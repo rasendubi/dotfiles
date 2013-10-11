@@ -26,6 +26,8 @@ set nobackup
 set nowritebackup
 set noswapfile
 
+set showcmd
+
 set scrolloff=2
 
 let g:clang_library_path="/usr/lib64/llvm"
@@ -60,15 +62,24 @@ inoremap <C-E> <lt>Esc>
 cnoremap <C-l> <lt>leader>
 cnoremap <C-E> <lt>Esc>
 
+" Start and end of line
 nnoremap H 0
 nnoremap L $
 
+onoremap p i(
+
 inoremap jk <Esc>
+
+" Select inside "", '', <>
+onoremap " :<C-U>normal! vi"<CR>
+onoremap ' :<C-U>normal! vi'<CR>
+onoremap < :<C-U>normal! vi<<CR>
+onoremap > :<C-U>normal! vi><CR>
 
 " Hard way
 " Force to learn jk 
-inoremap <Esc> <nop>
-inoremap <Left> <nop>
-inoremap <Right> <nop>
-inoremap <Up> <nop>
-inoremap <Down> <nop>
+inoremap <Esc>   <C-o>:echoerr "Don't use it!"<CR>
+inoremap <Left>  <C-o>:echoerr "Don't use it!"<CR>
+inoremap <Right> <C-o>:echoerr "Don't use it!"<CR>
+inoremap <Up>    <C-o>:echoerr "Don't use it!"<CR>
+inoremap <Down>  <C-o>:echoerr "Don't use it!"<CR>
