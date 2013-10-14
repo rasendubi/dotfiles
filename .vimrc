@@ -76,11 +76,20 @@ onoremap p i(
 
 inoremap jk <Esc>
 
+" Surround with " or '
+nnoremap <leader>" viw<Esc>a"<Esc>hbi"<Esc>lel
+nnoremap <leader>' viw<Esc>a'<Esc>hbi'<Esc>lel
+vnoremap <leader>" <Esc><Esc>`<i"<Esc>`>la"<Esc>
+vnoremap <leader>' <Esc><Esc>`<i'<Esc>`>la'<Esc>
+
 " Select inside "", '', <>
 onoremap " :<C-U>normal! vi"<CR>
 onoremap ' :<C-U>normal! vi'<CR>
 onoremap < :<C-U>normal! vi<<CR>
 onoremap > :<C-U>normal! vi><CR>
+
+" Convert word to uppercase
+inoremap <C-U> <Esc>viwUea
 
 " Hard way
 " Force to learn jk 
