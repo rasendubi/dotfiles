@@ -104,12 +104,13 @@ vnoremap <leader>> <Esc><Esc>`<i<<Esc>`>la><Esc>
 onoremap p i(
 " select text inside next paranthesis
 onoremap in( :<C-U>normal! f(vi(
-" Select inside "", '', <> {{{
+" Select inside "
 onoremap " :<C-U>normal! vi"<CR>
+" Select inside '
 onoremap ' :<C-U>normal! vi'<CR>
+" Select inside <>
 onoremap < :<C-U>normal! vi<<CR>
 onoremap > :<C-U>normal! vi><CR>
-" }}}
 " }}}
 
 " Use jk to exit insert-mode
@@ -128,6 +129,13 @@ inoremap <Up>    <C-o>:echoerr "Don't use it!"<CR>
 inoremap <Down>  <C-o>:echoerr "Don't use it!"<CR>
 " }}}
 " }}} (mappings)
+
+" Pascal file settings {{{
+augroup filetype_pascal
+    autocmd!
+    autocmd FileType pascal nnoremap <buffer> <F5> :!%:p:r<CR>
+    autocmd FileType pascal nnoremap <buffer> <F7> :!fpc %<CR>
+" }}}
 
 " Perl file settings {{{
 augroup filetype_perl
