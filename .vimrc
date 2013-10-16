@@ -15,7 +15,7 @@ set backspace=indent,eol,start
 set tabstop=4
 set softtabstop=4
 set shiftwidth=4
-set expandtab
+set noexpandtab
 
 filetype plugin on
 
@@ -42,7 +42,7 @@ set langmap=йq,цw,уe,кr,еt,нy,гu,шi,щo,зp,х[,ъ],фa,ыs,вd,аf,пg,
 " Status line settings {{{
 " Always show status line
 set laststatus=2
-set statusline=%-20.20f\ %y " Display filename and filetype
+set statusline=%-50.50f\ %y " Display filename and filetype
 set statusline+=[b:%n]      " Buffer number
 set statusline+=%m          " Modified flag
 set statusline+=%=          " Switch to right side
