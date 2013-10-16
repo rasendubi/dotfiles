@@ -47,7 +47,7 @@ set statusline+=[b:%n]      " Buffer number
 set statusline+=%m          " Modified flag
 set statusline+=%=          " Switch to right side
 set statusline+=%l:%-3c     " Current position in file
-set statusline+=of\ %L      " Total number of lines
+set statusline+=\ of\ %L    " Total number of lines
 set statusline+=\ %3p%%     " Percent in file
 " }}}
 
@@ -86,6 +86,8 @@ nnoremap + <C-W>+
 nnoremap _ <C-W>-
 " }}}
 
+" Show trailing spaces
+nnoremap <leader>t :execute "highlight trailing ctermbg=red \| match trailing " . '/\v[ \t]+$/'<CR>
 
 " Remove search highlight
 nnoremap <silent> <leader>/ :nohlsearch<CR>
@@ -150,9 +152,10 @@ augroup filetype_vim
     autocmd!
     autocmd FileType vim setlocal foldmethod=marker
 
+    autocmd FileType vim setlocal nolinebreak
+
     " Insert <leader> and <Esc>
     autocmd FileType vim inoremap <buffer> <C-l> <lt>leader>
     autocmd FileType vim inoremap <buffer> <C-E> <lt>Esc>
 augroup end
 " }}}
-
