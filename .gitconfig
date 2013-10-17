@@ -1,0 +1,17 @@
+[user]
+	email = rasen.dubi@gmail.com
+	name = Alexey Shmalko
+
+[push]
+	default = simple
+
+[alias]
+	ci = commit
+	ca = commit --amend
+	co = checkout
+	br = branch
+	st = status
+	re = reset --hard
+
+[color]
+	ui = true

@@ -1,5 +1,5 @@
 #!/bin/bash
-set +e
+set -e
 
 current_branch=$(git rev-parse --abbrev-ref HEAD)
 squash_branch=${current_branch}_squash
