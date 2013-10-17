@@ -134,28 +134,29 @@ inoremap <Down>  <C-o>:echoerr "Don't use it!"<CR>
 
 " Pascal file settings {{{
 augroup filetype_pascal
-    autocmd!
-    autocmd FileType pascal nnoremap <buffer> <F5> :!%:p:r<CR>
-    autocmd FileType pascal nnoremap <buffer> <F7> :!fpc %<CR>
+	autocmd!
+	autocmd FileType pascal nnoremap <buffer> <F5> :!%:p:r<CR>
+	autocmd FileType pascal nnoremap <buffer> <F7> :!fpc %<CR>
 " }}}
 
 " Perl file settings {{{
 augroup filetype_perl
-    autocmd!
-    autocmd FileType perl nnoremap <buffer> <F5> :!./%<CR>
-    autocmd FileType perl nnoremap <buffer> <F4> :!./% 
+	autocmd!
+	autocmd FileType perl nnoremap <buffer> <F5> :!./%<CR>
+	autocmd FileType perl nnoremap <buffer> <F4> :!./% 
 augroup end
 " }}}
 
 " Vimscript file settings {{{
 augroup filetype_vim
-    autocmd!
-    autocmd FileType vim setlocal foldmethod=marker
+	autocmd!
+	autocmd FileType vim setlocal foldmethod=marker
 
-    autocmd FileType vim setlocal nolinebreak
+	autocmd FileType vim setlocal nolinebreak
 
-    " Insert <leader> and <Esc>
-    autocmd FileType vim inoremap <buffer> <C-l> <lt>leader>
-    autocmd FileType vim inoremap <buffer> <C-E> <lt>Esc>
+	" Insert <leader> and <Esc>
+	autocmd FileType vim inoremap <buffer> <C-l>      <lt>leader>
+	autocmd FileType vim inoremap <buffer> <C-V><Esc> <lt>Esc>
+	autocmd FileType vim inoremap <buffer> <C-V><CR>  <lt>CR>
 augroup end
 " }}}
