@@ -37,6 +37,9 @@ let g:clang_library_path="/usr/lib64/llvm"
 
 set title
 
+set hlsearch
+set incsearch
+
 set langmap=йq,цw,уe,кr,еt,нy,гu,шi,щo,зp,х[,ъ],фa,ыs,вd,аf,пg,рh,оj,лk,дl,ж\\;,э',яz,чx,сc,мv,иb,тn,ьm,ю.,ё',ЙQ,ЦW,УE,КR,ЕT,НY,ГU,ШI,ЩO,ЗP,Х\{,Ъ\},ФA,ЫS,ВD,АF,ПG,РH,ОJ,ЛK,ДL,Ж\:,Э\",ЯZ,ЧX,СC,МV,ИB,ТN,ЬM,Б\<,Ю\>
 " }}}
 " Status line settings {{{
@@ -58,10 +61,10 @@ iabbr @@ rasen.dubi@gmail.com
 
 " Mappings {{{
 " Move lines up and down {{{
-nnoremap <C-J> :m +1<CR>
-nnoremap <C-K> :m -2<CR>
-inoremap <C-J> <Esc>:m +1<CR>A
-inoremap <C-K> <Esc>:m -2<CR>A
+nnoremap <silent> <C-J> :m +1<CR>
+nnoremap <silent> <C-K> :m -2<CR>
+inoremap <silent> <C-J> <Esc>:m +1<CR>A
+inoremap <silent> <C-K> <Esc>:m -2<CR>A
 " }}}
 
 nnoremap - dd
@@ -88,6 +91,8 @@ nnoremap _ <C-W>-
 
 " Show trailing spaces
 nnoremap <leader>t :execute "highlight trailing ctermbg=red \| match trailing " . '/\v[ \t]+$/'<CR>
+" Hide trailing spaces
+nnoremap <leader>T :highlight clear trailing<CR>
 
 " Remove search highlight
 nnoremap <silent> <leader>/ :nohlsearch<CR>
@@ -122,6 +127,9 @@ inoremap jk <Esc>
 " Convert word to uppercase
 inoremap <C-U> <Esc>viwUea
 
+nnoremap <silent> <leader>, :cprevious<CR>
+nnoremap <silent> <leader>. :cnext<CR>
+
 " Hard way (restrict use of some features) {{{
 " Force to learn jk 
 inoremap <Esc>   <C-o>:echoerr "Don't use it!"<CR>
@@ -129,6 +137,9 @@ inoremap <Left>  <C-o>:echoerr "Don't use it!"<CR>
 inoremap <Right> <C-o>:echoerr "Don't use it!"<CR>
 inoremap <Up>    <C-o>:echoerr "Don't use it!"<CR>
 inoremap <Down>  <C-o>:echoerr "Don't use it!"<CR>
+
+nnoremap 0 :echoerr "Use 'H' instead!"<CR>
+nnoremap $ :echoerr "Use 'L' instead!"<CR>
 " }}}
 " }}} (mappings)
 
