@@ -104,6 +104,8 @@ vnoremap <leader>> <Esc><Esc>`<i<<Esc>`>la><Esc>
 " Selection {{{
 " Select inside paranthesis
 onoremap p i(
+" Select one parameter
+onoremap op :<C-U>normal! T,vt,<CR>
 " select text inside next paranthesis
 onoremap in( :<C-U>normal! f(vi(
 " Select inside "
