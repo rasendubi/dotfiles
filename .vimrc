@@ -42,17 +42,17 @@ set incsearch
 
 set langmap=йq,цw,уe,кr,еt,нy,гu,шi,щo,зp,х[,ъ],фa,ыs,вd,аf,пg,рh,оj,лk,дl,ж\\;,э',яz,чx,сc,мv,иb,тn,ьm,ю.,ё',ЙQ,ЦW,УE,КR,ЕT,НY,ГU,ШI,ЩO,ЗP,Х\{,Ъ\},ФA,ЫS,ВD,АF,ПG,РH,ОJ,ЛK,ДL,Ж\:,Э\",ЯZ,ЧX,СC,МV,ИB,ТN,ЬM,Б\<,Ю\>
 " }}}
-" Status line settings {{{
+"" Status line settings {{{
 " Always show status line
 set laststatus=2
-set statusline=%-50.50f\ %y " Display filename and filetype
-set statusline+=[b:%n]      " Buffer number
-set statusline+=%m          " Modified flag
-set statusline+=%=          " Switch to right side
-set statusline+=%l:%-3c     " Current position in file
-set statusline+=\ of\ %L    " Total number of lines
-set statusline+=\ %3p%%     " Percent in file
-" }}}
+"set statusline=%-50.50f\ %y " Display filename and filetype
+"set statusline+=[b:%n]      " Buffer number
+"set statusline+=%m          " Modified flag
+"set statusline+=%=          " Switch to right side
+"set statusline+=%l:%-3c     " Current position in file
+"set statusline+=\ of\ %L    " Total number of lines
+"set statusline+=\ %3p%%     " Percent in file
+"" }}}
 
 call pathogen#infect()
 
@@ -133,8 +133,6 @@ nnoremap <silent> <leader>, :cprevious<CR>
 nnoremap <silent> <leader>. :cnext<CR>
 
 " Hard way (restrict use of some features) {{{
-" Force to learn jk 
-inoremap <Esc>   <C-o>:echoerr "Don't use it!"<CR>
 inoremap <Left>  <C-o>:echoerr "Don't use it!"<CR>
 inoremap <Right> <C-o>:echoerr "Don't use it!"<CR>
 inoremap <Up>    <C-o>:echoerr "Don't use it!"<CR>
@@ -173,3 +171,5 @@ augroup filetype_vim
 	autocmd FileType vim inoremap <buffer> <C-V><CR>  <lt>CR>
 augroup end
 " }}}
+
+let g:airline_powerline_fonts = 1
