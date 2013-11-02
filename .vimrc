@@ -87,6 +87,8 @@ nnoremap L $
 " Resize window {{{
 nnoremap + <C-W>+
 nnoremap _ <C-W>-
+nnoremap = <C-W>>
+nnoremap - <C-W><
 " }}}
 
 " Show trailing spaces

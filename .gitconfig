@@ -6,6 +6,7 @@
 	default = simple
 
 [alias]
+	a  = add
 	ci = commit
 	ca = commit --amend
 	co = checkout
