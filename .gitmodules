@@ -13,3 +13,6 @@
 [submodule ".vim/bundle/ultisnips"]
 	path = .vim/bundle/ultisnips
 	url = https://github.com/SirVer/ultisnips.git
+[submodule ".zsh/git-prompt"]
+	path = .zsh/git-prompt
+	url = https://github.com/olivierverdier/zsh-git-prompt.git
