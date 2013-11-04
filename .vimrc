@@ -55,6 +55,7 @@ set laststatus=2
 "" }}}
 
 call pathogen#infect()
+call pathogen#helptags()
 
 iabbr @n Alexey Shmalko
 iabbr @@ rasen.dubi@gmail.com
