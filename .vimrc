@@ -140,13 +140,7 @@ nnoremap <silent> <leader>, :cprevious<CR>
 nnoremap <silent> <leader>. :cnext<CR>
 
 " Hard way (restrict use of some features) {{{
-inoremap <Left>  <C-o>:echoerr "Don't use it!"<CR>
-inoremap <Right> <C-o>:echoerr "Don't use it!"<CR>
-inoremap <Up>    <C-o>:echoerr "Don't use it!"<CR>
-inoremap <Down>  <C-o>:echoerr "Don't use it!"<CR>
-
-nnoremap 0 :echoerr "Use 'H' instead!"<CR>
-nnoremap $ :echoerr "Use 'L' instead!"<CR>
+" It's OK. I use all my mappings ;)
 " }}}
 " }}} (mappings)
 
