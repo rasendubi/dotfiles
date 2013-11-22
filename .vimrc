@@ -124,9 +124,6 @@ onoremap in( :<C-U>normal! f(vi(
 onoremap " :<C-U>normal! vi"<CR>
 " Select inside '
 onoremap ' :<C-U>normal! vi'<CR>
-" Select inside <>
-onoremap < :<C-U>normal! vi<<CR>
-onoremap > :<C-U>normal! vi><CR>
 " }}}
 
 " Use jk to exit insert-mode
@@ -174,3 +171,10 @@ augroup end
 " }}}
 
 let g:airline_powerline_fonts = 1
+
+let g:clang_complete_copen = 0
+let g:clang_hl_errors = 1
+let g:clang_snippets = 1
+let g:clang_snippets_engine = "ultisnips"
+let g:clang_close_preview = 1
+let g:clang_complete_macros = 1
