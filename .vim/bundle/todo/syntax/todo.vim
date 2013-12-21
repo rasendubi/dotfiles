@@ -12,12 +12,14 @@ syntax match todoComment "\v#.*$"
 syntax match todoHeader "\v^.*:\s*$"
 syntax match todoElementName "\v^\s*-.*$"
 syntax match todoDone "\v^\s*\+.*$"
+syntax match todoPartial "\v^\s*\~.*$"
 syntax match todoQuoted "\v`[^`]*`"
 syntax match todoConstraints "\v^\s*\[.*\]$"
 
 highlight todoComment ctermfg=darkgrey
-highlight todoHeader ctermfg=green cterm=bold
-highlight todoElementName ctermfg=cyan
-highlight todoDone ctermfg=yellow
+highlight todoHeader ctermfg=cyan cterm=bold
+highlight todoElementName ctermfg=lightred
+highlight todoDone ctermfg=green
+highlight todoPartial ctermfg=yellow
 highlight todoQuoted ctermfg=white
 highlight todoConstraints ctermfg=darkred

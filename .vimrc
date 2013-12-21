@@ -63,14 +63,6 @@ call pathogen#helptags()
 iabbr @n Alexey Shmalko
 iabbr @@ rasen.dubi@gmail.com
 
-" Mappings {{{
-" Move lines up and down {{{
-nnoremap <silent> <C-J> :m +1<CR>
-nnoremap <silent> <C-K> :m -2<CR>
-inoremap <silent> <C-J> <Esc>:m +1<CR>A
-inoremap <silent> <C-K> <Esc>:m -2<CR>A
-" }}}
-
 nnoremap - dd
 
 " Edit .vimrc and commands {{{
