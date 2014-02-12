@@ -100,5 +100,6 @@ export PROJECT=moveable-all-pc-test
 export PATH="${HOME}/bin:${PATH}"
 
 alias g="git"
+alias :e="vim"
 
 export TERM=xterm-256color
