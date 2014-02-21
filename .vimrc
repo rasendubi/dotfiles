@@ -170,3 +170,6 @@ let g:clang_snippets = 1
 let g:clang_snippets_engine = "ultisnips"
 let g:clang_close_preview = 1
 let g:clang_complete_macros = 1
+
+set exrc
+set secure
