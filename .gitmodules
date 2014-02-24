@@ -16,3 +16,6 @@
 [submodule ".zsh/git-prompt"]
 	path = .zsh/git-prompt
 	url = https://github.com/olivierverdier/zsh-git-prompt.git
+[submodule ".vim/bundle/conque"]
+	path = .vim/bundle/conque
+	url = https://github.com/rasendubi/conque.git
