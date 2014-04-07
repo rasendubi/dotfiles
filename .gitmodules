@@ -19,3 +19,6 @@
 [submodule ".vim/bundle/conque"]
 	path = .vim/bundle/conque
 	url = https://github.com/rasendubi/conque.git
+[submodule ".vim/bundle/YouCompleteMe"]
+	path = .vim/bundle/YouCompleteMe
+	url = https://github.com/Valloric/YouCompleteMe.git
