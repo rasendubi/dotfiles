@@ -88,6 +88,16 @@ nnoremap = <C-W>>
 nnoremap - <C-W><
 " }}}
 
+" Manipulate windows {{{
+nnoremap <C-h> <C-w>h
+nnoremap <C-j> <C-w>j
+nnoremap <C-k> <C-w>k
+nnoremap <C-l> <C-w>l
+
+nnoremap <C-w><C-v> <C-w><C-v><C-w>l
+nnoremap <C-w>v <C-w><C-v><C-w>l
+" }}}
+
 " Show trailing spaces
 nnoremap <leader>t :execute "highlight trailing ctermbg=red \| match trailing " . '/\v[ \t]+$/'<CR>
 " Hide trailing spaces
@@ -171,5 +181,22 @@ let g:clang_snippets_engine = "ultisnips"
 let g:clang_close_preview = 1
 let g:clang_complete_macros = 1
 
+let g:netrw_altv = 1
+
 set exrc
 set secure
+
+if &t_Co >= 256
+	set background=dark
+	colorscheme solarized
+endif
+
+" let g:UltiSnipsExpandTrigger="<c-j>"
+
+let g:ycm_autoclose_preview_window_after_completion = 1
+let g:ycm_autoclose_preview_window_after_insertion = 1
+let g:ycm_use_ultisnips_completer = 1
+let g:ycm_key_list_select_completion=[]
+let g:ycm_key_list_previous_completion=[]
+
+let g:ycm_global_ycm_extra_conf = "~/.vim/.ycm_extra_conf.py"
