@@ -1,0 +1,20 @@
+#!/bin/bash - 
+
+# Converts .djvu in .pdf
+# Requires app-text/djvu
+
+if [ $# -lt 1 ]; then
+	echo "At least one argument expected"
+	exit -1
+fi
+
+input=$1
+
+if [ $# -eq 2 ]; then
+	output=$2
+else
+	output=`basename "$1" .djvu`.pdf
+fi
+
+ddjvu -format=pdf -quality=85 "$input" "$output"
+

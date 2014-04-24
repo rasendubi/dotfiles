@@ -5,6 +5,12 @@
 [push]
 	default = simple
 
+[sendemail]
+    smtpencryption = ssl
+	smtpserver = smtp.gmail.com
+	smtpuser = rasen.dubi@gmail.com
+	smtpserverport = 465
+
 [alias]
 	a  = add
 	d  = diff

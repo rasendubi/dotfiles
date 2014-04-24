@@ -57,6 +57,12 @@ set laststatus=2
 "set statusline+=\ %3p%%     " Percent in file
 "" }}}
 
+let g:pathogen_disabled = []
+
+if &term == 'linux'
+	call add(g:pathogen_disabled, 'vim-airline')
+endif
+
 call pathogen#infect()
 call pathogen#helptags()
 
@@ -139,7 +145,10 @@ nnoremap <silent> <leader>, :cprevious<CR>
 nnoremap <silent> <leader>. :cnext<CR>
 
 " Hard way (restrict use of some features) {{{
-" It's OK. I use all my mappings ;)
+nnoremap <C-w>h :echoerr "Don't use it!"<CR>
+nnoremap <C-w>j :echoerr "Don't use it!"<CR>
+nnoremap <C-w>k :echoerr "Don't use it!"<CR>
+nnoremap <C-w>l :echoerr "Don't use it!"<CR>
 " }}}
 " }}} (mappings)
 
@@ -155,6 +164,14 @@ augroup filetype_perl
 	autocmd!
 	autocmd FileType perl nnoremap <buffer> <F5> :!./%<CR>
 	autocmd FileType perl nnoremap <buffer> <F4> :!./% 
+augroup end
+" }}}
+
+" Python file settings {{{
+augroup filetype_python
+	autocmd!
+	autocmd FileType python nnoremap <buffer> <F5> :!./%<CR>
+	autocmd FileType python nnoremap <buffer> <F4> :!./% 
 augroup end
 " }}}
 
@@ -200,3 +217,11 @@ let g:ycm_key_list_select_completion=[]
 let g:ycm_key_list_previous_completion=[]
 
 let g:ycm_global_ycm_extra_conf = "~/.vim/.ycm_extra_conf.py"
+
+let g:load_doxygen_syntax = 1
+
+let g:hardtime_default_on = 1
+let g:hardtime_timeout = 500
+let g:hardtime_showmsg = 0
+let g:hardtime_allow_different_key = 1
+let g:hardtime_maxcount = 2

@@ -101,5 +101,3 @@ export PATH="${HOME}/bin:${PATH}"
 
 alias g="git"
 alias :e="vim"
-
-export TERM=xterm-256color
