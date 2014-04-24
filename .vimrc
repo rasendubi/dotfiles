@@ -87,6 +87,7 @@ nnoremap L $
 vnoremap L g_
 " }}}
 
+" Window manipulation {{{
 " Resize window {{{
 nnoremap + <C-W>+
 nnoremap _ <C-W>-
@@ -111,6 +112,8 @@ nnoremap <leader>T :highlight clear trailing<CR>
 
 " Remove search highlight
 nnoremap <silent> <leader>/ :nohlsearch<CR>
+" It's strange, but following mapping maps to <C-/> as well as <C-->
+nnoremap <silent> <c-_> :nohlsearch<CR>
 
 " Surround with ", ' or <> {{{
 nnoremap <leader>" viw<Esc>a"<Esc>hbi"<Esc>lel
@@ -152,6 +155,13 @@ nnoremap <C-w>l :echoerr "Don't use it!"<CR>
 " }}}
 " }}} (mappings)
 
+" C file settings {{{
+augroup filetype_c
+	autocmd!
+	autocmd FileType c,c.* nnoremap <buffer> <F9> :!%:p:r<CR>
+	autocmd FileType c,c.* nnoremap <buffer> <F7> :!gcc -std=c99 % -o %:p:r<CR>
+" }}}
+
 " Pascal file settings {{{
 augroup filetype_pascal
 	autocmd!
@@ -191,6 +201,7 @@ augroup end
 
 let g:airline_powerline_fonts = 1
 
+let g:clang_library_path = "/usr/lib64/"
 let g:clang_complete_copen = 0
 let g:clang_hl_errors = 1
 let g:clang_snippets = 1
@@ -199,6 +210,7 @@ let g:clang_close_preview = 1
 let g:clang_complete_macros = 1
 
 let g:netrw_altv = 1
+command! G Git
 
 set exrc
 set secure
@@ -223,5 +235,12 @@ let g:load_doxygen_syntax = 1
 let g:hardtime_default_on = 1
 let g:hardtime_timeout = 500
 let g:hardtime_showmsg = 0
+
+let g:ctrlp_map = '<c-u>'
+
+nnoremap <C-W>F :vertical wincmd f<cr>
+
+let g:hardtime_default_on = 1
+let g:hardtime_timeout = 500
 let g:hardtime_allow_different_key = 1
 let g:hardtime_maxcount = 2
