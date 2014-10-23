@@ -37,3 +37,6 @@
 [submodule ".vim/bundle/plantuml-syntax"]
 	path = .vim/bundle/plantuml-syntax
 	url = https://github.com/aklt/plantuml-syntax.git
+[submodule ".vim/bundle/neobundle.vim"]
+	path = .vim/bundle/neobundle.vim
+	url = https://github.com/Shougo/neobundle.vim

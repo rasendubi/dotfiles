@@ -86,7 +86,7 @@ NeoBundle 'Shougo/vimproc.vim', {
 
 NeoBundle 'Valloric/YouCompleteMe', {
 \    'build' : {
-\        'linux' : './install.sh --clang-completer --system-clang',
+\        'linux' : 'git submodule update --init --recursive && ./install.sh --clang-completer --system-libclang',
 \    },
 \ }
 NeoBundle 'altercation/vim-colors-solarized'
