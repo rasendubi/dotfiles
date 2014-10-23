@@ -58,14 +58,62 @@ set laststatus=2
 "set statusline+=\ %3p%%     " Percent in file
 "" }}}
 
-let g:pathogen_disabled = []
+"NeoBundle Scripts-----------------------------
+if has('vim_starting')
+  set nocompatible               " Be iMproved
 
-if &term == 'linux'
-	call add(g:pathogen_disabled, 'vim-airline')
+  " Required:
+  set runtimepath+=/home/rasen/.vim/bundle/neobundle.vim/
 endif
 
-call pathogen#infect()
-call pathogen#helptags()
+" Required:
+call neobundle#begin(expand('/home/rasen/.vim/bundle'))
+
+" Let NeoBundle manage NeoBundle
+" Required:
+NeoBundleFetch 'Shougo/neobundle.vim'
+
+" Add or remove your Bundles here:
+NeoBundle 'Shougo/vimproc.vim', {
+\ 'build' : {
+\     'windows' : 'tools\\update-dll-mingw',
+\     'cygwin' : 'make -f make_cygwin.mak',
+\     'mac' : 'make -f make_mac.mak',
+\     'linux' : 'make',
+\     'unix' : 'gmake',
+\    },
+\ }
+
+NeoBundle 'Valloric/YouCompleteMe', {
+\    'build' : {
+\        'linux' : './install.sh --clang-completer --system-clang',
+\    },
+\ }
+NeoBundle 'altercation/vim-colors-solarized'
+if &term != 'linux'
+	NeoBundle 'bling/vim-airline'
+endif
+NeoBundle 'kien/ctrlp.vim'
+NeoBundle 'SirVer/ultisnips'
+NeoBundle 'honza/vim-snippets'
+NeoBundle 'tpope/vim-fugitive'
+" NeoBundle 'Shougo/neosnippet.vim'
+" NeoBundle 'Shougo/neosnippet-snippets'
+" NeoBundle 'flazz/vim-colorschemes'
+" 
+" " You can specify revision/branch/tag.
+" NeoBundle 'Shougo/vimshell', { 'rev' : '3787e5' }
+
+" Required:
+call neobundle#end()
+
+" Required:
+filetype plugin indent on
+
+" If there are uninstalled bundles found on startup,
+" this will conveniently prompt you to install them.
+NeoBundleCheck
+"End NeoBundle Scripts-------------------------
 
 iabbr @n Alexey Shmalko
 iabbr @@ rasen.dubi@gmail.com
