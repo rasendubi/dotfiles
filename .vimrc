@@ -5,6 +5,7 @@ let mapleader = ","
 let localleader = "\\"
 
 set number
+set relativenumber
 set nowrap
 set autoindent
 set smartindent
@@ -244,3 +245,6 @@ let g:hardtime_default_on = 1
 let g:hardtime_timeout = 500
 let g:hardtime_allow_different_key = 1
 let g:hardtime_maxcount = 2
+
+set grepprg=grep\ -nH\ $*
+let g:tex_flavor='latex'

@@ -20,6 +20,10 @@
 	br = branch
 	st = status
 	re = reset --hard
+	dpush = push origin HEAD:refs/drafts/master
+	ppush = push origin HEAD:refs/publish/master
 
 [color]
 	ui = true
+[core]
+	editor = vim

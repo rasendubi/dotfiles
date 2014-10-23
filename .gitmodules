@@ -31,9 +31,9 @@
 [submodule ".vim/bundle/ctrlp"]
 	path = .vim/bundle/ctrlp
 	url = https://github.com/kien/ctrlp.vim.git
-[submodule ".vim/bundle/vim-hardtime"]
-	path = .vim/bundle/vim-hardtime
-	url = https://github.com/takac/vim-hardtime.git
 [submodule ".vim/bundle/vim-surround"]
 	path = .vim/bundle/vim-surround
 	url = https://github.com/tpope/vim-surround.git
+[submodule ".vim/bundle/plantuml-syntax"]
+	path = .vim/bundle/plantuml-syntax
+	url = https://github.com/aklt/plantuml-syntax.git
