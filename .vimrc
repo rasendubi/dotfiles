@@ -1,7 +1,7 @@
 " Basic settings {{{
 set nocompatible
 
-let mapleader = ","
+let mapleader = " "
 let localleader = "\\"
 
 set number
@@ -58,7 +58,8 @@ set laststatus=2
 "set statusline+=\ %3p%%     " Percent in file
 "" }}}
 
-"NeoBundle Scripts-----------------------------
+
+"NeoBundle Scripts----------------------------- {{{
 if has('vim_starting')
   set nocompatible               " Be iMproved
 
@@ -97,10 +98,11 @@ NeoBundle 'kien/ctrlp.vim'
 NeoBundle 'SirVer/ultisnips'
 NeoBundle 'honza/vim-snippets'
 NeoBundle 'tpope/vim-fugitive'
+NeoBundle 'airblade/vim-gitgutter'
 " NeoBundle 'Shougo/neosnippet.vim'
 " NeoBundle 'Shougo/neosnippet-snippets'
 " NeoBundle 'flazz/vim-colorschemes'
-" 
+
 " " You can specify revision/branch/tag.
 " NeoBundle 'Shougo/vimshell', { 'rev' : '3787e5' }
 
@@ -113,12 +115,7 @@ filetype plugin indent on
 " If there are uninstalled bundles found on startup,
 " this will conveniently prompt you to install them.
 NeoBundleCheck
-"End NeoBundle Scripts-------------------------
-
-iabbr @n Alexey Shmalko
-iabbr @@ rasen.dubi@gmail.com
-
-nnoremap - dd
+"End NeoBundle Scripts------------------------- }}}
 
 " Edit .vimrc and commands {{{
 nnoremap <leader>ev :vsplit $MYVIMRC<CR>
@@ -164,26 +161,9 @@ nnoremap <silent> <leader>/ :nohlsearch<CR>
 " It's strange, but following mapping maps to <C-/> as well as <C-->
 nnoremap <silent> <c-_> :nohlsearch<CR>
 
-" Surround with ", ' or <> {{{
-nnoremap <leader>" viw<Esc>a"<Esc>hbi"<Esc>lel
-nnoremap <leader>' viw<Esc>a'<Esc>hbi'<Esc>lel
-
-vnoremap <leader>" <Esc><Esc>`<i"<Esc>`>la"<Esc>
-vnoremap <leader>' <Esc><Esc>`<i'<Esc>`>la'<Esc>
-vnoremap <leader>< <Esc><Esc>`<i<<Esc>`>la><Esc>
-vnoremap <leader>> <Esc><Esc>`<i<<Esc>`>la><Esc>
-" }}}
 " Selection {{{
-" Select inside paranthesis
-onoremap p i(
-" Select one parameter
-onoremap op :<C-U>normal! T,vt,<CR>
 " select text inside next paranthesis
-onoremap in( :<C-U>normal! f(vi(
-" Select inside "
-onoremap " :<C-U>normal! vi"<CR>
-" Select inside '
-onoremap ' :<C-U>normal! vi'<CR>
+onoremap in( :<C-U>normal! f(vi(<CR>
 " }}}
 
 " Use jk to exit insert-mode
@@ -204,28 +184,6 @@ nnoremap <C-w>l :echoerr "Don't use it!"<CR>
 " }}}
 " }}} (mappings)
 
-" C file settings {{{
-augroup filetype_c
-	autocmd!
-	autocmd FileType c,c.* nnoremap <buffer> <F9> :!%:p:r<CR>
-	autocmd FileType c,c.* nnoremap <buffer> <F7> :!gcc -std=c99 % -o %:p:r<CR>
-" }}}
-
-" Pascal file settings {{{
-augroup filetype_pascal
-	autocmd!
-	autocmd FileType pascal nnoremap <buffer> <F5> :!%:p:r<CR>
-	autocmd FileType pascal nnoremap <buffer> <F7> :!fpc %<CR>
-" }}}
-
-" Perl file settings {{{
-augroup filetype_perl
-	autocmd!
-	autocmd FileType perl nnoremap <buffer> <F5> :!./%<CR>
-	autocmd FileType perl nnoremap <buffer> <F4> :!./% 
-augroup end
-" }}}
-
 " Python file settings {{{
 augroup filetype_python
 	autocmd!
@@ -245,6 +203,8 @@ augroup filetype_vim
 	autocmd FileType vim inoremap <buffer> <C-l>      <lt>leader>
 	autocmd FileType vim inoremap <buffer> <C-V><Esc> <lt>Esc>
 	autocmd FileType vim inoremap <buffer> <C-V><CR>  <lt>CR>
+
+	autocmd FileType vim nnoremap <buffer> <F5> :source %<CR>
 augroup end
 " }}}
 
@@ -267,9 +227,9 @@ set secure
 if &t_Co >= 256
 	set background=dark
 	colorscheme solarized
-endif
 
-" let g:UltiSnipsExpandTrigger="<c-j>"
+	highlight clear SignColumn
+endif
 
 let g:ycm_autoclose_preview_window_after_completion = 1
 let g:ycm_autoclose_preview_window_after_insertion = 1
@@ -281,18 +241,9 @@ let g:ycm_global_ycm_extra_conf = "~/.vim/.ycm_extra_conf.py"
 
 let g:load_doxygen_syntax = 1
 
-let g:hardtime_default_on = 1
-let g:hardtime_timeout = 500
-let g:hardtime_showmsg = 0
-
 let g:ctrlp_map = '<c-u>'
 
 nnoremap <C-W>F :vertical wincmd f<cr>
-
-let g:hardtime_default_on = 1
-let g:hardtime_timeout = 500
-let g:hardtime_allow_different_key = 1
-let g:hardtime_maxcount = 2
 
 set grepprg=grep\ -nH\ $*
 let g:tex_flavor='latex'
