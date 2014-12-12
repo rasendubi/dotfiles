@@ -15,6 +15,7 @@
 	a  = add
 	d  = diff
 	dl = diff HEAD~ HEAD
+	ds = diff --staged
 	ci = commit
 	ca = commit --amend
 	co = checkout
