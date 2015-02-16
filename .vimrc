@@ -99,8 +99,9 @@ NeoBundle 'SirVer/ultisnips'
 NeoBundle 'honza/vim-snippets'
 NeoBundle 'tpope/vim-fugitive'
 NeoBundle 'airblade/vim-gitgutter'
-" NeoBundle 'Shougo/neosnippet.vim'
-" NeoBundle 'Shougo/neosnippet-snippets'
+NeoBundle 'pbrisbin/vim-mkdir'
+NeoBundle 'tpope/vim-surround'
+" NeoBundle 'scrooloose/syntastic'
 " NeoBundle 'flazz/vim-colorschemes'
 
 " " You can specify revision/branch/tag.
@@ -119,7 +120,6 @@ NeoBundleCheck
 
 " Edit .vimrc and commands {{{
 nnoremap <leader>ev :vsplit $MYVIMRC<CR>
-nnoremap <leader>sv :source $MYVIMRC<CR>
 
 " Insert <leader> and <Esc>
 cnoremap <C-l> <lt>leader>
@@ -146,9 +146,6 @@ nnoremap <C-h> <C-w>h
 nnoremap <C-j> <C-w>j
 nnoremap <C-k> <C-w>k
 nnoremap <C-l> <C-w>l
-
-nnoremap <C-w><C-v> <C-w><C-v><C-w>l
-nnoremap <C-w>v <C-w><C-v><C-w>l
 " }}}
 
 " Show trailing spaces
@@ -181,6 +178,9 @@ nnoremap <C-w>h :echoerr "Don't use it!"<CR>
 nnoremap <C-w>j :echoerr "Don't use it!"<CR>
 nnoremap <C-w>k :echoerr "Don't use it!"<CR>
 nnoremap <C-w>l :echoerr "Don't use it!"<CR>
+
+nnoremap <C-w>v :echoerr "Use \<leader\>v instead"<cr>
+nnoremap <C-w>s :echoerr "Use \<leader\>s instead"<cr>
 " }}}
 " }}} (mappings)
 
@@ -247,3 +247,21 @@ nnoremap <C-W>F :vertical wincmd f<cr>
 
 set grepprg=grep\ -nH\ $*
 let g:tex_flavor='latex'
+
+" Fast saving and closing
+nnoremap <leader><leader> :w<cr>
+nnoremap <leader>q :q!<cr>
+nnoremap <leader>w :wq<cr>
+
+cabbrev w  echoerr "Use \<leader\>\<leader\> instead"
+cabbrev wq echoerr "Use \<leader\>w instead"
+
+" Opening splits
+nnoremap <leader>v <C-w><C-v><C-w>l
+nnoremap <leader>s <C-w>s
+
+" Insert newline and stay in normal mode
+nnoremap <silent> <leader>o o<Esc>
+nnoremap <silent> <leader>O O<Esc>
+
+" inoremap <Tab> <C-R>=strpart(getline('.'),0,col('.')-1)=~"^[ \t]*$"?"\t":repeat(' ',4-virtcol('.')%4)<cr>
