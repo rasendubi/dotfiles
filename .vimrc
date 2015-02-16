@@ -208,6 +208,14 @@ augroup filetype_vim
 augroup end
 " }}}
 
+" Haskell file settings {{{
+augroup filetype_haskell
+	autocmd!
+	autocmd FileType haskell setlocal expandtab
+	autocmd FileType haskell nnoremap <F5> :!ghci %<cr>
+augroup end
+" }}}
+
 let g:airline_powerline_fonts = 1
 
 let g:clang_library_path = "/usr/lib64/"
