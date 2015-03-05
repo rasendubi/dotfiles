@@ -90,7 +90,7 @@ NeoBundle 'Valloric/YouCompleteMe', {
 \        'linux' : 'git submodule update --init --recursive && ./install.sh --clang-completer --system-libclang',
 \    },
 \ }
-NeoBundle 'altercation/vim-colors-solarized'
+" NeoBundle 'altercation/vim-colors-solarized'
 if &term != 'linux'
 	NeoBundle 'bling/vim-airline'
 endif
@@ -98,10 +98,12 @@ NeoBundle 'kien/ctrlp.vim'
 NeoBundle 'SirVer/ultisnips'
 NeoBundle 'honza/vim-snippets'
 NeoBundle 'tpope/vim-fugitive'
+NeoBundle 'tpope/vim-surround'
 NeoBundle 'airblade/vim-gitgutter'
 NeoBundle 'pbrisbin/vim-mkdir'
 NeoBundle 'tpope/vim-surround'
 " NeoBundle 'scrooloose/syntastic'
+NeoBundle 'tomasr/molokai'
 " NeoBundle 'flazz/vim-colorschemes'
 
 " " You can specify revision/branch/tag.
@@ -205,6 +207,8 @@ augroup filetype_vim
 	autocmd FileType vim inoremap <buffer> <C-V><CR>  <lt>CR>
 
 	autocmd FileType vim nnoremap <buffer> <F5> :source %<CR>
+
+	autocmd FileType vim setlocal keywordprg=:help
 augroup end
 " }}}
 
@@ -233,10 +237,17 @@ set exrc
 set secure
 
 if &t_Co >= 256
-	set background=dark
-	colorscheme solarized
+	" set background=dark
+	" colorscheme solarized
 
-	highlight clear SignColumn
+	" highlight clear SignColumn
+
+	let g:molokai_original = 1
+	let g:rehash256 = 1
+
+	set cursorline
+
+	colorscheme molokai
 endif
 
 let g:ycm_autoclose_preview_window_after_completion = 1
@@ -271,5 +282,14 @@ nnoremap <leader>s <C-w>s
 " Insert newline and stay in normal mode
 nnoremap <silent> <leader>o o<Esc>
 nnoremap <silent> <leader>O O<Esc>
+
+" alt + h
+nnoremap h :tabp<cr>
+" alt + l
+nnoremap <Esc>l :tabn<cr>
+
+if executable('ag')
+	set grepprg=ag\ --nogroup\ --nocolor
+endif
 
 " inoremap <Tab> <C-R>=strpart(getline('.'),0,col('.')-1)=~"^[ \t]*$"?"\t":repeat(' ',4-virtcol('.')%4)<cr>
