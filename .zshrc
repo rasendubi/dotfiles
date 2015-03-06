@@ -94,10 +94,8 @@ if (( ${+terminfo[smkx]} )) && (( ${+terminfo[rmkx]} )); then
     zle -N zle-line-finish
 fi
 
-export TOOLCHAIN_PREFIX=/home/projects/toolchain/build/i386-elf-4.6.1-Linux-x86_64/bin/i386-elf-
-export PROJECT=moveable-all-pc-test
-
 export PATH="${HOME}/bin:${PATH}"
 
 alias g="git"
+alias v="vim"
 alias :e="vim"
