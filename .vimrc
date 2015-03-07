@@ -216,7 +216,17 @@ augroup end
 augroup filetype_haskell
 	autocmd!
 	autocmd FileType haskell setlocal expandtab
-	autocmd FileType haskell nnoremap <F5> :!ghci %<cr>
+	autocmd FileType haskell nnoremap <buffer> <F5> :!ghci %<cr>
+augroup end
+" }}}
+
+" Markdown file settings {{{
+augroup filetype_markdown
+	autocmd!
+	autocmd FileType markdown setlocal wrap
+	autocmd FileType markdown setlocal linebreak
+	autocmd FileType markdown nnoremap <buffer> j gj
+	autocmd FileType markdown nnoremap <buffer> k gk
 augroup end
 " }}}
 
@@ -291,5 +301,8 @@ nnoremap <Esc>l :tabn<cr>
 if executable('ag')
 	set grepprg=ag\ --nogroup\ --nocolor
 endif
+
+" repeat last command but prefix with !
+nnoremap !: q:kI!<esc><cr>
 
 " inoremap <Tab> <C-R>=strpart(getline('.'),0,col('.')-1)=~"^[ \t]*$"?"\t":repeat(' ',4-virtcol('.')%4)<cr>
