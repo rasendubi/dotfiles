@@ -4,7 +4,7 @@
 # Please don't use this script.
 # You MUST write your configs yourself, never copy other's.
 
-FILES=".vimrc .vim .gitconfig .zshrc .zsh .Xresources .config .nethackrc"
+FILES=".vimrc .vim .gitconfig .zshrc .zsh .tmux.conf .Xresources .config .nethackrc"
 
 DEST=$1
 
