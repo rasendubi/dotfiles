@@ -26,7 +26,7 @@
 	ca = commit --amend
 	co = checkout
 	cb = checkout -b
-	d  = checkout --detach
+	de = checkout --detach
 	br = branch
 	s  = status
 	re = reset --hard
