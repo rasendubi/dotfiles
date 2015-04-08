@@ -14,7 +14,7 @@
 [alias]
 	cl = clone
 	p  = push
-	pl = pull -r
+	pl = pull
 	f  = fetch
 	fa = fetch --all
 	a  = add
@@ -32,9 +32,14 @@
 	re = reset --hard
 	dp = push origin HEAD:refs/drafts/master
 	pp = push origin HEAD:refs/publish/master
+	r  = rebase
+	ri = rebase -i
 
 [color]
 	ui = true
 
 [core]
 	editor = vim
+
+[rerere]
+	enabled = true
