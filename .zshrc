@@ -97,5 +97,3 @@ fi
 export PATH="${HOME}/bin:${PATH}"
 
 alias g="git"
-alias v="vim"
-alias :e="vim"
