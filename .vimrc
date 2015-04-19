@@ -107,6 +107,8 @@ NeoBundle 'pbrisbin/vim-mkdir'
 NeoBundle 'tpope/vim-surround'
 " NeoBundle 'scrooloose/syntastic'
 NeoBundle 'tomasr/molokai'
+NeoBundle 'pbrisbin/vim-syntax-shakespeare'
+NeoBundle 'Lokaltog/vim-easymotion'
 " NeoBundle 'flazz/vim-colorschemes'
 
 " Required:
@@ -223,7 +225,7 @@ augroup filetype_haskell
 	autocmd!
 	autocmd FileType haskell setlocal expandtab
 	if has('nvim')
-		autocmd FileType haskell nnoremap <buffer> <F5> :vsplit | term ghci %<cr>
+		autocmd FileType haskell nnoremap <buffer> <F5> :vsplit \| term ghci %<cr>
 	else
 		autocmd FileType haskell nnoremap <buffer> <F5> :!ghci %<cr>
 	endif
@@ -258,6 +260,31 @@ let g:ycm_key_list_select_completion=[]
 let g:ycm_key_list_previous_completion=[]
 
 let g:ycm_global_ycm_extra_conf = "~/.vim/.ycm_extra_conf.py"
+" }}}
+
+" Easymotion {{{
+let g:EasyMotion_do_mapping = 0
+let g:EasyMotion_startofline = 0
+nmap <M-f> <Plug>(easymotion-f)
+nmap <M-F> <Plug>(easymotion-F)
+nmap <M-t> <Plug>(easymotion-t)
+nmap <M-T> <Plug>(easymotion-T)
+
+nmap <M-w> <Plug>(easymotion-w)
+nmap <M-W> <Plug>(easymotion-W)
+nmap <M-b> <Plug>(easymotion-b)
+nmap <M-B> <Plug>(easymotion-B)
+nmap <M-e> <Plug>(easymotion-e)
+nmap <M-E> <Plug>(easymotion-E)
+
+nmap / <Plug>(easymotion-sn)
+nmap <M-n> <Plug>(easymotion-next)
+nmap <M-N> <Plug>(easymotion-prev)
+" JK motions: Line motions
+nmap <M-j> <Plug>(easymotion-j)
+nmap <M-k> <Plug>(easymotion-k)
+
+set nohlsearch " easymotion does it
 " }}}
 
 let g:netrw_altv = 1
