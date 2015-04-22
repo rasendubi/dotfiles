@@ -193,8 +193,8 @@ nnoremap O<Esc> :echoerr "Use <lt>leader>O instead"<cr>
 augroup filetype_python
 	autocmd!
 	if has('nvim')
-		autocmd FileType python nnoremap <buffer> <F5> :vsplit | ./%<CR>
-		autocmd FileType python nnoremap <buffer> <F4> :vsplit | ./% 
+		autocmd FileType python nnoremap <buffer> <F5> :vsplit \| ./%<CR>
+		autocmd FileType python nnoremap <buffer> <F4> :vsplit \| ./% 
 	else
 		autocmd FileType python nnoremap <buffer> <F5> :!./%<CR>
 		autocmd FileType python nnoremap <buffer> <F4> :!./% 
@@ -277,14 +277,14 @@ nmap <M-B> <Plug>(easymotion-B)
 nmap <M-e> <Plug>(easymotion-e)
 nmap <M-E> <Plug>(easymotion-E)
 
-nmap / <Plug>(easymotion-sn)
+nmap <M-/> <Plug>(easymotion-sn)
 nmap <M-n> <Plug>(easymotion-next)
 nmap <M-N> <Plug>(easymotion-prev)
 " JK motions: Line motions
 nmap <M-j> <Plug>(easymotion-j)
 nmap <M-k> <Plug>(easymotion-k)
 
-set nohlsearch " easymotion does it
+" set nohlsearch " easymotion does it
 " }}}
 
 let g:netrw_altv = 1
@@ -322,7 +322,7 @@ nnoremap <silent> <leader>O O<Esc>
 
 if has('nvim')
 	nnoremap <M-h> :tabp<cr>
-	nnoremap <M-l> :tabp<cr>
+	nnoremap <M-l> :tabn<cr>
 else
 	" alt + h
 	nnoremap h :tabp<cr>
