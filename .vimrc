@@ -8,7 +8,6 @@ set number
 set nowrap
 set autoindent
 set smartindent
-set cindent
 
 set backspace=indent,eol,start
 
@@ -44,6 +43,11 @@ set incsearch
 set wildmode=longest:list,full
 
 set langmap=йq,цw,уe,кr,еt,нy,гu,шi,щo,зp,х[,ъ],фa,ыs,вd,аf,пg,рh,оj,лk,дl,ж\\;,э',яz,чx,сc,мv,иb,тn,ьm,ю.,ё',ЙQ,ЦW,УE,КR,ЕT,НY,ГU,ШI,ЩO,ЗP,Х\{,Ъ\},ФA,ЫS,ВD,АF,ПG,РH,ОJ,ЛK,ДL,Ж\:,Э\",ЯZ,ЧX,СC,МV,ИB,ТN,ЬM,Б\<,Ю\>
+
+set hidden
+
+set list
+set listchars=tab:»\ ,trail:·,extends:>,nbsp:.
 
 set exrc
 set secure
@@ -189,6 +193,11 @@ nnoremap O<Esc> :echoerr "Use <lt>leader>O instead"<cr>
 " }}}
 " }}} (mappings)
 
+augroup filteype_c
+	autocmd!
+	autocmd FileType c,cpp setlocal cindent
+augroup end
+
 " Python file settings {{{
 augroup filetype_python
 	autocmd!
@@ -221,13 +230,31 @@ augroup end
 " }}}
 
 " Haskell file settings {{{
+function! GHCI()
+	if !bufexists('ghci')
+		split
+		exec "normal \<C-w>J"
+		term cabal exec ghci %
+		file ghci
+		set bufhidden=hide
+		tnoremap <buffer> <C-r> :r<cr>
+	else
+		let win = bufwinnr('ghci')
+		if win != -1
+			exec "normal " . win . "\<C-w>w"
+			startinsert
+		end
+	end
+endfunction
+
 augroup filetype_haskell
 	autocmd!
-	autocmd FileType haskell setlocal expandtab
+	autocmd FileType haskell,cabal setlocal expandtab
+	autocmd FileType haskell compiler ghc
 	if has('nvim')
-		autocmd FileType haskell nnoremap <buffer> <F5> :vsplit \| term ghci %<cr>
+		autocmd FileType haskell nnoremap <buffer> <F5> :call GHCI()<cr>
 	else
-		autocmd FileType haskell nnoremap <buffer> <F5> :!ghci %<cr>
+		autocmd FileType haskell nnoremap <buffer> <F5> :!cabal exec ghci %<cr>
 	endif
 augroup end
 " }}}
@@ -338,4 +365,10 @@ endif
 " repeat last command but prefix with !
 nnoremap !: q:kI!<esc><cr>
 
+cmap w!! w! !sudo tee % >/dev/null
+
 " inoremap <Tab> <C-R>=strpart(getline('.'),0,col('.')-1)=~"^[ \t]*$"?"\t":repeat(' ',4-virtcol('.')%4)<cr>
+
+if has('nvim')
+	tnoremap <Esc><Esc> <C-\><C-n>
+end
