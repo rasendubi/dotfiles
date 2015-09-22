@@ -18,14 +18,18 @@
 	f  = fetch
 	fa = fetch --all
 	a  = add
+	ap = add -p
 	d  = diff
 	dl = diff HEAD~ HEAD
 	ds = diff --staged
 	l  = log
+	l1 = log -1
+	lp = log -p
 	c  = commit
 	ca = commit --amend
 	co = checkout
 	cb = checkout -b
+	cm = checkout origin/master
 	de = checkout --detach
 	br = branch
 	s  = status
@@ -33,7 +37,10 @@
 	dp = push origin HEAD:refs/drafts/master
 	pp = push origin HEAD:refs/publish/master
 	r  = rebase
+	rc = rebase --continue
 	ri = rebase -i
+	m  = merge
+	t  = tag
 
 [color]
 	ui = true
