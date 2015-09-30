@@ -1,2 +1,9 @@
-.vim/.netrwlist
-.zsh/cache
+/.vim/.netrwlist
+/.zsh/cache
+/.emacs.d/elpa
+/.emacs.d/ensime
+/.emacs.d/eshell
+/.emacs.d/auto-save-list
+/.emacs.d/ido.last
+/.emacs.d/projectile*
+/.emacs.d/recentf

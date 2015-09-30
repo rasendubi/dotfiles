@@ -1,0 +1,6 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: Global include
+# key: Inc
+# binding: direct-keybinding
+# --
+#include <${1:iostream}>

@@ -18,7 +18,7 @@ flags = [
     # a "-std=<something>".
     # For a C project, you would set this to something like 'c99' instead of
     # 'c++11'.
-    '-std=c++11',
+    '-std=c++14',
     # ...and the same thing goes for the magic -x option which specifies the
     # language that the files to be compiled are written in. This is mostly
     # relevant for c++ headers.
@@ -29,8 +29,8 @@ flags = [
     '-isystem', '/System/Library/Frameworks/Python.framework/Headers',
     '-isystem', '/usr/local/include',
     '-isystem', '/usr/local/include/eigen3',
-    '-I', 'include'
-    '-I.'
+    '-I', 'include',
+    '-I.',
 ]
 
 # Set this to the absolute path to the folder (NOT the file!) containing the
@@ -89,7 +89,8 @@ def FlagsForFile( filename ):
       compilation_info.compiler_flags_,
       compilation_info.compiler_working_dir_ )
   else:
-    relative_to = DirectoryOfThisScript()
+    # relative_to = DirectoryOfThisScript()
+    relative_to = os.path.dirname(os.path.abspath(filename))
     final_flags = MakeRelativePathsInFlagsAbsolute( flags, relative_to )
 
   return {

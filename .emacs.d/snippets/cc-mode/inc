@@ -1,0 +1,6 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: #include "..."
+# key: inc
+# binding: direct-keybinding
+# --
+#include "${1:`(concat (file-name-base) ".h")`}"
