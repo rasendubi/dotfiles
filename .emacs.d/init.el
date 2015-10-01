@@ -89,6 +89,16 @@
 (use-package magit
   :bind ("C-c m" . magit-status))
 
+(use-package git-gutter
+  :config
+  (global-git-gutter-mode 1)
+
+  (setq git-gutter:window-width 2
+        git-gutter:always-show-separator t
+        git-gutter:hide-gutter t
+        git-gutter:separator-sign " ")
+  (set-face-background 'git-gutter:separator "brightblack"))
+
 (use-package yasnippet
   :defer 5
   :diminish yas-minor-mode
