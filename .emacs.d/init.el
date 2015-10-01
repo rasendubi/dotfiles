@@ -34,7 +34,7 @@
 
 (require 'package)
 (add-to-list 'package-archives
-	     '("melpa" . "http://melpa.org/packages/") t)
+             '("melpa" . "http://melpa.org/packages/") t)
 (add-to-list 'package-archives
              '("marmalade" . "http://marmalade-repo.org/packages/") t)
 (package-initialize)
@@ -68,16 +68,23 @@
     (setq helm-google-suggest-use-curl-p t))
 
   (setq helm-move-to-line-cycle-in-source t
-      helm-ff-search-library-in-sexp t
-      helm-scroll-amount 8
-      helm-ff-file-name-history-use-recentf t
-      helm-M-x-fuzzy-match t)
+        helm-ff-search-library-in-sexp t
+        helm-scroll-amount 8
+        helm-ff-file-name-history-use-recentf t
+        helm-M-x-fuzzy-match t)
 
   (helm-mode 1))
 
 (use-package xclip
   :config
-  (xclip-mode 1))
+  (xclip-mode 1)
+  (defun my-x-set-selection (f type data)
+    (xclip-set-selection type data))
+  (advice-add 'x-set-selection :around #'my-x-set-selection)
+
+  (defun my-x-selection-value-internal (f type)
+    (xclip-selection-value))
+  (advice-add 'x-selection-value-internal :around #'my-x-selection-value-internal))
 
 (use-package magit
   :bind ("C-c m" . magit-status))
@@ -240,3 +247,12 @@
 
 (defun add-to-path (str)
   (setenv "PATH" (concat str ":" (getenv "PATH"))))
+
+(c-add-style "savvy"
+             '("k&r"
+               (indent-tabs-mode .t)
+               (c-basic-offset . 4)
+               (tab-width . 4)
+               (c-offsets-alist
+                (case-label +))))
+
