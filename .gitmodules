@@ -6,4 +6,4 @@
 	url = https://github.com/Shougo/neobundle.vim
 [submodule "ycmd"]
 	path = ycmd
-	url = ./ycmd
+	url = https://github.com/Valloric/ycmd.git
