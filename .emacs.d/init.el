@@ -173,26 +173,55 @@
   (setq ghc-ghc-options '("-fdefer-type-errors" "-XNamedWildCards"))
   (add-hook 'haskell-mode-hook (lambda () (ghc-init) (hare-init))))
 
+(use-package hideshow
+  :config
+  (add-hook 'c-mode-hook 'hs-minor-mode))
+
 (use-package evil
   :config
   (evil-mode 1)
 
   (modify-syntax-entry ?_ "w") ; _ is a part of word
 
+  (defun quit-other ()
+    (interactive)
+    (other-window 1)
+    (quit-window))
+
   (defun nmap (key action)
     (define-key evil-normal-state-map (kbd key) action))
-  
+  (defun vmap (key action)
+    (define-key evil-visual-state-map (kbd key) action))
+
   (nmap "C-h"     'windmove-left)
   (nmap "C-j"     'windmove-down)
   (nmap "C-k"     'windmove-up)
   (nmap "C-l"     'windmove-right)
-  
+
   (nmap "SPC"     nil)
   (nmap "SPC SPC" 'save-buffer)
   (nmap "H"       'move-beginning-of-line)
+  (vmap "H"       'move-beginning-of-line)
   (nmap "L"       'move-end-of-line)
-  
-  (nmap "SPC q"   'kill-emacs)
+  (vmap "L"       'move-end-of-line)
+
+  (nmap "-"       'hs-toggle-hiding)
+
+  (nmap "SPC ,"   'previous-error)
+  (nmap "SPC ."   'next-error)
+  (nmap "M-,"     'previous-error)
+  (nmap "M-."     'next-error)
+
+  (nmap "SPC x"   (lookup-key (current-global-map) (kbd "M-x")))
+  (vmap "SPC x"   (lookup-key (current-global-map) (kbd "M-x")))
+  (nmap "SPC ;"   (lookup-key (current-global-map) (kbd "M-:")))
+
+  (nmap "SPC p p" 'projectile-switch-project)
+  (nmap "SPC p f" 'helm-projectile-find-file)
+  (nmap "SPC p d" 'helm-projectile-find-dir)
+  (nmap "SPC p g" 'helm-projectile-grep)
+
+  (nmap "SPC q"   'quit-other)
   (nmap "SPC w"   (lambda () (interactive) (save-buffers-kill-terminal t)))
   (nmap "C-c C-z" 'suspend-frame)
   (nmap "C-u"     'projectile-find-file)
@@ -328,4 +357,3 @@
                (tab-width . 4)
                (c-offsets-alist
                 (case-label +))))
-
