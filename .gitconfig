@@ -41,6 +41,7 @@
 	ri = rebase -i
 	m  = merge
 	t  = tag
+	su = submodule update --init --recursive
 
 [color]
 	ui = true
