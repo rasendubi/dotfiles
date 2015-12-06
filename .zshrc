@@ -95,5 +95,10 @@ if (( ${+terminfo[smkx]} )) && (( ${+terminfo[rmkx]} )); then
 fi
 
 export PATH="${HOME}/bin:${PATH}"
+export PATH="${HOME}/local/bin:${PATH}"
+export PATH="${HOME}/.local/bin:${PATH}"
+
+export LD_LIBRARY_PATH="${HOME}/local/lib:${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="${HOME}/.local/lib:${LD_LIBRARY_PATH}"
 
 alias g="git"

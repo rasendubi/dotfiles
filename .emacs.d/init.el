@@ -149,23 +149,18 @@
   (add-to-list 'company-backends 'company-ghc))
 
 (use-package haskell-mode
+  :mode "\\.hs$"
   :init
   (setq company-ghc-show-info t
         haskell-indent-spaces 4
         haskell-process-type (quote cabal-repl))
   :config
   (add-hook 'haskell-mode-hook 'haskell-indent-mode)
-  (eval-after-load 'haskell-mode
-    '(define-key haskell-mode-map [f8] 'haskell-navigate-imports))
 
-  (eval-after-load "haskell-mode"
-      '(define-key haskell-mode-map (kbd "C-c C-b") 'haskell-compile))
-
-  (eval-after-load "haskell-mode"
-    '(define-key haskell-mode-map (kbd "C-c v c") 'haskell-cabal-visit-file))
-
-  (eval-after-load "haskell-cabal"
-      '(define-key haskell-cabal-mode-map (kbd "C-c C-b") 'haskell-compile)))
+  (define-key haskell-mode-map [f8] 'haskell-navigate-imports)
+  (define-key haskell-mode-map (kbd "C-c C-b") 'haskell-compile)
+  (define-key haskell-mode-map (kbd "C-c v c") 'haskell-cabal-visit-file)
+  (define-key haskell-cabal-mode-map (kbd "C-c C-b") 'haskell-compile))
 
 (use-package ghc
   :config
@@ -174,6 +169,7 @@
   (add-hook 'haskell-mode-hook (lambda () (ghc-init) (hare-init))))
 
 (use-package hideshow
+  :diminish hs-minor-mode
   :config
   (add-hook 'c-mode-hook 'hs-minor-mode))
 
@@ -181,7 +177,8 @@
   :config
   (evil-mode 1)
 
-  (modify-syntax-entry ?_ "w") ; _ is a part of word
+  (add-hook 'prog-mode-hook
+            (lambda () (modify-syntax-entry ?_ "w"))) ; _ is a part of word
 
   (defun quit-other ()
     (interactive)
@@ -192,6 +189,9 @@
     (define-key evil-normal-state-map (kbd key) action))
   (defun vmap (key action)
     (define-key evil-visual-state-map (kbd key) action))
+
+  (nmap "j"       'evil-next-visual-line)
+  (nmap "k"       'evil-previous-visual-line)
 
   (nmap "C-h"     'windmove-left)
   (nmap "C-j"     'windmove-down)
@@ -216,19 +216,50 @@
   (vmap "SPC x"   (lookup-key (current-global-map) (kbd "M-x")))
   (nmap "SPC ;"   (lookup-key (current-global-map) (kbd "M-:")))
 
+  (nmap "\\ x"    (lookup-key (current-global-map) (kbd "C-x")))
+  (vmap "\\ x"    (lookup-key (current-global-map) (kbd "C-x")))
+
   (nmap "SPC p p" 'projectile-switch-project)
   (nmap "SPC p f" 'helm-projectile-find-file)
   (nmap "SPC p d" 'helm-projectile-find-dir)
   (nmap "SPC p g" 'helm-projectile-grep)
+  (nmap "SPC p &" 'projectile-run-async-shell-command-in-root)
+  (nmap "SPC p !" 'projectile-run-shell-command-in-root)
 
   (nmap "SPC q"   'quit-other)
   (nmap "SPC w"   (lambda () (interactive) (save-buffers-kill-terminal t)))
   (nmap "C-c C-z" 'suspend-frame)
   (nmap "C-u"     'projectile-find-file)
-  (nmap "C-]"     'helm-semantic-or-imenu))
+  (nmap "C-]"     'helm-semantic-or-imenu)
+
+  (use-package key-chord
+    :config
+    (key-chord-mode 1)
+    (key-chord-define evil-insert-state-map "jk" 'evil-normal-state))
+
+  (use-package evil-numbers
+    :config
+    (nmap "C-a" 'evil-numbers/inc-at-pt)
+    (nmap "M-a" 'evil-numbers/dec-at-pt)))
+
+(use-package which-key
+  :diminish which-key-mode
+  :config
+  (which-key-mode))
+
+(use-package color-identifiers-mode
+  :diminish color-identifiers-mode
+  :config
+  (global-color-identifiers-mode))
+
+(use-package fill-column-indicator
+  :config
+  (add-hook 'c-mode-hook (lambda ()
+                           (fci-mode)
+                           (set-fill-column 110))))
 
 (use-package yaml-mode
-  :mode ("\\.yml$" . yaml-mode))
+  :mode ("\\.\\(yml\\|yaml\\)$" . yaml-mode))
 
 (use-package markdown-mode
   :mode ("\\.\\(markdown\\|mdown\\|md\\)$" . markdown-mode))

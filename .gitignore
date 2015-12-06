@@ -11,3 +11,4 @@
 /.vim/.netrwhist
 /.vim/.ycm_extra_conf.pyc
 /.vim/haskellmode.config
+/.emacs.d/.python-environments/
