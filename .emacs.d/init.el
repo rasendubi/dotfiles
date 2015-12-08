@@ -385,6 +385,7 @@
              '("k&r"
                (indent-tabs-mode .t)
                (c-basic-offset . 4)
+               (c-label-minimum-indentation . 0)
                (tab-width . 4)
                (c-offsets-alist
                 (case-label +))))
