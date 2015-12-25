@@ -232,6 +232,10 @@
   (nmap "C-u"     'projectile-find-file)
   (nmap "C-]"     'helm-semantic-or-imenu)
 
+  ;; Swap . and ;
+  (nmap "."       'evil-repeat-find-char)
+  (nmap ";"       'evil-repeat)
+
   (use-package key-chord
     :config
     (key-chord-mode 1)

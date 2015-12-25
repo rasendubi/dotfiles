@@ -42,6 +42,11 @@
 	m  = merge
 	t  = tag
 	su = submodule update --init --recursive
+	bi = bisect
+	bg = bisect good
+	bb = bisect bad
+	bis = bisect start
+	bir = bisect reset
 
 [color]
 	ui = true
