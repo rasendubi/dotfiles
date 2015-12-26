@@ -200,10 +200,10 @@
 
   (nmap "SPC"     nil)
   (nmap "SPC SPC" 'save-buffer)
-  (nmap "H"       'move-beginning-of-line)
-  (vmap "H"       'move-beginning-of-line)
-  (nmap "L"       'move-end-of-line)
-  (vmap "L"       'move-end-of-line)
+  (nmap "H"       'evil-first-non-blank)
+  (vmap "H"       'evil-first-non-blank)
+  (nmap "L"       'evil-end-of-line)
+  (vmap "L"       'evil-end-of-line)
 
   (nmap "-"       'hs-toggle-hiding)
 
@@ -235,6 +235,11 @@
   ;; Swap . and ;
   (nmap "."       'evil-repeat-find-char)
   (nmap ";"       'evil-repeat)
+
+  ;; Some highlighting for f, F, t, T commands
+  (use-package evil-quickscope
+    :config
+    (global-evil-quickscope-mode))
 
   (use-package key-chord
     :config
@@ -373,6 +378,8 @@
 
   (smart-tabs-advice c-indent-line c-basic-offset)
   (smart-tabs-advice c-indent-region c-basic-offset))
+
+(use-package restclient)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun minicom ()
