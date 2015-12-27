@@ -159,8 +159,7 @@
 
   (define-key haskell-mode-map [f8] 'haskell-navigate-imports)
   (define-key haskell-mode-map (kbd "C-c C-b") 'haskell-compile)
-  (define-key haskell-mode-map (kbd "C-c v c") 'haskell-cabal-visit-file)
-  (define-key haskell-cabal-mode-map (kbd "C-c C-b") 'haskell-compile))
+  (define-key haskell-mode-map (kbd "C-c v c") 'haskell-cabal-visit-file))
 
 (use-package ghc
   :config
@@ -246,6 +245,10 @@
     (key-chord-mode 1)
     (key-chord-define evil-insert-state-map "jk" 'evil-normal-state))
 
+  (use-package evil-magit
+    :init
+    (setq evil-magit-use-y-for-yank t))
+
   (use-package evil-numbers
     :config
     (nmap "C-a" 'evil-numbers/inc-at-pt)
@@ -325,17 +328,42 @@
 (use-package term-run
   :commands (term-run term-run-shell-command))
 
-(use-package org
-  :config
-  (setq org-log-done 'time)
-  (global-set-key (kbd "C-c l") 'org-store-link)
-  (global-set-key (kbd "C-c a") 'org-agenda)
-  (global-set-key (kbd "C-c c") 'org-capture)
-  (global-set-key (kbd "C-c b") 'org-iswitchb)
-
-  (use-package org-plus-contrib)
-
-  (setq org-modules '(org-bbdb org-bibtex org-docview org-gnus org-info org-irc org-mhe org-rmail org-w3m org-drill)))
+; (use-package org
+;   :config
+;   (setq org-log-done 'time)
+;   (global-set-key (kbd "C-c l") 'org-store-link)
+;   (global-set-key (kbd "C-c a") 'org-agenda)
+;   (global-set-key (kbd "C-c c") 'org-capture)
+;   (global-set-key (kbd "C-c b") 'org-iswitchb)
+; 
+;   (use-package org-plus-contrib)
+;   (require 'org-drill)
+; 
+;   (setq org-capture-templates
+;         `(("u"
+;            "Task: Read this URL"
+;            entry
+;            (file+headline "tasks.org" "Articles To Read")
+;            ,(concat "* TODO Read article: '%:description'\nURL: %c\n\n")
+;            :empty-lines 1
+;            :immediate-finish t)
+; 
+;           ("w"
+;            "Capture web snippet"
+;            entry
+;            (file+headline "my-facts.org" "Inbox")
+;            ,(concat "* Fact: '%:description'       :"
+;                     (format "%s" org-drill-question-tag)
+;                     ":\n:PROPERTIES:\n:DATE_ADDED: %u\n:SOURCE_URL: %c\n:END:\n\n%i\n%?\n")
+;            :empty-lines 1
+;            :immediate-finish t)))
+; 
+;   (require 'org-protocol)
+; 
+;   (setq org-modules '(org-bbdb org-bibtex org-docview org-gnus org-info org-irc org-mhe org-rmail org-w3m org-drill)
+;         org-drill-scope (f-files "~/org/drill"
+;                                  (lambda (file) (f-ext? file "org"))
+;                                  t)))
 
 (use-package smart-tabs-mode
   :config
