@@ -72,7 +72,7 @@
     firefox
     skype
     steam
-    mnemosyne
+    # mnemosyne # The one at upstream is broken. Fix is already in master
     libreoffice
 
     python
