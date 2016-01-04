@@ -12,6 +12,7 @@ local naughty = require("naughty")
 local menubar = require("menubar")
 local utils = require("utils")
 local kbd = require("kbd")
+local battery = require("battery")
 
 -- {{{ Error handling
 -- Check if awesome encountered an error during startup and fell back to
@@ -40,11 +41,17 @@ end
 
 -- {{{ Variable definitions
 -- Themes define colours, icons, and wallpapers
-beautiful.init("/usr/share/awesome/themes/default/theme.lua")
+
+-- theme = find_in_path(os.getenv("XDG_DATA_DIRS") or "/usr/local/share:/usr/share", "awesome/themese/default/theme.lua")
+
+-- Change this according to awesome wm location
+-- TODO: automate this to search in $XDG_DATA_DIRS
+beautiful.init("/nix/store/df393qpw2fyrhflh965f0kw2zgzkx476-awesome-3.5.6/share/awesome/themes/default/theme.lua")
+-- beautiful.init("/usr/share/awesome/themes/default/theme.lua")
 
 -- This is used later as the default terminal and editor to run.
--- terminal = "konsole"
-terminal = "urxvt"
+terminal = "konsole"
+-- terminal = "urxvt" -- TODO: It has some issues in NixOS. Try to find the reason
 editor = os.getenv("EDITOR") or "vi"
 editor_cmd = terminal .. " -e " .. editor
 geditor = "gvim"
@@ -187,6 +194,8 @@ for s = 1, screen.count() do
 
     -- Widgets that are aligned to the right
     local right_layout = wibox.layout.fixed.horizontal()
+
+    right_layout:add(battery.get_widget(wibox, "BAT0"))
     if s == 1 then right_layout:add(wibox.widget.systray()) end
     right_layout:add(mytextclock)
     right_layout:add(mylayoutbox[s])
@@ -271,9 +280,7 @@ globalkeys = awful.util.table.join(
                                    mypromptbox[mouse.screen].widget,
                                    awful.util.eval, nil,
                                    awful.util.getdir("cache") .. "/history_eval")
-              end),
-    -- Menubar
-    awful.key({ modkey }, "p", function() menubar.show() end)
+              end)
 )
 
 clientkeys = awful.util.table.join(
@@ -363,8 +370,12 @@ awful.rules.rules = {
                      keys = clientkeys,
                      buttons = clientbuttons } },
 
-	{ rule = { class = "Wine", instance = "TeamViewer.exe" },
-	  properties = { floating = true } },
+    { rule = { class = "Wine", instance = "TeamViewer.exe" },
+      properties = { floating = true } },
+    { rule = { instance = "plugin-container" },
+      properties = { floating = true } },
+    { rule = { class = "Skype" },
+      properties = { size_hints_honor = false, tag = tags[1][9] } },
     -- Set Firefox to always map on tags number 2 of screen 1.
     -- { rule = { class = "Firefox" },
     --   properties = { tag = tags[1][2] } },
