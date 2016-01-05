@@ -2,7 +2,7 @@
 }:
 
 stdenv.mkDerivation rec {
-  name = "ycmd-20160102";
+  name = "ycmd-2016-01-02";
 
   src = fetchgit {
     url = "git://github.com/Valloric/ycmd.git";
@@ -21,11 +21,11 @@ stdenv.mkDerivation rec {
   configurePhase = ":";
 
   installPhase = with pythonPackages; ''
-    mkdir -p $out/third_party $out/bin
-    cp -r ycmd/ CORE_VERSION libclang.so.* ycm_client_support.so ycm_core.so $out/
-    wrapProgram $out/ycmd/__main__.py \
+    mkdir -p $out/lib/ycmd/third_party $out/bin
+    cp -r ycmd/ CORE_VERSION libclang.so.* ycm_client_support.so ycm_core.so $out/lib/ycmd/
+    wrapProgram $out/lib/ycmd/ycmd/__main__.py \
       --prefix PYTHONPATH : "$(toPythonPath ${waitress}):$(toPythonPath ${frozendict}):$(toPythonPath ${bottle})"
-    ln -s $out/ycmd/__main__.py $out/bin/ycmd
+    ln -s $out/lib/ycmd/ycmd/__main__.py $out/bin/ycmd
   '';
 
   meta = {
