@@ -58,14 +58,19 @@
   time.timeZone = "Europe/Kiev";
 
   environment.systemPackages = with pkgs; [
+    kde4.kde_baseapps
+    kde4.oxygen_icons
+    kde4.konsole
+    kde4.kde_runtime
+    kde4.kdeartwork
+    shared_mime_info
+
     wget
     (vim_configurable.override { python3 = true; })
     emacs
     rxvt_unicode
     zsh
     htop
-    kde5.dolphin
-    kde5.konsole
     psmisc # for killall
     vlc
     google-chrome
@@ -74,6 +79,8 @@
     steam
     # mnemosyne # The one at upstream is broken. Fix is already in master
     libreoffice
+    nix-repl
+    irssi
 
     python
     python3
@@ -114,10 +121,16 @@
   users.extraUsers.rasen = {
     isNormalUser = true;
     uid = 1000;
-    extraGroups = [ "wheel" "networkmanager" ];
+    extraGroups = [ "users" "wheel" "networkmanager" "dialout" "plugdev" ];
     shell = "/var/run/current-system/sw/bin/zsh";
     initialPassword = "HelloWorld";
   };
+
+  users.extraGroups = {
+    plugdev = { };
+  };
+
+  services.udev.packages = with pkgs; [ openocd ];
 
   # The NixOS release to be compatible with for stateful data such as databases.
   system.stateVersion = "15.09";
