@@ -134,8 +134,7 @@
 
 (use-package ycmd
   :config
-  (set-variable 'ycmd-server-command
-                (list "python" (concat dotfiles-directory "ycmd/ycmd")))
+  (set-variable 'ycmd-server-command (list "ycmd"))
   (set-variable 'ycmd-global-config
                 (concat dotfiles-directory ".nvim/.ycm_extra_conf.py"))
   (add-hook 'after-init-hook #'global-ycmd-mode))
@@ -408,6 +407,9 @@
   (smart-tabs-advice c-indent-region c-basic-offset))
 
 (use-package restclient)
+
+(use-package nix-mode
+  :mode "\\.nix$")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun minicom ()
