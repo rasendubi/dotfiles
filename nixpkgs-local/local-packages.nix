@@ -11,6 +11,12 @@ let
 
     # Waiting for https://github.com/NixOS/nixpkgs/issues/11746 appear in channel
     mnemosyne = callPackage ./pkgs/mnemosyne { };
+
+    pythonPackages = pkgs.pythonPackages // {
+      frozendict = callPackage ./pkgs/frozendict { };
+    };
+
+    ycmd = callPackage ./pkgs/ycmd { };
   };
 
 in self
