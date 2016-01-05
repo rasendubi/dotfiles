@@ -5,6 +5,10 @@ let
 
   callPackage = pkgs.lib.callPackageWith (pkgs // pkgs.xlibs // self);
 
+  pythonPackages = pkgs.pythonPackages // {
+    frozendict = callPackage ./pkgs/frozendict { };
+  };
+
   self = {
     # Already in master waiting when appear in channel
     xxkb = callPackage ./pkgs/xxkb { };
@@ -12,11 +16,8 @@ let
     # Waiting for https://github.com/NixOS/nixpkgs/issues/11746 appear in channel
     mnemosyne = callPackage ./pkgs/mnemosyne { };
 
-    pythonPackages = pkgs.pythonPackages // {
-      frozendict = callPackage ./pkgs/frozendict { };
-    };
-
-    ycmd = callPackage ./pkgs/ycmd { };
+    # TODO: send upstream along with frozendict
+    ycmd = callPackage ./pkgs/ycmd { inherit pythonPackages; };
   };
 
 in self
