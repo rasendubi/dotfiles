@@ -20,6 +20,7 @@
   ];
 
   nixpkgs.config.allowUnfree = true;
+  nixpkgs.config.firefox.jre = true;
 
   boot.loader.grub = {
     enable = true;
@@ -65,6 +66,8 @@
     kde4.kdeartwork
     shared_mime_info
 
+    vpnc
+
     wget
     (vim_configurable.override { python3 = true; })
     emacs
@@ -74,13 +77,17 @@
     psmisc # for killall
     vlc
     google-chrome
-    firefox
+    # firefox
+    # (wrapFirefox { browser = firefox; })
+    firefoxWrapper
     skype
     steam
     # mnemosyne # The one at upstream is broken. Fix is already in master
     libreoffice
     nix-repl
     irssi
+    qbittorrent
+    calibre
 
     python
     python3
@@ -93,6 +100,13 @@
 
     # do I need this for regular setup?
     gnumake
+    binutils
+    gcc
+    gcc-arm-embedded
+    ghc
+    stack
+    minicom
+    openocd
   ];
 
   services.openssh.enable = true;
@@ -131,6 +145,64 @@
   };
 
   services.udev.packages = with pkgs; [ openocd ];
+
+  fonts = {
+    enableCoreFonts = true;
+    enableFontDir = true;
+    enableGhostscriptFonts = false;
+
+    fonts = with pkgs; [
+      corefonts
+      terminus_font
+      dejavu_fonts
+      source-code-pro
+      hasklig
+       #pkgs.cantarell_fonts
+       #pkgs.dejavu_fonts
+       #pkgs.dosemu_fonts
+       #pkgs.freefont_ttf
+       #pkgs.liberation_ttf
+       pkgs.terminus_font
+       #pkgs.ubuntu_font_family
+       #pkgs.ucsFonts
+       #pkgs.unifont
+       #pkgs.vistafonts
+       #pkgs.xlibs.fontadobe100dpi
+       #pkgs.xlibs.fontadobe75dpi
+       #pkgs.xlibs.fontadobeutopia100dpi
+       #pkgs.xlibs.fontadobeutopia75dpi
+       #pkgs.xlibs.fontadobeutopiatype1
+       #pkgs.xlibs.fontarabicmisc
+       pkgs.xlibs.fontbh100dpi
+       pkgs.xlibs.fontbh75dpi
+       pkgs.xlibs.fontbhlucidatypewriter100dpi
+       pkgs.xlibs.fontbhlucidatypewriter75dpi
+       pkgs.xlibs.fontbhttf
+       pkgs.xlibs.fontbhtype1
+       pkgs.xlibs.fontbitstream100dpi
+       pkgs.xlibs.fontbitstream75dpi
+       pkgs.xlibs.fontbitstreamtype1
+       #pkgs.xlibs.fontcronyxcyrillic
+       pkgs.xlibs.fontcursormisc
+       pkgs.xlibs.fontdaewoomisc
+       pkgs.xlibs.fontdecmisc
+       pkgs.xlibs.fontibmtype1
+       pkgs.xlibs.fontisasmisc
+       pkgs.xlibs.fontjismisc
+       pkgs.xlibs.fontmicromisc
+       pkgs.xlibs.fontmisccyrillic
+       pkgs.xlibs.fontmiscethiopic
+       pkgs.xlibs.fontmiscmeltho
+       pkgs.xlibs.fontmiscmisc
+       pkgs.xlibs.fontmuttmisc
+       pkgs.xlibs.fontschumachermisc
+       pkgs.xlibs.fontscreencyrillic
+       pkgs.xlibs.fontsonymisc
+       pkgs.xlibs.fontsunmisc
+       pkgs.xlibs.fontwinitzkicyrillic
+       pkgs.xlibs.fontxfree86type1
+    ];
+  };
 
   # The NixOS release to be compatible with for stateful data such as databases.
   system.stateVersion = "15.09";
