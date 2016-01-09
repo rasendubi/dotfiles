@@ -66,8 +66,6 @@
     kde4.kdeartwork
     shared_mime_info
 
-    vpnc
-
     wget
     (vim_configurable.override { python3 = true; })
     emacs
@@ -96,6 +94,7 @@
     wmname
     kbdd
     xclip
+    scrot
     # xxkb # It's in nixpkgs' master already but not in channel.
 
     # do I need this for regular setup?
@@ -103,10 +102,13 @@
     binutils
     gcc
     gcc-arm-embedded
-    ghc
-    stack
     minicom
     openocd
+
+    ghc
+    stack
+    cabal2nix
+    cabal-install
   ];
 
   services.openssh.enable = true;
