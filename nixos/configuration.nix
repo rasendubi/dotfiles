@@ -1,20 +1,19 @@
-# Edit this configuration file to define what should be installed on
-# your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running ‘nixos-help’).
-
 { config, pkgs, ... }:
 
 {
   imports =
-    [ # Include the results of the hardware scan.
+    [
       ./hardware-configuration.nix
     ];
+
+  nix.buildCores = 8;
 
   fileSystems."/home" = {
     device = "/dev/disk/by-uuid/b27c07d0-aaf7-44a1-87e1-5a2cb30954ec";
     fsType = "ext4";
   };
   swapDevices = [
+    # TODO: set priority
     { device = "/dev/disk/by-uuid/f0bd0438-3324-4295-9981-07015fa0af5e"; }
     { device = "/dev/disk/by-uuid/75822d9d-c5f0-495f-b089-f57d0de5246d"; }
   ];
@@ -42,15 +41,7 @@
     wicd.enable = true;
     interfaceMonitor.enable = false;
     wireless.enable = false;
-    # useDHCP = false;
   };
-
-  # Select internationalisation properties.
-  # i18n = {
-  #   consoleFont = "Lat2-Terminus16";
-  #   consoleKeyMap = "us";
-  #   defaultLocale = "en_US.UTF-8";
-  # };
 
   # for steam
   hardware.opengl.driSupport32Bit = true;
@@ -64,7 +55,11 @@
     kde4.konsole
     kde4.kde_runtime
     kde4.kdeartwork
+    kde4.okular
+    kde4.gwenview
     shared_mime_info
+    oxygen-gtk2
+    oxygen-gtk3
 
     wget
     (vim_configurable.override { python3 = true; })
@@ -73,6 +68,11 @@
     zsh
     htop
     psmisc # for killall
+    mosh
+    tmux
+    zip
+    unzip
+    git
     vlc
     google-chrome
     # firefox
@@ -86,6 +86,7 @@
     irssi
     qbittorrent
     calibre
+    deadbeef
 
     python
     python3
@@ -111,9 +112,50 @@
     cabal-install
   ];
 
-  services.openssh.enable = true;
+  # Install oxygen-gtk
+  environment.shellInit = ''
+    export GTK_PATH=$GTK_PATH:${pkgs.oxygen_gtk}/lib/gtk-2.0
+    export GTK2_RC_FILES=$GTK2_RC_FILES:${pkgs.oxygen_gtk}/share/themes/oxygen-gtk/gtk-2.0/gtkrc
+  '';
 
-  services.printing.enable = true;
+  services.openssh = {
+    enable = true;
+    passwordAuthentication = false;
+    startWhenNeeded = true;
+  };
+
+  services.openvpn.servers = {
+    kaa.config = ''
+      client
+      dev tap
+      port 22
+      proto tcp
+      tls-client
+      persist-key
+      persist-tun
+      ns-cert-type server
+      remote vpn.kaa.org.ua
+      ca /root/.vpn/ca.crt
+      key /root/.vpn/alexey.shmalko.key
+      cert /root/.vpn/alexey.shmalko.crt
+    '';
+  };
+
+  services.avahi = {
+    enable = true;
+    nssmdns = true;
+  };
+
+  services.gitolite = {
+    enable = false;
+    adminPubkey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDJhMhxIwZJgIY6CNSNEH+BetF/WCUtDFY2KTIl8LcvXNHZTh4ZMc5shTOS/ROT4aH8Awbm0NjMdW33J5tFMN8T7q89YZS8hbBjLEh8J04Y+kndjnllDXU6NnIr/AenMPIZxJZtSvWYx+f3oO6thvkZYcyzxvA5Vi6V1cGx6ni0Kizq/WV/mE/P1nNbwuN3C4lCtiBC9duvoNhp65PctQNohnKQs0vpQcqVlfqBsjQ7hhj2Fjg+Ofmt5NkL+NhKQNqfkYN5QyIAulucjmFAieKR4qQBABopl2F6f8D9IjY8yH46OCrgss4WTf+wxW4EBw/QEfNoKWkgVoZtxXP5pqAz rasen@Larry";
+  };
+
+  services.redshift = {
+    enable = true;
+    latitude = "50.4500";
+    longitude = "30.5233";
+  };
 
   services.xserver.enable = true;
   services.xserver.layout = "us,ru,ua";
@@ -134,6 +176,10 @@
 
   programs.zsh.enable = true;
 
+  environment.shellAliases = {
+    g = "git";
+  };
+
   users.extraUsers.rasen = {
     isNormalUser = true;
     uid = 1000;
@@ -146,6 +192,8 @@
     plugdev = { };
   };
 
+  i18n.supportedLocales = [ "en_US.UTF-8/UTF-8" ];
+
   services.udev.packages = with pkgs; [ openocd ];
 
   fonts = {
@@ -153,6 +201,7 @@
     enableFontDir = true;
     enableGhostscriptFonts = false;
 
+    # TODO
     fonts = with pkgs; [
       corefonts
       terminus_font
