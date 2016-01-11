@@ -54,7 +54,7 @@
     kde4.oxygen_icons
     kde4.konsole
     kde4.kde_runtime
-    kde4.kdeartwork
+    # kde4.kdeartwork # kscreensave is broken now
     kde4.okular
     kde4.gwenview
     shared_mime_info
@@ -80,13 +80,14 @@
     firefoxWrapper
     skype
     steam
-    # mnemosyne # The one at upstream is broken. Fix is already in master
+    mnemosyne
     libreoffice
     nix-repl
     irssi
     qbittorrent
     calibre
     deadbeef
+    wine
 
     python
     python3
@@ -96,7 +97,7 @@
     kbdd
     xclip
     scrot
-    # xxkb # It's in nixpkgs' master already but not in channel.
+    xxkb
 
     # do I need this for regular setup?
     gnumake
@@ -152,7 +153,8 @@
   };
 
   services.redshift = {
-    enable = true;
+    # I'm on vacation, so I don't need this now
+    # enable = true;
     latitude = "50.4500";
     longitude = "30.5233";
   };
