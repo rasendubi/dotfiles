@@ -54,7 +54,8 @@
     kde4.oxygen_icons
     kde4.konsole
     kde4.kde_runtime
-    # kde4.kdeartwork # kscreensave is broken now
+    kde4.kwin_styles
+    kde4.kfilemetadata
     kde4.okular
     kde4.gwenview
     shared_mime_info
