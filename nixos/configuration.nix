@@ -55,7 +55,6 @@
   environment.systemPackages = with pkgs; [
     kde4.kde_baseapps
     kde4.oxygen_icons
-    kde4.konsole
     kde4.kde_runtime
     kde4.kwin_styles
     kde4.kfilemetadata
@@ -208,57 +207,15 @@
     enableFontDir = true;
     enableGhostscriptFonts = false;
 
-    # TODO
     fonts = with pkgs; [
+      powerline-fonts
+      inconsolata
       corefonts
       terminus_font
       dejavu_fonts
       source-code-pro
-      hasklig
-       #pkgs.cantarell_fonts
-       #pkgs.dejavu_fonts
-       #pkgs.dosemu_fonts
-       #pkgs.freefont_ttf
-       #pkgs.liberation_ttf
-       pkgs.terminus_font
-       #pkgs.ubuntu_font_family
-       #pkgs.ucsFonts
-       #pkgs.unifont
-       #pkgs.vistafonts
-       #pkgs.xlibs.fontadobe100dpi
-       #pkgs.xlibs.fontadobe75dpi
-       #pkgs.xlibs.fontadobeutopia100dpi
-       #pkgs.xlibs.fontadobeutopia75dpi
-       #pkgs.xlibs.fontadobeutopiatype1
-       #pkgs.xlibs.fontarabicmisc
-       pkgs.xlibs.fontbh100dpi
-       pkgs.xlibs.fontbh75dpi
-       pkgs.xlibs.fontbhlucidatypewriter100dpi
-       pkgs.xlibs.fontbhlucidatypewriter75dpi
-       pkgs.xlibs.fontbhttf
-       pkgs.xlibs.fontbhtype1
-       pkgs.xlibs.fontbitstream100dpi
-       pkgs.xlibs.fontbitstream75dpi
-       pkgs.xlibs.fontbitstreamtype1
-       #pkgs.xlibs.fontcronyxcyrillic
-       pkgs.xlibs.fontcursormisc
-       pkgs.xlibs.fontdaewoomisc
-       pkgs.xlibs.fontdecmisc
-       pkgs.xlibs.fontibmtype1
-       pkgs.xlibs.fontisasmisc
-       pkgs.xlibs.fontjismisc
-       pkgs.xlibs.fontmicromisc
-       pkgs.xlibs.fontmisccyrillic
-       pkgs.xlibs.fontmiscethiopic
-       pkgs.xlibs.fontmiscmeltho
-       pkgs.xlibs.fontmiscmisc
-       pkgs.xlibs.fontmuttmisc
-       pkgs.xlibs.fontschumachermisc
-       pkgs.xlibs.fontscreencyrillic
-       pkgs.xlibs.fontsonymisc
-       pkgs.xlibs.fontsunmisc
-       pkgs.xlibs.fontwinitzkicyrillic
-       pkgs.xlibs.fontxfree86type1
+      ubuntu_font_family
+      unifont
     ];
   };
 

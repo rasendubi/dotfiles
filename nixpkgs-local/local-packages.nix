@@ -10,15 +10,11 @@ let
   };
 
   self = rec {
-    # Already in master waiting when appear in channel
-    xxkb = callPackage ./pkgs/xxkb { };
-
-    # Waiting for https://github.com/NixOS/nixpkgs/issues/11746 appear in channel
-    mnemosyne = callPackage ./pkgs/mnemosyne { };
-
     ycmd = callPackage ./pkgs/ycmd { inherit pythonPackages; };
 
     rust-nightly = callPackage ./pkgs/rust-nightly { };
+
+    powerline-fonts = callPackage ./pkgs/powerline-fonts { };
   };
 
 in self

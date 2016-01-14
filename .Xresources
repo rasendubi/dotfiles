@@ -10,7 +10,7 @@ urxvt*saveLines:         65535
 urxvt*cursorBlink:       false
 urxvt*urgentOnBell:       true
 !urxvt*override-redirect:false
-urxvt*borderLess:       true
+urxvt*borderLess:        false
 !urxvt*internalBorder:       0
 !urxvt*externalBorder:       0
 
@@ -23,11 +23,11 @@ urxvt*scrollTtyKeypress: true
 
 
 !-*- Perl extensions -*-
-URxvt.perl-ext-common:default,clipboard,matcher,keyboard-select
+!URxvt.perl-ext-common:default,clipboard,matcher,keyboard-select
 URxvt.keysym.M-u:     perl:url-select:select_next
 URxvt.url-launcher:   /usr/bin/xdg-open
 URxvt.underlineURLs:  True
-URxvt.matcher.button: 1 
+URxvt.matcher.button: 1
 URxvt.keysym.M-Escape:perl:keyboard-select:activate
 URxvt.keysym.C-C:     perl:clipboard:copy
 URxvt.keysym.C-V:     perl:clipboard:paste
@@ -35,7 +35,7 @@ URxvt.keysym.C-M-V:   perl:clipboard:paste_escaped
 !URxvt.copyCommand:   xsel -ib
 !URxvt.pasteCommand:  xsel -ob
 
-URxvt*font: xft:Terminess Powerline:size=10
+URxvt*font: xft:Terminess Powerline:normal:size=12
 
 ! this is needed to fix solarized
 ! URxvt.intensityStyles: false
@@ -44,7 +44,7 @@ Xft.dpi: 96
 Xft.antialias: 1
 Xft.hinting: 1
 Xft.hintstyle: hintfull
-Xfg.rgba: rgb
+Xft.rgba: rgb
 
 !! source: https://github.com/spazzpp2/dotfiles/blob/29819a5ac5e451bfa39bc324378aa508ef75cae8/Molokai.xrdb
 

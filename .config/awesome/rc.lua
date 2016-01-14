@@ -50,8 +50,7 @@ beautiful.init("/nix/store/df393qpw2fyrhflh965f0kw2zgzkx476-awesome-3.5.6/share/
 -- beautiful.init("/usr/share/awesome/themes/default/theme.lua")
 
 -- This is used later as the default terminal and editor to run.
-terminal = "konsole"
--- terminal = "urxvt" -- TODO: It has some issues in NixOS. Try to find the reason
+terminal = "urxvt"
 editor = os.getenv("EDITOR") or "vi"
 editor_cmd = terminal .. " -e " .. editor
 geditor = "gvim"
