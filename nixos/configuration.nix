@@ -49,6 +49,9 @@
 
   time.timeZone = "Europe/Kiev";
 
+  # Fixes okular
+  environment.pathsToLink = [ "/share" ];
+
   environment.systemPackages = with pkgs; [
     kde4.kde_baseapps
     kde4.oxygen_icons
@@ -73,6 +76,7 @@
     tmux
     zip
     unzip
+    unrar
     git
     vlc
     google-chrome
