@@ -6,7 +6,7 @@ colors
 
 source $HOME/.zsh/git-prompt/zshrc.sh
 
-prompt gentoo
+# prompt gentoo
 PROMPT='%B%F{green}%n@%m%k %B%F{blue}%1~%b$(git_super_status) %B%F{blue}%# %b%f%k'
 RPROMPT="[%?] %T"
 
