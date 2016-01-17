@@ -1,51 +1,32 @@
 XXkb.image.path: /home/rasen/.config/xxkb
 
-XXkb.group.base: 1
-XXkb.group.alt: 2
-
 XXkb.mainwindow.enable: yes
+XXkb.mainwindow.type: tray
 XXkb.mainwindow.geometry: 17x14+0+0
 XXkb.mainwindow.image.1: en.svg
 XXkb.mainwindow.image.2: ru.svg
 XXkb.mainwindow.image.3: ua.svg
 XXkb.mainwindow.image.4:
-XXkb.mainwindow.label.font: -misc-*-r-*-20-*
 
-XXkb.*.border.color: black
-XXkb.*.border.width: 0
-
-XXkb.*.label.foreground: white
-XXkb.*.label.background: black
 XXkb.*.label.enable: no
-XXkb.*.label.text.1: EN
-XXkb.*.label.text.2: RU
-XXkb.*.label.text.3: UA
-
-! XXkb.mainwindow.type:
-! possible values - normal, top, tray, wmaker
-XXkb.mainwindow.type: tray
 
 XXkb.button.enable: no
-XXkb.button.geometry: 10x10+0+0
-XXkb.button.image.1: en.svg
-XXkb.button.image.2: ru.svg
-XXkb.button.image.3: ua.svg
-XXkb.button.image.4:
-XXkb.button.label.font: -misc-*-r-*-13-*
 
 XXkb.controls.add_when_start: yes
 XXkb.controls.add_when_create: yes
 XXkb.controls.add_when_change: no
 XXkb.controls.focusout: no
-XXkb.controls.two_state: yes
-XXkb.controls.button_delete: yes
+XXkb.controls.button_delete: no
 XXkb.controls.button_delete_and_forget: yes
-XXkb.controls.mainwindow_delete: yes
+XXkb.controls.mainwindow_delete: no
 
 XXkb.mousebutton.1.reverse: no
 XXkb.mousebutton.3.reverse: no
 
 XXkb.bell.enable: no
-XXkb.bell.percent: -50
 
 XXkb.ignore.reverse: no
+
+XXkb.controls.two_state: yes
+XXkb.group.base: 1
+XXkb.group.alt: 2

@@ -1,60 +1,61 @@
 [user]
-	email = rasen.dubi@gmail.com
-	name = Alexey Shmalko
-
-[push]
-	default = simple
+    name = Alexey Shmalko
+    email = rasen.dubi@gmail.com
 
 [sendemail]
-	smtpencryption = ssl
-	smtpserver = smtp.gmail.com
-	smtpuser = rasen.dubi@gmail.com
-	smtpserverport = 465
-
-[alias]
-	cl = clone
-	p  = push
-	pl = pull
-	f  = fetch
-	fa = fetch --all
-	a  = add
-	ap = add -p
-	d  = diff
-	dl = diff HEAD~ HEAD
-	ds = diff --staged
-	l  = log
-	l1 = log -1
-	lp = log -p
-	c  = commit
-	ca = commit --amend
-	co = checkout
-	cb = checkout -b
-	cm = checkout origin/master
-	de = checkout --detach
-	br = branch
-	s  = status
-	re = reset --hard
-	dp = push origin HEAD:refs/drafts/master
-	pp = push origin HEAD:refs/publish/master
-	r  = rebase
-	rc = rebase --continue
-	ri = rebase -i
-	m  = merge
-	t  = tag
-	su = submodule update --init --recursive
-	bi = bisect
-	bg = bisect good
-	bb = bisect bad
-	bis = bisect start
-	bir = bisect reset
+    smtpencryption = ssl
+    smtpserver = smtp.gmail.com
+    smtpuser = rasen.dubi@gmail.com
+    smtpserverport = 465
 
 [color]
-	ui = true
+    ui = true
 
 [core]
-	editor = vim
+    editor = vim
+
+[push]
+    default = simple
 
 [rerere]
-	enabled = true
+    enabled = true
+
+[alias]
+    cl  = clone
+    p   = push
+    pl  = pull
+    f   = fetch
+    fa  = fetch --all
+    a   = add
+    ap  = add -p
+    d   = diff
+    dl  = diff HEAD~ HEAD
+    ds  = diff --staged
+    l   = log
+    l1  = log -1
+    lp  = log -p
+    c   = commit
+    ca  = commit --amend
+    co  = checkout
+    cb  = checkout -b
+    cm  = checkout origin/master
+    de  = checkout --detach
+    br  = branch
+    s   = status
+    re  = reset --hard
+    dp  = push origin HEAD:refs/drafts/master
+    pp  = push origin HEAD:refs/publish/master
+    r   = rebase
+    rc  = rebase --continue
+    ri  = rebase -i
+    m   = merge
+    t   = tag
+    su  = submodule update --init --recursive
+    bi  = bisect
+    bg  = bisect good
+    bb  = bisect bad
+    bis = bisect start
+    bir = bisect reset
+
 [url "git://github.com/ghc/packages-"]
-	insteadOf = git://github.com/ghc/packages/
+    insteadOf = git://github.com/ghc/packages/

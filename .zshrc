@@ -1,14 +1,24 @@
+source $HOME/.zsh/git-prompt/zshrc.sh
+
+PROMPT='%B%F{green}%n@%m%k %B%F{blue}%1~%b$(git_super_status) %B%F{blue}%# %b%f%k'
+RPROMPT="[%?] %T"
+
+alias ls='ls --color=auto'
+alias grep='grep --color=auto'
+
+alias g="git"
+
+export PATH="${HOME}/bin:${PATH}"
+export PATH="${HOME}/.local/bin:${PATH}"
+
+export LD_LIBRARY_PATH="${HOME}/.local/lib:${LD_LIBRARY_PATH}"
+
 autoload -U compinit promptinit
 autoload -U colors
 compinit
 promptinit
 colors
 
-source $HOME/.zsh/git-prompt/zshrc.sh
-
-# prompt gentoo
-PROMPT='%B%F{green}%n@%m%k %B%F{blue}%1~%b$(git_super_status) %B%F{blue}%# %b%f%k'
-RPROMPT="[%?] %T"
 
 # Lines configured by zsh-newuser-install
 HISTFILE=~/.histfile
@@ -29,15 +39,7 @@ setopt hist_ignore_space
 setopt hist_ignore_all_dups
 setopt extendedglob
 
-alias ls='ls --color=auto'
-alias ll='ls -lh'
-alias grep='grep --color=auto'
-
 setopt listpacked
-
-alias -s cpp=vim
-alias -s c=vim
-alias -s h=vim
 
 zstyle ':completion:*' use-cache on
 zstyle ':completion:*' cache-path ~/.zsh/cache
@@ -93,12 +95,3 @@ if (( ${+terminfo[smkx]} )) && (( ${+terminfo[rmkx]} )); then
     zle -N zle-line-init
     zle -N zle-line-finish
 fi
-
-export PATH="${HOME}/bin:${PATH}"
-export PATH="${HOME}/local/bin:${PATH}"
-export PATH="${HOME}/.local/bin:${PATH}"
-
-export LD_LIBRARY_PATH="${HOME}/local/lib:${LD_LIBRARY_PATH}"
-export LD_LIBRARY_PATH="${HOME}/.local/lib:${LD_LIBRARY_PATH}"
-
-alias g="git"

@@ -1,89 +1,29 @@
-! Just in case you forget how to update settings on-the-fly:
-! xrdb ~/.Xresources
+urxvt.loginShell:         true
+urxvt.saveLines:         65535
+urxvt.urgentOnBell:       true
 
-! General
-!urxvt*termName:  rxvt-256color
-urxvt*loginShell:         true
-urxvt*scrollBar:         false
-urxvt*secondaryScroll:    true
-urxvt*saveLines:         65535
-urxvt*cursorBlink:       false
-urxvt*urgentOnBell:       true
-!urxvt*override-redirect:false
-urxvt*borderLess:        false
-!urxvt*internalBorder:       0
-!urxvt*externalBorder:       0
+urxvt.scrollBar:         false
+urxvt.scrollTtyOutput:   false
+urxvt.scrollTtyKeypress:  true
+urxvt.secondaryScroll:    true
 
-urxvt*scrollTtyOutput: false
-urxvt*scrollTtyKeypress: true
- 
-!urxvt*font: xft:Terminess Powerline:size=13
-!  - cursor
-!urxvt*cursorColor: #DCDCCC
+URxvt.font: xft:Terminess Powerline:normal:size=12
 
-
-!-*- Perl extensions -*-
-!URxvt.perl-ext-common:default,clipboard,matcher,keyboard-select
-URxvt.keysym.M-u:     perl:url-select:select_next
-URxvt.url-launcher:   /usr/bin/xdg-open
-URxvt.underlineURLs:  True
-URxvt.matcher.button: 1
-URxvt.keysym.M-Escape:perl:keyboard-select:activate
-URxvt.keysym.C-C:     perl:clipboard:copy
-URxvt.keysym.C-V:     perl:clipboard:paste
-URxvt.keysym.C-M-V:   perl:clipboard:paste_escaped
-!URxvt.copyCommand:   xsel -ib
-!URxvt.pasteCommand:  xsel -ob
-
-URxvt*font: xft:Terminess Powerline:normal:size=12
-
-! this is needed to fix solarized
-! URxvt.intensityStyles: false
-
-Xft.dpi: 96
-Xft.antialias: 1
-Xft.hinting: 1
-Xft.hintstyle: hintfull
-Xft.rgba: rgb
-
-!! source: https://github.com/spazzpp2/dotfiles/blob/29819a5ac5e451bfa39bc324378aa508ef75cae8/Molokai.xrdb
-
-! Molokai theme
 URxvt*background: #101010
 URxvt*foreground: #d0d0d0
-URxvt*color0: #101010
-URxvt*color1: #960050
-URxvt*color2: #66aa11
-URxvt*color3: #c47f2c
-URxvt*color4: #30309b
-URxvt*color5: #7e40a5
-URxvt*color6: #3579a8
-URxvt*color7: #9999aa
-URxvt*color8: #303030
-URxvt*color9: #ff0090
-URxvt*color10: #80ff00
-URxvt*color11: #ffba68
-URxvt*color12: #5f5fee
-URxvt*color13: #bb88dd
-URxvt*color14: #4eb4fa
-URxvt*color15: #d0d0d0
-
-*xterm*background: #101010
-*xterm*foreground: #d0d0d0
-*xterm*cursorColor: #d0d0d0
-*xterm*color0: #101010
-*xterm*color1: #960050
-*xterm*color2: #66aa11
-*xterm*color3: #c47f2c
-*xterm*color4: #30309b
-*xterm*color5: #7e40a5
-*xterm*color6: #3579a8
-*xterm*color7: #9999aa
-*xterm*color8: #303030
-*xterm*color9: #ff0090
-*xterm*color10: #80ff00
-*xterm*color11: #ffba68
-*xterm*color12: #5f5fee
-*xterm*color13: #bb88dd
-*xterm*color14: #4eb4fa
-*xterm*color15: #d0d0d0
+URxvt*color0:     #101010
+URxvt*color1:     #960050
+URxvt*color2:     #66aa11
+URxvt*color3:     #c47f2c
+URxvt*color4:     #30309b
+URxvt*color5:     #7e40a5
+URxvt*color6:     #3579a8
+URxvt*color7:     #9999aa
+URxvt*color8:     #303030
+URxvt*color9:     #ff0090
+URxvt*color10:    #80ff00
+URxvt*color11:    #ffba68
+URxvt*color12:    #5f5fee
+URxvt*color13:    #bb88dd
+URxvt*color14:    #4eb4fa
+URxvt*color15:    #d0d0d0
