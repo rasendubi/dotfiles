@@ -9,7 +9,6 @@
   
   boot.kernelModules = [ "kvm-intel" "wl" ];
   boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
-  
   fileSystems = {
     "/" = {
       device = "/dev/disk/by-uuid/ba82dd25-a9e5-436f-ae76-4ee44d53b2c6";
@@ -22,13 +21,9 @@
   };
   swapDevices = [
     # TODO: set priority
-    { device = "/dev/disk/by-uuid/f0bd0438-3324-4295-9981-07015fa0af5e"; }
+    # { device = "/dev/disk/by-uuid/f0bd0438-3324-4295-9981-07015fa0af5e"; }
     { device = "/dev/disk/by-uuid/75822d9d-c5f0-495f-b089-f57d0de5246d"; }
   ];
-  
-  nix.maxJobs = 8;
-  nix.buildCores = 8;
-  
   boot.loader.grub = {
     enable = true;
     version = 2;
@@ -39,6 +34,8 @@
       }
     '';
   };
+  nix.maxJobs = 8;
+  nix.buildCores = 8;
   
   networking = {
     hostName = "Larry";
@@ -99,7 +96,7 @@
   };
   services.xserver.desktopManager.xterm.enable = false;
   services.xserver.layout = "us,ru,ua";
-  services.xserver.xkbOptions = "grp_led:caps,grp:caps_toggle,grp:menu_toggle";
+  services.xserver.xkbOptions = "grp:caps_toggle,grp:menu_toggle,grp_led:caps";
   services.redshift = {
     # enable = true;
     latitude = "50.4500";

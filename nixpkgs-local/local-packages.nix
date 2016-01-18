@@ -5,16 +5,14 @@ let
 
   callPackage = pkgs.lib.callPackageWith (pkgs // pkgs.xlibs // self);
 
-  pythonPackages = pkgs.pythonPackages // {
+  pythonPackages = pkgs.pythonPackages // rec {
     frozendict = callPackage ./pkgs/frozendict { };
   };
 
   self = rec {
-    ycmd = callPackage ./pkgs/ycmd { inherit pythonPackages; };
-
-    rust-nightly = callPackage ./pkgs/rust-nightly { };
-
     powerline-fonts = callPackage ./pkgs/powerline-fonts { };
+    ycmd = callPackage ./pkgs/ycmd { inherit pythonPackages; };
+    rust-nightly = callPackage ./pkgs/rust-nightly { };
   };
 
 in self

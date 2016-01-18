@@ -28,6 +28,7 @@ stdenv.mkDerivation {
 
       mkdir -p $out/share/fonts/psf
       cp -v */PSF/*.psf.gz $out/share/fonts/psf
+
     '';
 
   meta = with stdenv.lib; {

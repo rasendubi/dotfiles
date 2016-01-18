@@ -14,11 +14,11 @@ stdenv.mkDerivation rec {
 
   propagatedBuildInputs = with pythonPackages; [ waitress frozendict bottle ];
 
+  configurePhase = ":";
+
   buildPhase = ''
     ./build.py --clang-completer --system-libclang --system-boost
   '';
-
-  configurePhase = ":";
 
   installPhase = with pythonPackages; ''
     mkdir -p $out/lib/ycmd/third_party $out/bin
