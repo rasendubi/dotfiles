@@ -1,44 +1,6 @@
-(require 'cl)
-
-(tool-bar-mode 0)
-(menu-bar-mode 0)
-(scroll-bar-mode 0)
-(column-number-mode 1)
-(show-paren-mode 1)
-(xterm-mouse-mode 1)
-(global-hl-line-mode)
-
-(setq-default indent-tabs-mode nil)
-
-(fset 'yes-or-no-p 'y-or-n-p)
-
-(setq backup-directory-alist '(("." . "~/.emacs-backups")))
-
-(add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
-(load-theme 'molokai t)
-
-(setq browse-url-browser-function 'browse-url-generic
-      browse-url-generic-program "google-chrome-beta")
-
-;; Open config (this file)
-(global-set-key (kbd "<f12>") (lambda () (interactive) (find-file user-init-file)))
-
-;; Here is how to preserve current working directory
-;; (add-hook 'find-file-hook
-;;           (lambda ()
-;;             (setq default-directory command-line-default-directory)))
-;; or put this in your project root (.dir-locals.el):
-;; ((nil . ((default-directory . "project/directory/"))))
-
-(setq dotfiles-directory (file-name-as-directory (expand-file-name ".." (file-name-directory (file-truename user-init-file)))))
-
-(setq compilation-scroll-output t)
-
-(setq show-trailing-whitespace t)
-
 (require 'package)
 (add-to-list 'package-archives
-             '("melpa" . "http://melpa.org/packages/") t)
+             '("melpa" . "https://melpa.org/packages/") t)
 (add-to-list 'package-archives
              '("marmalade" . "http://marmalade-repo.org/packages/") t)
 (add-to-list 'package-archives
@@ -54,6 +16,150 @@
   (require 'use-package))
 (require 'diminish)
 (require 'bind-key)
+
+(use-package evil
+  :config
+  (evil-mode 1)
+
+  (defun quit-other ()
+    (interactive)
+    (other-window 1)
+    (quit-window))
+
+  (defun nmap (key action)
+    (define-key evil-normal-state-map (kbd key) action))
+  (defun vmap (key action)
+    (define-key evil-visual-state-map (kbd key) action))
+
+  (nmap "j"       'evil-next-visual-line)
+  (nmap "k"       'evil-previous-visual-line)
+
+  (nmap "C-h"     'windmove-left)
+  (nmap "C-j"     'windmove-down)
+  (nmap "C-k"     'windmove-up)
+  (nmap "C-l"     'windmove-right)
+
+  (nmap "SPC"     nil)
+  (nmap "SPC SPC" 'save-buffer)
+  (nmap "H"       'evil-first-non-blank)
+  (vmap "H"       'evil-first-non-blank)
+  (nmap "L"       'evil-end-of-line)
+  (vmap "L"       'evil-end-of-line)
+
+  (nmap "-"       'hs-toggle-hiding)
+
+  (nmap "SPC ,"   'previous-error)
+  (nmap "SPC ."   'next-error)
+  (nmap "M-,"     'previous-error)
+  (nmap "M-."     'next-error)
+
+  (nmap "SPC x"   (lookup-key (current-global-map) (kbd "M-x")))
+  (vmap "SPC x"   (lookup-key (current-global-map) (kbd "M-x")))
+  (nmap "SPC ;"   (lookup-key (current-global-map) (kbd "M-:")))
+
+  (nmap "\\ x"    (lookup-key (current-global-map) (kbd "C-x")))
+  (vmap "\\ x"    (lookup-key (current-global-map) (kbd "C-x")))
+
+  (nmap "SPC p p" 'projectile-switch-project)
+  (nmap "SPC p f" 'helm-projectile-find-file)
+  (nmap "SPC p d" 'helm-projectile-find-dir)
+  (nmap "SPC p g" 'helm-projectile-grep)
+  (nmap "SPC p &" 'projectile-run-async-shell-command-in-root)
+  (nmap "SPC p !" 'projectile-run-shell-command-in-root)
+
+  (nmap "SPC q"   'quit-other)
+  (nmap "SPC w"   (lambda () (interactive) (save-buffers-kill-terminal t)))
+  (nmap "C-z"     'suspend-frame)
+  (nmap "SPC z"   'evil-emacs-state)
+  (nmap "C-u"     'projectile-find-file)
+  (nmap "C-]"     'helm-semantic-or-imenu)
+
+  ;; Swap . and ;
+  (nmap "."       'evil-repeat-find-char)
+  (nmap ";"       'evil-repeat)
+
+  (nmap "<f4>"    'projectile-compile-project)
+
+  ;; Some highlighting for f, F, t, T commands
+  (use-package evil-quickscope
+    :config
+    (global-evil-quickscope-mode))
+
+  (use-package key-chord
+    :config
+    (key-chord-mode 1)
+    (key-chord-define evil-insert-state-map "jk" 'evil-normal-state))
+
+  (use-package evil-magit
+    :init
+    (setq evil-magit-use-y-for-yank t))
+
+  (use-package evil-numbers
+    :config
+    (nmap "C-a" 'evil-numbers/inc-at-pt)
+    (nmap "M-a" 'evil-numbers/dec-at-pt)))
+
+(add-hook 'prog-mode-hook
+          (lambda () (modify-syntax-entry ?_ "w"))) ; _ is a part of word
+
+(tool-bar-mode 0)
+(menu-bar-mode 0)
+(scroll-bar-mode 0)
+(column-number-mode 1)
+(show-paren-mode 1)
+(xterm-mouse-mode 1)
+(global-hl-line-mode)
+
+(setq-default indent-tabs-mode nil)
+
+(setq scroll-margin 3
+      scroll-conservatively 1)
+
+(setq-default whitespace-line-column 120
+              whitespace-style '(face
+                                 tab-mark
+                                 empty
+                                 trailing
+                                 lines-tail))
+(global-whitespace-mode t)
+
+(defun set-tab-width (width)
+  "Set tab width to WIDTH and generate tab stops"
+  (setq tab-width width)
+  (setq tab-stop-list (number-sequence width 120 width)))
+
+(set-tab-width 4)
+
+(fset 'yes-or-no-p 'y-or-n-p)
+
+(setq backup-directory-alist '(("." . "~/.emacs-backups")))
+
+(setq browse-url-browser-function 'browse-url-generic
+      browse-url-generic-program "google-chrome-beta")
+
+;; Open config (this file)
+(global-set-key (kbd "<f12>") (lambda () (interactive) (find-file user-init-file)))
+
+(set-face-attribute 'default nil :font "Terminess Powerline-12")
+
+(setq inhibit-startup-message t
+      inhibit-splash-screen t)
+
+;; Here is how to preserve current working directory
+;; (add-hook 'find-file-hook
+;;           (lambda ()
+;;             (setq default-directory command-line-default-directory)))
+;; or put this in your project root (.dir-locals.el):
+;; ((nil . ((default-directory . "project/directory/"))))
+
+(setq dotfiles-directory (file-name-as-directory (expand-file-name ".." (file-name-directory (file-truename user-init-file)))))
+
+(setq compilation-scroll-output t)
+
+(setq show-trailing-whitespace t)
+
+(add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
+(load-theme 'molokai t)
 
 (use-package helm
   :diminish helm-mode
@@ -94,6 +200,13 @@
 
 (use-package magit
   :bind ("C-c m" . magit-status))
+
+(use-package gitconfig-mode)
+
+(use-package powerline)
+(use-package airline-themes
+  :config
+  (load-theme 'airline-molokai t))
 
 (use-package git-gutter
   :diminish git-gutter-mode
@@ -171,87 +284,7 @@
   :config
   (add-hook 'c-mode-hook 'hs-minor-mode))
 
-(use-package evil
-  :config
-  (evil-mode 1)
 
-  (add-hook 'prog-mode-hook
-            (lambda () (modify-syntax-entry ?_ "w"))) ; _ is a part of word
-
-  (defun quit-other ()
-    (interactive)
-    (other-window 1)
-    (quit-window))
-
-  (defun nmap (key action)
-    (define-key evil-normal-state-map (kbd key) action))
-  (defun vmap (key action)
-    (define-key evil-visual-state-map (kbd key) action))
-
-  (nmap "j"       'evil-next-visual-line)
-  (nmap "k"       'evil-previous-visual-line)
-
-  (nmap "C-h"     'windmove-left)
-  (nmap "C-j"     'windmove-down)
-  (nmap "C-k"     'windmove-up)
-  (nmap "C-l"     'windmove-right)
-
-  (nmap "SPC"     nil)
-  (nmap "SPC SPC" 'save-buffer)
-  (nmap "H"       'evil-first-non-blank)
-  (vmap "H"       'evil-first-non-blank)
-  (nmap "L"       'evil-end-of-line)
-  (vmap "L"       'evil-end-of-line)
-
-  (nmap "-"       'hs-toggle-hiding)
-
-  (nmap "SPC ,"   'previous-error)
-  (nmap "SPC ."   'next-error)
-  (nmap "M-,"     'previous-error)
-  (nmap "M-."     'next-error)
-
-  (nmap "SPC x"   (lookup-key (current-global-map) (kbd "M-x")))
-  (vmap "SPC x"   (lookup-key (current-global-map) (kbd "M-x")))
-  (nmap "SPC ;"   (lookup-key (current-global-map) (kbd "M-:")))
-
-  (nmap "\\ x"    (lookup-key (current-global-map) (kbd "C-x")))
-  (vmap "\\ x"    (lookup-key (current-global-map) (kbd "C-x")))
-
-  (nmap "SPC p p" 'projectile-switch-project)
-  (nmap "SPC p f" 'helm-projectile-find-file)
-  (nmap "SPC p d" 'helm-projectile-find-dir)
-  (nmap "SPC p g" 'helm-projectile-grep)
-  (nmap "SPC p &" 'projectile-run-async-shell-command-in-root)
-  (nmap "SPC p !" 'projectile-run-shell-command-in-root)
-
-  (nmap "SPC q"   'quit-other)
-  (nmap "SPC w"   (lambda () (interactive) (save-buffers-kill-terminal t)))
-  (nmap "C-c C-z" 'suspend-frame)
-  (nmap "C-u"     'projectile-find-file)
-  (nmap "C-]"     'helm-semantic-or-imenu)
-
-  ;; Swap . and ;
-  (nmap "."       'evil-repeat-find-char)
-  (nmap ";"       'evil-repeat)
-
-  ;; Some highlighting for f, F, t, T commands
-  (use-package evil-quickscope
-    :config
-    (global-evil-quickscope-mode))
-
-  (use-package key-chord
-    :config
-    (key-chord-mode 1)
-    (key-chord-define evil-insert-state-map "jk" 'evil-normal-state))
-
-  (use-package evil-magit
-    :init
-    (setq evil-magit-use-y-for-yank t))
-
-  (use-package evil-numbers
-    :config
-    (nmap "C-a" 'evil-numbers/inc-at-pt)
-    (nmap "M-a" 'evil-numbers/dec-at-pt)))
 
 (use-package which-key
   :diminish which-key-mode
@@ -334,10 +367,10 @@
 ;   (global-set-key (kbd "C-c a") 'org-agenda)
 ;   (global-set-key (kbd "C-c c") 'org-capture)
 ;   (global-set-key (kbd "C-c b") 'org-iswitchb)
-; 
+;
 ;   (use-package org-plus-contrib)
 ;   (require 'org-drill)
-; 
+;
 ;   (setq org-capture-templates
 ;         `(("u"
 ;            "Task: Read this URL"
@@ -346,7 +379,7 @@
 ;            ,(concat "* TODO Read article: '%:description'\nURL: %c\n\n")
 ;            :empty-lines 1
 ;            :immediate-finish t)
-; 
+;
 ;           ("w"
 ;            "Capture web snippet"
 ;            entry
@@ -356,13 +389,18 @@
 ;                     ":\n:PROPERTIES:\n:DATE_ADDED: %u\n:SOURCE_URL: %c\n:END:\n\n%i\n%?\n")
 ;            :empty-lines 1
 ;            :immediate-finish t)))
-; 
+;
 ;   (require 'org-protocol)
-; 
+;
 ;   (setq org-modules '(org-bbdb org-bibtex org-docview org-gnus org-info org-irc org-mhe org-rmail org-w3m org-drill)
 ;         org-drill-scope (f-files "~/org/drill"
 ;                                  (lambda (file) (f-ext? file "org"))
 ;                                  t)))
+
+(org-babel-do-load-languages 'org-babel-load-languages
+                             '((sh . t)))
+
+(use-package htmlize)
 
 (use-package smart-tabs-mode
   :config
