@@ -7,6 +7,15 @@ urxvt.scrollTtyOutput:   false
 urxvt.scrollTtyKeypress:  true
 urxvt.secondaryScroll:    true
 
+urxvt.iso14755: False
+
+urxvt.perl-ext-common:    default,clipboard
+urxvt.keysym.S-C-C:       perl:clipboard:copy
+urxvt.keysym.S-C-V:       perl:clipboard:paste
+urxvt.keysym.C-M-V:       perl:clipboard:paste_escaped
+urxvt.clipboard.copycmd:  xclip -i -selection clipboard
+urxvt.clipboard.pastecmd: xclip -o -selection clipboard
+
 URxvt.font: xft:Terminess Powerline:normal:size=12
 
 URxvt*background: #101010

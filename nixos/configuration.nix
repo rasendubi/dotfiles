@@ -150,6 +150,7 @@
     pkgs.kde4.kde_baseapps # <-- dolphin
     pkgs.kde4.kde_runtime
     pkgs.kde4.kfilemetadata
+    pkgs.kde4.filelight
     pkgs.shared_mime_info
     pkgs.firefoxWrapper
     pkgs.google-chrome
@@ -163,14 +164,20 @@
     pkgs.vlc
     (pkgs.vim_configurable.override { python3 = true; })
     pkgs.emacs
-    pkgs.rxvt_unicode
+    pkgs.rxvt_unicode-with-plugins
+    pkgs.urxvt_perl
     pkgs.git
     pkgs.tmux
     pkgs.ghc
+    pkgs.haskellPackages.ghc-mod
     pkgs.stack
     pkgs.cabal-install
     pkgs.cabal2nix
+    pkgs.racer
+    pkgs.expect
+    pkgs.telnet
     pkgs.gnumake
+    pkgs.cmake
     pkgs.binutils
     pkgs.gcc
     pkgs.gcc-arm-embedded
@@ -184,8 +191,16 @@
     pkgs.unzip
     pkgs.unrar
     pkgs.irssi
+    pkgs.man-pages
+    pkgs.bind
+    pkgs.file
+    pkgs.whois
+    pkgs.gnupg
+    
+    pkgs.patchelf
     
     pkgs.nix-repl
+    pkgs.nox
     pkgs.python
     pkgs.python3
     pkgs.steam

@@ -313,13 +313,13 @@ let
     abort "no snapshot to bootstrap for this platfrom (missing target triple)";
 
 in stdenv.mkDerivation rec {
-  date = "2016-01-22";
+  date = "2016-01-27";
 
   name = "rust-nightly-${date}";
 
   src = fetchurl {
     url = "https://static.rust-lang.org/dist/${date}/rust-nightly-${target}.tar.gz";
-    sha256 = "199bcw4gkd31j4qccf2g1737x3dy70grz95ympv7r9njqz31hgkz";
+    sha256 = "17wi0dgxkym0p72fvpslmgqa1qgg51sm9pkzc726a48254dniy5v";
   };
 
   installPhase = ''
@@ -586,6 +586,7 @@ pkgs.kde4.gwenview
 pkgs.kde4.kde_baseapps # <-- dolphin
 pkgs.kde4.kde_runtime
 pkgs.kde4.kfilemetadata
+pkgs.kde4.filelight
 pkgs.shared_mime_info
 #+end_src
 
@@ -641,7 +642,8 @@ pkgs.emacs
    I use urxvt as my terminal emulator:
 #+name: nixos-system-packages
 #+begin_src nix
-pkgs.rxvt_unicode
+pkgs.rxvt_unicode-with-plugins
+pkgs.urxvt_perl
 #+end_src
 
    Urxvt gets its setting from =.Xresources= file. If you ever want to reload it on-the-fly, type the following (or press =C-c C-c= if you're in emacs):
@@ -666,20 +668,20 @@ urxvt.scrollTtyKeypress:  true
 urxvt.secondaryScroll:    true
 #+end_src
 
-    /TODO: add perl extensions/
+    The next piece disables annoying message when pressing Ctrl+Shift:
+#+begin_src conf-xdefaults :tangle .Xresources
+urxvt.iso14755: False
+#+end_src
 
-    # !-*- Perl extensions -*-
-    # !URxvt.perl-ext-common:default,clipboard,matcher,keyboard-select
-    # URxvt.keysym.M-u:     perl:url-select:select_next
-    # URxvt.url-launcher:   /usr/bin/xdg-open
-    # URxvt.underlineURLs:  True
-    # URxvt.matcher.button: 1
-    # URxvt.keysym.M-Escape:perl:keyboard-select:activate
-    # URxvt.keysym.C-C:     perl:clipboard:copy
-    # URxvt.keysym.C-V:     perl:clipboard:paste
-    # URxvt.keysym.C-M-V:   perl:clipboard:paste_escaped
-    # !URxvt.copyCommand:   xsel -ib
-    # !URxvt.pasteCommand:  xsel -ob
+    Copy-paste with Ctrl+Shift+C, Ctrl+Shift+V:
+#+begin_src conf-xdefaults :tangle .Xresources
+urxvt.perl-ext-common:    default,clipboard
+urxvt.keysym.S-C-C:       perl:clipboard:copy
+urxvt.keysym.S-C-V:       perl:clipboard:paste
+urxvt.keysym.C-M-V:       perl:clipboard:paste_escaped
+urxvt.clipboard.copycmd:  xclip -i -selection clipboard
+urxvt.clipboard.pastecmd: xclip -o -selection clipboard
+#+end_src
 
 **** Font
 
@@ -979,9 +981,20 @@ set-window-option -g automatic-rename
 #+name: nixos-system-packages
 #+begin_src nix
 pkgs.ghc
+pkgs.haskellPackages.ghc-mod
 pkgs.stack
 pkgs.cabal-install
 pkgs.cabal2nix
+#+end_src
+
+*** bkernel
+    I'm working on a kernel written in Rust. Thes is needed for it:
+
+#+name: nixos-system-packages
+#+begin_src nix
+pkgs.racer
+pkgs.expect
+pkgs.telnet
 #+end_src
 
 *** Embedded
@@ -989,6 +1002,7 @@ pkgs.cabal2nix
 #+name: nixos-system-packages
 #+begin_src nix
 pkgs.gnumake
+pkgs.cmake
 pkgs.binutils
 pkgs.gcc
 pkgs.gcc-arm-embedded
@@ -1014,8 +1028,16 @@ pkgs.zip
 pkgs.unzip
 pkgs.unrar
 pkgs.irssi
+pkgs.man-pages
+pkgs.bind
+pkgs.file
+pkgs.whois
+pkgs.gnupg
+
+pkgs.patchelf
 
 pkgs.nix-repl
+pkgs.nox
 pkgs.python
 pkgs.python3
 #+end_src
