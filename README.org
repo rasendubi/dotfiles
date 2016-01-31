@@ -157,141 +157,6 @@ nix-env -f nixpkgs-local/local-packages.nix -i
 
 #+RESULTS:
 
-**** powerline-fonts
-    *Tracking issue*: [[https://github.com/NixOS/nixpkgs/pull/12394]].
-    *Merged*, waiting to appear in the nixpkgs-unstable.
-
-    There was a packing error in the powerline-fonts package and the Terminus font wasn't installed.
-#+name: nixpkgs-local-packages
-#+begin_src nix
-powerline-fonts = callPackage ./pkgs/powerline-fonts { };
-#+end_src
-#+begin_src nix :tangle nixpkgs-local/pkgs/powerline-fonts/default.nix :padline no
-{ stdenv, fetchFromGitHub }:
-
-stdenv.mkDerivation {
-  name = "powerline-fonts-2015-06-29";
-
-  src = fetchFromGitHub {
-    owner = "powerline";
-    repo = "fonts";
-    rev = "97dc451724fb24e1dd9892c988642b239b5dc67c";
-    sha256 = "1m0a8k916s74iv2k0kk36dz7d2hfb2zgf8m0b9hg71w4yd3bmj4w";
-  };
-
-  buildPhase = "true";
-
-  installPhase =
-    ''
-      mkdir -p $out/share/fonts/opentype
-      cp -v */*.otf $out/share/fonts/opentype
-
-      mkdir -p $out/share/fonts/truetype
-      cp -v */*.ttf $out/share/fonts/truetype
-#+end_src
-
-    The part I've added:
-#+begin_src nix :tangle nixpkgs-local/pkgs/powerline-fonts/default.nix :padline no
-
-      mkdir -p $out/share/fonts/bdf
-      cp -v */BDF/*.bdf $out/share/fonts/bdf
-
-      mkdir -p $out/share/fonts/pcf
-      cp -v */PCF/*.pcf.gz $out/share/fonts/pcf
-
-      mkdir -p $out/share/fonts/psf
-      cp -v */PSF/*.psf.gz $out/share/fonts/psf
-#+end_src
-
-#+begin_src nix :tangle nixpkgs-local/pkgs/powerline-fonts/default.nix :padline no
-    '';
-
-  meta = with stdenv.lib; {
-    homepage = https://github.com/powerline/fonts;
-    description = "Patched fonts for Powerline users";
-    longDescription = ''
-      Pre-patched and adjusted fonts for usage with the Powerline plugin.
-    '';
-    license = with licenses; [ asl20 free ofl ];
-    platforms = platforms.all;
-    maintainer = with maintainers; [ malyn ];
-  };
-}
-#+end_src
-
-**** ycmd
-    *Tracking issue*: [[https://github.com/NixOS/nixpkgs/pull/12159]].
-    *Merged*, waiting to appear in the nixpkgs-unstable.
-
-    I need [[https://github.com/Valloric/ycmd][ycmd]] for my emacs autocompletion to work:
-#+name: nixpkgs-local-packages
-#+begin_src nix
-ycmd = callPackage ./pkgs/ycmd { inherit pythonPackages; };
-#+end_src
-#+begin_src nix :tangle nixpkgs-local/pkgs/ycmd/default.nix :padline no
-{ stdenv, fetchgit, cmake, python, llvmPackages, boost, pythonPackages, buildPythonPackage, makeWrapper
-}:
-
-stdenv.mkDerivation rec {
-  name = "ycmd-2016-01-02";
-
-  src = fetchgit {
-    url = "git://github.com/Valloric/ycmd.git";
-    rev = "79c8bc256e9036c397a3ff2c0589578f816b46ec";
-    sha256 = "0y261xbd73v6fbhv5jprdjydgp9yh7skzrh9rglk6zm3jlwvbj9z";
-  };
-
-  buildInputs = [ python cmake llvmPackages.clang boost makeWrapper ];
-
-  propagatedBuildInputs = with pythonPackages; [ waitress frozendict bottle ];
-
-  configurePhase = ":";
-
-  buildPhase = ''
-    ./build.py --clang-completer --system-libclang --system-boost
-  '';
-
-  installPhase = with pythonPackages; ''
-    mkdir -p $out/lib/ycmd/third_party $out/bin
-    cp -r ycmd/ CORE_VERSION libclang.so.* ycm_client_support.so ycm_core.so $out/lib/ycmd/
-    wrapProgram $out/lib/ycmd/ycmd/__main__.py \
-      --prefix PYTHONPATH : "$(toPythonPath ${waitress}):$(toPythonPath ${frozendict}):$(toPythonPath ${bottle})"
-    ln -s $out/lib/ycmd/ycmd/__main__.py $out/bin/ycmd
-  '';
-
-  meta = {
-    description = "A code-completion and comprehension server";
-    homepage = "https://github.com/Valloric/ycmd";
-    license = stdenv.lib.licenses.gpl3;
-    platforms = stdenv.lib.platforms.all;
-  };
-}
-#+end_src
-
-    It requires frozendict python library:
-#+name: nixpkgs-local-python-packages
-#+begin_src nix
-frozendict = callPackage ./pkgs/frozendict { };
-#+end_src
-#+begin_src nix :tangle nixpkgs-local/pkgs/frozendict/default.nix :padline no
-{ stdenv, fetchurl, buildPythonPackage }:
-
-buildPythonPackage {
-  name = "frozendict-0.5";
-
-  src = fetchurl {
-    url = "https://pypi.python.org/packages/source/f/frozendict/frozendict-0.5.tar.gz";
-    sha256 = "0m4kg6hbadvf99if78nx01q7qnbyhdw3x4znl5dasgciyi54432n";
-  };
-
-  meta = {
-    homepage = https://github.com/slezica/python-frozendict;
-    description = "An immutable dictionary";
-    license = stdenv.lib.licenses.mit;
-  };
-}
-#+end_src
-
 **** rust-nightly
     *Won't submit*. As nighties are unstable, it's unlikely it will be at nixpkgs.
 
@@ -627,6 +492,8 @@ pkgs.mnemosyne
 pkgs.deadbeef
 pkgs.wine
 pkgs.vlc
+pkgs.gparted
+pkgs.unetbootin
 #+end_src
 
 ** Development
@@ -636,6 +503,19 @@ pkgs.vlc
 #+begin_src nix
 (pkgs.vim_configurable.override { python3 = true; })
 pkgs.emacs
+#+end_src
+
+    The following packages are needed for emacs plugins:
+#+name: nixos-system-packages
+#+begin_src nix
+pkgs.ycmd
+pkgs.racerRust
+#+end_src
+
+    Leiningen is needed for clojure, but I don't really use it now.
+#+name: nixos-system-packages
+#+begin_src nix
+# pkgs.leiningen
 #+end_src
 
 *** rxvt-unicode
@@ -988,16 +868,6 @@ pkgs.cabal-install
 pkgs.cabal2nix
 #+end_src
 
-*** bkernel
-    I'm working on a kernel written in Rust. Thes is needed for it:
-
-#+name: nixos-system-packages
-#+begin_src nix
-pkgs.racerRust
-pkgs.expect
-pkgs.telnet
-#+end_src
-
 *** Embedded
     The following packages provide compiler, ARM cross-compiler, debugger, and terminal.
 #+name: nixos-system-packages
@@ -1009,6 +879,8 @@ pkgs.gcc
 pkgs.gcc-arm-embedded
 pkgs.minicom
 pkgs.openocd
+pkgs.expect
+pkgs.telnet
 #+end_src
 
     To allow user use openocd without sudo, we should add him to =plugdev= group and install openocd udev rules:
@@ -1028,6 +900,7 @@ pkgs.mosh
 pkgs.zip
 pkgs.unzip
 pkgs.unrar
+pkgs.p7zip
 pkgs.irssi
 pkgs.man-pages
 pkgs.bind

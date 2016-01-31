@@ -162,8 +162,13 @@
     pkgs.deadbeef
     pkgs.wine
     pkgs.vlc
+    pkgs.gparted
+    pkgs.unetbootin
     (pkgs.vim_configurable.override { python3 = true; })
     pkgs.emacs
+    pkgs.ycmd
+    pkgs.racerRust
+    # pkgs.leiningen
     pkgs.rxvt_unicode-with-plugins
     pkgs.urxvt_perl
     pkgs.git
@@ -173,9 +178,6 @@
     pkgs.stack
     pkgs.cabal-install
     pkgs.cabal2nix
-    pkgs.racerRust
-    pkgs.expect
-    pkgs.telnet
     pkgs.gnumake
     pkgs.cmake
     pkgs.binutils
@@ -183,6 +185,8 @@
     pkgs.gcc-arm-embedded
     pkgs.minicom
     pkgs.openocd
+    pkgs.expect
+    pkgs.telnet
     pkgs.wget
     pkgs.htop
     pkgs.psmisc
@@ -190,6 +194,7 @@
     pkgs.zip
     pkgs.unzip
     pkgs.unrar
+    pkgs.p7zip
     pkgs.irssi
     pkgs.man-pages
     pkgs.bind
