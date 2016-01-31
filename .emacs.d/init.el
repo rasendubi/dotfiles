@@ -70,8 +70,6 @@
 
   (nmap "SPC q"   'quit-other)
   (nmap "SPC w"   (lambda () (interactive) (save-buffers-kill-terminal t)))
-  (nmap "C-z"     'suspend-frame)
-  (nmap "SPC z"   'evil-emacs-state)
   (nmap "C-u"     'projectile-find-file)
   (nmap "C-]"     'helm-semantic-or-imenu)
 
@@ -80,6 +78,7 @@
   (nmap ";"       'evil-repeat)
 
   (nmap "<f4>"    'projectile-compile-project)
+  (nmap "<f5>"    'projectile-run-project)
 
   ;; Some highlighting for f, F, t, T commands
   (use-package evil-quickscope
@@ -371,7 +370,13 @@
   :mode ("\\.idr$" . idris-mode))
 
 (use-package rust-mode
-  :mode ("\\.rs$" . rust-mode))
+  :mode ("\\.rs$" . rust-mode)
+  :config
+  (use-package racer
+    :commands (racer-mode eldoc-mode)
+    :init
+    (add-hook 'rust-mode-hook #'racer-mode)
+    (add-hook 'racer-mode-hook #'eldoc-mode)))
 
 (use-package nim-mode
   :mode ("\\.nim$" . nim-mode))
@@ -505,6 +510,11 @@
 (use-package nix-mode
   :mode "\\.nix$")
 
+(use-package clojure-mode
+  :mode "\\.clj$"
+  :config
+  (use-package cider))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun minicom ()
   (interactive)
@@ -515,6 +525,10 @@
 
 (defun add-to-path (str)
   (setenv "PATH" (concat str ":" (getenv "PATH"))))
+
+(defun async-in-project-root (cmd)
+  (async-shell-command
+   (concat "cd " (projectile-project-root) " && " cmd)))
 
 (c-add-style "savvy"
              '("k&r"

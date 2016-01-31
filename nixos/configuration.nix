@@ -173,7 +173,7 @@
     pkgs.stack
     pkgs.cabal-install
     pkgs.cabal2nix
-    pkgs.racer
+    pkgs.racerRust
     pkgs.expect
     pkgs.telnet
     pkgs.gnumake

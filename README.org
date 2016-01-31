@@ -17,7 +17,7 @@ Pieces not covered in this document (yet) are:
 
     It looks like this:
 
-#+begin_src nix :tangle nixos/configuration.nix :noweb no-export
+#+begin_src nix :tangle nixos/configuration.nix :noweb no-export :padline no
 { config, pkgs, ... }:
 {
   nixpkgs.config.allowUnfree = true;
@@ -131,7 +131,7 @@ services.xserver.synaptics = {
     As a responsible NixOS user, I refuse to install software blindly with =sudo make install=. That's why I should write my own nix-expressions. I keep them in my local overlay until they're merged upstream.
 
     The entry is just a set of all my packages in =nixpkgs-local/local-packages.nix=:
-#+begin_src nix :tangle nixpkgs-local/local-packages.nix :noweb no-export
+#+begin_src nix :tangle nixpkgs-local/local-packages.nix :noweb no-export :padline no
 { system ? builtins.currentSystem }:
 
 let
@@ -166,7 +166,7 @@ nix-env -f nixpkgs-local/local-packages.nix -i
 #+begin_src nix
 powerline-fonts = callPackage ./pkgs/powerline-fonts { };
 #+end_src
-#+begin_src nix :tangle nixpkgs-local/pkgs/powerline-fonts/default.nix
+#+begin_src nix :tangle nixpkgs-local/pkgs/powerline-fonts/default.nix :padline no
 { stdenv, fetchFromGitHub }:
 
 stdenv.mkDerivation {
@@ -191,7 +191,8 @@ stdenv.mkDerivation {
 #+end_src
 
     The part I've added:
-#+begin_src nix :tangle nixpkgs-local/pkgs/powerline-fonts/default.nix
+#+begin_src nix :tangle nixpkgs-local/pkgs/powerline-fonts/default.nix :padline no
+
       mkdir -p $out/share/fonts/bdf
       cp -v */BDF/*.bdf $out/share/fonts/bdf
 
@@ -202,7 +203,7 @@ stdenv.mkDerivation {
       cp -v */PSF/*.psf.gz $out/share/fonts/psf
 #+end_src
 
-#+begin_src nix :tangle nixpkgs-local/pkgs/powerline-fonts/default.nix
+#+begin_src nix :tangle nixpkgs-local/pkgs/powerline-fonts/default.nix :padline no
     '';
 
   meta = with stdenv.lib; {
@@ -227,7 +228,7 @@ stdenv.mkDerivation {
 #+begin_src nix
 ycmd = callPackage ./pkgs/ycmd { inherit pythonPackages; };
 #+end_src
-#+begin_src nix :tangle nixpkgs-local/pkgs/ycmd/default.nix
+#+begin_src nix :tangle nixpkgs-local/pkgs/ycmd/default.nix :padline no
 { stdenv, fetchgit, cmake, python, llvmPackages, boost, pythonPackages, buildPythonPackage, makeWrapper
 }:
 
@@ -272,7 +273,7 @@ stdenv.mkDerivation rec {
 #+begin_src nix
 frozendict = callPackage ./pkgs/frozendict { };
 #+end_src
-#+begin_src nix :tangle nixpkgs-local/pkgs/frozendict/default.nix
+#+begin_src nix :tangle nixpkgs-local/pkgs/frozendict/default.nix :padline no
 { stdenv, fetchurl, buildPythonPackage }:
 
 buildPythonPackage {
@@ -301,7 +302,7 @@ buildPythonPackage {
 rust-nightly = callPackage ./pkgs/rust-nightly { };
 #+end_src
 
-#+begin_src nix :tangle nixpkgs-local/pkgs/rust-nightly/default.nix
+#+begin_src nix :tangle nixpkgs-local/pkgs/rust-nightly/default.nix :padline no
 { stdenv, fetchurl, zlib }:
 
 let
@@ -477,7 +478,7 @@ pkgs.xxkb
 
     Its settings are saved in =.xxkbrc= file. Xxkb just sits in the tray and displays layout image.
 
-#+begin_src conf-xdefaults :tangle .xxkbrc
+#+begin_src conf-xdefaults :tangle .xxkbrc :padline no
 XXkb.image.path: /home/rasen/.config/xxkb
 
 XXkb.mainwindow.enable: yes
@@ -657,7 +658,7 @@ xrdb ~/.Xresources
 
     See [[http://pod.tst.eu/http://cvs.schmorp.de/rxvt-unicode/doc/rxvt.1.pod][rxvt-unicode documentation]] for the full reference.
 
-#+begin_src conf-xdefaults :tangle .Xresources
+#+begin_src conf-xdefaults :tangle .Xresources :padline no
 urxvt.loginShell:         true
 urxvt.saveLines:         65535
 urxvt.urgentOnBell:       true
@@ -736,7 +737,7 @@ users.defaultUserShell = "/run/current-system/sw/bin/zsh";
 
 #+html: <pre style="color:#d0d0d0; background-color:#101010"><span style="color:#80ff00; font-weight:bold">rasen@Larry</span> <span style="color:#5f5fee; font-weight:bold">directory</span>(<span style="color:#bb88dd; font-weight:bold">master</span>|<span style="color:#30309b">+8</span>…) <span style="color:#5f5fee; font-weight:bold">%</span> command <span style="float:right">[0] 1:25</span></pre>
 
-#+begin_src shell-script :tangle .zshrc
+#+begin_src shell-script :tangle .zshrc :padline no
 source $HOME/.zsh/git-prompt/zshrc.sh
 
 PROMPT='%B%F{green}%n@%m%k %B%F{blue}%1~%b$(git_super_status) %B%F{blue}%# %b%f%k'
@@ -862,7 +863,7 @@ pkgs.git
 
     Basic info: my name, email, ui, editor, [[https://git-scm.com/blog/2010/03/08/rerere.html][rerere]].
 
-#+begin_src gitconfig :tangle .gitconfig
+#+begin_src gitconfig :tangle .gitconfig :padline no
 [user]
     name = Alexey Shmalko
     email = rasen.dubi@gmail.com
@@ -941,7 +942,7 @@ pkgs.tmux
 #+end_src
 
     I like =C-a= as a prefix.
-#+begin_src conf-space :tangle .tmux.conf
+#+begin_src conf-space :tangle .tmux.conf :padline no
 set -g prefix C-a
 unbind-key C-b
 bind-key C-a send-prefix
@@ -992,7 +993,7 @@ pkgs.cabal2nix
 
 #+name: nixos-system-packages
 #+begin_src nix
-pkgs.racer
+pkgs.racerRust
 pkgs.expect
 pkgs.telnet
 #+end_src
@@ -1066,7 +1067,7 @@ pkgs.nethack
 
    The following sets my default name, selects a dog, and disables auto-pickup; the last line makes interface a bit friendlier.
 
-#+begin_src fundamental :tangle .nethackrc
+#+begin_src fundamental :tangle .nethackrc :padline no
 OPTIONS=name:rasen
 OPTIONS=pettype:dog, dogname:Fido
 OPTIONS=!autopickup
@@ -1077,7 +1078,7 @@ OPTIONS=lit_corridor, DECgraphics, showscore, showexp, time, color, hilite_pet
 *** Setup
 
     There is a =setup.sh= script in this directory. It just links all files to =$HOME=:
-#+begin_src sh :shebang "#!/bin/sh" :tangle setup.sh
+#+begin_src sh :shebang "#!/bin/sh" :tangle setup.sh :padline no
 FILES=".vimrc .vim .nvimrc .nvim .gitconfig .zshrc .zsh .tmux.conf .xxkbrc .Xresources .config/awesome .config/xxkb .nethackrc .emacs.d"
 
 DEST=$1
