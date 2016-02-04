@@ -115,13 +115,18 @@
 (setq scroll-margin 3
       scroll-conservatively 1)
 
-(setq-default whitespace-line-column 120
-              whitespace-style '(face
-                                 tab-mark
-                                 empty
-                                 trailing
-                                 lines-tail))
-(global-whitespace-mode t)
+(use-package whitespace
+  :diminish (global-whitespace-mode
+             whitespace-mode
+             whitespace-newline-mode)
+  :config
+  (setq-default whitespace-line-column 120
+                whitespace-style '(face
+                                   tab-mark
+                                   empty
+                                   trailing
+                                   lines-tail))
+  (global-whitespace-mode t))
 
 (defun set-tab-width (width)
   "Set tab width to WIDTH and generate tab stops"
@@ -219,6 +224,7 @@
 
 (use-package magit
   :bind ("C-c m" . magit-status)
+  :diminish auto-revert-mode
   :config
   (use-package evil-magit
     :init
