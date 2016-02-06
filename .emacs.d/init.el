@@ -236,8 +236,8 @@
 (use-package diff-hl
   :defer 3
   :config
-  (diff-hl-flydiff-mode t)
-  (global-diff-hl-mode))
+  (global-diff-hl-mode t)
+  (diff-hl-flydiff-mode t))
 
 (use-package yasnippet
   :defer 5
@@ -375,11 +375,16 @@
 (use-package idris-mode
   :mode ("\\.idr$" . idris-mode))
 
+(use-package eldoc
+  :commands (eldoc-mode)
+  :diminish eldoc-mode)
+
 (use-package rust-mode
   :mode ("\\.rs$" . rust-mode)
   :config
   (use-package racer
-    :commands (racer-mode eldoc-mode)
+    :commands racer-mode
+    :diminish racer-mode
     :init
     (add-hook 'rust-mode-hook #'racer-mode)
     (add-hook 'racer-mode-hook #'eldoc-mode)))
