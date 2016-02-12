@@ -254,6 +254,7 @@
   :commands (projectile-ack
              projectile-ag
              projectile-compile-project
+             projectile-run-project
              projectile-dired
              projectile-grep
              projectile-find-dir
