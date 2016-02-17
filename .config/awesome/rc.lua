@@ -46,7 +46,7 @@ end
 
 -- Change this according to awesome wm location
 -- TODO: automate this to search in $XDG_DATA_DIRS
-beautiful.init("/nix/store/df393qpw2fyrhflh965f0kw2zgzkx476-awesome-3.5.6/share/awesome/themes/default/theme.lua")
+beautiful.init("/run/current-system/sw/share/awesome/themes/default/theme.lua")
 -- beautiful.init("/usr/share/awesome/themes/default/theme.lua")
 
 -- This is used later as the default terminal and editor to run.
