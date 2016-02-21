@@ -12,3 +12,4 @@
 /.vim/.ycm_extra_conf.pyc
 /.vim/haskellmode.config
 /.emacs.d/.python-environments/
+/.ssh/id_rsa
