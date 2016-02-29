@@ -145,10 +145,13 @@
 ;; Open config (this file)
 (global-set-key (kbd "<f12>") (lambda () (interactive) (find-file user-init-file)))
 
-(set-face-attribute 'default nil :font "Terminess Powerline-12")
+(defun font-exists-p (font)
+  (not (null (x-list-fonts font))))
 
-(setq inhibit-startup-message t
-      inhibit-splash-screen t)
+(when (font-exists-p "Terminess Powerline-12")
+  (set-face-attribute 'default nil :font "Terminess Powerline-12"))
+
+(setq inhibit-startup-screen t)
 
 ;; Here is how to preserve current working directory
 ;; (add-hook 'find-file-hook
