@@ -146,7 +146,7 @@
 (global-set-key (kbd "<f12>") (lambda () (interactive) (find-file user-init-file)))
 
 (defun font-exists-p (font)
-  (not (null (x-list-fonts font))))
+  (not (and (display-graphic-p) (null (x-list-fonts font)))))
 
 (when (font-exists-p "Terminess Powerline-12")
   (set-face-attribute 'default nil :font "Terminess Powerline-12"))
@@ -240,6 +240,9 @@
   :defer 3
   :config
   (global-diff-hl-mode t)
+  (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
+  (unless (display-graphic-p)
+    (diff-hl-margin-mode t))
   (diff-hl-flydiff-mode t))
 
 (use-package yasnippet
