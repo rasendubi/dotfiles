@@ -114,11 +114,10 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
     (global-evil-quickscope-mode))
 
   (use-package key-chord
-    :defer 1
     :config
     (key-chord-mode 1)
-    (key-chord-define evil-insert-state-map "jk" 'evil-normal-state))
-  (imap "<escape>" (rasen/hard-way "jk"))
+    (key-chord-define evil-insert-state-map "jk" 'evil-normal-state)
+    (imap "<escape>" (rasen/hard-way "jk")))
 
   (use-package evil-numbers
     :commands (evil-numbers/inc-at-pt
