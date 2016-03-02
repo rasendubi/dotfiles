@@ -31,9 +31,15 @@
     (define-key evil-normal-state-map (kbd key) action))
   (defun vmap (key action)
     (define-key evil-visual-state-map (kbd key) action))
+  (defun imap (key action)
+    (define-key evil-insert-state-map (kbd key) action))
+  (defmacro rasen/hard-way (key)
+    `(lambda () (interactive) (error "Don't use this key! Use %s instead" ,key)))
 
   (nmap "j"       'evil-next-visual-line)
   (nmap "k"       'evil-previous-visual-line)
+  (nmap "gj"      'evil-next-line)
+  (nmap "gk"      'evil-previous-line)
 
   (nmap "C-h"     'windmove-left)
   (nmap "C-j"     'windmove-down)
@@ -54,15 +60,17 @@
   (nmap "M-,"     'previous-error)
   (nmap "M-."     'next-error)
 
-  (nmap "SPC x"   (lookup-key (current-global-map) (kbd "M-x")))
-  (vmap "SPC x"   (lookup-key (current-global-map) (kbd "M-x")))
+  (nmap "SPC x"   'helm-M-x)
+  (vmap "SPC x"   'helm-M-x)
+  (nmap "M-x"     (rasen/hard-way "SPC x"))
   (nmap "SPC ;"   (lookup-key (current-global-map) (kbd "M-:")))
 
   (nmap "\\ x"    (lookup-key (current-global-map) (kbd "C-x")))
   (vmap "\\ x"    (lookup-key (current-global-map) (kbd "C-x")))
 
   (nmap "SPC p p" 'projectile-switch-project)
-  (nmap "SPC p f" 'helm-projectile-find-file)
+  ;(nmap "SPC p f" 'helm-projectile-find-file)
+  (nmap "SPC p f" (rasen/hard-way "U"))
   (nmap "SPC p d" 'helm-projectile-find-dir)
   (nmap "SPC p g" 'helm-projectile-grep)
   (nmap "SPC p &" 'projectile-run-async-shell-command-in-root)
@@ -70,7 +78,8 @@
 
   (nmap "SPC q"   'quit-other)
   (nmap "SPC w"   (lambda () (interactive) (save-buffers-kill-terminal t)))
-  (nmap "C-u"     'projectile-find-file)
+  (nmap "U"       'helm-projectile-find-file)
+  ;(nmap "C-u"     'projectile-find-file)
   (nmap "C-]"     'helm-semantic-or-imenu)
 
   ;; Swap . and ;
@@ -79,6 +88,24 @@
 
   (nmap "<f4>"    'projectile-compile-project)
   (nmap "<f5>"    'projectile-run-project)
+
+  ;; esc quit anything
+  (defun minibuffer-keyboard-quit ()
+    "Abort recursive edit.
+In Delete Selection mode, if the mark is active, just deactivate it;
+the it takes a second \\[keyboard-quit]] to abort the minibuffer."
+    (interactive)
+    (if (and delete-selection-mode transient-mark-mode mark-active)
+        (setq deactivate-mark t)
+      (when (get-buffer "*Completions*") (delete-windows-on "*Completions*"))
+      (abort-recursive-edit)))
+  (define-key evil-normal-state-map [escape] 'keyboard-quit)
+  (define-key evil-visual-state-map [escape] 'keyboard-quit)
+  (define-key minibuffer-local-map [escape] 'minibuffer-keyboard-quit)
+  (define-key minibuffer-local-ns-map [escape] 'minibuffer-keyboard-quit)
+  (define-key minibuffer-local-completion-map [escape] 'minibuffer-keyboard-quit)
+  (define-key minibuffer-local-must-match-map [escape] 'minibuffer-keyboard-quit)
+  (define-key minibuffer-local-isearch-map [escape] 'minibuffer-keyboard-quit)
 
   ;; Some highlighting for f, F, t, T commands
   (use-package evil-quickscope
@@ -91,13 +118,14 @@
     :config
     (key-chord-mode 1)
     (key-chord-define evil-insert-state-map "jk" 'evil-normal-state))
+  (imap "<escape>" (rasen/hard-way "jk"))
 
   (use-package evil-numbers
     :commands (evil-numbers/inc-at-pt
                evil-numbers/dec-at-pt)
     :init
     (nmap "C-a" 'evil-numbers/inc-at-pt)
-    (nmap "M-a" 'evil-numbers/dec-at-pt)))
+    (nmap "C-x" 'evil-numbers/dec-at-pt)))
 
 (add-hook 'prog-mode-hook
           (lambda () (modify-syntax-entry ?_ "w"))) ; _ is a part of word
@@ -322,7 +350,7 @@
   :init
   (setq company-ghc-show-info t
         haskell-indent-spaces 4
-        haskell-process-type (quote cabal-repl))
+        haskell-process-type 'cabal-repl)
   :config
   (add-hook 'haskell-mode-hook 'haskell-indent-mode)
 
