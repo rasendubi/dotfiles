@@ -155,6 +155,23 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
                                    lines-tail))
   (global-whitespace-mode t))
 
+(use-package clean-aindent-mode
+  :init
+  (setq clean-aindent-is-simple-indent t)
+  :config
+  (clean-aindent-mode t))
+(define-key global-map (kbd "RET") 'newline-and-indent)
+
+(use-package smartparens
+  :diminish smartparens-mode
+  :config
+  (require 'smartparens-config)
+  (sp-local-pair 'c-mode "{" nil :post-handlers '(("||\n[i]" "RET")))
+  (sp-local-pair 'c-mode "/*" "*/" :post-handlers '(("| " "SPC")
+                                                    ("||\n[i]" "RET")
+                                                    (" ||\n[i]" "*")))
+  (smartparens-global-mode))
+
 (defun set-tab-width (width)
   "Set tab width to WIDTH and generate tab stops"
   (setq tab-width width)
@@ -501,8 +518,23 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 ;                                  (lambda (file) (f-ext? file "org"))
 ;                                  t)))
 
-(org-babel-do-load-languages 'org-babel-load-languages
-                             '((sh . t)))
+(use-package org
+  :config
+  (setq org-directory "~/org"
+        org-default-notes-file "~/org/refile.org")
+  (setq org-capture-templates
+        '(("t" "todo" entry (file "~/org/refile.org")
+           "* TODO %?\n%U\n%a\n" :clock-in t :clock-resume t)
+           ("n" "note" entry (file "~/org/refile.org")
+            "* %? :NOTE:\n\n%a\n" :clock-in t :clock-resume t)))
+
+  (org-babel-do-load-languages 'org-babel-load-languages
+                               '((sh . t)
+                                 (ditaa . t)))
+  (setq org-ditaa-jar-path "~/.nix-profile/lib/ditaa.jar")
+  (global-set-key (kbd "C-c l") 'org-store-link)
+  (global-set-key (kbd "C-c c") 'org-capture)
+  (global-set-key (kbd "C-c b") 'org-iswitchb))
 
 (use-package htmlize
   :defer t)
@@ -561,6 +593,16 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (use-package cider))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(c-add-style "rasen"
+             '("k&r"
+               (c-basic-offset . 4)
+               (c-block-comment-prefix . "* ")
+               (c-label-minimum-indentation . 0)
+               (c-comment-prefix-regexp . "//+\\|\\**")
+               (c-offsets-alist . ((case-label . +)
+                                   (arglist-cont-nonempty . ++)))))
+(setq c-default-style "rasen")
+
 (defun minicom ()
   (interactive)
   (term-run-shell-command
