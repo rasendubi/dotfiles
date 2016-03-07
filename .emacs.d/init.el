@@ -115,6 +115,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
   (use-package key-chord
     :config
+    (setq key-chord-two-keys-delay 0.2)
     (key-chord-mode 1)
     (key-chord-define evil-insert-state-map "jk" 'evil-normal-state)
     (imap "<escape>" (rasen/hard-way "jk")))
@@ -160,17 +161,18 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (setq clean-aindent-is-simple-indent t)
   :config
   (clean-aindent-mode t))
-(define-key global-map (kbd "RET") 'newline-and-indent)
+;(define-key global-map (kbd "RET") 'newline-and-indent)
 
-(use-package smartparens
-  :diminish smartparens-mode
-  :config
-  (require 'smartparens-config)
-  (sp-local-pair 'c-mode "{" nil :post-handlers '(("||\n[i]" "RET")))
-  (sp-local-pair 'c-mode "/*" "*/" :post-handlers '(("| " "SPC")
-                                                    ("||\n[i]" "RET")
-                                                    (" ||\n[i]" "*")))
-  (smartparens-global-mode))
+;(use-package smartparens
+;  :diminish smartparens-mode
+;  :config
+;  (sp-local-pair '(c-mode rust-mode) "{" "}" :post-handlers '(("\n||\n[i]" "RET")))
+;  (require 'smartparens-config)
+;  (sp-local-pair '(c-mode rust-mode) "{" "}" :post-handlers '(("\n||\n[i]" "RET")))
+;  (sp-local-pair 'c-mode "/*" "*/" :post-handlers '(("| " "SPC")
+;                                                    ("||\n[i]" "RET")
+;                                                    (" ||\n[i]" "*")))
+;  (smartparens-global-mode))
 
 (defun set-tab-width (width)
   "Set tab width to WIDTH and generate tab stops"
@@ -184,7 +186,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (setq backup-directory-alist '(("." . "~/.emacs-backups")))
 
 (setq browse-url-browser-function 'browse-url-generic
-      browse-url-generic-program "google-chrome-beta")
+      browse-url-generic-program "google-chrome-stable")
 
 ;; Open config (this file)
 (global-set-key (kbd "<f12>") (lambda () (interactive) (find-file user-init-file)))
@@ -364,25 +366,59 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (use-package haskell-mode
   :mode "\\.hs$"
   :init
-  (setq company-ghc-show-info t
-        haskell-indent-spaces 4
-        haskell-process-type 'cabal-repl)
+  (setq company-ghc-show-info t)
   :config
-  (add-hook 'haskell-mode-hook 'haskell-indent-mode)
+  (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
+  (add-hook 'haskell-mode-hook 'haskell-decl-scan-mode)
+
+  (setq haskell-compile-cabal-build-command "cd %s && stack build")
+  (setq haskell-compile-cabal-build-command-alt "cd %s && cabal build --ghc-option=-ferror-spans")
 
   (define-key haskell-mode-map [f8] 'haskell-navigate-imports)
   (define-key haskell-mode-map (kbd "C-c C-b") 'haskell-compile)
   (define-key haskell-mode-map (kbd "C-c v c") 'haskell-cabal-visit-file)
 
-  (use-package company-ghc
-    :config
-    (add-to-list 'company-backends 'company-ghc))
+  ; haskell-interactive-mode
+  (define-key haskell-mode-map (kbd "C-x C-d") nil)
+  (define-key haskell-mode-map (kbd "C-c C-z") 'haskell-interactive-switch)
+  (define-key haskell-mode-map (kbd "C-c C-l") 'haskell-process-load-file)
+  (define-key haskell-mode-map (kbd "C-c C-t") 'haskell-process-do-type)
+  (define-key haskell-mode-map (kbd "C-c C-i") 'haskell-process-do-info)
+  (define-key haskell-mode-map (kbd "C-c M-.") nil)
+  (define-key haskell-mode-map (kbd "C-c C-d") nil)
+
+  (setq haskell-process-suggest-remove-import-lines t
+        haskell-process-auto-import-loaded-modules t)
+
+  (with-eval-after-load 'align
+    (add-to-list 'align-rules-list
+                 '(haskell-types
+                   (regexp . "\\(\\s-+\\)\\(::\\|∷\\)\\s-+")
+                   (modes . '(haskell-mode literate-haskell-mode))))
+    (add-to-list 'align-rules-list
+                 '(haskell-assignment
+                   (regexp . "\\(\\s-+\\)=\\s-+")
+                   (modes . '(haskell-mode literate-haskell-mode))))
+    (add-to-list 'align-rules-list
+                 '(haskell-arrows
+                   (regexp . "\\(\\s-+\\)\\(->\\|→\\)\\s-+")
+                   (modes . '(haskell-mode literate-haskell-mode))))
+    (add-to-list 'align-rules-list
+                 '(haskell-left-arrows
+                   (regexp . "\\(\\s-+\\)\\(<-\\|←\\)\\s-+")
+                   (modes . '(haskell-mode literate-haskell-mode)))))
 
   (use-package ghc
+    :init
+    (add-hook 'haskell-mode-hook 'ghc-init)
     :config
+    ; (setq ghc-ghc-options '("-fdefer-type-errors" "-XNamedWildCards"))
     (autoload 'ghc-init "ghc" nil t)
-    (setq ghc-ghc-options '("-fdefer-type-errors" "-XNamedWildCards"))
-    (add-hook 'haskell-mode-hook (lambda () (ghc-init) (hare-init)))))
+    (autoload 'ghc-debug "ghc" nil t))
+
+  (use-package company-ghc
+    :config
+    (add-to-list 'company-backends 'company-ghc)))
 
 (use-package hideshow
   :commands (hs-minor-mode)
