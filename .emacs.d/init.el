@@ -477,6 +477,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
     (add-hook 'racer-mode-hook #'eldoc-mode)))
 
 (use-package nim-mode
+  :disabled t
   :mode ("\\.nim$" . nim-mode))
 ;; Seems that I have to install nimsuggest first
 ; (custom-set-variables
@@ -487,6 +488,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :mode ("\\.lua$" . lua-mode))
 
 (use-package scala-mode2
+  :disabled t
   :mode ("\\.scala$" . scala-mode))
 
 (use-package ensime
@@ -517,17 +519,6 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (use-package term-run
   :commands (term-run term-run-shell-command))
 
-; (use-package org
-;   :config
-;   (setq org-log-done 'time)
-;   (global-set-key (kbd "C-c l") 'org-store-link)
-;   (global-set-key (kbd "C-c a") 'org-agenda)
-;   (global-set-key (kbd "C-c c") 'org-capture)
-;   (global-set-key (kbd "C-c b") 'org-iswitchb)
-;
-;   (use-package org-plus-contrib)
-;   (require 'org-drill)
-;
 ;   (setq org-capture-templates
 ;         `(("u"
 ;            "Task: Read this URL"
@@ -624,6 +615,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :mode "\\.nix$")
 
 (use-package clojure-mode
+  :disabled t
   :mode "\\.clj$"
   :config
   (use-package cider))

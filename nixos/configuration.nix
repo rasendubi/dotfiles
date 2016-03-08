@@ -41,7 +41,6 @@
     hostName = "Larry";
   
     wicd.enable = true;
-    interfaceMonitor.enable = false;
     wireless.enable = false;
   };
   
@@ -80,7 +79,6 @@
   services.openssh = {
     enable = true;
     passwordAuthentication = false;
-    startWhenNeeded = true;
   };
   services.gitolite = {
     enable = true;
@@ -162,12 +160,18 @@
     pkgs.deadbeef
     pkgs.wine
     pkgs.vlc
+    pkgs.mplayer
+    pkgs.smplayer
     pkgs.gparted
     pkgs.unetbootin
     (pkgs.vim_configurable.override { python3 = true; })
     pkgs.emacs
     pkgs.ycmd
     pkgs.racerRust
+    pkgs.ditaa
+    pkgs.oraclejre8
+    pkgs.texLive
+    # pkgs.texLiveExtra
     # pkgs.leiningen
     pkgs.rxvt_unicode-with-plugins
     pkgs.urxvt_perl
@@ -183,6 +187,7 @@
     pkgs.binutils
     pkgs.gcc
     pkgs.gcc-arm-embedded
+    (pkgs.gdb.override { multitarget = true; })
     pkgs.minicom
     pkgs.openocd
     pkgs.expect
@@ -201,6 +206,7 @@
     pkgs.file
     pkgs.whois
     pkgs.gnupg
+    pkgs.utillinuxCurses
     
     pkgs.patchelf
     

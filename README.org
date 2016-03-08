@@ -118,7 +118,6 @@ networking = {
   hostName = "Larry";
 
   wicd.enable = true;
-  interfaceMonitor.enable = false;
   wireless.enable = false;
 };
 
@@ -181,13 +180,13 @@ let
     abort "no snapshot to bootstrap for this platfrom (missing target triple)";
 
 in stdenv.mkDerivation rec {
-  date = "2016-02-17";
+  date = "2016-03-02";
 
   name = "rust-nightly-${date}";
 
   src = fetchurl {
     url = "https://static.rust-lang.org/dist/${date}/rust-nightly-${target}.tar.gz";
-    sha256 = "0bdjzavcfqfw8qj8x4r7csv57zxks2c73y480b9ynjvq0dxazaaq";
+    sha256 = "0v6a1h624kpzpcx7q5drd8zniz7m5cz1xvii25w326n2hxhsm3ib";
   };
 
   installPhase = ''
@@ -254,7 +253,6 @@ services.avahi = {
 services.openssh = {
   enable = true;
   passwordAuthentication = false;
-  startWhenNeeded = true;
 };
 #+end_src
 
@@ -494,6 +492,8 @@ pkgs.mnemosyne
 pkgs.deadbeef
 pkgs.wine
 pkgs.vlc
+pkgs.mplayer
+pkgs.smplayer
 pkgs.gparted
 pkgs.unetbootin
 #+end_src
@@ -512,6 +512,10 @@ pkgs.emacs
 #+begin_src nix
 pkgs.ycmd
 pkgs.racerRust
+pkgs.ditaa
+pkgs.oraclejre8
+pkgs.texLive
+# pkgs.texLiveExtra
 #+end_src
 
     Leiningen is needed for clojure, but I don't really use it now.
@@ -879,6 +883,7 @@ pkgs.cmake
 pkgs.binutils
 pkgs.gcc
 pkgs.gcc-arm-embedded
+(pkgs.gdb.override { multitarget = true; })
 pkgs.minicom
 pkgs.openocd
 pkgs.expect
@@ -909,6 +914,7 @@ pkgs.bind
 pkgs.file
 pkgs.whois
 pkgs.gnupg
+pkgs.utillinuxCurses
 
 pkgs.patchelf
 

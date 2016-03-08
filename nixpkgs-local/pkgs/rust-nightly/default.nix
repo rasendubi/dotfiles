@@ -9,13 +9,13 @@ let
     abort "no snapshot to bootstrap for this platfrom (missing target triple)";
 
 in stdenv.mkDerivation rec {
-  date = "2016-02-17";
+  date = "2016-03-02";
 
   name = "rust-nightly-${date}";
 
   src = fetchurl {
     url = "https://static.rust-lang.org/dist/${date}/rust-nightly-${target}.tar.gz";
-    sha256 = "0bdjzavcfqfw8qj8x4r7csv57zxks2c73y480b9ynjvq0dxazaaq";
+    sha256 = "0v6a1h624kpzpcx7q5drd8zniz7m5cz1xvii25w326n2hxhsm3ib";
   };
 
   installPhase = ''
