@@ -31,14 +31,6 @@ for FILE in $FILES; do
     ask_install $FILE
 done
 
-read -r -p "Copy NixOS config? [y/N] " response
-case "$response" in
-    [yY][eE][sS]|[yY])
-        sudo mkdir -v -p /etc/nixos
-        sudo cp -v "$BASE/nixos"/* "/etc/nixos/"
-        ;;
-esac
-
 if [ ! -f "$BASE/.ssh/id_rsa" ]; then
     read -r -p "$BASE/.ssh/id_rsa doesn't exist. Decrypt file? [y/N] " response
     case "$response" in
@@ -47,4 +39,14 @@ if [ ! -f "$BASE/.ssh/id_rsa" ]; then
             gpg2 --output "$BASE/.ssh/id_rsa" --yes --decrypt "$BASE/.ssh/id_rsa.gpg"
             ;;
     esac
+else
+    echo "$BASE/.ssh/id_rsa exists. Skipping..."
 fi
+
+read -r -p "Copy NixOS config? [y/N] " response
+case "$response" in
+    [yY][eE][sS]|[yY])
+        sudo mkdir -v -p /etc/nixos
+        sudo cp -v "$BASE/nixos"/* "/etc/nixos/"
+        ;;
+esac

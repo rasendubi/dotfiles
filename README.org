@@ -998,17 +998,6 @@ for FILE in $FILES; do
 done
 #+end_src
 
-    It then copies =nixos/*= files to =/etc/nixos/=.
-#+begin_src sh :tangle setup.sh
-read -r -p "Copy NixOS config? [y/N] " response
-case "$response" in
-    [yY][eE][sS]|[yY])
-        sudo mkdir -v -p /etc/nixos
-        sudo cp -v "$BASE/nixos"/* "/etc/nixos/"
-        ;;
-esac
-#+end_src
-
     Decrypt keys.
 #+begin_src sh :tangle setup.sh
 if [ ! -f "$BASE/.ssh/id_rsa" ]; then
@@ -1019,7 +1008,20 @@ if [ ! -f "$BASE/.ssh/id_rsa" ]; then
             gpg2 --output "$BASE/.ssh/id_rsa" --yes --decrypt "$BASE/.ssh/id_rsa.gpg"
             ;;
     esac
+else
+    echo "$BASE/.ssh/id_rsa exists. Skipping..."
 fi
+#+end_src
+
+    Then copies =nixos/*= files to =/etc/nixos/=.
+#+begin_src sh :tangle setup.sh
+read -r -p "Copy NixOS config? [y/N] " response
+case "$response" in
+    [yY][eE][sS]|[yY])
+        sudo mkdir -v -p /etc/nixos
+        sudo cp -v "$BASE/nixos"/* "/etc/nixos/"
+        ;;
+esac
 #+end_src
 
 # Local Variables:
