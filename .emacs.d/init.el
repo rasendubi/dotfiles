@@ -736,7 +736,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
     '(1 font-lock-keyword-face prepend)
     '(3 font-lock-string-face prepend))))
 
-(defun doxygen-font-lock-keywords ()
+(defconst doxygen-font-lock-keywords
   `((,(lambda (limit)
         (c-font-lock-doc-comments "/\\(\\*[\\*!]\\|/[/!]\\)<?" limit
           doxymacs-doxygen-keywords)))))
