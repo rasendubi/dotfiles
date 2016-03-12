@@ -1,4 +1,5 @@
-{ stdenv, fetchurl, zlib }:
+{ date, hash
+, stdenv, fetchurl, zlib }:
 
 let
   target =
@@ -9,13 +10,11 @@ let
     abort "no snapshot to bootstrap for this platfrom (missing target triple)";
 
 in stdenv.mkDerivation rec {
-  date = "2016-03-02";
-
   name = "rust-nightly-${date}";
 
   src = fetchurl {
     url = "https://static.rust-lang.org/dist/${date}/rust-nightly-${target}.tar.gz";
-    sha256 = "0v6a1h624kpzpcx7q5drd8zniz7m5cz1xvii25w326n2hxhsm3ib";
+    sha256 = hash;
   };
 
   installPhase = ''

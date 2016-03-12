@@ -163,13 +163,26 @@ nix-env -f nixpkgs-local/local-packages.nix -i
 
     Rust wiki [[https://nixos.org/wiki/Rust#Nightlies][recommends]] using [[https://github.com/Ericson2314/nixos-configuration/blob/nixos/user/.nixpkgs/rust-nightly.nix][Ericson2314's rustc-nightly]] package. However, it doesn't pack libstd.
 
+    You can get hash with the following command:
+#+name rust-nightly-hash
+#+header: :var date="2016-03-11"
+#+begin_src sh
+nix-prefetch-url --type sha256 https://static.rust-lang.org/dist/$date/rust-nightly-x86_64-unknown-linux-gnu.tar.gz
+#+end_src
+
+#+RESULTS:
+
 #+name: nixpkgs-local-packages
 #+begin_src nix
-rust-nightly = callPackage ./pkgs/rust-nightly { };
+rust-nightly = callPackage ./pkgs/rust-nightly {
+  date = "2016-03-11";
+  hash = "0s450rm51z9gywb4vnaradvy23cqyd19yk8j4swrr3v520f4dx6b";
+};
 #+end_src
 
 #+begin_src nix :tangle nixpkgs-local/pkgs/rust-nightly/default.nix :padline no
-{ stdenv, fetchurl, zlib }:
+{ date, hash
+, stdenv, fetchurl, zlib }:
 
 let
   target =
@@ -180,13 +193,11 @@ let
     abort "no snapshot to bootstrap for this platfrom (missing target triple)";
 
 in stdenv.mkDerivation rec {
-  date = "2016-03-02";
-
   name = "rust-nightly-${date}";
 
   src = fetchurl {
     url = "https://static.rust-lang.org/dist/${date}/rust-nightly-${target}.tar.gz";
-    sha256 = "0v6a1h624kpzpcx7q5drd8zniz7m5cz1xvii25w326n2hxhsm3ib";
+    sha256 = hash;
   };
 
   installPhase = ''

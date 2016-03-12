@@ -10,7 +10,10 @@ let
   };
 
   self = rec {
-    rust-nightly = callPackage ./pkgs/rust-nightly { };
+    rust-nightly = callPackage ./pkgs/rust-nightly {
+      date = "2016-03-11";
+      hash = "0s450rm51z9gywb4vnaradvy23cqyd19yk8j4swrr3v520f4dx6b";
+    };
   };
 
 in self
