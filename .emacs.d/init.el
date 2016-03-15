@@ -179,7 +179,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (setq tab-width width)
   (setq tab-stop-list (number-sequence width 120 width)))
 
-(set-tab-width 4)
+(set-tab-width 2)
 
 (fset 'yes-or-no-p 'y-or-n-p)
 
@@ -749,7 +749,8 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
                (c-label-minimum-indentation . 0)
                (c-comment-prefix-regexp . "//+\\|\\**")
                (c-offsets-alist . ((case-label . +)
-                                   (arglist-cont-nonempty . ++)))))
+                                   (arglist-cont-nonempty . +)
+                                   (inextern-lang . 0)))))
 (setq c-default-style "rasen")
 
 (defun minicom ()

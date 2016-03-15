@@ -101,7 +101,7 @@
   services.xserver.layout = "us,ru,ua";
   services.xserver.xkbOptions = "grp:caps_toggle,grp:menu_toggle,grp_led:caps";
   services.redshift = {
-    # enable = true;
+    enable = true;
     latitude = "50.4500";
     longitude = "30.5233";
   };

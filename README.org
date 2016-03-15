@@ -400,11 +400,11 @@ XXkb.group.alt: 2
 #+end_src
 
 *** Redshift
-    Redshift adjusts the color temperature of the screen according to the position of the sun. That should improve my sleep. However, I'm on vacation, so I don't need this now.
+    Redshift adjusts the color temperature of the screen according to the position of the sun. That should improve my sleep.
 #+name: nixos-general
 #+begin_src nix
 services.redshift = {
-  # enable = true;
+  enable = true;
   latitude = "50.4500";
   longitude = "30.5233";
 };
