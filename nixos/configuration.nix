@@ -42,6 +42,10 @@
   
     wicd.enable = true;
     wireless.enable = false;
+  
+    extraHosts = ''
+      127.0.0.1 Larry Larry.local
+    '';
   };
   
   services.xserver.synaptics = {
@@ -169,6 +173,7 @@
     pkgs.smplayer
     pkgs.gparted
     pkgs.unetbootin
+    pkgs.kvm
     (pkgs.vim_configurable.override { python3 = true; })
     pkgs.emacs
     pkgs.ycmd
@@ -180,7 +185,8 @@
     # pkgs.leiningen
     pkgs.rxvt_unicode-with-plugins
     pkgs.urxvt_perl
-    pkgs.git
+    pkgs.gitFull
+    pkgs.gitg
     pkgs.tmux
     pkgs.ghc
     pkgs.haskellPackages.ghc-mod
@@ -209,6 +215,7 @@
     pkgs.man-pages
     pkgs.bind
     pkgs.file
+    pkgs.which
     pkgs.whois
     pkgs.gnupg
     pkgs.utillinuxCurses

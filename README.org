@@ -119,6 +119,10 @@ networking = {
 
   wicd.enable = true;
   wireless.enable = false;
+
+  extraHosts = ''
+    127.0.0.1 Larry Larry.local
+  '';
 };
 
 services.xserver.synaptics = {
@@ -512,6 +516,7 @@ pkgs.mplayer
 pkgs.smplayer
 pkgs.gparted
 pkgs.unetbootin
+pkgs.kvm
 #+end_src
 
 ** Development
@@ -760,7 +765,8 @@ fi
 *** git
 #+name: nixos-system-packages
 #+begin_src nix
-pkgs.git
+pkgs.gitFull
+pkgs.gitg
 #+end_src
 
     Basic info: my name, email, ui, editor, [[https://git-scm.com/blog/2010/03/08/rerere.html][rerere]].
@@ -928,6 +934,7 @@ pkgs.irssi
 pkgs.man-pages
 pkgs.bind
 pkgs.file
+pkgs.which
 pkgs.whois
 pkgs.gnupg
 pkgs.utillinuxCurses
