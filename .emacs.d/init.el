@@ -35,6 +35,9 @@
     (define-key evil-insert-state-map (kbd key) action))
   (defmacro rasen/hard-way (key)
     `(lambda () (interactive) (error "Don't use this key! Use %s instead" ,key)))
+  (defun rasen/helm-projectile-grep-headers ()
+    (interactive)
+    (helm-do-grep-1 (list (projectile-project-root)) t nil '("*.h")))
 
   (nmap "j"       'evil-next-visual-line)
   (nmap "k"       'evil-previous-visual-line)
@@ -68,11 +71,14 @@
   (nmap "\\ x"    (lookup-key (current-global-map) (kbd "C-x")))
   (vmap "\\ x"    (lookup-key (current-global-map) (kbd "C-x")))
 
+  (nmap "\\ x C-f" (rasen/hard-way "SPC f"))
+  (nmap "SPC f"   'helm-find-files)
   (nmap "SPC p p" 'projectile-switch-project)
-  ;(nmap "SPC p f" 'helm-projectile-find-file)
   (nmap "SPC p f" (rasen/hard-way "U"))
   (nmap "SPC p d" 'helm-projectile-find-dir)
   (nmap "SPC p g" 'helm-projectile-grep)
+  (nmap "g r"     'helm-projectile-grep)
+  (nmap "g h"     'rasen/helm-projectile-grep-headers)
   (nmap "SPC p &" 'projectile-run-async-shell-command-in-root)
   (nmap "SPC p !" 'projectile-run-shell-command-in-root)
 
@@ -88,6 +94,9 @@
 
   (nmap "<f4>"    'projectile-compile-project)
   (nmap "<f5>"    'projectile-run-project)
+
+  (imap "C-n"     #'company-complete-common-or-cycle)
+  (imap "C-p"     #'company-select-previous)
 
   ;; esc quit anything
   (defun minibuffer-keyboard-quit ()
@@ -351,6 +360,14 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
                 (concat dotfiles-directory ".nvim/.ycm_extra_conf.py"))
   ;(add-hook 'after-init-hook #'global-ycmd-mode)
   )
+
+(use-package flycheck
+  :config
+  (global-flycheck-mode))
+
+(use-package flycheck-ycmd
+  :config
+  (flycheck-ycmd-setup))
 
 (use-package company-ycmd
   :commands (company-ycmd)
