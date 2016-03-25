@@ -538,10 +538,11 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 (use-package org
   :config
+  (use-package org-plus-contrib)
   (require 'org-drill)
   (setq org-directory "~/org"
         org-default-notes-file "~/org/refile.org")
-  (setq org-modules '(org-bbdb org-bibtex org-docview org-gnus org-info org-irc org-mhe org-rmail org-w3m org-drill)
+  (setq org-modules '(org-bbdb org-bibtex org-docview org-gnus org-info org-irc org-mhe org-rmail org-w3m org-drill ox-confluence)
         org-drill-scope (f-files "~/org/drill"
                                  (lambda (file) (f-ext? file "org"))
                                  t))
