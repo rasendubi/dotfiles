@@ -536,41 +536,41 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (use-package term-run
   :commands (term-run term-run-shell-command))
 
-;   (setq org-capture-templates
-;         `(("u"
-;            "Task: Read this URL"
-;            entry
-;            (file+headline "tasks.org" "Articles To Read")
-;            ,(concat "* TODO Read article: '%:description'\nURL: %c\n\n")
-;            :empty-lines 1
-;            :immediate-finish t)
-;
-;           ("w"
-;            "Capture web snippet"
-;            entry
-;            (file+headline "my-facts.org" "Inbox")
-;            ,(concat "* Fact: '%:description'       :"
-;                     (format "%s" org-drill-question-tag)
-;                     ":\n:PROPERTIES:\n:DATE_ADDED: %u\n:SOURCE_URL: %c\n:END:\n\n%i\n%?\n")
-;            :empty-lines 1
-;            :immediate-finish t)))
-;
-;   (require 'org-protocol)
-;
-;   (setq org-modules '(org-bbdb org-bibtex org-docview org-gnus org-info org-irc org-mhe org-rmail org-w3m org-drill)
-;         org-drill-scope (f-files "~/org/drill"
-;                                  (lambda (file) (f-ext? file "org"))
-;                                  t)))
-
 (use-package org
   :config
+  (require 'org-drill)
   (setq org-directory "~/org"
         org-default-notes-file "~/org/refile.org")
+  (setq org-modules '(org-bbdb org-bibtex org-docview org-gnus org-info org-irc org-mhe org-rmail org-w3m org-drill)
+        org-drill-scope (f-files "~/org/drill"
+                                 (lambda (file) (f-ext? file "org"))
+                                 t))
   (setq org-capture-templates
-        '(("t" "todo" entry (file "~/org/refile.org")
+        `(("u"
+           "Task: Read this URL"
+           entry
+           (file+headline "tasks.org" "Articles To Read")
+           ,(concat "* TODO Read article: '%:description'\nURL: %c\n\n")
+           :empty-lines 1
+           :immediate-finish t)
+
+          ("w"
+           "Capture web snippet"
+           entry
+           (file+headline "my-facts.org" "Inbox")
+           ,(concat "* Fact: '%:description'       :"
+                    (format "%s" org-drill-question-tag)
+                    ":\n:PROPERTIES:\n:DATE_ADDED: %u\n:SOURCE_URL: %c\n:END:\n\n%i\n%?\n")
+           :empty-lines 1
+           :immediate-finish t)
+
+          ("t" "todo" entry (file "~/org/refile.org")
            "* TODO %?\n%U\n%a\n" :clock-in t :clock-resume t)
-           ("n" "note" entry (file "~/org/refile.org")
-            "* %? :NOTE:\n\n%a\n" :clock-in t :clock-resume t)))
+
+          ("n" "note" entry (file "~/org/refile.org")
+           "* %? :NOTE:\n\n%a\n" :clock-in t :clock-resume t)))
+
+  (require 'org-protocol)
 
   (org-babel-do-load-languages 'org-babel-load-languages
                                '((sh . t)
@@ -632,7 +632,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :mode "\\.nix$")
 
 (use-package clojure-mode
-  :disabled t
+  ;:disabled t
   :mode "\\.clj$"
   :config
   (use-package cider))
