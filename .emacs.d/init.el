@@ -98,6 +98,8 @@
   (imap "C-n"     #'company-complete-common-or-cycle)
   (imap "C-p"     #'company-select-previous)
 
+  (nmap "C-\\"    'evil-execute-in-emacs-state)
+
   ;; esc quit anything
   (defun minibuffer-keyboard-quit ()
     "Abort recursive edit.
@@ -565,11 +567,25 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
            :empty-lines 1
            :immediate-finish t)
 
+          ("s"
+           "Capture normal snippet"
+           entry
+           (file+headline "my-facts.org" "Inbox")
+           ,(concat "* Fact: '%f'       :"
+                    (format "%s" org-drill-question-tag)
+                    ":\n:PROPERTIES:\n:DATE_ADDED: %u\n:SOURCE_URL: [[%l][%f]]\n:END:\n\n%i\n%?\n")
+           :empty-lines 1
+           :immediate-finish t)
+
           ("t" "todo" entry (file "~/org/refile.org")
            "* TODO %?\n%U\n%a\n" :clock-in t :clock-resume t)
 
           ("n" "note" entry (file "~/org/refile.org")
            "* %? :NOTE:\n\n%a\n" :clock-in t :clock-resume t)))
+
+  ;; %l in org-capture fails with multiline context, so use only the
+  ;; first line as a context
+  (setq org-context-in-file-links 1)
 
   (require 'org-protocol)
 
@@ -758,6 +774,11 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   `((,(lambda (limit)
         (c-font-lock-doc-comments "/\\(\\*[\\*!]\\|/[/!]\\)<?" limit
           doxymacs-doxygen-keywords)))))
+
+(use-package irfc
+  :config
+  (setq irfc-directory "/home/rasen/tmp"
+        irfc-assoc-mode t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (c-add-style "rasen"
