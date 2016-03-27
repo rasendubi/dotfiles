@@ -151,8 +151,10 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 (setq-default indent-tabs-mode nil)
 
+;; `scroll-conservatively' should be greater than 100 to never recenter point.
+;; Value 1 helps, but eventually recenters cursor if you scroll too fast
 (setq scroll-margin 3
-      scroll-conservatively 1)
+      scroll-conservatively 101)
 
 (use-package whitespace
   :diminish (global-whitespace-mode
