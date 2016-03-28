@@ -40,6 +40,7 @@
   networking = {
     hostName = "Larry";
   
+    useDHCP = false;
     wicd.enable = true;
     wireless.enable = false;
   
@@ -152,6 +153,7 @@
     pkgs.kde4.kwin_styles
     pkgs.oxygen-gtk2
     pkgs.oxygen-gtk3
+    pkgs.gnome3.adwaita-icon-theme
     pkgs.kde4.okular
     pkgs.kde4.gwenview
     pkgs.kde4.kde_baseapps # <-- dolphin

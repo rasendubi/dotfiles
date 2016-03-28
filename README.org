@@ -117,6 +117,7 @@ nix.buildCores = 8;
 networking = {
   hostName = "Larry";
 
+  useDHCP = false;
   wicd.enable = true;
   wireless.enable = false;
 
@@ -438,6 +439,13 @@ environment.shellInit = ''
   export GTK_PATH=$GTK_PATH:${pkgs.oxygen_gtk}/lib/gtk-2.0
   export GTK2_RC_FILES=$GTK2_RC_FILES:${pkgs.oxygen_gtk}/share/themes/oxygen-gtk/gtk-2.0/gtkrc
 '';
+#+end_src
+
+**** TODO Find a way to make deadbeef use oxygen theme
+The theme has some issues with deadbeef, so I install adwaita icons to make deadbeef usable.
+#+name: nixos-system-packages
+#+begin_src nix
+pkgs.gnome3.adwaita-icon-theme
 #+end_src
 
 *** Fonts
