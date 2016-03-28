@@ -560,6 +560,11 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
   ;; ox-confluence
   (add-to-list 'org-modules 'ox-confluence)
+  ;; ox-confluence has an issue with verbatim---it doesn't redefine
+  ;; verbatim translation, so `org-ascii-verbatim' is used. The
+  ;; following line makes `org-ascii-verbatim' produce proper
+  ;; confluence fixed-width block.
+  (setq org-ascii-verbatim-format "\{\{%s\}\}")
 
   ;; org-capture
   (setq org-capture-templates
