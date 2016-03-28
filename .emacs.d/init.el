@@ -22,7 +22,7 @@
   :config
   (evil-mode 1)
 
-  (defun quit-other ()
+  (defun rasen/quit-other ()
     (interactive)
     (other-window 1)
     (quit-window))
@@ -82,10 +82,9 @@
   (nmap "SPC p &" 'projectile-run-async-shell-command-in-root)
   (nmap "SPC p !" 'projectile-run-shell-command-in-root)
 
-  (nmap "SPC q"   'quit-other)
+  (nmap "SPC q"   'rasen/quit-other)
   (nmap "SPC w"   (lambda () (interactive) (save-buffers-kill-terminal t)))
   (nmap "U"       'helm-projectile-find-file)
-  ;(nmap "C-u"     'projectile-find-file)
   (nmap "C-]"     'helm-semantic-or-imenu)
 
   ;; Swap . and ;
@@ -219,11 +218,11 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 ;; or put this in your project root (.dir-locals.el):
 ;; ((nil . ((default-directory . "project/directory/"))))
 
-(setq dotfiles-directory (file-name-as-directory (expand-file-name ".." (file-name-directory (file-truename user-init-file)))))
+(defvar dotfiles-directory
+  (file-name-as-directory (expand-file-name ".." (file-name-directory (file-truename user-init-file))))
+  "The path to the dotfiles directory")
 
 (setq compilation-scroll-output t)
-
-(setq show-trailing-whitespace t)
 
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
 (load-theme 'molokai t)
@@ -274,6 +273,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (helm-mode 1))
 
 (use-package xclip
+  :if (not window-system)
   :config
   (xclip-mode 1)
   (defun my-x-set-selection (f type data)
@@ -287,6 +287,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (use-package magit
   :bind ("C-c m" . magit-status)
   :diminish auto-revert-mode
+  :defer 6
   :config
   (use-package evil-magit
     :init
@@ -361,11 +362,10 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :config
   (set-variable 'ycmd-server-command (list "ycmd"))
   (set-variable 'ycmd-global-config
-                (concat dotfiles-directory ".nvim/.ycm_extra_conf.py"))
-  ;(add-hook 'after-init-hook #'global-ycmd-mode)
-  )
+                (concat dotfiles-directory ".nvim/.ycm_extra_conf.py")))
 
 (use-package flycheck
+  :diminish flycheck-mode
   :config
   (global-flycheck-mode))
 
@@ -377,7 +377,6 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :commands (company-ycmd)
   :init
   (defun c-c++-hook ()
-    ;(push 'company-ycmd company-backends)
     (push 'company-ycmd company-backends)
     (ycmd-mode))
 
@@ -541,15 +540,28 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :commands (term-run term-run-shell-command))
 
 (use-package org
+  :ensure org-plus-contrib
   :config
-  (use-package org-plus-contrib)
-  (require 'org-drill)
+  (global-set-key (kbd "C-c l") 'org-store-link)
+  (global-set-key (kbd "C-c c") 'org-capture)
+  (global-set-key (kbd "C-c b") 'org-iswitchb)
+
   (setq org-directory "~/org"
         org-default-notes-file "~/org/refile.org")
-  (setq org-modules '(org-bbdb org-bibtex org-docview org-gnus org-info org-irc org-mhe org-rmail org-w3m org-drill ox-confluence)
-        org-drill-scope (f-files "~/org/drill"
-                                 (lambda (file) (f-ext? file "org"))
-                                 t))
+
+  ;; org-drill
+  (require 'org-drill)
+  (defun rasen/org-drill-files ()
+    (f-files "~/org/drill"
+             (lambda (file) (f-ext? file "org"))
+             t))
+  (setq org-drill-scope (rasen/org-drill-files))
+  (add-to-list 'org-modules 'org-drill)
+
+  ;; ox-confluence
+  (add-to-list 'org-modules 'ox-confluence)
+
+  ;; org-capture
   (setq org-capture-templates
         `(("u"
            "Task: Read this URL"
@@ -569,7 +581,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
            :empty-lines 1
            :immediate-finish t)
 
-          ("s"
+          ("f"
            "Capture normal snippet"
            entry
            (file+headline "my-facts.org" "Inbox")
@@ -589,15 +601,26 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   ;; first line as a context
   (setq org-context-in-file-links 1)
 
+  ;; org-protocol
   (require 'org-protocol)
+  (load "server")
+  (unless (server-running-p)
+    (server-start))
 
+  ;; org-refile
+  (setq org-refile-use-outline-path 'file)
+  (setq org-refile-targets
+        '((nil :maxlevel . 3)
+          (rasen/org-drill-files :level . 0)))
+
+  ;; org-babel
   (org-babel-do-load-languages 'org-babel-load-languages
-                               '((sh . t)
-                                 (ditaa . t)))
+                               '((emacs-lisp . t)
+                                 (sh . t)
+                                 (ditaa . t)
+                                 (plantuml . t)))
   (setq org-ditaa-jar-path "~/.nix-profile/lib/ditaa.jar")
-  (global-set-key (kbd "C-c l") 'org-store-link)
-  (global-set-key (kbd "C-c c") 'org-capture)
-  (global-set-key (kbd "C-c b") 'org-iswitchb))
+  (setq org-plantuml-jar-path "~/.nix-profile/lib/plantuml.jar"))
 
 (use-package htmlize
   :defer t)
@@ -651,10 +674,33 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :mode "\\.nix$")
 
 (use-package clojure-mode
-  ;:disabled t
+  :disabled t
   :mode "\\.clj$"
   :config
   (use-package cider))
+
+(use-package cedet
+  :disabled t
+  :config
+  (require 'semantic/ia)
+  (require 'semantic/bovine/gcc)
+  (setq semantic-default-submodes
+        '(global-semantic-idle-scheduler-mode
+          global-semanticdb-minor-mode
+          global-semantic-show-unmatched-syntax-mode
+          global-semantic-show-parser-state-mode
+          global-semantic-highlight-edits-mode))
+  ;(when (cedet-gnu-global-version-check t)
+  ;  (semanticdb-enable-gnu-global-databases 'c-mode)
+  ;  (semanticdb-enable-gnu-global-databases 'c++-mode))
+  (add-hook 'c-mode-common-hook
+            (lambda ()
+              (interactive)
+              (local-set-key "." 'semantic-complete-self-insert)
+              (local-set-key ">" 'semantic-complete-self-insert)))
+  (semantic-mode 1)
+  ;(global-ede-mode t)
+  )
 
 (setq c-doc-comment-style '((java-mode . javadoc)
                             (pike-mode . autodoc)
@@ -779,7 +825,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 (use-package irfc
   :config
-  (setq irfc-directory "/home/rasen/tmp"
+  (setq irfc-directory "~/tmp"
         irfc-assoc-mode t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
