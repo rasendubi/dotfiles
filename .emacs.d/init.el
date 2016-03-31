@@ -33,6 +33,8 @@
     (define-key evil-visual-state-map (kbd key) action))
   (defun imap (key action)
     (define-key evil-insert-state-map (kbd key) action))
+  (defun mmap (key action)
+    (define-key evil-motion-state-map (kbd key) action))
   (defmacro rasen/hard-way (key)
     `(lambda () (interactive) (error "Don't use this key! Use %s instead" ,key)))
   (defun rasen/helm-projectile-grep-headers ()
@@ -53,8 +55,10 @@
   (nmap "SPC SPC" 'save-buffer)
   (nmap "H"       'evil-first-non-blank)
   (vmap "H"       'evil-first-non-blank)
+  (mmap "H"       'evil-first-non-blank)
   (nmap "L"       'evil-end-of-line)
   (vmap "L"       'evil-end-of-line)
+  (mmap "L"       'evil-end-of-line)
 
   (nmap "-"       'hs-toggle-hiding)
 
@@ -109,6 +113,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
         (setq deactivate-mark t)
       (when (get-buffer "*Completions*") (delete-windows-on "*Completions*"))
       (abort-recursive-edit)))
+
   (define-key evil-normal-state-map [escape] 'keyboard-quit)
   (define-key evil-visual-state-map [escape] 'keyboard-quit)
   (define-key minibuffer-local-map [escape] 'minibuffer-keyboard-quit)
