@@ -841,9 +841,11 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
                (c-label-minimum-indentation . 0)
                (c-comment-prefix-regexp . "//+\\|\\**")
                (c-offsets-alist . ((case-label . +)
-                                   (arglist-cont-nonempty . +)
+                                   (arglist-cont-nonempty . ++)
                                    (inextern-lang . 0)))))
-(setq c-default-style "rasen")
+(setq c-default-style '((java-mode . "java")
+                        (awk-mode . "awk")
+                        (other . "rasen")))
 
 (defun minicom ()
   (interactive)
