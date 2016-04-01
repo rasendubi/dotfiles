@@ -50,8 +50,14 @@
   (nmap "C-j"     'windmove-down)
   (nmap "C-k"     'windmove-up)
   (nmap "C-l"     'windmove-right)
+  (mmap "C-h"     'windmove-left)
+  (mmap "C-j"     'windmove-down)
+  (mmap "C-k"     'windmove-up)
+  (mmap "C-l"     'windmove-right)
 
   (nmap "SPC"     nil)
+  (vmap "SPC"     nil)
+  (mmap "SPC"     nil)
   (nmap "SPC SPC" 'save-buffer)
   (nmap "H"       'evil-first-non-blank)
   (vmap "H"       'evil-first-non-blank)
@@ -69,6 +75,7 @@
 
   (nmap "SPC x"   'helm-M-x)
   (vmap "SPC x"   'helm-M-x)
+  (mmap "SPC x"   'helm-M-x)
   (nmap "M-x"     (rasen/hard-way "SPC x"))
   (nmap "SPC ;"   (lookup-key (current-global-map) (kbd "M-:")))
 
@@ -510,7 +517,9 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 ; (add-to-list 'company-backends 'company-nim)
 
 (use-package lua-mode
-  :mode ("\\.lua$" . lua-mode))
+  :mode ("\\.lua$" . lua-mode)
+  :config
+  (setq lua-indent-level 4))
 
 (use-package scala-mode2
   :disabled t
