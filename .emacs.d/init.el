@@ -79,10 +79,11 @@
   (nmap "M-x"     (rasen/hard-way "SPC x"))
   (nmap "SPC ;"   (lookup-key (current-global-map) (kbd "M-:")))
 
-  (nmap "\\ x"    (lookup-key (current-global-map) (kbd "C-x")))
-  (vmap "\\ x"    (lookup-key (current-global-map) (kbd "C-x")))
+  (nmap "\\ \\"   (lookup-key (current-global-map) (kbd "C-x")))
+  (vmap "\\ \\"   (lookup-key (current-global-map) (kbd "C-x")))
+  (nmap "\\ x"    (rasen/hard-way "\\ \\"))
+  (vmap "\\ x"    (rasen/hard-way "\\ \\"))
 
-  (nmap "\\ x C-f" (rasen/hard-way "SPC f"))
   (nmap "SPC f"   'helm-find-files)
   (nmap "SPC p p" 'projectile-switch-project)
   (nmap "SPC p f" (rasen/hard-way "U"))
@@ -140,7 +141,9 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
     (setq key-chord-two-keys-delay 0.2)
     (key-chord-mode 1)
     (key-chord-define evil-insert-state-map "jk" 'evil-normal-state)
-    (imap "<escape>" (rasen/hard-way "jk")))
+    (key-chord-define evil-visual-state-map "jk" 'evil-normal-state)
+    (imap "<escape>" (rasen/hard-way "jk"))
+    (vmap "<escape>" (rasen/hard-way "jk")))
 
   (use-package evil-numbers
     :commands (evil-numbers/inc-at-pt
@@ -258,6 +261,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
              helm-command-prefix
              helm-google-suggest)
   :diminish helm-mode
+  :defer 6
 
   :init
   (global-set-key (kbd "M-x") 'helm-M-x)
@@ -469,13 +473,6 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :config
   (global-color-identifiers-mode))
 
-(use-package fill-column-indicator
-  :disabled t
-  :config
-  (add-hook 'c-mode-hook (lambda ()
-                           (fci-mode)
-                           (set-fill-column 110))))
-
 (use-package yaml-mode
   :mode ("\\.\\(yml\\|yaml\\)$" . yaml-mode))
 
@@ -492,6 +489,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (use-package company-cmake))
 
 (use-package idris-mode
+  :disabled t
   :mode ("\\.idr$" . idris-mode))
 
 (use-package eldoc
@@ -851,9 +849,10 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (c-add-style "rasen"
              '("k&r"
                (c-basic-offset . 4)
+               (fill-column . 70)
+               (whitespace-line-column . 100)
                (c-block-comment-prefix . "* ")
                (c-label-minimum-indentation . 0)
-               (c-comment-prefix-regexp . "//+\\|\\**")
                (c-offsets-alist . ((case-label . +)
                                    (arglist-cont-nonempty . ++)
                                    (inextern-lang . 0)))))
@@ -861,25 +860,5 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
                         (awk-mode . "awk")
                         (other . "rasen")))
 
-(defun minicom ()
-  (interactive)
-  (term-run-shell-command
-   (concat "minicom -D /dev/"
-           (completing-read "Select terminal:"
-                            (directory-files "/dev/" nil "ttyUSB.*\\|ttyACM.*")))))
-
 (defun add-to-path (str)
   (setenv "PATH" (concat str ":" (getenv "PATH"))))
-
-(defun async-in-project-root (cmd)
-  (async-shell-command
-   (concat "cd " (projectile-project-root) " && " cmd)))
-
-(c-add-style "savvy"
-             '("k&r"
-               (indent-tabs-mode .t)
-               (c-basic-offset . 4)
-               (c-label-minimum-indentation . 0)
-               (tab-width . 4)
-               (c-offsets-alist
-                (case-label +))))
