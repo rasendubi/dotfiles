@@ -854,6 +854,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
                (c-block-comment-prefix . "* ")
                (c-label-minimum-indentation . 0)
                (c-offsets-alist . ((case-label . +)
+                                   (arglist-intro . ++)
                                    (arglist-cont-nonempty . ++)
                                    (inextern-lang . 0)))))
 (setq c-default-style '((java-mode . "java")
