@@ -112,6 +112,7 @@ NeoBundle 'tomasr/molokai'
 NeoBundle 'pbrisbin/vim-syntax-shakespeare'
 NeoBundle 'Lokaltog/vim-easymotion'
 NeoBundle 'aklt/plantuml-syntax'
+NeoBundle 'jceb/vim-orgmode'
 " NeoBundle 'flazz/vim-colorschemes'
 
 " Required:
@@ -360,6 +361,10 @@ endif
 if executable('ag')
 	set grepprg=ag\ --nogroup\ --nocolor
 endif
+
+" swap ; and .
+nnoremap . ;
+nnoremap ; .
 
 " repeat last command but prefix with !
 nnoremap !: q:kI!<esc><cr>

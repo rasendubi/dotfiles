@@ -102,6 +102,8 @@
   ;; Swap . and ;
   (nmap "."       'evil-repeat-find-char)
   (nmap ";"       'evil-repeat)
+  (nmap "C-;"     'evil-repeat-pop)
+  (nmap "g."      'goto-last-change)
 
   (nmap "<f4>"    'projectile-compile-project)
   (nmap "<f5>"    'projectile-run-project)
@@ -130,6 +132,23 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (define-key minibuffer-local-must-match-map [escape] 'minibuffer-keyboard-quit)
   (define-key minibuffer-local-isearch-map [escape] 'minibuffer-keyboard-quit)
 
+  (use-package smartrep
+    :commands (smartrep-read-event-loop))
+  (defun isearch-exit-chord-worker (&optional arg)
+    (interactive "p")
+    (isearch-delete-char)
+    (isearch-cancel))
+
+  (defun isearch-exit-chord (arg)
+    (interactive "p")
+    (isearch-printing-char)
+    (run-at-time 0.3 nil '(lambda () (signal 'quit nil)))
+    (condition-case nil
+        (smartrep-read-event-loop
+         '(("k" . isearch-exit-chord-worker)))
+      (quit nil)))
+  (define-key isearch-mode-map "j" 'isearch-exit-chord)
+
   ;; Some highlighting for f, F, t, T commands
   (use-package evil-quickscope
     :defer 2
@@ -141,7 +160,8 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
     (setq key-chord-two-keys-delay 0.2)
     (key-chord-mode 1)
     (key-chord-define evil-insert-state-map "jk" 'evil-normal-state)
-    (key-chord-define evil-visual-state-map "jk" 'evil-normal-state)
+    (key-chord-define evil-visual-state-map "jk" 'evil-change-to-previous-state)
+    (key-chord-define evil-replace-state-map "jk" 'evil-normal-state)
     (imap "<escape>" (rasen/hard-way "jk"))
     (vmap "<escape>" (rasen/hard-way "jk")))
 
@@ -557,6 +577,10 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (global-set-key (kbd "C-c l") 'org-store-link)
   (global-set-key (kbd "C-c c") 'org-capture)
   (global-set-key (kbd "C-c b") 'org-iswitchb)
+
+  (add-hook 'org-mode-hook (lambda ()
+                             (visual-line-mode 1)
+                             (whitespace-mode -1)))
 
   (setq org-directory "~/org"
         org-default-notes-file "~/org/refile.org")
