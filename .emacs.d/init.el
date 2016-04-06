@@ -747,6 +747,18 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   ;(global-ede-mode t)
   )
 
+(use-package hippie-exp
+  :config
+  (imap "C-/" 'hippie-expand)
+  (setq hippie-expand-try-functions-list
+        '(try-expand-dabbrev-visible
+          try-expand-dabbrev
+          try-expand-dabbrev-all-buffers
+          try-complete-file-name-partially
+          try-complete-file-name
+          try-expand-line
+          try-expand-list)))
+
 (setq c-doc-comment-style '((java-mode . javadoc)
                             (pike-mode . autodoc)
                             (c-mode . doxygen)
