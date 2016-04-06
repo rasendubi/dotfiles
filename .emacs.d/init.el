@@ -88,8 +88,10 @@
   (nmap "SPC p p" 'projectile-switch-project)
   (nmap "SPC p f" (rasen/hard-way "U"))
   (nmap "SPC p d" 'helm-projectile-find-dir)
-  (nmap "SPC p g" 'helm-projectile-grep)
-  (nmap "g r"     'helm-projectile-grep)
+  ;; like "global search"
+  (nmap "g /"     'helm-projectile-grep)
+  (nmap "SPC p g" (rasen/hard-way "g /"))
+  (nmap "g r"     (rasen/hard-way "g /"))
   (nmap "g h"     'rasen/helm-projectile-grep-headers)
   (nmap "SPC p &" 'projectile-run-async-shell-command-in-root)
   (nmap "SPC p !" 'projectile-run-shell-command-in-root)
@@ -107,6 +109,8 @@
 
   (nmap "<f4>"    'projectile-compile-project)
   (nmap "<f5>"    'projectile-run-project)
+  (mmap "<f4>"    'projectile-compile-project)
+  (mmap "<f5>"    'projectile-run-project)
 
   (imap "C-n"     #'company-complete-common-or-cycle)
   (imap "C-p"     #'company-select-previous)
@@ -868,6 +872,11 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :config
   (setq irfc-directory "~/tmp"
         irfc-assoc-mode t))
+
+;; Debugging
+(use-package gud
+  :config
+  (setq gdb-many-windows t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (c-add-style "rasen"
