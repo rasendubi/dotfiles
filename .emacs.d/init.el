@@ -96,6 +96,13 @@
   (nmap "SPC p &" 'projectile-run-async-shell-command-in-root)
   (nmap "SPC p !" 'projectile-run-shell-command-in-root)
 
+  ;; That works much better than the default
+  (nmap "g f"     'helm-projectile-find-file-dwim)
+  ;; Save default just in case
+  (nmap "g F"     'find-file-at-point)
+  ;; g F was bound to `evil-find-file-at-point-with-line'
+  ;; I've never used it though
+
   (nmap "SPC q"   'rasen/quit-other)
   (nmap "SPC w"   (lambda () (interactive) (save-buffers-kill-terminal t)))
   (nmap "U"       'helm-projectile-find-file)
@@ -889,6 +896,30 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (use-package gud
   :config
   (setq gdb-many-windows t))
+
+(use-package tramp
+  :config
+  (setq tramp-default-method "ssh")
+  (setq tramp-default-host "ashmalko.local")
+
+  ;; This is needed for tramp to respect remote PATH variable
+  (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+
+  (defun sudo ()
+    "Use TRAMP to `sudo' the current buffer"
+    (interactive)
+    (when buffer-file-name
+      (find-alternate-file
+       (concat "/sudo:root@localhost:"
+               buffer-file-name)))))
+
+(use-package ido
+  :config
+  (ido-mode 1)
+  ; I still use `helm-projectile-find-file', but that should be faster
+  ; for searching direct files. Time will show.
+  (nmap "SPC f" 'ido-find-file)
+  (nmap "SPC b" 'ido-switch-buffer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (c-add-style "rasen"
