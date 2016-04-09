@@ -114,8 +114,10 @@
   (nmap "C-;"     'evil-repeat-pop)
   (nmap "g."      'goto-last-change)
 
+  (nmap "<f3>"    'projectile-test-project)
   (nmap "<f4>"    'projectile-compile-project)
   (nmap "<f5>"    'projectile-run-project)
+  (mmap "<f3>"    'projectile-test-project)
   (mmap "<f4>"    'projectile-compile-project)
   (mmap "<f5>"    'projectile-run-project)
 
@@ -388,6 +390,9 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
              projectile-vc)
   :diminish projectile-mode
   :config
+  ;; Use prefix arg, is you want to change compilation command
+  (setq compilation-read-command nil)
+
   (projectile-global-mode)
   (setq projectile-completion-system 'helm))
 
