@@ -787,6 +787,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
     (concat "\\([@\\\\]\\(brief\\|li\\|\\(end\\)?code\\|sa"
             "\\|note\\|\\(end\\)?verbatim\\|return\\|arg\\|fn"
             "\\|hideinitializer\\|showinitializer"
+            "\\|parblock\\|endparblock"
             ;; FIXME
             ;; How do I get & # < > % to work?
             ;;"\\|\\\\&\\|\\$\\|\\#\\|<\\|>\\|\\%"
