@@ -634,7 +634,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
            (file+headline "my-facts.org" "Inbox")
            ,(concat "* Fact: '%:description'       :"
                     (format "%s" org-drill-question-tag)
-                    ":\n:PROPERTIES:\n:DATE_ADDED: %u\n:SOURCE_URL: %c\n:END:\n\n%i\n%?\n")
+                    ":\n:PROPERTIES:\n:DATE_ADDED: %u\n:SOURCE_URL: %c\n:END:\n%i\n%?\n")
            :empty-lines 1
            :immediate-finish t)
 
@@ -644,7 +644,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
            (file+headline "my-facts.org" "Inbox")
            ,(concat "* Fact: '%f'       :"
                     (format "%s" org-drill-question-tag)
-                    ":\n:PROPERTIES:\n:DATE_ADDED: %u\n:SOURCE_URL: [[%l][%f]]\n:END:\n\n%i\n%?\n")
+                    ":\n:PROPERTIES:\n:DATE_ADDED: %u\n:SOURCE_URL: [[%l][%f]]\n:END:\n%i\n%?\n")
            :empty-lines 1
            :immediate-finish t)
 
