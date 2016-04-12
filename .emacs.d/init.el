@@ -927,6 +927,39 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (nmap "SPC f" 'ido-find-file)
   (nmap "SPC b" 'ido-switch-buffer))
 
+;; I want to log all my key presses to analyze them later
+;;
+;; Well... it doesn't log all key presses (only command
+;; invocations). That means, 'ciw' shows only 'c' in the log. (I may
+;; need to change the logger to log all key presses.)
+(use-package command-log-mode
+  ;; I've patches command-log-mode to not merge command repetitions
+  ;; into the single line.
+  ;; PR is here: https://github.com/lewang/command-log-mode/pull/12
+  :load-path "site-lisp/command-log-mode"
+
+  :init
+  ;; Don't bind C-c o to open `clm/toggle-command-log-buffer'
+  (setq command-log-mode-key-binding-open-log nil)
+
+  :config
+  ;; log all commands
+  (setq clm/log-command-exceptions* nil)
+  ;; don't merge repetitions
+  (setq clm/log-repeat t)
+
+  (setq clm/logging-dir "~/log/")
+
+  ;; Create a buffer for logging, so logging starts automatically
+  (setq clm/command-log-buffer (get-buffer-create " *command-log*"))
+
+  ;; Save logs on exit
+  (add-hook 'kill-emacs-hook 'clm/save-command-log)
+  ;; ... and every hour
+  (run-with-timer 1 3600 'clm/save-command-log)
+
+  (global-command-log-mode))
+
 ;; Shamelessly stealed from from https://github.com/purcell/emacs.d
 (defun rename-this-file-and-buffer (new-name)
   "Renames both current buffer and file it's visiting to NEW-NAME."

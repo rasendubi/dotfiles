@@ -4,3 +4,6 @@
 [submodule ".vim/bundle/neobundle.vim"]
 	path = .vim/bundle/neobundle.vim
 	url = https://github.com/Shougo/neobundle.vim
+[submodule "command-log-mode"]
+	path = .emacs.d/site-lisp/command-log-mode
+	url = https://github.com/rasendubi/command-log-mode.git
