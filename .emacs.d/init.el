@@ -938,13 +938,15 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   ;; PR is here: https://github.com/lewang/command-log-mode/pull/12
   :load-path "site-lisp/command-log-mode"
 
+  :diminish command-log-mode
+
   :init
   ;; Don't bind C-c o to open `clm/toggle-command-log-buffer'
   (setq command-log-mode-key-binding-open-log nil)
 
   :config
   ;; log all commands
-  (setq clm/log-command-exceptions* nil)
+  (setq clm/log-command-exceptions* '(digit-argument))
   ;; don't merge repetitions
   (setq clm/log-repeat t)
 
@@ -953,10 +955,10 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   ;; Create a buffer for logging, so logging starts automatically
   (setq clm/command-log-buffer (get-buffer-create " *command-log*"))
 
-  ;; Save logs on exit
+  ;; Save logs on idle
+  (run-with-idle-timer 60 t 'clm/save-command-log)
+  ;; ... and on exit
   (add-hook 'kill-emacs-hook 'clm/save-command-log)
-  ;; ... and every hour
-  (run-with-timer 1 3600 'clm/save-command-log)
 
   (global-command-log-mode))
 
