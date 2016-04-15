@@ -799,8 +799,26 @@ pkgs.gitg
 [push]
     default = simple
 
+[pull]
+    ff = only
+
 [rerere]
     enabled = true
+#+end_src
+
+    Configure signing with [[https://www.gnupg.org/][gpg]].
+#+begin_src gitconfig :tangle .gitconfig
+[user]
+    signingkey = EB3066C3
+
+[gpg]
+    program = gpg2
+
+[commit]
+    gpgSign = true
+
+[push]
+    gpgSign = if-asked
 #+end_src
 
     I have *LOTS* of aliases:
@@ -817,7 +835,7 @@ pkgs.gitg
     d   = diff
     dl  = diff HEAD~ HEAD
     ds  = diff --staged
-    l   = log
+    l   = log --show-signature
     l1  = log -1
     lp  = log -p
     c   = commit

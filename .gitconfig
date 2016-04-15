@@ -17,8 +17,23 @@
 [push]
     default = simple
 
+[pull]
+    ff = only
+
 [rerere]
     enabled = true
+
+[user]
+    signingkey = EB3066C3
+
+[gpg]
+    program = gpg2
+
+[commit]
+    gpgSign = true
+
+[push]
+    gpgSign = if-asked
 
 [alias]
     cl  = clone
@@ -31,7 +46,7 @@
     d   = diff
     dl  = diff HEAD~ HEAD
     ds  = diff --staged
-    l   = log
+    l   = log --show-signature
     l1  = log -1
     lp  = log -p
     c   = commit
