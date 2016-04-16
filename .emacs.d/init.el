@@ -11,6 +11,9 @@
   (package-refresh-contents)
   (package-install 'use-package))
 
+(defconst android-p
+  (string-equal system-configuration "arm-unknown-linux-androideabi"))
+
 (setq use-package-always-ensure t)
 ;(setq use-package-verbose t)
 (eval-when-compile
@@ -169,6 +172,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
     (global-evil-quickscope-mode))
 
   (use-package key-chord
+    :if (not android-p)
     :config
     (setq key-chord-two-keys-delay 0.2)
     (key-chord-mode 1)
@@ -190,7 +194,8 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 (tool-bar-mode 0)
 (menu-bar-mode 0)
-(scroll-bar-mode 0)
+(unless android-p
+  (scroll-bar-mode 0))
 (column-number-mode 1)
 (show-paren-mode 1)
 (xterm-mouse-mode 1)
@@ -322,7 +327,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (helm-mode 1))
 
 (use-package xclip
-  :if (not window-system)
+  :if (and (not window-system) (not android-p))
   :config
   (xclip-mode 1)
   (defun my-x-set-selection (f type data)

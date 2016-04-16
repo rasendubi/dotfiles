@@ -29,9 +29,6 @@
 [gpg]
     program = gpg2
 
-[commit]
-    gpgSign = true
-
 [push]
     gpgSign = if-asked
 
