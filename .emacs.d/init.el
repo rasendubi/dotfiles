@@ -198,7 +198,12 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (scroll-bar-mode 0))
 (column-number-mode 1)
 (show-paren-mode 1)
-(xterm-mouse-mode 1)
+
+;; It doesn't work well on android, but is enabled by default there
+(if android-p
+    (xterm-mouse-mode -1)
+  (xterm-mouse-mode 1))
+
 (global-hl-line-mode)
 
 (setq-default indent-tabs-mode nil)
