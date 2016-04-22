@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+
+import json
+import sys
+import urllib.request
+import re
+from subprocess import Popen, PIPE, call
+
+if len(sys.argv) > 2:
+    remote = sys.argv[1]
+    pr = sys.argv[2]
+else:
+    remote = 'origin'
+    pr = sys.argv[1]
+
+remote_url = Popen(['git', 'remote', 'get-url', remote], stdout=PIPE).communicate()[0]
+repo = re.search('github.com[:/](.*/.*)\.git', remote_url.decode('utf-8')).group(1)
+
+url = "https://api.github.com/repos/{}/pulls/{}".format(repo, pr)
+
+r = urllib.request.urlopen(url)
+
+x = json.loads(r.read().decode(r.info().get_param('charset') or 'utf-8'))
+
+message = 'Merge pull request #{} from {}\n\n{}'.format(
+    x['number'],
+    x['head']['label'].replace(':', '/'),
+    x['title'])
+
+fetch_url = 'refs/pull/{}/head'.format(pr)
+print('Fetching {}/{}'.format(remote, fetch_url))
+call(['git', 'fetch', remote, fetch_url])
+
+call(['git', 'merge', '--no-ff', '-S', '-m', message, '--edit', 'FETCH_HEAD'])
