@@ -997,6 +997,12 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
     (delete-file (buffer-file-name))
     (kill-this-buffer)))
 
+;; http://stackoverflow.com/a/13408008/2538771
+(require 'ansi-color)
+(defun colorize-compilation-buffer ()
+  (ansi-color-apply-on-region compilation-filter-start (point)))
+(add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (c-add-style "rasen"
              '("k&r"
