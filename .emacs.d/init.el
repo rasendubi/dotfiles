@@ -174,6 +174,13 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (use-package key-chord
     :if (not android-p)
     :config
+
+    ;; This must be called before `key-chord-mode' as key-chord must
+    ;; override input-method to work properly.
+    (set-input-method "ukrainian-computer")
+    ;; I still want English be default
+    (toggle-input-method)
+
     (setq key-chord-two-keys-delay 0.2)
     (key-chord-mode 1)
     (key-chord-define evil-insert-state-map "jk" 'evil-normal-state)
