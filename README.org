@@ -601,10 +601,10 @@ urxvt.clipboard.pastecmd: xclip -o -selection clipboard
 
 **** Font
 
-    I use Terminus font [[https://github.com/powerline/fonts][patched for use with Powerline]].
+    I use Terminus font.
 
 #+begin_src conf-xdefaults :tangle .Xresources
-URxvt.font: xft:Terminess Powerline:normal:size=12
+URxvt.font: xft:Terminus:normal:size=12
 #+end_src
 
     # Xft.dpi: 96

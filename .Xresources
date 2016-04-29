@@ -16,7 +16,7 @@ urxvt.keysym.C-M-V:       perl:clipboard:paste_escaped
 urxvt.clipboard.copycmd:  xclip -i -selection clipboard
 urxvt.clipboard.pastecmd: xclip -o -selection clipboard
 
-URxvt.font: xft:Terminess Powerline:normal:size=12
+URxvt.font: xft:Terminus:normal:size=12
 
 URxvt*background: #101010
 URxvt*foreground: #d0d0d0

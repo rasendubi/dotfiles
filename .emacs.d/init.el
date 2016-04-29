@@ -271,8 +271,10 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (defun font-exists-p (font)
   (not (and (display-graphic-p) (null (x-list-fonts font)))))
 
-(when (font-exists-p "Terminess Powerline-12")
-  (set-face-attribute 'default nil :font "Terminess Powerline-12"))
+(cond ((font-exists-p "Terminus-12")
+       (set-face-attribute 'default nil :font "Terminus-12"))
+      ((font-exists-p "Terminess Powerline-12")
+       (set-face-attribute 'default nil :font "Terminess Powerline-12")))
 
 (setq inhibit-startup-screen t)
 
