@@ -456,6 +456,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :mode "\\.hs$"
   :init
   (setq company-ghc-show-info t)
+  (setq flycheck-ghc-stack-use-nix t)
   :config
   (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
   (add-hook 'haskell-mode-hook 'haskell-decl-scan-mode)
