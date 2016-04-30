@@ -401,6 +401,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
              projectile-project-root
              projectile-recentf
              projectile-regenerate-tags
+             projectile-register-project-type
              projectile-replace
              projectile-run-async-shell-command-in-root
              projectile-run-shell-command-in-root
@@ -471,7 +472,17 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
                                  (setq-local adaptive-fill-mode t)))
 
   (setq haskell-compile-cabal-build-command "cd %s && stack build")
-  (setq haskell-compile-cabal-build-command-alt "cd %s && cabal build --ghc-option=-ferror-spans")
+  (setq haskell-compile-cabal-build-command-alt "cd %s && cabal build --ghc-options=-ferror-spans")
+
+  ;; Use Nix for stack ghci
+  (add-to-list 'haskell-process-args-stack-ghci "--nix")
+  (add-to-list 'haskell-process-args-stack-ghci "--test")
+
+  ;; Use Nix for default build/test command
+  (projectile-register-project-type 'haskell-stack
+                                    '("stack.yaml")
+                                    "stack build --nix"
+                                    "stack build --nix --test")
 
   (define-key haskell-mode-map [f8] 'haskell-navigate-imports)
   (define-key haskell-mode-map (kbd "C-c C-b") 'haskell-compile)
