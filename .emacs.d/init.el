@@ -976,6 +976,9 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   ;; PR is here: https://github.com/lewang/command-log-mode/pull/12
   :load-path "site-lisp/command-log-mode"
 
+  ;; Well, I've gathered enough logs for now.
+  :disabled t
+
   :diminish command-log-mode
 
   :init
