@@ -61,6 +61,7 @@
     extraGroups = [ "users" "wheel" "networkmanager" "dialout" "plugdev" ];
     initialPassword = "HelloWorld";
   };
+  nix.useChroot = true;
   services.openvpn.servers = {
     kaa.config = ''
       client
@@ -176,15 +177,14 @@
     pkgs.gparted
     pkgs.unetbootin
     pkgs.kvm
+    pkgs.thunderbird
     (pkgs.vim_configurable.override { python3 = true; })
     pkgs.emacs
     pkgs.ycmd
     pkgs.racerRust
     pkgs.ditaa
     pkgs.oraclejre8
-    pkgs.texLive
-    # pkgs.texLiveExtra
-    # pkgs.leiningen
+    pkgs.texlive.combined.scheme-basic
     pkgs.rxvt_unicode-with-plugins
     pkgs.urxvt_perl
     pkgs.gitFull
@@ -205,6 +205,7 @@
     pkgs.openocd
     pkgs.expect
     pkgs.telnet
+    pkgs.arduino
     pkgs.wget
     pkgs.htop
     pkgs.psmisc
