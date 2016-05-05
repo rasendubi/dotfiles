@@ -163,6 +163,12 @@ nix-env -f nixpkgs-local/local-packages.nix -i
 
 #+RESULTS:
 
+To make package results testing better, we build them in isolated environment (for more info, see [[https://nixos.org/nixos/manual/options.html#opt-nix.useChroot][nixos manual]]):
+#+name: nixos-general
+#+begin_src nix
+nix.useChroot = true;
+#+end_src
+
 **** rust-nightly
     *Won't submit*. As nighties are unstable, it's unlikely it will be at nixpkgs.
 
@@ -525,6 +531,7 @@ pkgs.smplayer
 pkgs.gparted
 pkgs.unetbootin
 pkgs.kvm
+pkgs.thunderbird
 #+end_src
 
 ** Development
@@ -543,14 +550,7 @@ pkgs.ycmd
 pkgs.racerRust
 pkgs.ditaa
 pkgs.oraclejre8
-pkgs.texLive
-# pkgs.texLiveExtra
-#+end_src
-
-    Leiningen is needed for clojure, but I don't really use it now.
-#+name: nixos-system-packages
-#+begin_src nix
-# pkgs.leiningen
+pkgs.texlive.combined.scheme-basic
 #+end_src
 
 *** rxvt-unicode
@@ -940,6 +940,15 @@ pkgs.telnet
 #+begin_src nix
 users.extraGroups.plugdev = { };
 services.udev.packages = [ pkgs.openocd ];
+#+end_src
+
+**** Arduino
+
+I teach a course for children involving Arduino programming.
+
+#+name: nixos-system-packages
+#+begin_src nix
+pkgs.arduino
 #+end_src
 
 *** Other terminal goodies
