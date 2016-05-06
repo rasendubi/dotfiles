@@ -136,8 +136,8 @@ services.xserver.synaptics = {
 *** Local overlay
     As a responsible NixOS user, I refuse to install software blindly with =sudo make install=. That's why I should write my own nix-expressions. I keep them in my local overlay until they're merged upstream.
 
-    The entry is just a set of all my packages in =nixpkgs-local/local-packages.nix=:
-#+begin_src nix :tangle nixpkgs-local/local-packages.nix :noweb no-export :padline no
+    The entry is just a set of all my packages in =nixpkgs-local/default.nix=:
+#+begin_src nix :tangle nixpkgs-local/default.nix :noweb no-export :padline no
 { system ? builtins.currentSystem }:
 
 let
@@ -158,7 +158,7 @@ in self
 
 You can install all packages to current user with:
 #+begin_src sh
-nix-env -f nixpkgs-local/local-packages.nix -i
+nix-env -f nixpkgs-local/default.nix -i
 #+end_src
 
 #+RESULTS:
