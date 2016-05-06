@@ -95,6 +95,24 @@
     enable = true;
     adminPubkey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDJhMhxIwZJgIY6CNSNEH+BetF/WCUtDFY2KTIl8LcvXNHZTh4ZMc5shTOS/ROT4aH8Awbm0NjMdW33J5tFMN8T7q89YZS8hbBjLEh8J04Y+kndjnllDXU6NnIr/AenMPIZxJZtSvWYx+f3oO6thvkZYcyzxvA5Vi6V1cGx6ni0Kizq/WV/mE/P1nNbwuN3C4lCtiBC9duvoNhp65PctQNohnKQs0vpQcqVlfqBsjQ7hhj2Fjg+Ofmt5NkL+NhKQNqfkYN5QyIAulucjmFAieKR4qQBABopl2F6f8D9IjY8yH46OCrgss4WTf+wxW4EBw/QEfNoKWkgVoZtxXP5pqAz rasen@Larry";
   };
+  services.dnsmasq = {
+    enable = true;
+  
+    # These are used in addition to resolv.conf
+    servers = [ "8.8.8.8" "8.8.4.4" ];
+  
+    extraConfig = ''
+      listen-address=127.0.0.1
+      cache-size=1000
+  
+      no-negcache
+    '';
+  };
+  
+  # This will prepend dnsmasq server to use as main server
+  environment.etc."resolv.conf.head".text = ''
+    nameserver 127.0.0.1
+  '';
   services.xserver.enable = true;
   i18n.supportedLocales = [ "en_US.UTF-8/UTF-8" ];
   time.timeZone = "Europe/Kiev";

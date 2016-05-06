@@ -293,6 +293,34 @@ services.gitolite = {
 };
 #+end_src
 
+*** dnsmasq
+
+Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
+
+#+name: nixos-general
+#+begin_src nix
+services.dnsmasq = {
+  enable = true;
+
+  # These are used in addition to resolv.conf
+  servers = [ "8.8.8.8" "8.8.4.4" ];
+
+  extraConfig = ''
+    listen-address=127.0.0.1
+    cache-size=1000
+
+    no-negcache
+  '';
+};
+
+# Put the text in /etc/resolv.conf.head
+#
+# That will prepend dnsmasq server to /etc/resolv.conf (dhcpcd-specific)
+environment.etc."resolv.conf.head".text = ''
+  nameserver 127.0.0.1
+'';
+#+end_src
+
 ** Environment
 *** General
     I definitely use X server:
