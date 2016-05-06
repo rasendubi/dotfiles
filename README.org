@@ -507,8 +507,13 @@ pkgs.firefoxWrapper
 #+name: nixos-general
 #+begin_src nix
 nixpkgs.config.firefox.jre = true;
+#+end_src
+
+The default java plugin (=pkgs.oraclejdk8=) has issues building, so use open alternative for now. (Actually, it works better with my windom manager so I think I'll stick with it for a while.)
+#+name: nixos-general
+#+begin_src nix
 nixpkgs.config.packageOverrides = pkgs: rec {
-  jrePlugin = pkgs.oraclejre8;
+  jrePlugin = pkgs.icedtea_web;
 };
 #+end_src
 
@@ -549,7 +554,7 @@ pkgs.emacs
 pkgs.ycmd
 pkgs.racerRust
 pkgs.ditaa
-pkgs.oraclejre8
+pkgs.jre
 pkgs.texlive.combined.scheme-basic
 #+end_src
 

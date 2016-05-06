@@ -134,7 +134,7 @@
   environment.pathsToLink = [ "/share" ];
   nixpkgs.config.firefox.jre = true;
   nixpkgs.config.packageOverrides = pkgs: rec {
-    jrePlugin = pkgs.oraclejre8;
+    jrePlugin = pkgs.icedtea_web;
   };
   programs.zsh.enable = true;
   
@@ -183,7 +183,7 @@
     pkgs.ycmd
     pkgs.racerRust
     pkgs.ditaa
-    pkgs.oraclejre8
+    pkgs.jre
     pkgs.texlive.combined.scheme-basic
     pkgs.rxvt_unicode-with-plugins
     pkgs.urxvt_perl
