@@ -625,6 +625,10 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (use-package term-run
   :commands (term-run term-run-shell-command))
 
+;; Used by org-mode config
+(use-package f
+  :functions (f-files f-ext?))
+
 (use-package org
   :ensure org-plus-contrib
   :config
