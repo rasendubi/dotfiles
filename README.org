@@ -175,7 +175,7 @@ nix.useChroot = true;
     Rust wiki [[https://nixos.org/wiki/Rust#Nightlies][recommends]] using [[https://github.com/Ericson2314/nixos-configuration/blob/nixos/user/.nixpkgs/rust-nightly.nix][Ericson2314's rustc-nightly]] package. However, it doesn't pack libstd.
 
     You can get hash with the following command:
-#+name rust-nightly-hash
+#+name: rust-nightly-hash
 #+header: :var date="2016-03-11"
 #+begin_src sh
 nix-prefetch-url --type sha256 https://static.rust-lang.org/dist/$date/rust-nightly-x86_64-unknown-linux-gnu.tar.gz
