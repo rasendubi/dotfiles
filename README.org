@@ -583,7 +583,6 @@ pkgs.ycmd
 pkgs.racerRust
 pkgs.ditaa
 pkgs.jre
-pkgs.texlive.combined.scheme-basic
 #+end_src
 
 *** rxvt-unicode
@@ -591,8 +590,7 @@ pkgs.texlive.combined.scheme-basic
    I use urxvt as my terminal emulator:
 #+name: nixos-system-packages
 #+begin_src nix
-pkgs.rxvt_unicode-with-plugins
-pkgs.urxvt_perl
+pkgs.rxvt_unicode
 #+end_src
 
    Urxvt gets its setting from =.Xresources= file. If you ever want to reload it on-the-fly, type the following (or press =C-c C-c= if you're in emacs):
@@ -622,15 +620,14 @@ urxvt.secondaryScroll:    true
 urxvt.iso14755: False
 #+end_src
 
-    Copy-paste with Ctrl+Shift+C, Ctrl+Shift+V:
-#+begin_src conf-xdefaults :tangle .Xresources
-urxvt.perl-ext-common:    default,clipboard
-urxvt.keysym.S-C-C:       perl:clipboard:copy
-urxvt.keysym.S-C-V:       perl:clipboard:paste
-urxvt.keysym.C-M-V:       perl:clipboard:paste_escaped
-urxvt.clipboard.copycmd:  xclip -i -selection clipboard
-urxvt.clipboard.pastecmd: xclip -o -selection clipboard
-#+end_src
+    +Copy-paste with Ctrl+Shift+C, Ctrl+Shift+V:+
+
+    From [[https://github.com/muennich/urxvt-perls][urxvt-perls]]:
+    #+begin_quote
+    Since version 9.20 rxvt-unicode natively supports copying to and pasting from the CLIPBOARD buffer with the Ctrl-Meta-c and Ctrl-Meta-v key bindings. The clipboard.autocopy setting is provided by the selection_to_clipboard extension shipped with rxvt-unicode.
+    #+end_quote
+
+    That means, I don't need perl extensions at all.
 
 **** Font
 

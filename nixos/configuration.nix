@@ -109,7 +109,9 @@
     '';
   };
   
-  # This will prepend dnsmasq server to use as main server
+  # Put the text in /etc/resolv.conf.head
+  #
+  # That will prepend dnsmasq server to /etc/resolv.conf (dhcpcd-specific)
   environment.etc."resolv.conf.head".text = ''
     nameserver 127.0.0.1
   '';
@@ -202,9 +204,7 @@
     pkgs.racerRust
     pkgs.ditaa
     pkgs.jre
-    pkgs.texlive.combined.scheme-basic
-    pkgs.rxvt_unicode-with-plugins
-    pkgs.urxvt_perl
+    pkgs.rxvt_unicode
     pkgs.gitFull
     pkgs.gitg
     pkgs.tmux
