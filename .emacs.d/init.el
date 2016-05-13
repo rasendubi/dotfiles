@@ -497,6 +497,9 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (define-key haskell-mode-map (kbd "C-c M-.") nil)
   (define-key haskell-mode-map (kbd "C-c C-d") nil)
 
+  ;; Disable popups (i.e., report errors in the interactive shell).
+  (setq haskell-interactive-popup-errors nil)
+
   (setq haskell-process-suggest-remove-import-lines t
         haskell-process-auto-import-loaded-modules t)
 
