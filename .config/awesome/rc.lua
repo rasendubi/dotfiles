@@ -53,7 +53,7 @@ beautiful.init("/run/current-system/sw/share/awesome/themes/default/theme.lua")
 terminal = "urxvt"
 editor = os.getenv("EDITOR") or "vi"
 editor_cmd = terminal .. " -e " .. editor
-geditor = "gvim"
+geditor = "emacs"
 
 -- Default modkey.
 -- Usually, Mod4 is the key with a logo between Control and Alt.
@@ -207,13 +207,6 @@ for s = 1, screen.count() do
 
     mywibox[s]:set_widget(layout)
 end
--- }}}
-
--- {{{ Mouse bindings
-root.buttons(awful.util.table.join(
-    awful.button({ }, 4, awful.tag.viewnext),
-    awful.button({ }, 5, awful.tag.viewprev)
-))
 -- }}}
 
 -- {{{ Key bindings
