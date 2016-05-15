@@ -133,6 +133,12 @@ services.xserver.synaptics = {
 };
 #+end_src
 
+I have nvidia video card and integrated intel-one. I don't use nvidia one, so next the line disables it:
+#+name: nixos-machine
+#+begin_src nix
+hardware.nvidiaOptimus.disable = true;
+#+end_src
+
 *** Local overlay
     As a responsible NixOS user, I refuse to install software blindly with =sudo make install=. That's why I should write my own nix-expressions. I keep them in my local overlay until they're merged upstream.
 

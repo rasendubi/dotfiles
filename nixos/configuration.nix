@@ -54,6 +54,7 @@
     twoFingerScroll = true;
     vertEdgeScroll = true;
   };
+  hardware.nvidiaOptimus.disable = true;
 
   users.extraUsers.rasen = {
     isNormalUser = true;
