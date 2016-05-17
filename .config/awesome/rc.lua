@@ -44,10 +44,17 @@ end
 
 -- theme = find_in_path(os.getenv("XDG_DATA_DIRS") or "/usr/local/share:/usr/share", "awesome/themese/default/theme.lua")
 
--- Change this according to awesome wm location
 -- TODO: automate this to search in $XDG_DATA_DIRS
-beautiful.init("/run/current-system/sw/share/awesome/themes/default/theme.lua")
--- beautiful.init("/usr/share/awesome/themes/default/theme.lua")
+themes = {
+    "/run/current-system/sw/share/awesome/themes/default/theme.lua",
+    "/usr/share/awesome/themes/default/theme.lua"
+}
+for i, theme in ipairs(themes) do
+    if awful.util.file_readable(theme) then
+        beautiful.init(theme)
+        break
+    end
+end
 
 -- This is used later as the default terminal and editor to run.
 terminal = "urxvt"
