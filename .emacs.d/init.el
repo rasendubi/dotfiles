@@ -464,13 +464,6 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
   (add-hook 'haskell-mode-hook 'haskell-decl-scan-mode)
 
-  ;; For unknown reason, local value of `adaptive-fill-mode' was set
-  ;; to nil in haskell files. That broke refill in comments.
-  ;;
-  ;; Setting it back to t fixes refill.
-  (add-hook 'haskell-mode-hook (lambda ()
-                                 (setq-local adaptive-fill-mode t)))
-
   (setq haskell-compile-cabal-build-command "cd %s && stack build")
   (setq haskell-compile-cabal-build-command-alt "cd %s && cabal build --ghc-options=-ferror-spans")
 
