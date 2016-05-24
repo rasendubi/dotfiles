@@ -88,6 +88,8 @@
       workstation = true;
     };
   };
+  systemd.services.avahi-daemon.wantedBy = [ "multi-user.target" ];
+  systemd.services.avahi-daemon.after = [ "openvpn-kaa.target" ];
   services.openssh = {
     enable = true;
     passwordAuthentication = false;

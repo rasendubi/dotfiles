@@ -280,6 +280,14 @@ services.avahi = {
 };
 #+end_src
 
+The following lines are needed to start avahi-daemon automatically. The default service is wantedBy "if-up.target" which doesn't seem to be activated (maybe because of wicd).
+
+#+name: nixos-general
+#+begin_src nix
+systemd.services.avahi-daemon.wantedBy = [ "multi-user.target" ];
+systemd.services.avahi-daemon.after = [ "openvpn-kaa.target" ];
+#+end_src
+
 *** SSH
 #+name: nixos-general
 #+begin_src nix
