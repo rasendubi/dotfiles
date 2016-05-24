@@ -1,5 +1,11 @@
 { config, pkgs, ... }:
-{
+let
+  mytexlive = pkgs.texlive.combine {
+    inherit (pkgs.texlive)
+    scheme-full
+    collection-xetex;
+  };
+in {
   nixpkgs.config.allowUnfree = true;
 
   imports = [ <nixpkgs/nixos/modules/installer/scan/not-detected.nix> ];
@@ -159,6 +165,7 @@
   nixpkgs.config.packageOverrides = pkgs: rec {
     jrePlugin = pkgs.icedtea_web;
   };
+  environment.sessionVariables.MT_TEXMFMAIN = "${mytexlive}/share/texmf/";
   programs.zsh.enable = true;
   
   users.defaultUserShell = "/run/current-system/sw/bin/zsh";
@@ -186,6 +193,7 @@
     pkgs.kde4.filelight
     pkgs.shared_mime_info
     pkgs.firefoxWrapper
+    mytexlive
     pkgs.google-chrome
     pkgs.skype
     pkgs.libreoffice

@@ -21,7 +21,9 @@ Pieces not covered in this document (yet) are:
 
 #+begin_src nix :tangle nixos/configuration.nix :noweb no-export :padline no
 { config, pkgs, ... }:
-{
+let
+  <<nixos-definitions>>
+in {
   nixpkgs.config.allowUnfree = true;
 
   <<nixos-machine>>
@@ -193,6 +195,7 @@ nix-prefetch-url --type sha256 https://static.rust-lang.org/dist/$date/rust-nigh
 #+begin_src nix
 rust-nightly = callPackage ./pkgs/rust-nightly {
   date = "2016-03-11";
+  # TODO: hash should be different depending on the system
   hash = "0s450rm51z9gywb4vnaradvy23cqyd19yk8j4swrr3v520f4dx6b";
 };
 #+end_src
@@ -545,7 +548,7 @@ environment.pathsToLink = [ "/share" ];
 pkgs.firefoxWrapper
 #+end_src
 
-    The following enables jre support as well as uses newer version:
+    The following enables jre support:
 #+name: nixos-general
 #+begin_src nix
 nixpkgs.config.firefox.jre = true;
@@ -557,6 +560,40 @@ The default java plugin (=pkgs.oraclejdk8=) has issues building, so use open alt
 nixpkgs.config.packageOverrides = pkgs: rec {
   jrePlugin = pkgs.icedtea_web;
 };
+#+end_src
+
+*** Texlive
+    I'm writing my bachelor thesis now, so I need texlive. Going to remove it later as it has big footprint and it's a pain in the ass to keep it up to date and working.
+
+#+name: nixos-definitions
+#+begin_src nix
+mytexlive = pkgs.texlive.combine {
+  inherit (pkgs.texlive)
+  scheme-full
+  collection-xetex;
+};
+#+end_src
+
+#+name: nixos-system-packages
+#+begin_src nix
+mytexlive
+#+end_src
+
+**** MT_TEXMFMAIN
+
+     If I run latex with cyrillic font, I get the following error:
+#+begin_src
+kpathsea: Running mktextfm larm1440
+mktextfm: Cannot find mktex.opt; check your installation.
+kpathsea: Appending font creation commands to missfont.log.
+! Font T2A/cmr/m/n/14.4=larm1440 at 14.4pt not loadable: Metric (TFM) file not
+found.
+#+end_src
+
+This fixes the issue:
+#+name: nixos-general
+#+begin_src nix
+environment.sessionVariables.MT_TEXMFMAIN = "${mytexlive}/share/texmf/";
 #+end_src
 
 *** Other applications
