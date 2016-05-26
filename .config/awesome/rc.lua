@@ -116,7 +116,7 @@ utils.run_once("wicd-client", "wicd-client -t")
 utils.run("wmname LG3D")
 utils.run("synclient TapButton1=1 TapButton2=3 TapButton3=2 VertEdgeScroll=1")
 utils.rerun("syndaemon", "syndaemon -i 0.75 -K -t -d")
---utils.run("systemd")
+utils.run("xscreensaver")
 -- utils.run_once("/usr/bin/pulseaudio", "start-pulseaudio-x11")
 -- }}}
 

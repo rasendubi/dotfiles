@@ -209,6 +209,7 @@ in {
     pkgs.unetbootin
     pkgs.kvm
     pkgs.thunderbird
+    pkgs.xscreensaver
     (pkgs.vim_configurable.override { python3 = true; })
     pkgs.emacs
     pkgs.ycmd
