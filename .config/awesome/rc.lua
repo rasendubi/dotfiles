@@ -117,6 +117,7 @@ utils.run("wmname LG3D")
 utils.run("synclient TapButton1=1 TapButton2=3 TapButton3=2 VertEdgeScroll=1")
 utils.rerun("syndaemon", "syndaemon -i 0.75 -K -t -d")
 utils.run("xscreensaver")
+utils.run("xss-lock -- xscreensaver-command -lock")
 -- utils.run_once("/usr/bin/pulseaudio", "start-pulseaudio-x11")
 -- }}}
 

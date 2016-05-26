@@ -210,6 +210,7 @@ in {
     pkgs.kvm
     pkgs.thunderbird
     pkgs.xscreensaver
+    pkgs.xss-lock
     (pkgs.vim_configurable.override { python3 = true; })
     pkgs.emacs
     pkgs.ycmd

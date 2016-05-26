@@ -617,6 +617,7 @@ pkgs.unetbootin
 pkgs.kvm
 pkgs.thunderbird
 pkgs.xscreensaver
+pkgs.xss-lock
 #+end_src
 
 ** Development
