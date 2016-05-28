@@ -194,9 +194,9 @@ nix-prefetch-url --type sha256 https://static.rust-lang.org/dist/$date/rust-nigh
 #+name: nixpkgs-local-packages
 #+begin_src nix
 rust-nightly = callPackage ./pkgs/rust-nightly {
-  date = "2016-03-11";
+  date = "2016-05-28";
   # TODO: hash should be different depending on the system
-  hash = "0s450rm51z9gywb4vnaradvy23cqyd19yk8j4swrr3v520f4dx6b";
+  hash = "0f9rx672v97f5bn6mnb1dgyczyf5f8vcjp55yvasflvln1w64krv";
 };
 #+end_src
 
@@ -221,7 +221,7 @@ in stdenv.mkDerivation rec {
   };
 
   installPhase = ''
-    ./install.sh --prefix=$out --disable-ldconfig
+    ./install.sh --prefix=$out --disable-ldconfig --without=rust-docs
   '';
 
   dontStrip = true;
@@ -235,7 +235,7 @@ in stdenv.mkDerivation rec {
   in
   ''
     for executable in ${stdenv.lib.concatMapStringsSep " " (s: "$out/bin/" + s) [ "cargo" "rustc" "rustdoc" ]}; do
-      patchelf --interpreter "${stdenv.glibc}/lib/${stdenv.cc.dynamicLinker}" \
+      patchelf --interpreter "${stdenv.glibc.out}/lib/${stdenv.cc.dynamicLinker}" \
         --set-rpath "${rpath}" \
         "$executable"
     done

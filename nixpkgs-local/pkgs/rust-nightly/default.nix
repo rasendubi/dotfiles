@@ -18,7 +18,7 @@ in stdenv.mkDerivation rec {
   };
 
   installPhase = ''
-    ./install.sh --prefix=$out --disable-ldconfig
+    ./install.sh --prefix=$out --disable-ldconfig --without=rust-docs
   '';
 
   dontStrip = true;
@@ -32,7 +32,7 @@ in stdenv.mkDerivation rec {
   in
   ''
     for executable in ${stdenv.lib.concatMapStringsSep " " (s: "$out/bin/" + s) [ "cargo" "rustc" "rustdoc" ]}; do
-      patchelf --interpreter "${stdenv.glibc}/lib/${stdenv.cc.dynamicLinker}" \
+      patchelf --interpreter "${stdenv.glibc.out}/lib/${stdenv.cc.dynamicLinker}" \
         --set-rpath "${rpath}" \
         "$executable"
     done
