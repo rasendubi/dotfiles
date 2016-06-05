@@ -526,7 +526,6 @@ fonts = {
     I don't use full KDE but some apps are definitely nice.
 #+name: nixos-system-packages
 #+begin_src nix
-pkgs.kde4.okular
 pkgs.kde4.gwenview
 pkgs.kde4.kde_baseapps # <-- dolphin
 pkgs.kde4.kde_runtime
@@ -535,7 +534,7 @@ pkgs.kde4.filelight
 pkgs.shared_mime_info
 #+end_src
 
-    Okular can't show anything without this:
+    KDE apps may have issues with mime types without this:
 #+name: nixos-general
 #+begin_src nix
 environment.pathsToLink = [ "/share" ];
@@ -618,6 +617,9 @@ pkgs.kvm
 pkgs.thunderbird
 pkgs.xscreensaver
 pkgs.xss-lock
+
+# zathura is a cool document viewer
+pkgs.zathura
 #+end_src
 
 ** Development

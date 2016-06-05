@@ -185,7 +185,6 @@ in {
     pkgs.oxygen-gtk2
     pkgs.oxygen-gtk3
     pkgs.gnome3.adwaita-icon-theme
-    pkgs.kde4.okular
     pkgs.kde4.gwenview
     pkgs.kde4.kde_baseapps # <-- dolphin
     pkgs.kde4.kde_runtime
@@ -211,6 +210,9 @@ in {
     pkgs.thunderbird
     pkgs.xscreensaver
     pkgs.xss-lock
+    
+    # zathura is a cool document viewer
+    pkgs.zathura
     (pkgs.vim_configurable.override { python3 = true; })
     pkgs.emacs
     pkgs.ycmd
