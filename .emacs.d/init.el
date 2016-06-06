@@ -555,6 +555,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (use-package cmake-mode
   :mode ("^CMakeLists\\.txt$" . cmake-mode)
   :config
+  (setq cmake-tab-width 4)
   (use-package cmake-font-lock)
   (use-package company-cmake))
 
