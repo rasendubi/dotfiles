@@ -341,13 +341,13 @@ for i = 1, 9 do
                   end),
         awful.key({ modkey, "Control", "Shift" }, "#" .. i + 9,
                   function ()
-				      if client.focus then
-						  local tag = awful.tag.gettags(client.focus.screen)[i]
-						  if client.focus and tag then
-							  awful.client.toggletag(tag)
-						  end
-					  end
-                  end))
+                      if client.focus then
+                          local tag = awful.tag.gettags(client.focus.screen)[i]
+                          if client.focus and tag then
+                              awful.client.toggletag(tag)
+                          end
+                      end
+    end))
 end
 
 clientbuttons = awful.util.table.join(
@@ -360,6 +360,10 @@ root.keys(globalkeys)
 -- }}}
 
 -- {{{ Rules
+
+-- Move skype to 2 screen tag 1 in two-screen setup
+skype_tag = tags[2] and tags[2][1] or tags[1][9]
+
 -- Use xprop command line utility to find out rule
 awful.rules.rules = {
     -- All clients will match this rule.
@@ -375,10 +379,7 @@ awful.rules.rules = {
     { rule = { instance = "plugin-container" },
       properties = { floating = true } },
     { rule = { class = "Skype" },
-      properties = { size_hints_honor = false, tag = tags[1][9] } },
-    -- Set Firefox to always map on tags number 2 of screen 1.
-    -- { rule = { class = "Firefox" },
-    --   properties = { tag = tags[1][2] } },
+      properties = { size_hints_honor = false, tag = skype_tag } },
 }
 -- }}}
 
@@ -409,4 +410,3 @@ end)
 client.connect_signal("focus", function(c) c.border_color = beautiful.border_focus end)
 client.connect_signal("unfocus", function(c) c.border_color = beautiful.border_normal end)
 -- }}}
-
