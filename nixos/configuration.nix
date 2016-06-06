@@ -193,6 +193,7 @@ in {
     pkgs.shared_mime_info
     pkgs.firefoxWrapper
     mytexlive
+    pkgs.zathura
     pkgs.google-chrome
     pkgs.skype
     pkgs.libreoffice
@@ -210,9 +211,6 @@ in {
     pkgs.thunderbird
     pkgs.xscreensaver
     pkgs.xss-lock
-    
-    # zathura is a cool document viewer
-    pkgs.zathura
     (pkgs.vim_configurable.override { python3 = true; })
     pkgs.emacs
     pkgs.ycmd

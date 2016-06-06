@@ -595,6 +595,18 @@ This fixes the issue:
 environment.sessionVariables.MT_TEXMFMAIN = "${mytexlive}/share/texmf/";
 #+end_src
 
+*** Zathura
+    Zathura is a cool document viewer with Vim-like bindings.
+#+name: nixos-system-packages
+#+begin_src nix
+pkgs.zathura
+#+end_src
+
+Enable incremental search (Zathura's config goes to =~/.config/zathura/zathurarc=).
+#+begin_src fundamental :tangle .config/zathura/zathurarc :padline no
+set incremental-search true
+#+end_src
+
 *** Other applications
     Don't require additional setup.
 
@@ -617,9 +629,6 @@ pkgs.kvm
 pkgs.thunderbird
 pkgs.xscreensaver
 pkgs.xss-lock
-
-# zathura is a cool document viewer
-pkgs.zathura
 #+end_src
 
 ** Development
@@ -1100,7 +1109,7 @@ OPTIONS=lit_corridor, DECgraphics, showscore, showexp, time, color, hilite_pet
 
     There is a =setup.sh= script in this directory. It just links all files to =$HOME=:
 #+begin_src sh :shebang "#!/bin/sh" :tangle setup.sh :padline no
-FILES=".vimrc .vim .nvimrc .nvim .gitconfig .zshrc .zsh .tmux.conf .xxkbrc .Xresources .config/awesome .config/nvim .config/xxkb .nethackrc .emacs.d .ssh bin"
+FILES=".vimrc .vim .nvimrc .nvim .gitconfig .zshrc .zsh .tmux.conf .xxkbrc .Xresources .config/awesome .config/nvim .config/xxkb .nethackrc .emacs.d .ssh bin .config/zathura"
 
 DEST=$1
 
