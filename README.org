@@ -174,7 +174,7 @@ nix-env -f nixpkgs-local/default.nix -i
 To make package results testing better, we build them in isolated environment (for more info, see [[https://nixos.org/nixos/manual/options.html#opt-nix.useChroot][nixos manual]]):
 #+name: nixos-general
 #+begin_src nix
-nix.useChroot = true;
+nix.useSandbox = true;
 #+end_src
 
 **** rust-nightly
@@ -1007,7 +1007,7 @@ set-window-option -g automatic-rename
 #+name: nixos-system-packages
 #+begin_src nix
 pkgs.ghc
-pkgs.haskellPackages.ghc-mod
+pkgs.haskell.packages.ghc7103.ghc-mod
 pkgs.stack
 pkgs.cabal-install
 pkgs.cabal2nix

@@ -68,7 +68,7 @@ in {
     extraGroups = [ "users" "wheel" "networkmanager" "dialout" "plugdev" ];
     initialPassword = "HelloWorld";
   };
-  nix.useChroot = true;
+  nix.useSandbox = true;
   services.openvpn.servers = {
     kaa.config = ''
       client
@@ -222,7 +222,7 @@ in {
     pkgs.gitg
     pkgs.tmux
     pkgs.ghc
-    pkgs.haskellPackages.ghc-mod
+    pkgs.haskell.packages.ghc7103.ghc-mod
     pkgs.stack
     pkgs.cabal-install
     pkgs.cabal2nix
