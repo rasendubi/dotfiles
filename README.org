@@ -61,7 +61,7 @@ users.extraUsers.rasen = {
     I have two machines. Currently, only one is running NixOS, but I'll setup the second soon.
 
 **** Larry
-    This one is a laptop that needs the proprietary driver for Wi-Fi card (this ="wl"= and =broadcom_sta=).
+    This one is a laptop that needs the proprietary driver for Wi-Fi card (this =wl= and =broadcom_sta=).
 
 #+name: nixos-machine
 #+begin_src nix
