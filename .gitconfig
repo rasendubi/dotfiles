@@ -34,6 +34,8 @@
 
 [alias]
     cl  = clone
+    gh-cl = gh-clone
+    cr  = cr-fix
     p   = push
     pl  = pull
     f   = fetch
@@ -68,6 +70,9 @@
     bb  = bisect bad
     bis = bisect start
     bir = bisect reset
+
+[url "git@github.com:"]
+    pushInsteadOf = https://github.com/
 
 [url "git://github.com/ghc/packages-"]
     insteadOf = git://github.com/ghc/packages/

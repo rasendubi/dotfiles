@@ -917,6 +917,8 @@ pkgs.gitg
 #+begin_src gitconfig :tangle .gitconfig
 [alias]
     cl  = clone
+    gh-cl = gh-clone
+    cr  = cr-fix
     p   = push
     pl  = pull
     f   = fetch
@@ -951,6 +953,13 @@ pkgs.gitg
     bb  = bisect bad
     bis = bisect start
     bir = bisect reset
+#+end_src
+
+Always push to github with ssh keys instead of login/password.
+
+#+begin_src gitconfig :tangle .gitconfig
+[url "git@github.com:"]
+    pushInsteadOf = https://github.com/
 #+end_src
 
     The next is needed for proper resolving of GHC submodules:

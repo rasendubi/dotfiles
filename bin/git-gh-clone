@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -x
+
+user=$1
+repo=$2
+
+shift
+shift
+
+git clone "https://github.com/$user/$repo.git" "$@"
