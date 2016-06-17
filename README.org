@@ -732,6 +732,13 @@ URxvt*color14:    #4eb4fa
 URxvt*color15:    #d0d0d0
 #+end_src
 
+*** fish
+
+#+name: nixos-system-packages
+#+begin_src nix
+pkgs.fish
+#+end_src
+
 *** Zsh
     Zsh is my default shell:
 #+name: nixos-general

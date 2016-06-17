@@ -218,6 +218,7 @@ in {
     pkgs.ditaa
     pkgs.jre
     pkgs.rxvt_unicode
+    pkgs.fish
     pkgs.gitFull
     pkgs.gitg
     pkgs.tmux
