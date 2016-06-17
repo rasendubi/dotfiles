@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+
+# Usage:
+# git cr-fix #pr your_remote
+#
+# git cr-fix upstream_remote #pr your_remote
+
+# TODO(rasen): find how save your_remote in git config
+
+import json
+import sys
+import urllib.request
+import re
+from subprocess import Popen, PIPE, call
+
+if len(sys.argv) > 3:
+    remote = sys.argv[1]
+    pr = sys.argv[2]
+    myremote = sys.argv[3]
+else:
+    remote = 'origin'
+    pr = sys.argv[1]
+    myremote = sys.argv[2]
+
+remote_url = Popen(['git', 'remote', 'get-url', remote], stdout=PIPE).communicate()[0]
+repo = re.search('github.com[:/](.*/.*)\.git', remote_url.decode('utf-8')).group(1)
+
+myremote_url = Popen(['git', 'remote', 'get-url', myremote], stdout=PIPE).communicate()[0]
+myname = re.search('github.com[:/](.*)/.*\.git', myremote_url.decode('utf-8')).group(1)
+
+url = "https://api.github.com/repos/{}/pulls/{}".format(repo, pr)
+
+r = urllib.request.urlopen(url)
+x = json.loads(r.read().decode(r.info().get_param('charset') or 'utf-8'))
+
+mybranch_name = "cr/{}".format(pr)
+
+cmd = ['git', 'push', myremote, "HEAD:refs/heads/{}".format(mybranch_name)]
+print(*cmd)
+call(cmd)
+
+fix_url = "https://github.com/{repo}/compare/{branch}...{me}:{mybranch}?expand=1".format(
+    repo=x["head"]["repo"]["full_name"],
+    branch=x["head"]["ref"],
+    me=myname,
+    mybranch=mybranch_name)
+
+print(fix_url)
+call(['xdg-open', fix_url])
