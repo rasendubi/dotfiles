@@ -644,7 +644,7 @@ pkgs.emacs
 #+name: nixos-system-packages
 #+begin_src nix
 pkgs.ycmd
-pkgs.racerRust
+pkgs.rustracer
 pkgs.ditaa
 pkgs.jre
 #+end_src

@@ -214,7 +214,7 @@ in {
     (pkgs.vim_configurable.override { python3 = true; })
     pkgs.emacs
     pkgs.ycmd
-    pkgs.racerRust
+    pkgs.rustracer
     pkgs.ditaa
     pkgs.jre
     pkgs.rxvt_unicode
