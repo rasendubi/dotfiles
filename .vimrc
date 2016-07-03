@@ -90,11 +90,11 @@ NeoBundle 'Shougo/vimproc.vim', {
 \    },
 \ }
 
-NeoBundle 'Valloric/YouCompleteMe', {
-\    'build' : {
-\        'linux' : 'git submodule update --init --recursive && ./install.sh --clang-completer --system-libclang',
-\    },
-\ }
+" NeoBundle 'Valloric/YouCompleteMe', {
+" \    'build' : {
+" \        'linux' : 'git submodule update --init --recursive && ./install.sh --clang-completer --system-libclang',
+" \    },
+" \ }
 " NeoBundle 'altercation/vim-colors-solarized'
 if &term != 'linux'
 	NeoBundle 'bling/vim-airline'

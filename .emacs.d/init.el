@@ -713,6 +713,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (org-babel-do-load-languages 'org-babel-load-languages
                                '((emacs-lisp . t)
                                  (sh . t)
+                                 (shell . t)
                                  (ditaa . t)
                                  (plantuml . t)))
   (setq org-ditaa-jar-path "~/.nix-profile/lib/ditaa.jar")

@@ -1,7 +1,5 @@
 { config, pkgs, ... }:
-let
-  
-in {
+{
   nixpkgs.config.allowUnfree = true;
 
   imports = [ <nixpkgs/nixos/modules/installer/scan/not-detected.nix> ];
@@ -147,9 +145,10 @@ in {
   
     fonts = with pkgs; [
       powerline-fonts
+      terminus_font
+  
       inconsolata
       corefonts
-      terminus_font
       dejavu_fonts
       source-code-pro
       ubuntu_font_family
