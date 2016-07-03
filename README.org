@@ -22,34 +22,34 @@ Pieces not (yet) covered in this document are:
 #+begin_src nix :tangle nixos/configuration.nix :noweb no-export :padline no
 { config, pkgs, ... }:
 {
-  nixpkgs.config.allowUnfree = true;
+  imports = [
+    {
+      nixpkgs.config.allowUnfree = true;
 
-  <<nixos-machine>>
+      # The NixOS release to be compatible with for stateful data such as databases.
+      system.stateVersion = "15.09";
+    }
 
-  <<nixos-general>>
-
-  environment.systemPackages = [
-    <<nixos-system-packages>>
+    <<nixos-section>>
   ];
-
-  # The NixOS release to be compatible with for stateful data such as databases.
-  system.stateVersion = "15.09";
 }
 #+end_src
 
-    These =<<nixos-machine>>=, =<<nixos-general>>=, and =<<nixos-system-packages>>= are replaced by other parts of this doc. =<<nixos-machine>>= is described in [[Machines section][Machines section]]; =<<nixos-general>>= and =<<nixos-system-packages>>= are scatered around the doc. =<<nixos-system-packages>>= can only consist of packages, and they usually start with =pkgs.= so you can quickly distinguish these sections.
+This =<<nixos-section>>= is replaced by other parts of this doc.
 
 *** Users
     I'm the only user of the system:
 
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-users.extraUsers.rasen = {
-  isNormalUser = true;
-  uid = 1000;
-  extraGroups = [ "users" "wheel" "networkmanager" "dialout" "plugdev" ];
-  initialPassword = "HelloWorld";
-};
+{
+  users.extraUsers.rasen = {
+    isNormalUser = true;
+    uid = 1000;
+    extraGroups = [ "users" "wheel" ];
+    initialPassword = "HelloWorld";
+  };
+}
 #+end_src
 
     =initialPassword= is used only first time when user is created. It must be changed as soon as possible with =passwd=.
@@ -61,88 +61,100 @@ users.extraUsers.rasen = {
 **** Larry
     This one is a laptop that needs the proprietary driver for Wi-Fi card (this =wl= and =broadcom_sta=).
 
-#+name: nixos-machine
+#+name: nixos-section
 #+begin_src nix
-imports = [ <nixpkgs/nixos/modules/installer/scan/not-detected.nix> ];
+{
+  imports = [ <nixpkgs/nixos/modules/installer/scan/not-detected.nix> ];
 
-boot.initrd.availableKernelModules = [ "ahci" "xhci_hcd" ];
-boot.initrd.kernelModules = [ "wl" ];
+  boot.initrd.availableKernelModules = [ "ahci" "xhci_hcd" ];
+  boot.initrd.kernelModules = [ "wl" ];
 
-boot.kernelModules = [ "kvm-intel" "wl" ];
-boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
+  boot.kernelModules = [ "kvm-intel" "wl" ];
+  boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
+}
 #+end_src
 
     I have two partitions (usual "separate home" setup).
-#+name: nixos-machine
+#+name: nixos-section
 #+begin_src nix
-fileSystems = {
-  "/" = {
-    device = "/dev/disk/by-uuid/ba82dd25-a9e5-436f-ae76-4ee44d53b2c6";
-    fsType = "ext4";
+{
+  fileSystems = {
+    "/" = {
+      device = "/dev/disk/by-uuid/ba82dd25-a9e5-436f-ae76-4ee44d53b2c6";
+      fsType = "ext4";
+    };
+    "/home" = {
+      device = "/dev/disk/by-uuid/b27c07d0-aaf7-44a1-87e1-5a2cb30954ec";
+      fsType = "ext4";
+    };
   };
-  "/home" = {
-    device = "/dev/disk/by-uuid/b27c07d0-aaf7-44a1-87e1-5a2cb30954ec";
-    fsType = "ext4";
-  };
-};
+}
 #+end_src
 
 There are also two swap partitions, but one of them is from my slow hdd, so I probably shouldn't use it.
 
-#+name: nixos-machine
+#+name: nixos-section
 #+begin_src nix
-swapDevices = [
-  # TODO: set priority
-  # { device = "/dev/disk/by-uuid/f0bd0438-3324-4295-9981-07015fa0af5e"; }
-  { device = "/dev/disk/by-uuid/75822d9d-c5f0-495f-b089-f57d0de5246d"; }
-];
+{
+  swapDevices = [
+    # TODO: set priority
+    # { device = "/dev/disk/by-uuid/f0bd0438-3324-4295-9981-07015fa0af5e"; }
+    { device = "/dev/disk/by-uuid/75822d9d-c5f0-495f-b089-f57d0de5246d"; }
+  ];
+}
 #+end_src
 
     There is also Gentoo on the second drive---it's good to keep it bootable.
-#+name: nixos-machine
+#+name: nixos-section
 #+begin_src nix
-boot.loader.grub = {
-  enable = true;
-  version = 2;
-  device = "/dev/sda";
-  extraEntries = ''
-    menuentry 'Gentoo' {
-      configfile (hd1,1)/grub2/grub.cfg
-    }
-  '';
-};
+{
+  boot.loader.grub = {
+    enable = true;
+    version = 2;
+    device = "/dev/sda";
+    extraEntries = ''
+      menuentry 'Gentoo' {
+        configfile (hd1,1)/grub2/grub.cfg
+      }
+    '';
+  };
+}
 #+end_src
 
     Boring stuff: 8 hyper-threads, networking ([[https://launchpad.net/wicd][wicd]]), synaptics (Larry is a laptop).
 
-#+name: nixos-machine
+#+name: nixos-section
 #+begin_src nix
-nix.maxJobs = 8;
-nix.buildCores = 8;
+{
+  nix.maxJobs = 8;
+  nix.buildCores = 8;
 
-networking = {
-  hostName = "Larry";
+  networking = {
+    hostName = "Larry";
 
-  useDHCP = false;
-  wicd.enable = true;
-  wireless.enable = false;
+    useDHCP = false;
+    wicd.enable = true;
+    wireless.enable = false;
 
-  extraHosts = ''
-    127.0.0.1 Larry Larry.local
-  '';
-};
+    extraHosts = ''
+      127.0.0.1 Larry Larry.local
+    '';
+  };
 
-services.xserver.synaptics = {
-  enable = true;
-  twoFingerScroll = true;
-  vertEdgeScroll = true;
-};
+  services.xserver.synaptics = {
+    enable = true;
+    twoFingerScroll = true;
+    vertEdgeScroll = true;
+  };
+}
 #+end_src
 
 I have nvidia video card and integrated intel-one. I don't use nvidia one, so next the line disables it:
-#+name: nixos-machine
+#+name: nixos-section
 #+begin_src nix
-hardware.nvidiaOptimus.disable = true;
+{
+  hardware.nvidiaOptimus.disable = true;
+}
 #+end_src
 
 *** Local overlay
@@ -174,9 +186,11 @@ nix-env -f nixpkgs-local/default.nix -i
 #+RESULTS:
 
 To make package results testing better, I build them in isolated environment (for more info, see [[https://nixos.org/nixos/manual/options.html#opt-nix.useChroot][nixos manual]]):
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-nix.useSandbox = true;
+{
+  nix.useSandbox = true;
+}
 #+end_src
 
 **** rust-nightly
@@ -251,168 +265,204 @@ in stdenv.mkDerivation rec {
 ** Services
 *** OpenVPN
     All my computers are members of the VPN:
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-services.openvpn.servers = {
-  kaa.config = ''
-    client
-    dev tap
-    port 22
-    proto tcp
-    tls-client
-    persist-key
-    persist-tun
-    ns-cert-type server
-    remote vpn.kaa.org.ua
-    ca /root/.vpn/ca.crt
-    key /root/.vpn/alexey.shmalko.key
-    cert /root/.vpn/alexey.shmalko.crt
-  '';
-};
+{
+  services.openvpn.servers = {
+    kaa.config = ''
+      client
+      dev tap
+      port 22
+      proto tcp
+      tls-client
+      persist-key
+      persist-tun
+      ns-cert-type server
+      remote vpn.kaa.org.ua
+      ca /root/.vpn/ca.crt
+      key /root/.vpn/alexey.shmalko.key
+      cert /root/.vpn/alexey.shmalko.crt
+    '';
+  };
+}
 #+end_src
 
     Avahi is needed to allow resolution of =.local= names. For example, you can access this computer by =larry.local= if we meet at the same local network.
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-services.avahi = {
-  enable = true;
-  nssmdns = true;
-  publish = {
+{
+  services.avahi = {
     enable = true;
-    userServices = true;
-    workstation = true;
+    nssmdns = true;
+    publish = {
+      enable = true;
+      userServices = true;
+      workstation = true;
+    };
   };
-};
+}
 #+end_src
 
 The following lines are needed to start avahi-daemon automatically. The default service is wantedBy "if-up.target" which doesn't seem to be activated (maybe because of wicd).
 
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-systemd.services.avahi-daemon.wantedBy = [ "multi-user.target" ];
-systemd.services.avahi-daemon.after = [ "openvpn-kaa.target" ];
+{
+  systemd.services.avahi-daemon.wantedBy = [ "multi-user.target" ];
+  systemd.services.avahi-daemon.after = [ "openvpn-kaa.target" ];
+}
 #+end_src
 
 *** SSH
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-services.openssh = {
-  enable = true;
-  passwordAuthentication = false;
-};
+{
+  services.openssh = {
+    enable = true;
+    passwordAuthentication = false;
+  };
+}
 #+end_src
 
 *** Gitolite
     I host some git repos on my machines:
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-services.gitolite = {
-  enable = true;
-  adminPubkey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDJhMhxIwZJgIY6CNSNEH+BetF/WCUtDFY2KTIl8LcvXNHZTh4ZMc5shTOS/ROT4aH8Awbm0NjMdW33J5tFMN8T7q89YZS8hbBjLEh8J04Y+kndjnllDXU6NnIr/AenMPIZxJZtSvWYx+f3oO6thvkZYcyzxvA5Vi6V1cGx6ni0Kizq/WV/mE/P1nNbwuN3C4lCtiBC9duvoNhp65PctQNohnKQs0vpQcqVlfqBsjQ7hhj2Fjg+Ofmt5NkL+NhKQNqfkYN5QyIAulucjmFAieKR4qQBABopl2F6f8D9IjY8yH46OCrgss4WTf+wxW4EBw/QEfNoKWkgVoZtxXP5pqAz rasen@Larry";
-};
+{
+  services.gitolite = {
+    enable = true;
+    adminPubkey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDJhMhxIwZJgIY6CNSNEH+BetF/WCUtDFY2KTIl8LcvXNHZTh4ZMc5shTOS/ROT4aH8Awbm0NjMdW33J5tFMN8T7q89YZS8hbBjLEh8J04Y+kndjnllDXU6NnIr/AenMPIZxJZtSvWYx+f3oO6thvkZYcyzxvA5Vi6V1cGx6ni0Kizq/WV/mE/P1nNbwuN3C4lCtiBC9duvoNhp65PctQNohnKQs0vpQcqVlfqBsjQ7hhj2Fjg+Ofmt5NkL+NhKQNqfkYN5QyIAulucjmFAieKR4qQBABopl2F6f8D9IjY8yH46OCrgss4WTf+wxW4EBw/QEfNoKWkgVoZtxXP5pqAz rasen@Larry";
+  };
+}
 #+end_src
 
 *** dnsmasq
 
 Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
 
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-services.dnsmasq = {
-  enable = true;
+{
+  services.dnsmasq = {
+    enable = true;
 
-  # These are used in addition to resolv.conf
-  servers = [ "8.8.8.8" "8.8.4.4" ];
+    # These are used in addition to resolv.conf
+    servers = [ "8.8.8.8" "8.8.4.4" ];
 
-  extraConfig = ''
-    listen-address=127.0.0.1
-    cache-size=1000
+    extraConfig = ''
+      listen-address=127.0.0.1
+      cache-size=1000
 
-    no-negcache
+      no-negcache
+    '';
+  };
+
+  # Put the text in /etc/resolv.conf.head
+  #
+  # That will prepend dnsmasq server to /etc/resolv.conf (dhcpcd-specific)
+  environment.etc."resolv.conf.head".text = ''
+    nameserver 127.0.0.1
   '';
-};
-
-# Put the text in /etc/resolv.conf.head
-#
-# That will prepend dnsmasq server to /etc/resolv.conf (dhcpcd-specific)
-environment.etc."resolv.conf.head".text = ''
-  nameserver 127.0.0.1
-'';
+}
 #+end_src
 
 ** Environment
 *** General
     I definitely use X server:
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-services.xserver.enable = true;
+{
+  services.xserver.enable = true;
+}
 #+end_src
 
     Use English as my only supported locale:
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-i18n.supportedLocales = [ "en_US.UTF-8/UTF-8" ];
+{
+  i18n.supportedLocales = [ "en_US.UTF-8/UTF-8" ];
+}
 #+end_src
 
     Setup timezone:
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-time.timeZone = "Europe/Kiev";
+{
+  time.timeZone = "Europe/Kiev";
+}
 #+end_src
 
 *** Login manager
     I use SLiM. It stands for Simple Login Manager. It's fast and has little dependencies. The projects is dead since 2014, but still works fine, so I keep using it.
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-services.xserver.displayManager.slim.enable = true;
+{
+  services.xserver.displayManager.slim.enable = true;
+}
 #+end_src
 
 *** Window manager
     I use [[http://awesome.naquadah.org/][awesome wm]]:
 
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-services.xserver.windowManager.awesome = {
-  enable = true;
-  luaModules = [ pkgs.luaPackages.luafilesystem ];
-};
+{
+  services.xserver.windowManager.awesome = {
+    enable = true;
+    luaModules = [ pkgs.luaPackages.luafilesystem ];
+  };
+}
 #+end_src
 
     Disabling xterm makes awesome wm a default choice in slim:
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-services.xserver.desktopManager.xterm.enable = false;
+{
+  services.xserver.desktopManager.xterm.enable = false;
+}
 #+end_src
 
     These packages are used by my awesome wm setup:
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-pkgs.wmname
-pkgs.kbdd
-pkgs.xclip
-pkgs.scrot
+{
+  environment.systemPackages = [
+    pkgs.wmname
+    pkgs.kbdd
+    pkgs.xclip
+    pkgs.scrot
+  ];
+}
 #+end_src
 
 *** Keyboard
 **** Layouts
     I use English, Russian, and Ukrainian layouts:
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-services.xserver.layout = "us,ru,ua";
+{
+  services.xserver.layout = "us,ru,ua";
+}
 #+end_src
 
     I toggle between them with either Caps Lock, or Menu key---I have two different keyboards, and one doesn't have Menu when Caps Lock is too far on the second. I never use Caps Lock--the feature, so it's nice to have Caps LED indicate alternate layouts.
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-services.xserver.xkbOptions = "grp:caps_toggle,grp:menu_toggle,grp_led:caps";
+{
+  services.xserver.xkbOptions = "grp:caps_toggle,grp:menu_toggle,grp_led:caps";
+}
 #+end_src
 
 **** Layout indicator
 
     I use [[http://sourceforge.net/projects/xxkb][xxkb]] as a keyboard indicator.
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-pkgs.xxkb
+{
+  environment.systemPackages = [
+    pkgs.xxkb
+  ];
+}
 #+end_src
 
     Its settings are saved in =.xxkbrc= file. Xxkb just sits in the tray and displays layout image.
@@ -459,119 +509,144 @@ XXkb.group.alt: 2
 
 *** Redshift
     Redshift adjusts the color temperature of the screen according to the position of the sun. That should improve my sleep.
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-services.redshift = {
-  enable = true;
-  latitude = "50.4500";
-  longitude = "30.5233";
-};
+{
+  services.redshift = {
+    enable = true;
+    latitude = "50.4500";
+    longitude = "30.5233";
+  };
+}
 #+end_src
 
 ** Look and Feel
 *** Qt theme
     This makes apps look like in KDE:
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-pkgs.kde4.oxygen_icons
-pkgs.kde4.kwin_styles
+{
+  environment.systemPackages = [
+    pkgs.kde4.oxygen_icons
+    pkgs.kde4.kwin_styles
+  ];
+}
 #+end_src
 
 *** Gtk theme
     I like consistency, so oxygen-gtk is a nice choice:
-#+name: nixos-system-packages
-#+begin_src nix
-pkgs.oxygen-gtk2
-pkgs.oxygen-gtk3
-#+end_src
 
-    Set it as a default theme:
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-environment.shellInit = ''
-  export GTK_PATH=$GTK_PATH:${pkgs.oxygen_gtk}/lib/gtk-2.0
-  export GTK2_RC_FILES=$GTK2_RC_FILES:${pkgs.oxygen_gtk}/share/themes/oxygen-gtk/gtk-2.0/gtkrc
-'';
+{
+  environment.systemPackages = [ pkgs.oxygen-gtk2 pkgs.oxygen-gtk3 ];
+
+  environment.shellInit = ''
+    export GTK_PATH=$GTK_PATH:${pkgs.oxygen_gtk}/lib/gtk-2.0
+    export GTK2_RC_FILES=$GTK2_RC_FILES:${pkgs.oxygen_gtk}/share/themes/oxygen-gtk/gtk-2.0/gtkrc
+  '';
+}
 #+end_src
 
 **** TODO Find a way to make deadbeef use oxygen theme
 The theme has some issues with deadbeef, so I install adwaita icons to make deadbeef usable.
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-pkgs.gnome3.adwaita-icon-theme
+{
+  environment.systemPackages = [
+    pkgs.gnome3.adwaita-icon-theme
+  ];
+}
 #+end_src
 
 *** Fonts
 
-I'm not a font guru, so I just stuffed a bunch of fonts. The ones I'm really need to be there are =powerline-fonts= and =terminus_font=.
+I'm not a font guru, so I just stuffed a bunch of random fonts here.
 
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-fonts = {
-  enableCoreFonts = true;
-  enableFontDir = true;
-  enableGhostscriptFonts = false;
+{
+  fonts = {
+    enableCoreFonts = true;
+    enableFontDir = true;
+    enableGhostscriptFonts = false;
 
-  fonts = with pkgs; [
-    powerline-fonts
-    terminus_font
-
-    inconsolata
-    corefonts
-    dejavu_fonts
-    source-code-pro
-    ubuntu_font_family
-    unifont
-  ];
-};
+    fonts = with pkgs; [
+      inconsolata
+      corefonts
+      dejavu_fonts
+      source-code-pro
+      ubuntu_font_family
+      unifont
+    ];
+  };
+}
 #+end_src
 
 ** Applications
     Here go applications (almost) every normal user needs.
 *** KDE apps
     I don't use full KDE but some apps are definitely nice.
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-pkgs.kde4.gwenview
-pkgs.kde4.kde_baseapps # <-- dolphin
-pkgs.kde4.kde_runtime
-pkgs.kde4.kfilemetadata
-pkgs.kde4.filelight
-pkgs.shared_mime_info
+{
+  environment.systemPackages = [
+    pkgs.kde4.gwenview
+    pkgs.kde4.kde_baseapps # <-- dolphin
+    pkgs.kde4.kde_runtime
+    pkgs.kde4.kfilemetadata
+    pkgs.kde4.filelight
+    pkgs.shared_mime_info
+  ];
+}
 #+end_src
 
     KDE apps may have issues with mime types without this:
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-environment.pathsToLink = [ "/share" ];
+{
+  environment.pathsToLink = [ "/share" ];
+}
 #+end_src
 
 *** Firefox
     Though my default browser is google-chrome, it has issues with Java plugin, so I use firefox for that:
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-pkgs.firefoxWrapper
+{
+  environment.systemPackages = [
+    pkgs.firefoxWrapper
+  ];
+}
 #+end_src
 
     The following enables jre support:
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-nixpkgs.config.firefox.jre = true;
+{
+  nixpkgs.config.firefox.jre = true;
+}
 #+end_src
 
 The default java plugin (=pkgs.oraclejdk8=) has issues building, so use open alternative for now. (Actually, it works better with my windom manager so I think I'll stick with it for a while.)
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-nixpkgs.config.packageOverrides = pkgs: rec {
-  jrePlugin = pkgs.icedtea_web;
-};
+{
+  nixpkgs.config.packageOverrides = pkgs: rec {
+    jrePlugin = pkgs.icedtea_web;
+  };
+}
 #+end_src
 
 *** Zathura
     Zathura is a cool document viewer with Vim-like bindings.
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-pkgs.zathura
+{
+  environment.systemPackages = [
+    pkgs.zathura
+  ];
+}
 #+end_src
 
 Enable incremental search (Zathura's config goes to =~/.config/zathura/zathurarc=).
@@ -582,51 +657,67 @@ set incremental-search true
 *** Other applications
     Don't require additional setup.
 
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-pkgs.google-chrome
-pkgs.skype
-pkgs.libreoffice
-pkgs.qbittorrent
-pkgs.calibre
-pkgs.mnemosyne
-pkgs.deadbeef
-pkgs.wine
-pkgs.vlc
-pkgs.mplayer
-pkgs.smplayer
-pkgs.gparted
-pkgs.unetbootin
-pkgs.kvm
-pkgs.thunderbird
-pkgs.xscreensaver
-pkgs.xss-lock
+{
+  environment.systemPackages = [
+    pkgs.google-chrome
+    pkgs.skype
+    pkgs.libreoffice
+    pkgs.qbittorrent
+    pkgs.calibre
+    pkgs.mnemosyne
+    pkgs.deadbeef
+    pkgs.wine
+    pkgs.vlc
+    pkgs.mplayer
+    pkgs.smplayer
+    pkgs.gparted
+    pkgs.unetbootin
+    pkgs.kvm
+    pkgs.thunderbird
+    pkgs.xscreensaver
+    pkgs.xss-lock
+  ];
+}
 #+end_src
 
 ** Development
 *** Editors
     I'm a seasoned Vim user, but I've switched to emacs now.
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-(pkgs.vim_configurable.override { python3 = true; })
-pkgs.emacs
+{
+  environment.systemPackages = [
+    (pkgs.vim_configurable.override { python3 = true; })
+    pkgs.emacs
+  ];
+}
 #+end_src
 
     The following packages are needed for emacs plugins:
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-pkgs.ycmd
-pkgs.rustracer
-pkgs.ditaa
-pkgs.jre
+{
+  environment.systemPackages = [
+    pkgs.ycmd
+    pkgs.rustracer
+    pkgs.ditaa
+    pkgs.jre
+  ];
+}
 #+end_src
 
 *** rxvt-unicode
 
    I use urxvt as my terminal emulator:
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-pkgs.rxvt_unicode
+{
+  environment.systemPackages = [
+    pkgs.rxvt_unicode
+  ];
+}
 #+end_src
 
    Urxvt gets its setting from =.Xresources= file. If you ever want to reload it on-the-fly, type the following (or press =C-c C-c= if you're in emacs):
@@ -669,6 +760,18 @@ urxvt.iso14755: False
 
     I use Terminus font.
 
+#+name: nixos-section
+#+begin_src nix
+{
+  fonts = {
+    fonts = [
+      pkgs.powerline-fonts
+      pkgs.terminus_font
+    ];
+  };
+}
+#+end_src
+
 #+begin_src conf-xdefaults :tangle .Xresources
 URxvt.font: xft:Terminus:normal:size=12
 #+end_src
@@ -702,18 +805,24 @@ URxvt*color15:    #d0d0d0
 
 fish is a cool shell, but haven't yet configured it properly to switch to it for my day-to-day work.
 
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-pkgs.fish
+{
+  environment.systemPackages = [
+    pkgs.fish
+  ];
+}
 #+end_src
 
 *** Zsh
     Zsh is my default shell:
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-programs.zsh.enable = true;
+{
+  programs.zsh.enable = true;
 
-users.defaultUserShell = "/run/current-system/sw/bin/zsh";
+  users.defaultUserShell = "/run/current-system/sw/bin/zsh";
+}
 #+end_src
 
 **** Prompt
@@ -840,10 +949,14 @@ fi
     /TODO review this/
 
 *** git
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-pkgs.gitFull
-pkgs.gitg
+{
+  environment.systemPackages = [
+    pkgs.gitFull
+    pkgs.gitg
+  ];
+}
 #+end_src
 
     Basic info: my name, email, ui, editor, [[https://git-scm.com/blog/2010/03/08/rerere.html][rerere]].
@@ -945,9 +1058,13 @@ Always push to github with ssh keys instead of login/password.
 #+end_src
 
 *** tmux
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-pkgs.tmux
+{
+  environment.systemPackages = [
+    pkgs.tmux
+  ];
+}
 #+end_src
 
     I like =C-a= as a prefix.
@@ -988,95 +1105,126 @@ set-window-option -g automatic-rename
 
 *** Haskell
     Needed to work with Haskell:
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-pkgs.ghc
-pkgs.haskell.packages.ghc7103.ghc-mod
-pkgs.stack
-pkgs.cabal-install
-pkgs.cabal2nix
+{
+  environment.systemPackages = [
+    pkgs.ghc
+    pkgs.haskell.packages.ghc7103.ghc-mod
+    pkgs.stack
+    pkgs.cabal-install
+    pkgs.cabal2nix
+  ];
+}
 #+end_src
 
 *** Embedded
     The following packages provide compiler, ARM cross-compiler, debugger, and terminal.
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-pkgs.gnumake
-pkgs.cmake
-pkgs.binutils
-pkgs.gcc
-pkgs.gcc-arm-embedded
-(pkgs.gdb.override { multitarget = true; })
-pkgs.minicom
-pkgs.openocd
-pkgs.expect
-pkgs.telnet
+{
+  environment.systemPackages = [
+    pkgs.gnumake
+    pkgs.cmake
+    pkgs.binutils
+    pkgs.gcc
+    pkgs.gcc-arm-embedded
+    (pkgs.gdb.override { multitarget = true; })
+    pkgs.minicom
+    pkgs.openocd
+    pkgs.expect
+    pkgs.telnet
+  ];
+}
 #+end_src
 
     To allow user use openocd without sudo, we should add him to =plugdev= group and install openocd udev rules:
-#+name: nixos-general
+
+#+name: nixos-section
 #+begin_src nix
-users.extraGroups.plugdev = { };
-services.udev.packages = [ pkgs.openocd ];
+{
+  users.extraGroups.plugdev = { };
+  users.extraUsers.rasen.extraGroups = [ "plugdev" "dialout" ];
+
+  services.udev.packages = [ pkgs.openocd ];
+}
 #+end_src
 
 **** Arduino
 
 I teach a course for children involving Arduino programming.
 
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-pkgs.arduino
+{
+  environment.systemPackages = [
+    pkgs.arduino
+  ];
+}
 #+end_src
 
 *** Other terminal goodies
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-pkgs.wget
-pkgs.htop
-pkgs.psmisc
-pkgs.mosh
-pkgs.zip
-pkgs.unzip
-pkgs.unrar
-pkgs.p7zip
-pkgs.irssi
-pkgs.man-pages
-pkgs.bind
-pkgs.file
-pkgs.which
-pkgs.whois
-pkgs.gnupg
-pkgs.utillinuxCurses
+{
+  environment.systemPackages = [
+    pkgs.wget
+    pkgs.htop
+    pkgs.psmisc
+    pkgs.mosh
+    pkgs.zip
+    pkgs.unzip
+    pkgs.unrar
+    pkgs.p7zip
+    pkgs.irssi
+    pkgs.man-pages
+    pkgs.bind
+    pkgs.file
+    pkgs.which
+    pkgs.whois
+    pkgs.gnupg
+    pkgs.utillinuxCurses
 
-pkgs.patchelf
+    pkgs.patchelf
 
-pkgs.nix-repl
-pkgs.nox
-pkgs.python
-pkgs.python3
+    pkgs.nix-repl
+    pkgs.nox
+    pkgs.python
+    pkgs.python3
+  ];
+}
 #+end_src
 
 ** Games
 *** Steam
     We need the following package:
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-pkgs.steam
+{
+  environment.systemPackages = [
+    pkgs.steam
+  ];
+}
 #+end_src
 
     It's also required to enable 32-bit support for opengl and pulseaudio:
-#+name: nixos-general
+#+name: nixos-section
 #+begin_src nix
-hardware.opengl.driSupport32Bit = true;
-hardware.pulseaudio.support32Bit = true;
+{
+  hardware.opengl.driSupport32Bit = true;
+  hardware.pulseaudio.support32Bit = true;
+}
 #+end_src
 
 *** Nethack
     I play nethack rarely, but still nice to have my setting in sync.
-#+name: nixos-system-packages
+#+name: nixos-section
 #+begin_src nix
-pkgs.nethack
+{
+  environment.systemPackages = [
+    pkgs.nethack
+  ];
+}
 #+end_src
 
    The following sets my default name, selects a dog, and disables auto-pickup; the last line makes interface a bit friendlier.
