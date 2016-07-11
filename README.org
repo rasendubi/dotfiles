@@ -37,9 +37,11 @@ Pieces not (yet) covered in this document are:
 
 This =<<nixos-section>>= is replaced by other parts of this doc.
 
-*** Configuration location
+*** Default locations
 
     This moves nixos configuration from the default location to the dotfiles/nixos/configuration.nix.
+
+    This also disables channel mechanism and makes nixos use Nixpkgs in the =dotfiles/channels= directory. I usually follow nixpkgs-unstable, but that gives me more control.
 
 #+name: nixos-section
 #+begin_src nix
@@ -47,10 +49,9 @@ This =<<nixos-section>>= is replaced by other parts of this doc.
   nix.nixPath =
     let dotfiles = "/home/rasen/dotfiles";
     in [
-      "/nix/var/nix/profiles/per-user/root/channels/nixos"
       "nixos-config=${dotfiles}/nixos/configuration.nix"
       "dotfiles=${dotfiles}"
-      "/nix/var/nix/profiles/per-user/root/channels"
+      "${dotfiles}/channels"
     ];
 }
 #+end_src
@@ -58,6 +59,19 @@ This =<<nixos-section>>= is replaced by other parts of this doc.
 If you want to override default configuration location, use =-I= flag:
 #+begin_src sh
 sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix
+#+end_src
+
+*** Save config
+
+Save nixos-config in the Nix store, so I can later retrieve it.
+
+#+name: nixos-section
+#+begin_src nix
+{
+  nix.nixPath = let current-config = <nixos-config>; in [
+    "current-config=${current-config}"
+  ];
+}
 #+end_src
 
 *** Users

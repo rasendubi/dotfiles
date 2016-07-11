@@ -12,11 +12,15 @@
       nix.nixPath =
         let dotfiles = "/home/rasen/dotfiles";
         in [
-          "/nix/var/nix/profiles/per-user/root/channels/nixos"
           "nixos-config=${dotfiles}/nixos/configuration.nix"
           "dotfiles=${dotfiles}"
-          "/nix/var/nix/profiles/per-user/root/channels"
+          "${dotfiles}/channels"
         ];
+    }
+    {
+      nix.nixPath = let current-config = <nixos-config>; in [
+        "current-config=${current-config}"
+      ];
     }
     {
       users.extraUsers.rasen = {

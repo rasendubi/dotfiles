@@ -7,3 +7,6 @@
 [submodule "command-log-mode"]
 	path = .emacs.d/site-lisp/command-log-mode
 	url = https://github.com/rasendubi/command-log-mode.git
+[submodule "channels/nixpkgs"]
+	path = channels/nixpkgs
+	url = https://github.com/NixOS/nixpkgs-channels
