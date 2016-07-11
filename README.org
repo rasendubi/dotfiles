@@ -37,6 +37,29 @@ Pieces not (yet) covered in this document are:
 
 This =<<nixos-section>>= is replaced by other parts of this doc.
 
+*** Configuration location
+
+    This moves nixos configuration from the default location to the dotfiles/nixos/configuration.nix.
+
+#+name: nixos-section
+#+begin_src nix
+{
+  nix.nixPath =
+    let dotfiles = "/home/rasen/dotfiles";
+    in [
+      "/nix/var/nix/profiles/per-user/root/channels/nixos"
+      "nixos-config=${dotfiles}/nixos/configuration.nix"
+      "dotfiles=${dotfiles}"
+      "/nix/var/nix/profiles/per-user/root/channels"
+    ];
+}
+#+end_src
+
+If you want to override default configuration location, use =-I= flag:
+#+begin_src sh
+sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix
+#+end_src
+
 *** Users
     I'm the only user of the system:
 
@@ -1287,17 +1310,6 @@ if [ ! -f "$BASE/.ssh/id_rsa" ]; then
 else
     echo "$BASE/.ssh/id_rsa exists. Skipping..."
 fi
-#+end_src
-
-    Then copies =nixos/*= files to =/etc/nixos/=.
-#+begin_src sh :tangle setup.sh
-read -r -p "Copy NixOS config? [y/N] " response
-case "$response" in
-    [yY][eE][sS]|[yY])
-        sudo mkdir -v -p /etc/nixos
-        sudo cp -v "$BASE/nixos"/* "/etc/nixos/"
-        ;;
-esac
 #+end_src
 
 # Local Variables:

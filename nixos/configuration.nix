@@ -9,6 +9,16 @@
     }
 
     {
+      nix.nixPath =
+        let dotfiles = "/home/rasen/dotfiles";
+        in [
+          "/nix/var/nix/profiles/per-user/root/channels/nixos"
+          "nixos-config=${dotfiles}/nixos/configuration.nix"
+          "dotfiles=${dotfiles}"
+          "/nix/var/nix/profiles/per-user/root/channels"
+        ];
+    }
+    {
       users.extraUsers.rasen = {
         isNormalUser = true;
         uid = 1000;

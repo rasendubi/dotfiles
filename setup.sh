@@ -42,11 +42,3 @@ if [ ! -f "$BASE/.ssh/id_rsa" ]; then
 else
     echo "$BASE/.ssh/id_rsa exists. Skipping..."
 fi
-
-read -r -p "Copy NixOS config? [y/N] " response
-case "$response" in
-    [yY][eE][sS]|[yY])
-        sudo mkdir -v -p /etc/nixos
-        sudo cp -v "$BASE/nixos"/* "/etc/nixos/"
-        ;;
-esac
