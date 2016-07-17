@@ -63,14 +63,12 @@ sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix
 
 *** Save config
 
-Save nixos-config in the Nix store, so I can later retrieve it.
+Save nixos-config in the Nix store, so I can later retrieve it. The config for the current system is located at =/var/run/current-system/configuration.nix=.
 
 #+name: nixos-section
 #+begin_src nix
 {
-  nix.nixPath = let current-config = <nixos-config>; in [
-    "current-config=${current-config}"
-  ];
+  system.copySystemConfiguration = true;
 }
 #+end_src
 

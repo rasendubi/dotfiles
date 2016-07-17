@@ -18,9 +18,7 @@
         ];
     }
     {
-      nix.nixPath = let current-config = <nixos-config>; in [
-        "current-config=${current-config}"
-      ];
+      system.copySystemConfiguration = true;
     }
     {
       users.extraUsers.rasen = {
