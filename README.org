@@ -13,6 +13,7 @@ Pieces not (yet) covered in this document are:
 - vim configuration at =.vimrc= and =.vim/=;
 - awesome wm configuration at =.config/awesome/=;
 - scripts at =bin/=;
+- irssi config at =.irssi=;
 
 ** NixOS
     I'm a [[http://nixos.org/][NixOS]] user. What's cool about it is that I can describe all my system configuration in one file (=/etc/nixos/configuration.nix=), so I can just copy it to other machine, call =nixos-rebuild= and have system with the same software, system settings, etc.
@@ -1276,7 +1277,7 @@ OPTIONS=lit_corridor, DECgraphics, showscore, showexp, time, color, hilite_pet
 
     There is a =setup.sh= script in this directory. It just links all files to =$HOME=:
 #+begin_src sh :shebang "#!/bin/sh" :tangle setup.sh :padline no
-FILES=".vimrc .vim .nvimrc .nvim .gitconfig .zshrc .zsh .tmux.conf .xxkbrc .Xresources .config/awesome .config/nvim .config/xxkb .nethackrc .emacs.d .ssh bin .config/zathura"
+FILES=".vimrc .vim .nvimrc .nvim .gitconfig .zshrc .zsh .tmux.conf .xxkbrc .Xresources .config/awesome .config/nvim .config/xxkb .nethackrc .emacs.d .ssh bin .config/zathura .irssi"
 
 DEST=$1
 
