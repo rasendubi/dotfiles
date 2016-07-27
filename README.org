@@ -1213,7 +1213,6 @@ I teach a course for children involving Arduino programming.
     pkgs.unrar
     pkgs.p7zip
     pkgs.irssi
-    pkgs.man-pages
     pkgs.bind
     pkgs.file
     pkgs.which
@@ -1222,6 +1221,11 @@ I teach a course for children involving Arduino programming.
     pkgs.utillinuxCurses
 
     pkgs.patchelf
+
+    pkgs.man-pages
+    pkgs.stdman
+    pkgs.posix_man_pages
+    pkgs.stdmanpages
 
     pkgs.nix-repl
     pkgs.nox

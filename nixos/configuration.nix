@@ -390,7 +390,6 @@
         pkgs.unrar
         pkgs.p7zip
         pkgs.irssi
-        pkgs.man-pages
         pkgs.bind
         pkgs.file
         pkgs.which
@@ -399,6 +398,11 @@
         pkgs.utillinuxCurses
     
         pkgs.patchelf
+    
+        pkgs.man-pages
+        pkgs.stdman
+        pkgs.posix_man_pages
+        pkgs.stdmanpages
     
         pkgs.nix-repl
         pkgs.nox
