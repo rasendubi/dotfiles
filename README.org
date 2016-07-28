@@ -360,6 +360,15 @@ The following lines are needed to start avahi-daemon automatically. The default 
 }
 #+end_src
 
+**** Mosh
+[[https://mosh.mit.edu/][Mosh (mobile shell)]] is a cool addition to ssh.
+#+name: nixos-section
+#+begin_src nix
+{
+  programs.mosh.enable = true;
+}
+#+end_src
+
 *** Gitolite
     I host some git repos on my machines:
 #+name: nixos-section
@@ -1207,7 +1216,6 @@ I teach a course for children involving Arduino programming.
     pkgs.wget
     pkgs.htop
     pkgs.psmisc
-    pkgs.mosh
     pkgs.zip
     pkgs.unzip
     pkgs.unrar
