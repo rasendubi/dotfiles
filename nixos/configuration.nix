@@ -351,7 +351,7 @@
     {
       environment.systemPackages = [
         pkgs.ghc
-        pkgs.haskell.packages.ghc7103.ghc-mod
+        pkgs.haskellPackages.ghc-mod
         pkgs.stack
         pkgs.cabal-install
         pkgs.cabal2nix
