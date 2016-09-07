@@ -78,10 +78,6 @@
         useDHCP = false;
         wicd.enable = true;
         wireless.enable = false;
-    
-        extraHosts = ''
-          127.0.0.1 Larry Larry.local
-        '';
       };
     
       services.xserver.synaptics = {
@@ -117,11 +113,12 @@
     {
       services.avahi = {
         enable = true;
+        browseDomains = [ ];
+        interfaces = [ "tap0" ];
         nssmdns = true;
         publish = {
           enable = true;
-          userServices = true;
-          workstation = true;
+          addresses = true;
         };
       };
     }
@@ -133,6 +130,20 @@
       services.openssh = {
         enable = true;
         passwordAuthentication = false;
+    
+        # Disable default firewall rules
+        ports = [];
+        listenAddresses = [
+          { addr = "0.0.0.0"; port = 22; }
+        ];
+      };
+    
+      # allow ssh from VPN network only
+      networking.firewall = {
+        extraCommands = ''
+          ip46tables -D INPUT -i tap0 -p tcp -m tcp --dport 22 -j ACCEPT 2> /dev/null || true
+          ip46tables -A INPUT -i tap0 -p tcp -m tcp --dport 22 -j ACCEPT
+        '';
       };
     }
     {
@@ -165,6 +176,15 @@
       environment.etc."resolv.conf.head".text = ''
         nameserver 127.0.0.1
       '';
+    }
+    {
+      networking.firewall = {
+        enable = true;
+        allowPing = false;
+    
+        connectionTrackingModules = [];
+        autoLoadConntrackHelpers = false;
+      };
     }
     {
       services.xserver.enable = true;
