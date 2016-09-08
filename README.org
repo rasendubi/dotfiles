@@ -1323,7 +1323,7 @@ if [ -z "$DEST" ]; then
     DEST="$HOME"
 fi
 
-BASE=$(dirname $(readlink -f $0))
+BASE=$(cd "$(dirname "$0")" && pwd)
 
 ask_install() {
     FILENAME=$1
