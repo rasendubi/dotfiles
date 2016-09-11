@@ -749,6 +749,7 @@ set incremental-search true
     pkgs.thunderbird
     pkgs.xscreensaver
     pkgs.xss-lock
+    pkgs.alarm-clock-applet
   ];
 }
 #+end_src
@@ -874,14 +875,12 @@ URxvt*color15:    #d0d0d0
 
 *** fish
 
-fish is a cool shell, but haven't yet configured it properly to switch to it for my day-to-day work.
+fish is a cool shell, but I haven't yet configured it properly to switch to it for my day-to-day work.
 
 #+name: nixos-section
 #+begin_src nix
 {
-  environment.systemPackages = [
-    pkgs.fish
-  ];
+  programs.fish.enable = true;
 }
 #+end_src
 

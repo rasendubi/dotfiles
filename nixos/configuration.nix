@@ -318,6 +318,7 @@
         pkgs.thunderbird
         pkgs.xscreensaver
         pkgs.xss-lock
+        pkgs.alarm-clock-applet
       ];
     }
     {
@@ -348,9 +349,7 @@
       };
     }
     {
-      environment.systemPackages = [
-        pkgs.fish
-      ];
+      programs.fish.enable = true;
     }
     {
       programs.zsh.enable = true;
