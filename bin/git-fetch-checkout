@@ -1,0 +1,2 @@
+#!/bin/sh
+git fetch "$@" && git checkout FETCH_HEAD
