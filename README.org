@@ -1095,6 +1095,7 @@ fi
     cb  = checkout -b
     cm  = checkout origin/master
     de  = checkout --detach
+    fco = fetch-checkout
     br  = branch
     s   = status
     re  = reset --hard
