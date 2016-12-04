@@ -234,9 +234,8 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (global-whitespace-mode t))
 
 (use-package clean-aindent-mode
-  :init
-  (setq clean-aindent-is-simple-indent t)
   :config
+  (setq clean-aindent-is-simple-indent t)
   (clean-aindent-mode t))
 ;(define-key global-map (kbd "RET") 'newline-and-indent)
 
@@ -252,7 +251,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 ;  (smartparens-global-mode))
 
 (defun set-tab-width (width)
-  "Set tab width to WIDTH and generate tab stops"
+  "Set tab width to WIDTH and generate tab stops."
   (setq tab-width width)
   (setq tab-stop-list (number-sequence width 120 width)))
 
@@ -262,13 +261,16 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 (setq backup-directory-alist '(("." . "~/.emacs-backups")))
 
-(setq browse-url-browser-function 'browse-url-generic
-      browse-url-generic-program "google-chrome-stable")
+(use-package browse-url
+  :config
+  (setq browse-url-browser-function 'browse-url-generic
+        browse-url-generic-program "google-chrome-stable"))
 
 ;; Open config (this file)
 (global-set-key (kbd "<f12>") (lambda () (interactive) (find-file user-init-file)))
 
 (defun font-exists-p (font)
+  "Check if the FONT exists."
   (not (and (display-graphic-p) (null (x-list-fonts font)))))
 
 (cond ((font-exists-p "Terminus-12")
@@ -287,12 +289,11 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 (defvar dotfiles-directory
   (file-name-as-directory (expand-file-name ".." (file-name-directory (file-truename user-init-file))))
-  "The path to the dotfiles directory")
+  "The path to the dotfiles directory.")
 
-(setq compilation-scroll-output t)
-
-(add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
-(load-theme 'molokai t)
+(use-package compile
+  :config
+  (setq compilation-scroll-output t))
 
 (use-package helm-projectile
   :commands (helm-projectile-switch-to-buffer
@@ -330,7 +331,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (define-key helm-map (kbd "C-z") 'helm-select-action)
 
   (when (executable-find "curl")
-    (setq helm-google-suggest-use-curl-p t))
+    (setq helm-net-prefer-curl t))
 
   (setq helm-move-to-line-cycle-in-source t
         helm-ff-search-library-in-sexp t
@@ -382,7 +383,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (yas-global-mode 1)
   (yas-load-directory "~/.emacs.d/snippets")
   (add-hook 'term-mode-hook (lambda ()
-                              (setq yas-dont-activate t))))
+                              (setq yas-dont-activate-functions t))))
 
 (use-package projectile
   :commands (projectile-ack
@@ -410,18 +411,20 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
              projectile-vc)
   :diminish projectile-mode
   :config
-  ;; Use prefix arg, is you want to change compilation command
+  ;; Use the prefix arg if you want to change the compilation command
   (setq compilation-read-command nil)
 
-  (projectile-global-mode)
+  (projectile-mode)
   (setq projectile-completion-system 'helm))
 
 (use-package powerline)
 
 (use-package airline-themes
-  :init
+  :config
   (require 'cl)
-  (load-theme 'airline-molokai t))
+  (load-theme 'airline-molokai t)
+  (add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
+  (load-theme 'molokai t))
 
 (use-package company
   :diminish company-mode
@@ -764,8 +767,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (smart-tabs-advice c-indent-line c-basic-offset)
   (smart-tabs-advice c-indent-region c-basic-offset))
 
-(use-package restclient
-  :disabled t)
+(use-package restclient)
 
 (use-package nix-mode
   :mode "\\.nix$")
@@ -1033,6 +1035,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 ;; http://stackoverflow.com/a/13408008/2538771
 (require 'ansi-color)
 (defun colorize-compilation-buffer ()
+  "Interpret color escape codes in the buffer."
   (ansi-color-apply-on-region compilation-filter-start (point)))
 (add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
 
@@ -1053,4 +1056,5 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
                         (other . "rasen")))
 
 (defun add-to-path (str)
+  "Add an STR to the PATH environment variable."
   (setenv "PATH" (concat str ":" (getenv "PATH"))))
