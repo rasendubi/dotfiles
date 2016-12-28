@@ -1,5 +1,6 @@
 local naughty = require('naughty')
 local beautiful = require('beautiful')
+local wibox = require('wibox')
 
 local battery = {}
 
@@ -14,7 +15,7 @@ local function get_file(file)
     return res
 end
 
-function battery.get_widget(wibox, adapter)
+function battery.get_widget(adapter)
     local battery_widget = wibox.widget.textbox()
     battery_widget:set_align("right")
 
