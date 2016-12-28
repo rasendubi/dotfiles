@@ -518,11 +518,11 @@ Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
 
 *** Keyboard
 **** Layouts
-    I use English, Russian, and Ukrainian layouts:
+    I use English and Ukrainian layouts. I also use Russian symbols, but they are on the third level.
 #+name: nixos-section
 #+begin_src nix
 {
-  services.xserver.layout = "us,ru,ua";
+  services.xserver.layout = "us,ua";
 }
 #+end_src
 
@@ -536,57 +536,7 @@ Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
 
 **** Layout indicator
 
-    I use [[http://sourceforge.net/projects/xxkb][xxkb]] as a keyboard indicator.
-#+name: nixos-section
-#+begin_src nix
-{
-  environment.systemPackages = [
-    pkgs.xxkb
-  ];
-}
-#+end_src
-
-    Its settings are saved in =.xxkbrc= file. Xxkb just sits in the tray and displays layout image.
-
-#+begin_src conf-xdefaults :tangle .xxkbrc :padline no
-XXkb.image.path: /home/rasen/.config/xxkb
-
-XXkb.mainwindow.enable: yes
-XXkb.mainwindow.type: tray
-XXkb.mainwindow.geometry: 17x14+0+0
-XXkb.mainwindow.image.1: en.svg
-XXkb.mainwindow.image.2: ru.svg
-XXkb.mainwindow.image.3: ua.svg
-XXkb.mainwindow.image.4:
-
-XXkb.*.label.enable: no
-
-XXkb.button.enable: no
-
-XXkb.controls.add_when_start: yes
-XXkb.controls.add_when_create: yes
-XXkb.controls.add_when_change: no
-XXkb.controls.focusout: no
-XXkb.controls.button_delete: no
-XXkb.controls.button_delete_and_forget: yes
-XXkb.controls.mainwindow_delete: no
-
-XXkb.mousebutton.1.reverse: no
-XXkb.mousebutton.3.reverse: no
-
-XXkb.bell.enable: no
-
-XXkb.ignore.reverse: no
-#+end_src
-    /TODO make path relative/
-
-    The following enables two-state mode---in that mode xxkb switches between one base (English) and one alternative layout (Russian or Ukrainian). Switching of alternate layouts is implemented in awesome wm config.
-
-#+begin_src conf-xdefaults :tangle .xxkbrc
-XXkb.controls.two_state: yes
-XXkb.group.base: 1
-XXkb.group.alt: 2
-#+end_src
+     I use built-in awesome layout indicator.
 
 *** Redshift
     Redshift adjusts the color temperature of the screen according to the position of the sun. That should improve my sleep.
@@ -1325,7 +1275,7 @@ OPTIONS=lit_corridor, DECgraphics, showscore, showexp, time, color, hilite_pet
 
     There is a =setup.sh= script in this directory. It just links all files to =$HOME=:
 #+begin_src sh :shebang "#!/bin/sh" :tangle setup.sh :padline no
-FILES=".vimrc .vim .nvimrc .nvim .gitconfig .zshrc .zsh .tmux.conf .xxkbrc .Xresources .config/awesome .config/nvim .config/xxkb .nethackrc .emacs.d .ssh bin .config/zathura .irssi"
+FILES=".vimrc .vim .nvimrc .nvim .gitconfig .zshrc .zsh .tmux.conf .Xresources .config/awesome .config/nvim .config/xxkb .nethackrc .emacs.d .ssh bin .config/zathura .irssi"
 
 DEST=$1
 

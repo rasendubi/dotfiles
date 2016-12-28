@@ -220,15 +220,10 @@
       ];
     }
     {
-      services.xserver.layout = "us,ru,ua";
+      services.xserver.layout = "us,ua";
     }
     {
       services.xserver.xkbOptions = "grp:caps_toggle,grp:menu_toggle,grp_led:caps";
-    }
-    {
-      environment.systemPackages = [
-        pkgs.xxkb
-      ];
     }
     {
       services.redshift = {

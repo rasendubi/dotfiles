@@ -85,7 +85,6 @@ menubar.utils.terminal = terminal -- Set the terminal for applications that requ
 -- }}}
 
 -- Autostart {{{
-utils.rerun("xxkb")
 utils.run_once("kbdd")
 utils.run_once("wicd-client", "wicd-client -t")
 utils.run("wmname LG3D")
@@ -95,6 +94,8 @@ utils.run("xscreensaver")
 utils.run("xss-lock -- xscreensaver-command -lock")
 -- utils.run_once("/usr/bin/pulseaudio", "start-pulseaudio-x11")
 -- }}}
+
+mykeyboardlayout = awful.widget.keyboardlayout()
 
 -- {{{ Wibar
 -- Create a textclock widget
