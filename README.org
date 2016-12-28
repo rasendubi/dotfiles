@@ -437,6 +437,16 @@ Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
 }
 #+end_src
 
+*** VirtualBox
+
+#+name: nixos-section
+#+begin_src nix
+{
+  virtualisation.virtualbox.host.enable = true;
+  users.extraUsers.rasen.extraGroups = [ "vboxusers" ];
+}
+#+end_src
+
 ** Environment
 *** General
     I definitely use X server:

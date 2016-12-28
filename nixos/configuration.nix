@@ -187,6 +187,10 @@
       };
     }
     {
+      virtualisation.virtualbox.host.enable = true;
+      users.extraUsers.rasen.extraGroups = [ "vboxusers" ];
+    }
+    {
       services.xserver.enable = true;
     }
     {
