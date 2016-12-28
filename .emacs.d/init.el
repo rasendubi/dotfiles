@@ -1039,6 +1039,11 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (ansi-color-apply-on-region compilation-filter-start (point)))
 (add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
 
+(use-package avy
+  :config
+  (nmap "K" 'avy-goto-char)
+  (mmap "K" 'avy-goto-char))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (c-add-style "rasen"
              '("k&r"
