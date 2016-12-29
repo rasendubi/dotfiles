@@ -640,6 +640,9 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
                              (visual-line-mode 1)
                              (whitespace-mode -1)))
 
+  ;; save CLOSED timestamp when task is done
+  (setq org-log-done t)
+
   (setq org-directory "~/org"
         org-default-notes-file "~/org/refile.org")
 
