@@ -928,7 +928,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
    ;; one argument that has to be a word
    (list
     (concat "\\([@\\\\]\\(addtogroup\\|defgroup\\|weakgroup"
-            "\\|page\\|anchor\\|ref\\|section\\|subsection"
+            "\\|page\\|anchor\\|ref\\|section\\|subsection\\|subsubsection\\|paragraph"
             "\\)\\)\\s-+\\(\\sw+\\)")
     '(1 font-lock-keyword-face prepend)
     '(3 font-lock-string-face prepend))))
