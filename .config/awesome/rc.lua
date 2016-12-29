@@ -303,6 +303,18 @@ globalkeys = awful.util.table.join(
                   }
               end,
               {description = "lua execute prompt", group = "awesome"}),
+
+    -- Multimedia keys
+    awful.key({ }, "XF86AudioMute", function ()
+            awful.spawn("amixer set Master toggle")
+    end),
+    awful.key({ }, "XF86AudioRaiseVolume", function ()
+            awful.spawn("amixer set Master 2%+")
+    end),
+    awful.key({ }, "XF86AudioLowerVolume", function ()
+            awful.spawn("amixer set Master 2%-")
+    end),
+
     -- Menubar
     awful.key({ modkey }, "p", function() menubar.show() end,
               {description = "show the menubar", group = "launcher"})
