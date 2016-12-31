@@ -295,6 +295,17 @@ in stdenv.mkDerivation rec {
 #+end_src
 
 ** Services
+*** Locate
+    Update [[https://linux.die.net/man/1/locate][locate]] database daily.
+#+name: nixos-section
+#+begin_src nix
+{
+  services.locate = {
+    enable = true;
+    localuser = "rasen";
+  };
+}
+#+end_src
 *** OpenVPN
     All my computers are members of the VPN:
 #+name: nixos-section
@@ -423,6 +434,8 @@ Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
 #+end_src
 
 *** Firewall
+
+Enable firewall. This disables all ports and pings.
 
 #+name: nixos-section
 #+begin_src nix

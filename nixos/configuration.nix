@@ -93,6 +93,11 @@
       nix.useSandbox = true;
     }
     {
+      services.locate = {
+        enable = true;
+      };
+    }
+    {
       services.openvpn.servers = {
         kaa.config = ''
           client
