@@ -268,6 +268,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 ;; Open config (this file)
 (global-set-key (kbd "<f12>") (lambda () (interactive) (find-file user-init-file)))
+(global-set-key (kbd "S-<f12>") (lambda () (interactive) (find-file "~/dotfiles/README.org")))
 
 (defun font-exists-p (font)
   "Check if the FONT exists."
@@ -632,6 +633,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (use-package org
   :ensure org-plus-contrib
   :config
+  (global-set-key (kbd "C-c a") 'org-agenda)
   (global-set-key (kbd "C-c l") 'org-store-link)
   (global-set-key (kbd "C-c c") 'org-capture)
   (global-set-key (kbd "C-c b") 'org-iswitchb)
@@ -718,7 +720,6 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   ;; org-babel
   (org-babel-do-load-languages 'org-babel-load-languages
                                '((emacs-lisp . t)
-                                 (sh . t)
                                  (shell . t)
                                  (ditaa . t)
                                  (plantuml . t)))
