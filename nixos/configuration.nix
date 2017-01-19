@@ -95,6 +95,7 @@
     {
       services.locate = {
         enable = true;
+        localuser = "rasen";
       };
     }
     {
@@ -210,7 +211,7 @@
     {
       services.xserver.windowManager.awesome = {
         enable = true;
-        luaModules = [ pkgs.luaPackages.luafilesystem ];
+        luaModules = [ pkgs.luaPackages.luafilesystem pkgs.luaPackages.cjson ];
       };
     }
     {

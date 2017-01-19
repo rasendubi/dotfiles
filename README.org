@@ -503,7 +503,7 @@ Enable firewall. This disables all ports and pings.
 {
   services.xserver.windowManager.awesome = {
     enable = true;
-    luaModules = [ pkgs.luaPackages.luafilesystem ];
+    luaModules = [ pkgs.luaPackages.luafilesystem pkgs.luaPackages.cjson ];
   };
 }
 #+end_src
