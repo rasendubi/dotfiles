@@ -357,11 +357,17 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (use-package magit
   :bind ("C-c m" . magit-status)
   :diminish auto-revert-mode
-  :defer 6
+  :defer 6)
+
+(use-package evil-magit
+  :after magit
   :config
-  (use-package evil-magit
-    :init
-    (setq evil-magit-use-y-for-yank t)))
+  (setq evil-magit-use-y-for-yank t))
+
+(use-package magithub
+  :after magit
+  :config
+  (magithub-feature-autoinject t))
 
 (use-package gitconfig-mode
   :mode "^\\.gitconfig$")
