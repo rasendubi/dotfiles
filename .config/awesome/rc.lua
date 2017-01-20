@@ -315,6 +315,23 @@ globalkeys = awful.util.table.join(
             awful.spawn("amixer set Master 2%-")
     end),
 
+    -- Unfocus all windows and turn the screen off
+    awful.key({ modkey, "Mod1" }, "l", function ()
+            local saved = client.focus
+            client.focus = nil
+
+            mousegrabber.run(function (p)
+                    client.focus = saved
+                    return false
+            end, 'rtl_logo')
+
+            gears.timer.start_new(
+                1, function ()
+                    awful.spawn("xset dpms force off")
+                    return false
+            end)
+    end),
+
     -- Menubar
     awful.key({ modkey }, "p", function() menubar.show() end,
               {description = "show the menubar", group = "launcher"})
