@@ -13,3 +13,9 @@
 /.vim/haskellmode.config
 /.emacs.d/.python-environments/
 /.ssh/id_rsa
+/.ssh/known_hosts
+/.emacs.d/custom.el
+/.emacs.d/history
+/.emacs.d/ac-comphist.dat
+/.emacs.d/bookmarks
+/.emacs.d/nix-buffer/
