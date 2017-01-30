@@ -146,10 +146,39 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (define-key minibuffer-local-ns-map [escape] 'minibuffer-keyboard-quit)
   (define-key minibuffer-local-completion-map [escape] 'minibuffer-keyboard-quit)
   (define-key minibuffer-local-must-match-map [escape] 'minibuffer-keyboard-quit)
-  (define-key minibuffer-local-isearch-map [escape] 'minibuffer-keyboard-quit)
+  (define-key minibuffer-local-isearch-map [escape] 'minibuffer-keyboard-quit))
 
-  (use-package smartrep
-    :commands (smartrep-read-event-loop))
+;; Some highlighting for f, F, t, T commands
+(use-package evil-quickscope
+  :defer 2
+  :config
+  (global-evil-quickscope-mode))
+
+(use-package evil-numbers
+  :bind (:map evil-normal-state-map
+              ("C-a" . evil-numbers/int-at-pt)
+              ("C-x" . evil-numbers/dec-at-pt)))
+
+(use-package smartrep
+  :commands (smartrep-read-event-loop))
+
+(use-package key-chord
+  :if (not android-p)
+  :config
+  ;; This must be called before `key-chord-mode' as key-chord must
+  ;; override input-method to work properly.
+  (set-input-method "ukrainian-computer")
+  ;; I still want English be default
+  (toggle-input-method)
+
+  (setq key-chord-two-keys-delay 0.2)
+  (key-chord-mode 1)
+  (key-chord-define evil-insert-state-map "jk" 'evil-normal-state)
+  (key-chord-define evil-visual-state-map "jk" 'evil-change-to-previous-state)
+  (key-chord-define evil-replace-state-map "jk" 'evil-normal-state)
+  (imap "<escape>" (rasen/hard-way "jk"))
+  (vmap "<escape>" (rasen/hard-way "jk"))
+
   (defun isearch-exit-chord-worker (&optional arg)
     (interactive "p")
     (isearch-delete-char)
@@ -163,38 +192,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
         (smartrep-read-event-loop
          '(("k" . isearch-exit-chord-worker)))
       (quit nil)))
-  (define-key isearch-mode-map "j" 'isearch-exit-chord)
-
-  ;; Some highlighting for f, F, t, T commands
-  (use-package evil-quickscope
-    :defer 2
-    :config
-    (global-evil-quickscope-mode))
-
-  (use-package key-chord
-    :if (not android-p)
-    :config
-
-    ;; This must be called before `key-chord-mode' as key-chord must
-    ;; override input-method to work properly.
-    (set-input-method "ukrainian-computer")
-    ;; I still want English be default
-    (toggle-input-method)
-
-    (setq key-chord-two-keys-delay 0.2)
-    (key-chord-mode 1)
-    (key-chord-define evil-insert-state-map "jk" 'evil-normal-state)
-    (key-chord-define evil-visual-state-map "jk" 'evil-change-to-previous-state)
-    (key-chord-define evil-replace-state-map "jk" 'evil-normal-state)
-    (imap "<escape>" (rasen/hard-way "jk"))
-    (vmap "<escape>" (rasen/hard-way "jk")))
-
-  (use-package evil-numbers
-    :commands (evil-numbers/inc-at-pt
-               evil-numbers/dec-at-pt)
-    :init
-    (nmap "C-a" 'evil-numbers/inc-at-pt)
-    (nmap "C-x" 'evil-numbers/dec-at-pt)))
+  (define-key isearch-mode-map "j" 'isearch-exit-chord))
 
 (add-hook 'prog-mode-hook
           (lambda () (modify-syntax-entry ?_ "w"))) ; _ is a part of word
@@ -231,29 +229,30 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
                                    empty
                                    trailing
                                    lines-tail))
+
+  ; Original face overrides foreground, so you don't see syntax
+  ; highlight. Use underlines to show characters past limit.
+  (set-face-attribute 'whitespace-line nil
+                      :foreground nil
+                      :background nil
+                      :underline (list :color "yellow4" :style 'wave))
+
   (global-whitespace-mode t))
+
+(set-face-attribute 'font-lock-comment-face nil
+                    :overline nil
+                    :foreground (face-attribute 'shadow :foreground)
+                    :background (face-attribute 'shadow :background))
 
 (use-package clean-aindent-mode
   :config
   (setq clean-aindent-is-simple-indent t)
   (clean-aindent-mode t))
-;(define-key global-map (kbd "RET") 'newline-and-indent)
-
-;(use-package smartparens
-;  :diminish smartparens-mode
-;  :config
-;  (sp-local-pair '(c-mode rust-mode) "{" "}" :post-handlers '(("\n||\n[i]" "RET")))
-;  (require 'smartparens-config)
-;  (sp-local-pair '(c-mode rust-mode) "{" "}" :post-handlers '(("\n||\n[i]" "RET")))
-;  (sp-local-pair 'c-mode "/*" "*/" :post-handlers '(("| " "SPC")
-;                                                    ("||\n[i]" "RET")
-;                                                    (" ||\n[i]" "*")))
-;  (smartparens-global-mode))
 
 (defun set-tab-width (width)
   "Set tab width to WIDTH and generate tab stops."
-  (setq tab-width width)
-  (setq tab-stop-list (number-sequence width 120 width)))
+  (setq-default tab-width width)
+  (setq-default tab-stop-list (number-sequence width 120 width)))
 
 (set-tab-width 2)
 
@@ -431,15 +430,26 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (require 'cl)
   (load-theme 'airline-molokai t)
   (add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
-  (load-theme 'molokai t))
+  (load-theme 'molokai t)
+
+  ; (setq powerline-utf-8-separator-left        #xe0b0
+  ;       powerline-utf-8-separator-right       #xe0b2
+  ;       airline-utf-glyph-separator-left      #xe0b0
+  ;       airline-utf-glyph-separator-right     #xe0b2
+  ;       airline-utf-glyph-subseparator-left   #xe0b1
+  ;       airline-utf-glyph-subseparator-right  #xe0b3
+  ;       airline-utf-glyph-branch              #xe0a0
+  ;       airline-utf-glyph-readonly            #xe0a2
+  ;       airline-utf-glyph-linenumber          #xe0a1)
+  )
 
 (use-package company
+  :defer 2
   :diminish company-mode
   :config
   (global-company-mode))
 
 (use-package ycmd
-  :defer t
   :commands (ycmd-hook ycmd-mode)
   :config
   (set-variable 'ycmd-server-command (list "ycmd"))
@@ -447,15 +457,18 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
                 (concat dotfiles-directory ".nvim/.ycm_extra_conf.py")))
 
 (use-package flycheck
+  :defer 2
   :diminish flycheck-mode
   :config
   (global-flycheck-mode))
 
 (use-package flycheck-ycmd
+  :after flycheck
   :config
   (flycheck-ycmd-setup))
 
 (use-package company-ycmd
+  :after company
   :commands (company-ycmd)
   :init
   (defun c-c++-hook ()
@@ -522,19 +535,21 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
     (add-to-list 'align-rules-list
                  '(haskell-left-arrows
                    (regexp . "\\(\\s-+\\)\\(<-\\|←\\)\\s-+")
-                   (modes . '(haskell-mode literate-haskell-mode)))))
+                   (modes . '(haskell-mode literate-haskell-mode))))))
 
-  (use-package ghc
-    :init
-    (add-hook 'haskell-mode-hook 'ghc-init)
-    :config
-    ; (setq ghc-ghc-options '("-fdefer-type-errors" "-XNamedWildCards"))
-    (autoload 'ghc-init "ghc" nil t)
-    (autoload 'ghc-debug "ghc" nil t))
+(use-package company-ghc
+  :after haskell-mode
+  :commands (company-ghc)
+  :config
+  (add-to-list 'company-backends 'company-ghc))
 
-  (use-package company-ghc
-    :config
-    (add-to-list 'company-backends 'company-ghc)))
+(use-package ghc
+  :after haskell-mode
+  :init
+  (add-hook 'haskell-mode-hook 'ghc-init)
+  :config
+  ; (setq ghc-ghc-options '("-fdefer-type-errors" "-XNamedWildCards"))
+  )
 
 (use-package hideshow
   :commands (hs-minor-mode)
@@ -565,49 +580,32 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (use-package cmake-mode
   :mode ("^CMakeLists\\.txt$" . cmake-mode)
   :config
-  (setq cmake-tab-width 4)
-  (use-package cmake-font-lock)
-  (use-package company-cmake))
+  (setq cmake-tab-width 4))
 
-(use-package idris-mode
-  :disabled t
-  :mode ("\\.idr$" . idris-mode))
+(use-package cmake-font-lock
+  :after cmake-mode)
+(use-package company-cmake
+  :after cmake-mode)
 
 (use-package eldoc
   :commands (eldoc-mode)
   :diminish eldoc-mode)
 
 (use-package rust-mode
-  :mode ("\\.rs$" . rust-mode)
-  :config
-  (use-package racer
-    :commands racer-mode
-    :diminish racer-mode
-    :init
-    (add-hook 'rust-mode-hook #'racer-mode)
-    (add-hook 'racer-mode-hook #'eldoc-mode)))
+  :mode ("\\.rs$" . rust-mode))
 
-(use-package nim-mode
-  :disabled t
-  :mode ("\\.nim$" . nim-mode))
-;; Seems that I have to install nimsuggest first
-; (custom-set-variables
-;  '(nim-nimsuggest-path "~/.nimble/bin/nimsuggest"))
-; (add-to-list 'company-backends 'company-nim)
+(use-package racer
+  :after rust-mode
+  :commands racer-mode
+  :diminish racer-mode
+  :init
+  (add-hook 'rust-mode-hook #'racer-mode)
+  (add-hook 'racer-mode-hook #'eldoc-mode))
 
 (use-package lua-mode
   :mode ("\\.lua$" . lua-mode)
   :config
   (setq lua-indent-level 4))
-
-(use-package scala-mode2
-  :disabled t
-  :mode ("\\.scala$" . scala-mode))
-
-(use-package ensime
-  :disabled t
-  :config
-  (add-hook 'scala-mode-hook 'ensime-scala-mode-hook))
 
 (use-package rainbow-delimiters
   :commands (rainbow-delimiters-mode)
@@ -713,9 +711,6 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
   ;; org-protocol
   (require 'org-protocol)
-  (load "server")
-  (unless (server-running-p)
-    (server-start))
 
   ;; org-refile
   (setq org-refile-use-outline-path 'file)
@@ -777,7 +772,8 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (smart-tabs-advice c-indent-line c-basic-offset)
   (smart-tabs-advice c-indent-region c-basic-offset))
 
-(use-package restclient)
+(use-package restclient
+  :mode "\\.http$")
 
 (use-package nix-mode
   :mode "\\.nix$")
@@ -812,8 +808,9 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   )
 
 (use-package hippie-exp
+  :bind (:map evil-insert-state-map
+              ("C-/" . hippie-expand))
   :config
-  (imap "C-/" 'hippie-expand)
   (setq hippie-expand-try-functions-list
         '(try-expand-dabbrev-visible
           try-expand-dabbrev
@@ -1073,3 +1070,12 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (defun add-to-path (str)
   "Add an STR to the PATH environment variable."
   (setenv "PATH" (concat str ":" (getenv "PATH"))))
+
+;; Save custom configuration in the ~/.emacs.d/custom.el file insted
+;; of this one.
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+(load custom-file t)
+
+(load "server")
+(unless (server-running-p)
+  (server-start))
