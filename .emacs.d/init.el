@@ -346,7 +346,12 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 (use-package compile
   :config
-  (setq compilation-scroll-output t))
+  (setq compilation-scroll-output t)
+  (evil-add-hjkl-bindings compilation-mode-map 'motion
+    (kbd "SPC x") (lookup-key evil-motion-state-map (kbd "SPC x"))
+    (kbd "g")     nil
+    (kbd "g g")   'evil-goto-first-line
+    (kbd "g r")   'recompile))
 
 (use-package helm-projectile
   :commands (helm-projectile-switch-to-buffer
@@ -365,14 +370,15 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
              helm-mini
              helm-find-files
              helm-command-prefix
-             helm-google-suggest)
+             helm-google-suggest
+             helm-build-in-buffer-source
+             helm-make-source)
   :bind (("M-x" . helm-M-x)
          ("C-x C-b" . helm-mini)
          ("C-x C-f" . helm-find-files)
          ("C-h" . helm-command-prefix)
          ("C-c h g" . helm-google-suggest))
   :diminish (helm-mode helm-major-mode)
-  :defer 6
   :config
   (require 'helm-config)
 
