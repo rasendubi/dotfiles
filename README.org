@@ -460,6 +460,25 @@ Enable firewall. This disables all ports and pings.
 }
 #+end_src
 
+*** Postgres
+    Local postgres database for development.
+#+name: nixos-section
+#+begin_src nix
+{
+  services.postgresql = {
+    enable = true;
+  };
+}
+#+end_src
+
+*** Docker
+#+name: nixos-section
+#+begin_src nix
+{
+  virtualisation.docker.enable = true;
+}
+#+end_src
+
 ** Environment
 *** General
     I definitely use X server:

@@ -197,6 +197,14 @@
       users.extraUsers.rasen.extraGroups = [ "vboxusers" ];
     }
     {
+      services.postgresql = {
+        enable = true;
+      };
+    }
+    {
+      virtualisation.docker.enable = true;
+    }
+    {
       services.xserver.enable = true;
     }
     {
