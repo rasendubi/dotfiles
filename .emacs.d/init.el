@@ -356,7 +356,17 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (use-package magit
   :bind ("C-c m" . magit-status)
   :diminish auto-revert-mode
-  :defer 6)
+  :defer 6
+  :config
+  (defun rasen/magit-push-head (target args)
+    "Push HEAD to a branch read in the minibuffer."
+    (interactive
+     (list (magit-read-remote-branch "Push HEAD to"
+                                     nil nil nil 'confirm)
+           (magit-push-arguments)))
+    (magit-git-push "HEAD" target args))
+  (magit-define-popup-action 'magit-push-popup
+    ?h "HEAD" 'rasen/magit-push-head))
 
 (use-package evil-magit
   :after magit
