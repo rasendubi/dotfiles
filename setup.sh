@@ -31,14 +31,13 @@ for FILE in $FILES; do
     ask_install $FILE
 done
 
-if [ ! -f "$BASE/.ssh/id_rsa" ]; then
-    read -r -p "$BASE/.ssh/id_rsa doesn't exist. Decrypt file? [y/N] " response
-    case "$response" in
+if [ ! -e "$DEST/.config/fish/functions/fisher.fish" ]; then
+    read -r -p "Install fisherman and all plugins? [y/N] " response
+    case $response in
         [yY][eE][sS]|[yY])
-            install -m 600 /dev/null "$BASE/.ssh/id_rsa"
-            gpg2 --output "$BASE/.ssh/id_rsa" --yes --decrypt "$BASE/.ssh/id_rsa.gpg"
+            curl -Lo "$DEST/.config/fish/functions/fisher.fish" --create-dirs \
+                https://raw.githubusercontent.com/fisherman/fisherman/master/fisher.fish
+            fish -c fisher
             ;;
     esac
-else
-    echo "$BASE/.ssh/id_rsa exists. Skipping..."
 fi

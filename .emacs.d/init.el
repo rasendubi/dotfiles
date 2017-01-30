@@ -1149,7 +1149,6 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :mode "\\.json$")
 
 (add-to-list 'load-path "~/.emacs.d/site-lisp/")
-(require 'jbt)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (c-add-style "rasen"
