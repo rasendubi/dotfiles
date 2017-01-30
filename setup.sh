@@ -1,5 +1,5 @@
 #!/bin/sh
-FILES=".vimrc .vim .nvimrc .nvim .gitconfig .zshrc .zsh .tmux.conf .xxkbrc .Xresources .config/awesome .config/nvim .config/xxkb .nethackrc .emacs.d .ssh bin .config/zathura .irssi .config/xkb"
+FILES=".vimrc .vim .nvimrc .nvim .gitconfig .zshrc .zsh .tmux.conf .xxkbrc .Xresources .config/awesome .config/nvim .config/xxkb .nethackrc .emacs.d .ssh bin .config/zathura .irssi .config/xkb .config/fish"
 
 DEST=$1
 
