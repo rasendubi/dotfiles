@@ -404,9 +404,12 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (advice-add 'x-selection-value-internal :around #'my-x-selection-value-internal))
 
 (use-package magit
-  :bind ("C-c m" . magit-status)
+  :bind (:map evil-normal-state-map
+              ("g m" . magit-status))
   :diminish auto-revert-mode
   :defer 6
+  :init
+  (global-set-key (kbd "C-c m") (rasen/hard-way "g m"))
   :config
   (defun rasen/magit-push-head (target args)
     "Push HEAD to a branch read in the minibuffer."
