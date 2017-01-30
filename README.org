@@ -570,6 +570,20 @@ Enable firewall. This disables all ports and pings.
 
      I use built-in awesome layout indicator.
 
+**** Custom keyboard modification
+#+begin_src fundamental :tangle .config/xkb/my
+xkb_keymap {
+  xkb_keycodes  { include "evdev+aliases(qwerty)"};
+  xkb_types     { include "complete"};
+  xkb_compat    { include "complete+ledcaps(group_lock)"};
+  xkb_geometry  { include "pc(pc105)"};
+
+  xkb_symbols "my" {
+    include "pc+us+ru:2+inet(evdev)+group(menu_toggle)"
+  };
+};
+#+end_src
+
 *** Redshift
     Redshift adjusts the color temperature of the screen according to the position of the sun. That should improve my sleep.
 #+name: nixos-section
@@ -1307,7 +1321,7 @@ OPTIONS=lit_corridor, DECgraphics, showscore, showexp, time, color, hilite_pet
 
     There is a =setup.sh= script in this directory. It just links all files to =$HOME=:
 #+begin_src sh :shebang "#!/bin/sh" :tangle setup.sh :padline no
-FILES=".vimrc .vim .nvimrc .nvim .gitconfig .zshrc .zsh .tmux.conf .Xresources .config/awesome .config/nvim .config/xxkb .nethackrc .emacs.d .ssh bin .config/zathura .irssi"
+FILES=".vimrc .vim .nvimrc .nvim .gitconfig .zshrc .zsh .tmux.conf .xxkbrc .Xresources .config/awesome .config/nvim .config/xxkb .nethackrc .emacs.d .ssh bin .config/zathura .irssi .config/xkb"
 
 DEST=$1
 

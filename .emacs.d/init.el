@@ -11,15 +11,83 @@
   (package-refresh-contents)
   (package-install 'use-package))
 
-(defconst android-p
-  (string-equal system-configuration "arm-unknown-linux-androideabi"))
-
 (setq use-package-always-ensure t)
-;(setq use-package-verbose t)
+; (setq use-package-verbose t)
 (eval-when-compile
   (require 'use-package))
 (require 'diminish)
 (require 'bind-key)
+
+(defconst android-p
+  (string-equal system-configuration "arm-unknown-linux-androideabi"))
+
+;; Make '_' a part of words, so commands like
+;; `evil-forward-word-begin' work properly.
+(add-hook 'prog-mode-hook
+          (lambda () (modify-syntax-entry ?_ "w")))
+
+(tool-bar-mode -1)
+(menu-bar-mode -1)
+(unless android-p
+  (scroll-bar-mode -1))
+(column-number-mode 1)
+(show-paren-mode 1)
+
+;; Force redraw as hiding menu bar does not take effect immediately.
+;; This is a workaround, but I don't have time to debug the issue.
+; (redraw-display)
+
+;; It doesn't work well on android, but is enabled by default there
+(if android-p
+    (xterm-mouse-mode -1)
+  (xterm-mouse-mode 1))
+
+;; Highlight current line
+(global-hl-line-mode)
+
+(setq-default indent-tabs-mode nil)
+
+;; `scroll-conservatively' should be greater than 100 to never
+;; recenter point. Value 1 helps, but eventually recenters cursor if
+;; you scroll too fast
+(setq scroll-margin 3
+      scroll-conservatively 101)
+
+;; Don't clutter the current directory with backups. Save them in a
+;; separate directory.
+(setq backup-directory-alist `(("." . "~/.emacs.d/backups")))
+
+;; Open config (this file)
+(global-set-key (kbd "<f12>") (lambda () (interactive) (find-file user-init-file)))
+
+(defun set-tab-width (width)
+  "Set tab width to WIDTH and generate tab stops."
+  (setq-default tab-width width)
+  (setq-default tab-stop-list (number-sequence width 120 width)))
+
+(set-tab-width 2)
+
+(fset 'yes-or-no-p 'y-or-n-p)
+
+(setq backup-directory-alist '(("." . "~/.emacs-backups")))
+
+(defun rasen/font-exists-p (font)
+  "Check if the FONT exists."
+  (and (display-graphic-p) (not (null (x-list-fonts font)))))
+
+(cond ((rasen/font-exists-p "Terminess Powerline-12")
+       (set-face-attribute 'default nil :font "Terminess Powerline-12"))
+      ((rasen/font-exists-p "Terminus-12")
+       (set-face-attribute 'default nil :font "Terminus-12")))
+
+(setq inhibit-startup-screen t)
+
+(defvar dotfiles-directory
+  (file-name-as-directory (expand-file-name ".." (file-name-directory (file-truename user-init-file))))
+  "The path to the dotfiles directory.")
+
+(use-package smartrep
+  :commands (smartrep-read-event-loop))
 
 (use-package evil
   :config
@@ -42,7 +110,30 @@
     `(lambda () (interactive) (error "Don't use this key! Use %s instead" ,key)))
   (defun rasen/helm-projectile-grep-headers ()
     (interactive)
-    (helm-do-grep-1 (list (projectile-project-root)) t nil '("*.h")))
+    (helm-do-grep-1 (list (projectile-project-root)) t nil '("*.h" "*.hpp")))
+
+  (defun rasen/smart-move-beginning-of-line (arg)
+    "Move point back to indentation of beginning of line.
+
+Move point to the first non-whitespace character on this line.
+If point is already there, move to the beginning of the line.
+Effectively toggle between the first non-whitespace character and
+the beginning of the line.
+
+If ARG is not nil or 1, move forward ARG - 1 lines first.  If
+point reaches the beginning or end of the buffer, stop there."
+    (interactive "^p")
+    (setq arg (or arg 1))
+
+    ;; Move lines first
+    (when (/= arg 1)
+      (let ((line-move-visual nil))
+        (forward-line (1- arg))))
+
+    (let ((orig-point (point)))
+      (back-to-indentation)
+      (when (= orig-point (point))
+        (move-beginning-of-line 1))))
 
   (nmap "j"       'evil-next-visual-line)
   (nmap "k"       'evil-previous-visual-line)
@@ -62,9 +153,9 @@
   (vmap "SPC"     nil)
   (mmap "SPC"     nil)
   (nmap "SPC SPC" 'save-buffer)
-  (nmap "H"       'evil-first-non-blank)
-  (vmap "H"       'evil-first-non-blank)
-  (mmap "H"       'evil-first-non-blank)
+  (nmap "H"       'rasen/smart-move-beginning-of-line)
+  (vmap "H"       'rasen/smart-move-beginning-of-line)
+  (mmap "H"       'rasen/smart-move-beginning-of-line)
   (nmap "L"       'evil-end-of-line)
   (vmap "L"       'evil-end-of-line)
   (mmap "L"       'evil-end-of-line)
@@ -164,6 +255,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 (use-package key-chord
   :if (not android-p)
+  :after evil
   :config
   ;; This must be called before `key-chord-mode' as key-chord must
   ;; override input-method to work properly.
@@ -192,31 +284,21 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
         (smartrep-read-event-loop
          '(("k" . isearch-exit-chord-worker)))
       (quit nil)))
-  (define-key isearch-mode-map "j" 'isearch-exit-chord))
+  (define-key isearch-mode-map "j" 'isearch-exit-chord)
+  (vmap "<escape>" (rasen/hard-way "jk")))
 
-(add-hook 'prog-mode-hook
-          (lambda () (modify-syntax-entry ?_ "w"))) ; _ is a part of word
+;; Highlight for f, F, t, T commands
+(use-package evil-quickscope
+  :after evil
+  :defer 2
+  :config
+  (global-evil-quickscope-mode))
 
-(tool-bar-mode 0)
-(menu-bar-mode 0)
-(unless android-p
-  (scroll-bar-mode 0))
-(column-number-mode 1)
-(show-paren-mode 1)
-
-;; It doesn't work well on android, but is enabled by default there
-(if android-p
-    (xterm-mouse-mode -1)
-  (xterm-mouse-mode 1))
-
-(global-hl-line-mode)
-
-(setq-default indent-tabs-mode nil)
-
-;; `scroll-conservatively' should be greater than 100 to never recenter point.
-;; Value 1 helps, but eventually recenters cursor if you scroll too fast
-(setq scroll-margin 3
-      scroll-conservatively 101)
+(use-package evil-numbers
+  :after evil
+  :bind (:map evil-normal-state-map
+              ("C-a" . evil-numbers/inc-at-pt)
+              ("C-x" . evil-numbers/dec-at-pt)))
 
 (use-package whitespace
   :diminish (global-whitespace-mode
@@ -249,47 +331,18 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (setq clean-aindent-is-simple-indent t)
   (clean-aindent-mode t))
 
-(defun set-tab-width (width)
-  "Set tab width to WIDTH and generate tab stops."
-  (setq-default tab-width width)
-  (setq-default tab-stop-list (number-sequence width 120 width)))
-
-(set-tab-width 2)
-
-(fset 'yes-or-no-p 'y-or-n-p)
-
-(setq backup-directory-alist '(("." . "~/.emacs-backups")))
+(use-package alert
+  :commands (alert)
+  :config
+  (setq alert-default-style 'libnotify))
 
 (use-package browse-url
+  :commands (browse-url-at-point
+             browse-url-at-mouse
+             browse-url-of-file)
   :config
   (setq browse-url-browser-function 'browse-url-generic
         browse-url-generic-program "google-chrome-stable"))
-
-;; Open config (this file)
-(global-set-key (kbd "<f12>") (lambda () (interactive) (find-file user-init-file)))
-(global-set-key (kbd "S-<f12>") (lambda () (interactive) (find-file "~/dotfiles/README.org")))
-
-(defun font-exists-p (font)
-  "Check if the FONT exists."
-  (not (and (display-graphic-p) (null (x-list-fonts font)))))
-
-(cond ((font-exists-p "Terminus-12")
-       (set-face-attribute 'default nil :font "Terminus-12"))
-      ((font-exists-p "Terminess Powerline-12")
-       (set-face-attribute 'default nil :font "Terminess Powerline-12")))
-
-(setq inhibit-startup-screen t)
-
-;; Here is how to preserve current working directory
-;; (add-hook 'find-file-hook
-;;           (lambda ()
-;;             (setq default-directory command-line-default-directory)))
-;; or put this in your project root (.dir-locals.el):
-;; ((nil . ((default-directory . "project/directory/"))))
-
-(defvar dotfiles-directory
-  (file-name-as-directory (expand-file-name ".." (file-name-directory (file-truename user-init-file))))
-  "The path to the dotfiles directory.")
 
 (use-package compile
   :config
@@ -313,16 +366,13 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
              helm-find-files
              helm-command-prefix
              helm-google-suggest)
-  :diminish helm-mode
+  :bind (("M-x" . helm-M-x)
+         ("C-x C-b" . helm-mini)
+         ("C-x C-f" . helm-find-files)
+         ("C-h" . helm-command-prefix)
+         ("C-c h g" . helm-google-suggest))
+  :diminish (helm-mode helm-major-mode)
   :defer 6
-
-  :init
-  (global-set-key (kbd "M-x") 'helm-M-x)
-  (global-set-key (kbd "C-x C-b") 'helm-mini)
-  (global-set-key (kbd "C-x C-f") 'helm-find-files)
-  (global-set-key (kbd "C-h") 'helm-command-prefix)
-  (global-set-key (kbd "C-c h g") 'helm-google-suggest)
-
   :config
   (require 'helm-config)
 
@@ -378,24 +428,30 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :config
   (magithub-feature-autoinject t))
 
-(use-package gitconfig-mode
-  :mode "^\\.gitconfig$")
+(use-package evil-magit
+  :after magit
+  :config
+  (setq evil-magit-use-y-for-yank t))
 
 (use-package diff-hl
-  :defer 3
+  ; :disabled t
+  :after magit
   :config
-  (global-diff-hl-mode t)
-  (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
+  ; (global-diff-hl-mode t)
+  ; (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
   (unless (display-graphic-p)
     (diff-hl-margin-mode t))
-  (diff-hl-flydiff-mode t))
+  ; (diff-hl-flydiff-mode t)
+  )
+
+(use-package gitconfig-mode
+  :mode "^\\.gitconfig$")
 
 (use-package yasnippet
   :defer 5
   :diminish yas-minor-mode
-  :init
-  (make-directory "~/.emacs.d/snippets" t)
   :config
+  (make-directory "~/.emacs.d/snippets" t)
   (yas-global-mode 1)
   (yas-load-directory "~/.emacs.d/snippets")
   (add-hook 'term-mode-hook (lambda ()
@@ -481,12 +537,12 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :after company
   :commands (company-ycmd)
   :init
-  (defun c-c++-hook ()
+  (defun ycmd-c-c++-hook ()
     (push 'company-ycmd company-backends)
     (ycmd-mode))
 
-  (add-hook 'c-mode-hook 'c-c++-hook)
-  (add-hook 'c++-mode-hook 'c-c++-hook))
+  (add-hook 'c-mode-hook 'ycmd-c-c++-hook)
+  (add-hook 'c++-mode-hook 'ycmd-c-c++-hook))
 
 (use-package haskell-mode
   :mode "\\.hs$"
@@ -568,6 +624,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (add-hook 'c-mode-hook 'hs-minor-mode))
 
 (use-package which-key
+  :defer 2
   :diminish which-key-mode
   :config
   (which-key-mode))
@@ -585,7 +642,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :mode ("\\.\\(markdown\\|mdown\\|md\\)$" . markdown-mode))
 
 (use-package undo-tree
-  :diminish undo-tree-mode)
+  :diminish (undo-tree-mode global-undo-tree-mode))
 
 (use-package cmake-mode
   :mode ("^CMakeLists\\.txt$" . cmake-mode)
@@ -608,7 +665,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :after rust-mode
   :commands racer-mode
   :diminish racer-mode
-  :init
+  :config
   (add-hook 'rust-mode-hook #'racer-mode)
   (add-hook 'racer-mode-hook #'eldoc-mode))
 
@@ -642,16 +699,16 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 ;; Used by org-mode config
 (use-package f
-  :functions (f-files f-ext?))
+  :commands (f-files f-ext?))
 
 (use-package org
+  :defer 5
+  :bind (("C-c a" . org-agenda)
+         ("C-c l" . org-store-link)
+         ("C-c c" . org-capture)
+         ("C-c b" . org-iswitchb))
   :ensure org-plus-contrib
   :config
-  (global-set-key (kbd "C-c a") 'org-agenda)
-  (global-set-key (kbd "C-c l") 'org-store-link)
-  (global-set-key (kbd "C-c c") 'org-capture)
-  (global-set-key (kbd "C-c b") 'org-iswitchb)
-
   (add-hook 'org-mode-hook (lambda ()
                              (visual-line-mode 1)
                              (whitespace-mode -1)))
@@ -819,7 +876,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 (use-package hippie-exp
   :bind (:map evil-insert-state-map
-              ("C-/" . hippie-expand))
+         ("C-/" . hippie-expand))
   :config
   (setq hippie-expand-try-functions-list
         '(try-expand-dabbrev-visible
@@ -953,6 +1010,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
           doxymacs-doxygen-keywords)))))
 
 (use-package irfc
+  :commands (irfc-visit irfc-mode)
   :config
   (setq irfc-directory "~/tmp"
         irfc-assoc-mode t))
@@ -963,6 +1021,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (setq gdb-many-windows t))
 
 (use-package tramp
+  :defer 3
   :config
   (setq tramp-default-method "ssh")
   (setq tramp-default-host "ashmalko.local")
@@ -978,13 +1037,14 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
        (concat "/sudo:root@localhost:"
                buffer-file-name)))))
 
+; I still use `helm-projectile-find-file', but that should be faster
+; for searching direct files. Time will show.
 (use-package ido
+  :bind (:map evil-normal-state-map
+              ("SPC f" . ido-find-file)
+              ("SPC b" . ido-siwtch-buffer))
   :config
-  (ido-mode 1)
-  ; I still use `helm-projectile-find-file', but that should be faster
-  ; for searching direct files. Time will show.
-  (nmap "SPC f" 'ido-find-file)
-  (nmap "SPC b" 'ido-switch-buffer))
+  (ido-mode 1))
 
 ;; I want to log all my key presses to analyze them later
 ;;
@@ -1057,9 +1117,36 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
 
 (use-package avy
+  :bind (:map evil-normal-state-map
+         ("K" . avy-goto-char)
+         :map evil-motion-state-map
+         ("K" . avy-goto-char)))
+
+(use-package string-inflection
+  :bind (:map evil-normal-state-map
+         ("C-q" . string-inflection-ruby-style-cycle)))
+
+(use-package virtualenvwrapper
+  :commands (venv-workon
+             venv-deactivate
+             venv-mkvirtualenv
+             venv-rmvirtualenv
+             venv-lsvirtualenv
+             venv-cdvirtualenv
+             venv-cpvirtualenv))
+
+(use-package visual-fill-column
+  :commands (visual-fill-column-mode)
   :config
-  (nmap "K" 'avy-goto-char)
-  (mmap "K" 'avy-goto-char))
+  (setq-default fill-column 100)
+  (setq-default visual-fill-column-center-text t
+                visual-fill-column-fringes-outside-margins nil))
+
+(use-package json-mode
+  :mode "\\.json$")
+
+(add-to-list 'load-path "~/.emacs.d/site-lisp/")
+(require 'jbt)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (c-add-style "rasen"
@@ -1072,6 +1159,8 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
                (c-offsets-alist . ((case-label . +)
                                    (arglist-intro . ++)
                                    (arglist-cont-nonempty . ++)
+                                   (innamespace . 0)
+                                   (inline-open . 0)
                                    (inextern-lang . 0)))))
 (setq c-default-style '((java-mode . "java")
                         (awk-mode . "awk")
@@ -1080,9 +1169,14 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (defun add-to-path (str)
   "Add an STR to the PATH environment variable."
   (setenv "PATH" (concat str ":" (getenv "PATH"))))
+(put 'narrow-to-region 'disabled nil)
 
-;; Save custom configuration in the ~/.emacs.d/custom.el file insted
-;; of this one.
+(let ((my/credentials-file (expand-file-name "private.el" user-emacs-directory)))
+  (when (file-readable-p my/credentials-file)
+    (load-file my/credentials-file)))
+
+;; Save custom configuration in the "~/.emacs.d/custom.el" file
+;; instead of this one.
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 (load custom-file t)
 

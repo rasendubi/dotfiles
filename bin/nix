@@ -41,6 +41,15 @@ def nix_prefetch_github(args, unknown):
 def nix_prefetch_url(args, unknown):
     return call(['nix-prefetch-url', args.url] + unknown)
 
+def nix_channel_list(args, unknown):
+    return call(['nix-channel', '--list'] + unknown)
+
+def nix_channel_update(args, unknown):
+    return call(['nix-channel', '--update'] + unknown)
+
+def nix_channel_rollback(args, unknown):
+    return call(['nix-channel', '--rollback'] + unknown)
+
 parser = argparse.ArgumentParser(description='A Nix command-line wrapper')
 subparsers = parser.add_subparsers()
 
@@ -68,6 +77,16 @@ parser_prefetch_github.set_defaults(func=nix_prefetch_github)
 parser_prefetch_url = prefetch_parsers.add_parser('url', help='Prefetch URL')
 parser_prefetch_url.add_argument('url', type=str, help='URL to prefetch')
 parser_prefetch_url.set_defaults(func=nix_prefetch_url)
+
+parser_channel = subparsers.add_parser('channel', help='Control channels')
+channel_parsers = parser_channel.add_subparsers()
+
+channel_list = channel_parsers.add_parser('list', help='List all channels')
+channel_list.set_defaults(func=nix_channel_list)
+channel_update = channel_parsers.add_parser('update', help='Update channels')
+channel_update.set_defaults(func=nix_channel_update)
+channel_rollback = channel_parsers.add_parser('rollback', help='Rollback to previous channel version')
+channel_rollback.set_defaults(func=nix_channel_rollback)
 
 args, unknown = parser.parse_known_args()
 if debug:

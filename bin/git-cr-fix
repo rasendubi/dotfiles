@@ -35,7 +35,7 @@ x = json.loads(r.read().decode(r.info().get_param('charset') or 'utf-8'))
 
 mybranch_name = "cr/{}".format(pr)
 
-cmd = ['git', 'push', myremote, "HEAD:refs/heads/{}".format(mybranch_name)]
+cmd = ['git', 'push', '--force-with-lease', myremote, "HEAD:refs/heads/{}".format(mybranch_name)]
 print(*cmd)
 call(cmd)
 
