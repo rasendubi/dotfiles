@@ -1,3 +1,4 @@
+set shell=/bin/sh
 " Basic settings {{{
 set nocompatible
 
