@@ -1060,6 +1060,9 @@ fi
 [pull]
     ff = only
 
+[rebase]
+    autostash = true
+
 [rerere]
     enabled = true
 #+end_src

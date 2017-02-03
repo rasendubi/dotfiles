@@ -20,6 +20,9 @@
 [pull]
     ff = only
 
+[rebase]
+    autostash = true
+
 [rerere]
     enabled = true
 
