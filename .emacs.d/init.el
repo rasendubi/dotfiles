@@ -18,6 +18,9 @@
 (require 'diminish)
 (require 'bind-key)
 
+(setq-default frame-title-format
+              '("[%m] " (:eval (projectile-project-name))))
+
 (defconst android-p
   (string-equal system-configuration "arm-unknown-linux-androideabi"))
 
