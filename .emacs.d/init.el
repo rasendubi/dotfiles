@@ -433,7 +433,15 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (use-package evil-magit
   :after magit
   :config
-  (setq evil-magit-use-y-for-yank t))
+  (setq evil-magit-use-y-for-yank t)
+
+  (defun rasen/magit-fco-master ()
+    "Fetch origin/master and checkout it."
+    (interactive)
+    (magit-fetch "origin" "master")
+    (magit-checkout "origin/master"))
+  (evil-magit-define-key evil-magit-state 'magit-mode-map
+                         "g m" 'rasen/magit-fco-master))
 
 (use-package magithub
   :after magit
