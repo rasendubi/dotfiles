@@ -420,6 +420,9 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :init
   (global-set-key (kbd "C-c m") (rasen/hard-way "g m"))
   :config
+  ;; Don't put files into trash can. Delete them for real.
+  (setq-default magit-delete-by-moving-to-trash nil)
+
   (defun rasen/magit-push-head (target args)
     "Push HEAD to a branch read in the minibuffer."
     (interactive
@@ -457,11 +460,11 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   ; :disabled t
   :after magit
   :config
-  ; (global-diff-hl-mode t)
   ; (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
   (unless (display-graphic-p)
     (diff-hl-margin-mode t))
   ; (diff-hl-flydiff-mode t)
+  (global-diff-hl-mode t)
   )
 
 (use-package gitconfig-mode
@@ -728,6 +731,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
          ("C-c l" . org-store-link)
          ("C-c b" . org-iswitchb)
          :map evil-normal-state-map
+         ("SPC o" . org-clock-out)
          ("SPC l" . org-clock-in-last)
          ("SPC c" . org-capture))
   :ensure org-plus-contrib
@@ -765,6 +769,11 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (setq-default org-clock-out-remove-zero-time-clocks t)
   ;; Save more last clocks
   (setq-default org-clock-history-length 10)
+
+  ;; `org-update-dblock' narrows to the subtree. I hate this.
+  (defun rasen/advice-org-update-dblock (f &rest r)
+    (save-restriction (apply f r)))
+  (advice-add 'org-update-dblock :around #'rasen/advice-org-update-dblock)
 
   ;; org-capture
   (setq org-capture-templates
