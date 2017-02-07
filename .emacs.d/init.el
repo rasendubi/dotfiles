@@ -722,12 +722,17 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :commands (f-files f-ext?))
 
 (use-package org
+  :mode ("\\.org$" . org-mode)
   :defer 5
   :bind (("C-c a" . org-agenda)
          ("C-c l" . org-store-link)
-         ("C-c c" . org-capture)
-         ("C-c b" . org-iswitchb))
+         ("C-c b" . org-iswitchb)
+         :map evil-normal-state-map
+         ("SPC l" . org-clock-in-last)
+         ("SPC c" . org-capture))
   :ensure org-plus-contrib
+  :init
+  (nmap "C-c c" (rasen/hard-way "SPC c"))
   :config
   (add-hook 'org-mode-hook (lambda ()
                              (visual-line-mode 1)
@@ -755,6 +760,11 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   ;; following line makes `org-ascii-verbatim' produce proper
   ;; confluence fixed-width block.
   (setq org-ascii-verbatim-format "\{\{%s\}\}")
+
+  ;; remove clocks with 0 duration
+  (setq-default org-clock-out-remove-zero-time-clocks t)
+  ;; Save more last clocks
+  (setq-default org-clock-history-length 10)
 
   ;; org-capture
   (setq org-capture-templates
@@ -1164,6 +1174,9 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 (use-package json-mode
   :mode "\\.json$")
+
+(use-package pip-requirements
+  :mode "^requirements.txt$")
 
 (add-to-list 'load-path "~/.emacs.d/site-lisp/")
 
