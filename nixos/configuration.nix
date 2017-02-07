@@ -24,7 +24,7 @@
       users.extraUsers.rasen = {
         isNormalUser = true;
         uid = 1000;
-        extraGroups = [ "users" "wheel" ];
+        extraGroups = [ "users" "wheel" "input" ];
         initialPassword = "HelloWorld";
       };
     }
@@ -363,11 +363,10 @@
     }
     {
       programs.fish.enable = true;
+      users.defaultUserShell = pkgs.fish;
     }
     {
       programs.zsh.enable = true;
-    
-      users.defaultUserShell = "/run/current-system/sw/bin/zsh";
     }
     {
       environment.systemPackages = [

@@ -82,7 +82,7 @@ Save nixos-config in the Nix store, so I can later retrieve it. The config for t
   users.extraUsers.rasen = {
     isNormalUser = true;
     uid = 1000;
-    extraGroups = [ "users" "wheel" ];
+    extraGroups = [ "users" "wheel" "input" ];
     initialPassword = "HelloWorld";
   };
 }
@@ -887,6 +887,7 @@ fish is a cool shell, but I haven't yet configured it properly to switch to it f
 #+begin_src nix
 {
   programs.fish.enable = true;
+  users.defaultUserShell = pkgs.fish;
 }
 #+end_src
 
@@ -896,8 +897,6 @@ fish is a cool shell, but I haven't yet configured it properly to switch to it f
 #+begin_src nix
 {
   programs.zsh.enable = true;
-
-  users.defaultUserShell = "/run/current-system/sw/bin/zsh";
 }
 #+end_src
 
