@@ -1125,11 +1125,11 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (use-package visual-fill-column
   :commands (visual-fill-column-mode)
   :init
-  (add-hook 'org-mode-hook 'visual-fill-column-mode)
-  :config
   (add-hook 'org-mode-hook
             (lambda ()
-              (setq-local fill-column 100)))
+              (setq-local fill-column 100)
+              (visual-fill-column-mode)))
+  :config
   (setq-default visual-fill-column-center-text t
                 visual-fill-column-fringes-outside-margins nil))
 
