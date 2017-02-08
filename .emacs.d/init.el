@@ -111,9 +111,6 @@
     (define-key evil-motion-state-map (kbd key) action))
   (defmacro rasen/hard-way (key)
     `(lambda () (interactive) (error "Don't use this key! Use %s instead" ,key)))
-  (defun rasen/helm-projectile-grep-headers ()
-    (interactive)
-    (helm-do-grep-1 (list (projectile-project-root)) t nil '("*.h" "*.hpp")))
 
   (defun rasen/smart-move-beginning-of-line (arg)
     "Move point back to indentation of beginning of line.
@@ -170,56 +167,18 @@ point reaches the beginning or end of the buffer, stop there."
   (nmap "M-,"     'previous-error)
   (nmap "M-."     'next-error)
 
-  (nmap "SPC x"   'helm-M-x)
-  (vmap "SPC x"   'helm-M-x)
-  (mmap "SPC x"   'helm-M-x)
-  (nmap "M-x"     (rasen/hard-way "SPC x"))
   (nmap "SPC ;"   (lookup-key (current-global-map) (kbd "M-:")))
 
   (nmap "\\ \\"   (lookup-key (current-global-map) (kbd "C-x")))
   (vmap "\\ \\"   (lookup-key (current-global-map) (kbd "C-x")))
-  (nmap "\\ x"    (rasen/hard-way "\\ \\"))
-  (vmap "\\ x"    (rasen/hard-way "\\ \\"))
-
-  (nmap "SPC f"   'helm-find-files)
-  (nmap "SPC p p" 'projectile-switch-project)
-  (nmap "SPC p f" (rasen/hard-way "U"))
-  (nmap "SPC p d" 'helm-projectile-find-dir)
-  ;; like "global search"
-  (nmap "g /"     'helm-projectile-grep)
-  (nmap "SPC p g" (rasen/hard-way "g /"))
-  (nmap "g r"     (rasen/hard-way "g /"))
-  (nmap "g h"     'rasen/helm-projectile-grep-headers)
-  (nmap "SPC p &" 'projectile-run-async-shell-command-in-root)
-  (nmap "SPC p !" 'projectile-run-shell-command-in-root)
-
-  ;; That works much better than the default
-  (nmap "g f"     'helm-projectile-find-file-dwim)
-  ;; Save default just in case
-  (nmap "g F"     'find-file-at-point)
-  ;; g F was bound to `evil-find-file-at-point-with-line'
-  ;; I've never used it though
 
   (nmap "SPC q"   'rasen/quit-other)
-  (nmap "SPC w"   (lambda () (interactive) (save-buffers-kill-terminal t)))
-  (nmap "U"       'helm-projectile-find-file)
-  (nmap "C-]"     'helm-semantic-or-imenu)
 
   ;; Swap . and ;
   (nmap "."       'evil-repeat-find-char)
   (nmap ";"       'evil-repeat)
   (nmap "C-;"     'evil-repeat-pop)
   (nmap "g."      'goto-last-change)
-
-  (nmap "<f3>"    'projectile-test-project)
-  (nmap "<f4>"    'projectile-compile-project)
-  (nmap "<f5>"    'projectile-run-project)
-  (mmap "<f3>"    'projectile-test-project)
-  (mmap "<f4>"    'projectile-compile-project)
-  (mmap "<f5>"    'projectile-run-project)
-
-  (imap "C-n"     #'company-complete-common-or-cycle)
-  (imap "C-p"     #'company-select-previous)
 
   (nmap "C-\\"    'evil-execute-in-emacs-state)
 
@@ -250,8 +209,8 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 (use-package evil-numbers
   :bind (:map evil-normal-state-map
-              ("C-a" . evil-numbers/int-at-pt)
-              ("C-x" . evil-numbers/dec-at-pt)))
+         ("C-a" . evil-numbers/int-at-pt)
+         ("C-x" . evil-numbers/dec-at-pt)))
 
 (use-package smartrep
   :commands (smartrep-read-event-loop))
@@ -356,49 +315,33 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
     (kbd "g g")   'evil-goto-first-line
     (kbd "g r")   'recompile))
 
-(use-package helm-projectile
-  :commands (helm-projectile-switch-to-buffer
-             helm-projectile-find-dir
-             helm-projectile-dired-find-dir
-             helm-projectile-recentf
-             helm-projectile-find-file
-             helm-projectile-grep
-             helm-projectile
-             helm-projectile-switch-project)
+(use-package ivy
+  :diminish ivy-mode
   :config
-  (helm-projectile-on))
+  ;; Don't start input with ^
+  (setq-default ivy-initial-inputs-alist nil)
+  (setq-default ivy-re-builders-alist '((t . ivy--regex-ignore-order)))
+  (ivy-mode 1))
 
-(use-package helm
-  :commands (helm-M-x
-             helm-mini
-             helm-find-files
-             helm-command-prefix
-             helm-google-suggest
-             helm-build-in-buffer-source
-             helm-make-source)
-  :bind (("M-x" . helm-M-x)
-         ("C-x C-b" . helm-mini)
-         ("C-x C-f" . helm-find-files)
-         ("C-h" . helm-command-prefix)
-         ("C-c h g" . helm-google-suggest))
-  :diminish (helm-mode helm-major-mode)
+(use-package ivy-hydra)
+
+(use-package smex)
+
+(use-package counsel
+  :demand
+  :diminish counsel-mode
+  :bind (:map evil-normal-state-map
+         ("SPC x" . counsel-M-x)
+         ("SPC f" . counsel-find-file)
+         ("g /"   . counsel-git-grep)
+         :map evil-visual-state-map
+         ("SPC x" . counsel-M-x)
+         :map evil-motion-state-map
+         ("SPC x" . counsel-M-x)
+         :map read-expression-map
+         ("C-r" . counsel-expression-history))
   :config
-  (require 'helm-config)
-
-  (define-key helm-map (kbd "<tab>") 'helm-execute-persistent-action)
-  (define-key helm-map (kbd "C-i") 'helm-execute-persistent-action)
-  (define-key helm-map (kbd "C-z") 'helm-select-action)
-
-  (when (executable-find "curl")
-    (setq helm-net-prefer-curl t))
-
-  (setq helm-move-to-line-cycle-in-source t
-        helm-ff-search-library-in-sexp t
-        helm-scroll-amount 8
-        helm-ff-file-name-history-use-recentf t
-        helm-M-x-fuzzy-match t)
-
-  (helm-mode 1))
+  (counsel-mode 1))
 
 (use-package xclip
   :if (and (not window-system) (not android-p))
@@ -422,6 +365,8 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :config
   ;; Don't put files into trash can. Delete them for real.
   (setq-default magit-delete-by-moving-to-trash nil)
+
+  (setq-default magit-completing-read-function 'ivy-completing-read)
 
   (defun rasen/magit-push-head (target args)
     "Push HEAD to a branch read in the minibuffer."
@@ -481,36 +426,38 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
                               (setq yas-dont-activate-functions t))))
 
 (use-package projectile
-  :commands (projectile-ack
-             projectile-ag
-             projectile-compile-project
-             projectile-run-project
-             projectile-dired
-             projectile-grep
-             projectile-find-dir
-             projectile-find-file
-             projectile-find-tag
-             projectile-find-test-file
-             projectile-invalidate-cache
-             projectile-kill-buffers
-             projectile-multi-occur
-             projectile-project-root
-             projectile-recentf
-             projectile-regenerate-tags
-             projectile-register-project-type
-             projectile-replace
-             projectile-run-async-shell-command-in-root
-             projectile-run-shell-command-in-root
-             projectile-switch-project
-             projectile-switch-to-buffer
-             projectile-vc)
+  :bind (:map evil-normal-state-map
+         ("SPC p p" . projectile-switch-project)
+         ("SPC p &" . projectile-run-async-shell-command-in-root)
+         ("SPC p !" . projectile-run-shell-command-in-root)
+         ;; That works much better than the default
+         ("g f"     . projectile-find-file-dwim)
+         ("U"       . projectile-find-file)
+         ("<f3>"    . projectile-test-project)
+         ("<f4>"    . projectile-compile-project)
+         ("<f5>"    . projectile-run-project)
+         ("<f3>"    . projectile-test-project)
+         ("<f4>"    . projectile-compile-project)
+         ("<f5>"    . projectile-run-project))
+  :init
+  ;; Save default just in case
+  (nmap "g F" 'find-file-at-point)
+  ;; g F was bound to `evil-find-file-at-point-with-line'
+  ;; I've never used it though
   :diminish projectile-mode
   :config
   ;; Use the prefix arg if you want to change the compilation command
   (setq compilation-read-command nil)
 
-  (projectile-mode)
-  (setq projectile-completion-system 'helm))
+  (setq-default projectile-use-git-grep t)
+
+  (setq-default projectile-completion-system 'ivy)
+  (projectile-mode))
+
+(use-package counsel-projectile
+  :after projectile
+  :config
+  (counsel-projectile-on))
 
 (use-package powerline)
 
@@ -534,6 +481,9 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 (use-package company
   :defer 2
+  :bind (:map evil-insert-state-map
+         ("C-n" . company-complete-common-or-cycle)
+         ("C-p" . company-select-previous))
   :diminish company-mode
   :config
   (global-company-mode))
@@ -745,16 +695,19 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   ;; save CLOSED timestamp when task is done
   (setq org-log-done t)
 
+  ;; (setcdr (assoc "\\.pdf\\'" org-file-apps) "zathura %s")
+
   (setq org-directory "~/org"
-        org-default-notes-file "~/org/refile.org")
+        org-default-notes-file "~/org/refile.org"
+        org-agenda-files '("~/org/notes.org"))
 
   ;; org-drill
   (require 'org-drill)
-  (defun rasen/org-drill-files ()
-    (f-files "~/org/drill"
+  (defun rasen/org-files-in-dir (dir)
+    (f-files dir
              (lambda (file) (f-ext? file "org"))
              t))
-  (setq org-drill-scope (rasen/org-drill-files))
+  (setq org-drill-scope (rasen/org-files-in-dir "~/org/drill"))
   (add-to-list 'org-modules 'org-drill)
 
   ;; ox-confluence
@@ -819,10 +772,14 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (require 'org-protocol)
 
   ;; org-refile
-  (setq org-refile-use-outline-path 'file)
+  (defun rasen/org-refile-files ()
+    (rasen/org-files-in-dir "~/org"))
+  ;; non-nil values work bad with ivy
+  (setq-default org-refile-use-outline-path nil)
   (setq org-refile-targets
-        '((nil :maxlevel . 3)
-          (rasen/org-drill-files :level . 0)))
+        '(;(nil :maxlevel . 3)
+          (org-agenda-files :maxlevel . 2)
+          (rasen/org-refile-files :level . 0)))
 
   ;; org-babel
   (org-babel-do-load-languages 'org-babel-load-languages
@@ -1076,15 +1033,6 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
        (concat "/sudo:root@localhost:"
                buffer-file-name)))))
 
-; I still use `helm-projectile-find-file', but that should be faster
-; for searching direct files. Time will show.
-(use-package ido
-  :bind (:map evil-normal-state-map
-              ("SPC f" . ido-find-file)
-              ("SPC b" . ido-siwtch-buffer))
-  :config
-  (ido-mode 1))
-
 ;; I want to log all my key presses to analyze them later
 ;;
 ;; Well... it doesn't log all key presses (only command
@@ -1176,8 +1124,12 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 (use-package visual-fill-column
   :commands (visual-fill-column-mode)
+  :init
+  (add-hook 'org-mode-hook 'visual-fill-column-mode)
   :config
-  (setq-default fill-column 100)
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (setq-local fill-column 100)))
   (setq-default visual-fill-column-center-text t
                 visual-fill-column-fringes-outside-margins nil))
 
@@ -1189,7 +1141,6 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 (add-to-list 'load-path "~/.emacs.d/site-lisp/")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (c-add-style "rasen"
              '("k&r"
                (c-basic-offset . 4)
