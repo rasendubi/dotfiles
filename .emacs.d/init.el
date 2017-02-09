@@ -1163,9 +1163,9 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (setenv "PATH" (concat str ":" (getenv "PATH"))))
 (put 'narrow-to-region 'disabled nil)
 
-(let ((my/credentials-file (expand-file-name "private.el" user-emacs-directory)))
-  (when (file-readable-p my/credentials-file)
-    (load-file my/credentials-file)))
+(let ((private-file (expand-file-name "private.el" user-emacs-directory)))
+  (when (file-readable-p private-file)
+    (load-file private-file)))
 
 ;; Save custom configuration in the "~/.emacs.d/custom.el" file
 ;; instead of this one.
