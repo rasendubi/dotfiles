@@ -216,6 +216,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :commands (smartrep-read-event-loop))
 
 (use-package key-chord
+  :disabled t
   :if (not android-p)
   :after evil
   :config

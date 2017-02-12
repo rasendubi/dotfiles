@@ -235,6 +235,7 @@
     }
     {
       services.xserver.layout = "us,ua";
+      services.xserver.xkbVariant = "workman,";
     }
     {
       services.xserver.xkbOptions = "grp:caps_toggle,grp:menu_toggle,grp_led:caps";

@@ -555,6 +555,7 @@ Enable firewall. This disables all ports and pings.
 #+begin_src nix
 {
   services.xserver.layout = "us,ua";
+  services.xserver.xkbVariant = "workman,";
 }
 #+end_src
 
