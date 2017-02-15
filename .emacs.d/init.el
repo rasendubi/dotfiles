@@ -227,7 +227,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 (use-package evil-numbers
   :bind (:map evil-normal-state-map
-         ("C-a" . evil-numbers/int-at-pt)
+         ("C-a" . evil-numbers/inc-at-pt)
          ("C-x" . evil-numbers/dec-at-pt)))
 
 (use-package smartrep
