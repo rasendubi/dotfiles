@@ -1085,6 +1085,12 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
   (global-command-log-mode))
 
+;; Gather stats on command usage, so I can better design my bindings.
+(use-package keyfreq
+  :config
+  (keyfreq-mode 1)
+  (keyfreq-autosave-mode 1))
+
 ;; Shamelessly stealed from from https://github.com/purcell/emacs.d
 (defun rename-this-file-and-buffer (new-name)
   "Renames both current buffer and file it's visiting to NEW-NAME."
