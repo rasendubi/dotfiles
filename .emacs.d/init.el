@@ -112,6 +112,15 @@
   (defmacro rasen/hard-way (key)
     `(lambda () (interactive) (error "Don't use this key! Use %s instead" ,key)))
 
+  (global-set-key (kbd "<left>")  (rasen/hard-way "h"))
+  (global-set-key (kbd "<up>")    (rasen/hard-way "j"))
+  (global-set-key (kbd "<down>")  (rasen/hard-way "k"))
+  (global-set-key (kbd "<right>") (rasen/hard-way "l"))
+  (nmap "<left>"  (rasen/hard-way "h"))
+  (nmap "<up>"    (rasen/hard-way "j"))
+  (nmap "<down>"  (rasen/hard-way "k"))
+  (nmap "<right>" (rasen/hard-way "l"))
+
   (defun rasen/smart-move-beginning-of-line (arg)
     "Move point back to indentation of beginning of line.
 
@@ -135,18 +144,20 @@ point reaches the beginning or end of the buffer, stop there."
       (when (= orig-point (point))
         (move-beginning-of-line 1))))
 
-  (nmap "j"       'evil-next-visual-line)
-  (nmap "k"       'evil-previous-visual-line)
-  (nmap "gj"      'evil-next-line)
-  (nmap "gk"      'evil-previous-line)
+  (nmap "k"       'evil-next-visual-line)
+  (nmap "j"       'evil-previous-visual-line)
+  (nmap "gk"      'evil-next-line)
+  (nmap "gj"      'evil-previous-line)
+  (mmap "k"       'evil-next-line)
+  (mmap "j"       'evil-previous-line)
 
   (nmap "C-h"     'windmove-left)
-  (nmap "C-j"     'windmove-down)
-  (nmap "C-k"     'windmove-up)
+  (nmap "C-k"     'windmove-down)
+  (nmap "C-j"     'windmove-up)
   (nmap "C-l"     'windmove-right)
   (mmap "C-h"     'windmove-left)
-  (mmap "C-j"     'windmove-down)
-  (mmap "C-k"     'windmove-up)
+  (mmap "C-k"     'windmove-down)
+  (mmap "C-j"     'windmove-up)
   (mmap "C-l"     'windmove-right)
 
   (nmap "SPC"     nil)
@@ -203,9 +214,16 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 ;; Some highlighting for f, F, t, T commands
 (use-package evil-quickscope
-  :defer 2
-  :config
-  (global-evil-quickscope-mode))
+  :bind (:map evil-normal-state-map
+         ("f" . evil-quickscope-find-char-to)
+         ("F" . evil-quickscope-find-char-backward-to)
+         ("t" . evil-quickscope-find-char)
+         ("T" . evil-quickscope-find-char-backward)
+         :map evil-motion-state-map
+         ("f" . evil-quickscope-find-char-to)
+         ("F" . evil-quickscope-find-char-backward-to)
+         ("t" . evil-quickscope-find-char)
+         ("T" . evil-quickscope-find-char-backward)))
 
 (use-package evil-numbers
   :bind (:map evil-normal-state-map
@@ -249,19 +267,6 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
       (quit nil)))
   (define-key isearch-mode-map "j" 'isearch-exit-chord)
   (vmap "<escape>" (rasen/hard-way "jk")))
-
-;; Highlight for f, F, t, T commands
-(use-package evil-quickscope
-  :after evil
-  :defer 2
-  :config
-  (global-evil-quickscope-mode))
-
-(use-package evil-numbers
-  :after evil
-  :bind (:map evil-normal-state-map
-              ("C-a" . evil-numbers/inc-at-pt)
-              ("C-x" . evil-numbers/dec-at-pt)))
 
 (use-package whitespace
   :diminish (global-whitespace-mode
@@ -322,6 +327,8 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   ;; Don't start input with ^
   (setq-default ivy-initial-inputs-alist nil)
   (setq-default ivy-re-builders-alist '((t . ivy--regex-ignore-order)))
+  (define-key ivy-minibuffer-map (kbd "C-e") 'ivy-alt-done)
+  (define-key ivy-minibuffer-map (kbd "C-M-e") 'ivy-immediate-done)
   (ivy-mode 1))
 
 (use-package ivy-hydra)
@@ -384,6 +391,14 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :config
   (setq evil-magit-use-y-for-yank t)
 
+  (dolist (state (list evil-magit-state 'visual))
+    (evil-define-key state magit-mode-map (kbd "j")   'evil-previous-visual-line)
+    (evil-define-key state magit-mode-map (kbd "k")   'evil-next-visual-line)
+    (evil-define-key state magit-mode-map (kbd "C-j") 'magit-section-backward)
+    (evil-define-key state magit-mode-map (kbd "C-k") 'magit-section-forward)
+    (evil-define-key state magit-mode-map (kbd "gj")  'magit-section-backward-sibling)
+    (evil-define-key state magit-mode-map (kbd "gk")  'magit-section-forward-sibling))
+
   (defun rasen/magit-fco-master ()
     "Fetch origin/master and checkout it."
     (interactive)
@@ -436,10 +451,8 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
          ("U"       . projectile-find-file)
          ("<f3>"    . projectile-test-project)
          ("<f4>"    . projectile-compile-project)
-         ("<f5>"    . projectile-run-project)
-         ("<f3>"    . projectile-test-project)
-         ("<f4>"    . projectile-compile-project)
          ("<f5>"    . projectile-run-project))
+  :commands (projectile-project-name)
   :init
   ;; Save default just in case
   (nmap "g F" 'find-file-at-point)
@@ -448,7 +461,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :diminish projectile-mode
   :config
   ;; Use the prefix arg if you want to change the compilation command
-  (setq compilation-read-command nil)
+  (setq-default compilation-read-command nil)
 
   (setq-default projectile-use-git-grep t)
 
@@ -511,12 +524,12 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :after company
   :commands (company-ycmd)
   :init
-  (defun ycmd-c-c++-hook ()
+  (defun rasen/ycmd-c-c++-hook ()
     (push 'company-ycmd company-backends)
     (ycmd-mode))
 
-  (add-hook 'c-mode-hook 'ycmd-c-c++-hook)
-  (add-hook 'c++-mode-hook 'ycmd-c-c++-hook))
+  (add-hook 'c-mode-hook 'rasen/ycmd-c-c++-hook)
+  (add-hook 'c++-mode-hook 'rasen/ycmd-c-c++-hook))
 
 (use-package haskell-mode
   :mode "\\.hs$"
@@ -1108,11 +1121,13 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :bind (:map evil-normal-state-map
          ("K" . avy-goto-char)
          :map evil-motion-state-map
-         ("K" . avy-goto-char)))
+         ("K" . avy-goto-char))
+  :config
+  (setq-default avy-keys (list ?a ?s ?h ?t ?n ?e ?o ?i)))
 
 (use-package string-inflection
   :bind (:map evil-normal-state-map
-         ("C-q" . string-inflection-ruby-style-cycle)))
+         ("SPC s i" . string-inflection-ruby-style-cycle)))
 
 (use-package virtualenvwrapper
   :commands (venv-workon
