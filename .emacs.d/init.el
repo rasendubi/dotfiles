@@ -289,6 +289,10 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
   (global-whitespace-mode t))
 
+(use-package whitespace-cleanup-mode
+  :config
+  (whitespace-cleanup-mode 1))
+
 (set-face-attribute 'font-lock-comment-face nil
                     :overline nil
                     :foreground (face-attribute 'shadow :foreground)
