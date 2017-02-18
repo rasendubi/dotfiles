@@ -112,14 +112,18 @@
   (defmacro rasen/hard-way (key)
     `(lambda () (interactive) (error "Don't use this key! Use %s instead" ,key)))
 
-  (global-set-key (kbd "<left>")  (rasen/hard-way "h"))
-  (global-set-key (kbd "<up>")    (rasen/hard-way "j"))
-  (global-set-key (kbd "<down>")  (rasen/hard-way "k"))
-  (global-set-key (kbd "<right>") (rasen/hard-way "l"))
+  ; (global-set-key (kbd "<left>")  (rasen/hard-way "h"))
+  ; (global-set-key (kbd "<up>")    (rasen/hard-way "j"))
+  ; (global-set-key (kbd "<down>")  (rasen/hard-way "k"))
+  ; (global-set-key (kbd "<right>") (rasen/hard-way "l"))
   (nmap "<left>"  (rasen/hard-way "h"))
   (nmap "<up>"    (rasen/hard-way "j"))
   (nmap "<down>"  (rasen/hard-way "k"))
   (nmap "<right>" (rasen/hard-way "l"))
+  (mmap "<left>"  (rasen/hard-way "h"))
+  (mmap "<up>"    (rasen/hard-way "j"))
+  (mmap "<down>"  (rasen/hard-way "k"))
+  (mmap "<right>" (rasen/hard-way "l"))
 
   (defun rasen/smart-move-beginning-of-line (arg)
     "Move point back to indentation of beginning of line.
@@ -171,6 +175,7 @@ point reaches the beginning or end of the buffer, stop there."
   (vmap "L"       'evil-end-of-line)
   (mmap "L"       'evil-end-of-line)
 
+  ;; 2017-02-18 unused
   (nmap "-"       'hs-toggle-hiding)
 
   (nmap "SPC ,"   'previous-error)
@@ -191,6 +196,7 @@ point reaches the beginning or end of the buffer, stop there."
   (nmap "C-;"     'evil-repeat-pop)
   (nmap "g."      'goto-last-change)
 
+  ;; 2017-02-18 unused
   (nmap "C-\\"    'evil-execute-in-emacs-state)
 
   ;; esc quit anything
@@ -290,6 +296,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (global-whitespace-mode t))
 
 (use-package whitespace-cleanup-mode
+  :diminish whitespace-cleanup-mode
   :config
   (whitespace-cleanup-mode 1))
 
@@ -1111,7 +1118,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
         (rename-buffer new-name)
         (set-visited-file-name new-name)))))
 
-(defun delete-this-file ()
+(defun delete-this-file-and-buffer ()
   "Delete the current file, and kill the buffer."
   (interactive)
   (or (buffer-file-name) (error "No file is currently being edited"))
