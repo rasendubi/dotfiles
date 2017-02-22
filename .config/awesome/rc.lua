@@ -528,3 +528,54 @@ client.connect_signal(
         end
     end)
 -- }}
+
+function razer(n, t)
+    local c = client.focus
+
+    if t ~= 'down' and not (c and c.class == 'Google-chrome' and (n == 8 or n == 9))then
+        return
+    end
+
+    if c then
+        -- naughty.notify{ text = 'razer ' .. tostring(n) .. "\n" .. 'class = ' .. c.class }
+    end
+    if n == 11 then
+        awful.tag.history.restore()
+        return
+    end
+    if c.class == 'Google-chrome' then
+        if n == 1 then
+            awful.spawn("xdotool key Alt+Left")
+        elseif n == 2 then
+            awful.spawn("xdotool key ctrl+Prior")
+        elseif n == 3 then
+            awful.spawn("xdotool key ctrl+Next")
+        elseif n == 4 then
+            awful.spawn("xdotool key Alt+Right")
+        elseif n == 8 then
+            awful.spawn('xdotool click 6') -- scroll left
+        elseif n == 9 then
+            awful.spawn('xdotool click 7') -- scroll right
+        elseif n == 5 then
+            awful.spawn('xdotool key ctrl+shift+t')
+        elseif n == 6 then
+            awful.spawn("xdotool key ctrl+w")
+        end
+    elseif c.class == 'Thunderbird' then
+        if n == 2 then
+            awful.spawn('xdotool key space')
+        elseif n == 3 then
+            awful.spawn('xdotool key n')
+        elseif n == 6 then
+            awful.spawn('xdotool key t')
+        end
+    elseif c.class == 'Skype' then
+        if n == 2 then
+            awful.spawn('xdotool key ctrl+shift+Tab')
+        elseif n == 3 then
+            awful.spawn('xdotool key ctrl+Tab')
+        end
+    else
+        awful.spawn('xdotool key F' .. tostring(n + 12))
+    end
+end
