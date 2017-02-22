@@ -1172,6 +1172,18 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (use-package pip-requirements
   :mode "^requirements.txt$")
 
+(use-package web-mode
+  :commands (web-mode)
+  :init
+  (add-to-list 'auto-mode-alist '("\\.js\\'" . web-mode))
+  :config
+  (setq-default web-mode-content-types-alist
+                '(("jsx" . ".*\\.js[x]?\\'")))
+  (setq-default js-indent 2
+                web-mode-markup-indent-offset 2
+                web-mode-code-indent-offset 2
+                web-mode-indent-style 2))
+
 (add-to-list 'load-path "~/.emacs.d/site-lisp/")
 
 (c-add-style "rasen"
