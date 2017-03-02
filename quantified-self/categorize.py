@@ -15,7 +15,7 @@ def default_parser(class_, instance, role, title):
     if title:
         return [ title ]
 
-    return None
+    return []
 
 class_parsers = collections.defaultdict(lambda: default_parser)
 
