@@ -708,7 +708,8 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
          :map evil-normal-state-map
          ("SPC o" . org-clock-out)
          ("SPC l" . org-clock-in-last)
-         ("SPC c" . org-capture))
+         ("SPC c" . org-capture)
+         ("SPC a" . org-agenda))
   :ensure org-plus-contrib
   :init
   (nmap "C-c c" (rasen/hard-way "SPC c"))
@@ -717,6 +718,11 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
                              (visual-line-mode 1)
                              (whitespace-mode -1)))
 
+  (defun rasen/org-files-in-dir (dir)
+    (f-files dir
+             (lambda (file) (f-ext? file "org"))
+             t))
+
   ;; save CLOSED timestamp when task is done
   (setq org-log-done t)
 
@@ -724,14 +730,13 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
   (setq org-directory "~/org"
         org-default-notes-file "~/org/refile.org"
-        org-agenda-files '("~/org/notes.org"))
+        org-agenda-files '("~/org/notes.org" "~/org/heutagogy.org"))
+
+  (setq-default org-todo-keywords
+                '((sequence "SOMEDAY" "TODO" "|" "DONE" "CANCELED")))
 
   ;; org-drill
   (require 'org-drill)
-  (defun rasen/org-files-in-dir (dir)
-    (f-files dir
-             (lambda (file) (f-ext? file "org"))
-             t))
   (setq org-drill-scope (rasen/org-files-in-dir "~/org/drill"))
   (add-to-list 'org-modules 'org-drill)
 
@@ -804,7 +809,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (setq org-refile-targets
         '(;(nil :maxlevel . 3)
           (org-agenda-files :maxlevel . 2)
-          (rasen/org-refile-files :level . 0)))
+          (rasen/org-refile-files :level . 1)))
 
   ;; org-babel
   (org-babel-do-load-languages 'org-babel-load-languages
@@ -1180,9 +1185,11 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (setq-default web-mode-content-types-alist
                 '(("jsx" . ".*\\.js[x]?\\'")))
   (setq-default js-indent 2
+                js-switch-indent-offset 2
                 web-mode-markup-indent-offset 2
                 web-mode-code-indent-offset 2
-                web-mode-indent-style 2))
+                web-mode-attr-indent-offset 2
+                ))
 
 (add-to-list 'load-path "~/.emacs.d/site-lisp/")
 
