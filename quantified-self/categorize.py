@@ -19,18 +19,21 @@ def default_parser(class_, instance, role, title):
 
 class_parsers = collections.defaultdict(lambda: default_parser)
 
-def class_parser(class_):
+def class_parser(*classes):
     def w(f):
-        class_parsers[class_] = f
+        for class_ in classes:
+            class_parsers[class_] = f
         return f
     return w
 
 ### START PARSERS ###
 # Add parsers for the class
 
-@class_parser('Google-chrome')
+@class_parser('Google-chrome', 'google-chrome', 'Google-chrome-stable')
 def google_chrome(class_, instance, role, title):
-    if role == 'browser':
+    class_ = 'Google-chrome'
+
+    if role == 'browser' and title:
         res = re.match(r'^(.*) \[(.*)\]\[(.*)\] - Google Chrome$', title)
         if res:
             page_title = res.group(1)
@@ -130,7 +133,7 @@ current = None
 
 # print('dataRaw = [')
 cur_id = 1
-with open('/home/rasen/log.txt', 'r') as f:
+with open('/home/rasen/log.txt', 'r', errors='replace') as f:
     for line in f.readlines():
         x = json.loads(line)
         c = category(x)
