@@ -734,6 +734,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
   (setq-default org-todo-keywords
                 '((sequence "SOMEDAY" "TODO" "|" "DONE" "CANCELED")))
+  (setq-default org-todo-repeat-to-state "TODO")
 
   ;; org-drill
   (require 'org-drill)
@@ -1209,6 +1210,39 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (setq c-default-style '((java-mode . "java")
                         (awk-mode . "awk")
                         (other . "rasen")))
+
+(use-package gnus
+  :config
+  (setq user-mail-address "ashmalko@cybervisiontech.com"
+        user-full-name "Alexey Shmalko")
+  (setq gnus-select-method
+        '(nnimap "gmail"
+                 (nnimap-address "imap.gmail.com")
+                 (nnimap-server-port "imaps")
+                 (nnimap-stream ssl)))
+  (setq gnus-secondary-select-methods
+        '((nnimap "work"
+                  (nnimap-address "mail.cybervisiontech.com")
+                  (nnimap-server-port "imaps")
+                  (nnimap-stream ssl))))
+  (setq gnus-parameters
+        '(("nnimap work:.*"
+           (display . all)
+           (posting-style
+            (name "Alexey Shmalko")
+            (address "ashmalko@cybervisiontech.com")))
+          ("nnimap gmal:.*"
+           (posting-style
+            (name "Alexey Shmalko")
+            (address "rasen.dubi@gmail.com")))))
+  (setq smtpmail-smtp-server "mail.cybervisiontech.com"
+        smtpmail-smtp-service 465
+        smtpmail-stream-type 'ssl
+        send-mail-function 'smtpmail-send-it
+        message-send-mail-function 'smtpmail-send-it
+        gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]")
+  (setq gnus-permanently-visible-groups ".*"))
+
 
 (defun add-to-path (str)
   "Add an STR to the PATH environment variable."
