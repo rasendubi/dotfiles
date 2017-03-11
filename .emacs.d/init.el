@@ -1215,34 +1215,46 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :config
   (setq user-mail-address "ashmalko@cybervisiontech.com"
         user-full-name "Alexey Shmalko")
-  (setq gnus-select-method
-        '(nnimap "gmail"
-                 (nnimap-address "imap.gmail.com")
-                 (nnimap-server-port "imaps")
-                 (nnimap-stream ssl)))
+
+  (setq gnus-select-method '(nnnil ""))
+
   (setq gnus-secondary-select-methods
         '((nnimap "work"
                   (nnimap-address "mail.cybervisiontech.com")
                   (nnimap-server-port "imaps")
+                  (nnimap-stream ssl))
+          (nnimap "gmail"
+                  (nnimap-address "imap.gmail.com")
+                  (nnimap-server-port "imaps")
                   (nnimap-stream ssl))))
+
   (setq gnus-parameters
-        '(("nnimap work:.*"
+        '(("nnimap\\+work:.*"
            (display . all)
            (posting-style
             (name "Alexey Shmalko")
-            (address "ashmalko@cybervisiontech.com")))
-          ("nnimap gmal:.*"
+            (address "ashmalko@cybervisiontech.com")
+            ("X-Message-SMTP-Method" "smtp mail.cybervisiontech.com 587")))
+          ("nnimap\\+gmail:.*"
+           (display . all)
            (posting-style
             (name "Alexey Shmalko")
-            (address "rasen.dubi@gmail.com")))))
-  (setq smtpmail-smtp-server "mail.cybervisiontech.com"
+            (address "rasen.dubi@gmail.com"))
+            ("X-Message-SMTP-Method" "smtp smtp.gmail.com 587"))))
+
+  (setq gnus-fetch-old-headers t)
+  (setq smtpmail-smtp-server "smtp.gmail.com"
         smtpmail-smtp-service 465
         smtpmail-stream-type 'ssl
         send-mail-function 'smtpmail-send-it
         message-send-mail-function 'smtpmail-send-it
         gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]")
-  (setq gnus-permanently-visible-groups ".*"))
 
+  (setq gnus-check-new-newsgroups nil ;; NOTE: don't check for new groups
+      gnus-save-newsrc-file nil ;; NOTE: don't write `.newsrc' file
+      gnus-read-newsrc-file nil ;; NOTE: don't read it, either
+      gnus-interactive-exit nil
+      gnus-save-killed-list nil))
 
 (defun add-to-path (str)
   "Add an STR to the PATH environment variable."
