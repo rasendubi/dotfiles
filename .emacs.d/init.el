@@ -1256,6 +1256,15 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
       gnus-interactive-exit nil
       gnus-save-killed-list nil))
 
+;; For use with "Edit with Emacs" chrome plugin.
+;; https://chrome.google.com/webstore/detail/edit-with-emacs/ljobjlafonikaiipfkggjbhkghgicgoh?hl=en
+(use-package edit-server
+  :demand ; no defer
+  :bind (:map edit-server-edit-mode-map
+         ("C-c C-k" . edit-server-abort))
+  :config
+  (edit-server-start))
+
 (defun add-to-path (str)
   "Add an STR to the PATH environment variable."
   (setenv "PATH" (concat str ":" (getenv "PATH"))))
