@@ -479,6 +479,18 @@ Enable firewall. This disables all ports and pings.
 }
 #+end_src
 
+*** Dovecot
+#+name: nixos-section
+#+begin_src nix
+{
+  services.dovecot2 = {
+    enable = true;
+    enablePop3 = false;
+    enableImap = true;
+    mailLocation = "maildir:/home/rasen/Mail:LAYOUT=fs";
+  };
+}
+#+end_src
 ** Environment
 *** General
     I definitely use X server:

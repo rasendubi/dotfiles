@@ -205,6 +205,14 @@
       virtualisation.docker.enable = true;
     }
     {
+      services.dovecot2 = {
+        enable = true;
+        enablePop3 = false;
+        enableImap = true;
+        mailLocation = "maildir:/home/rasen/Mail:LAYOUT=fs";
+      };
+    }
+    {
       services.xserver.enable = true;
     }
     {
