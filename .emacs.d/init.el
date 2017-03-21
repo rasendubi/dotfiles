@@ -1240,12 +1240,12 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
            (posting-style
             (name "Alexey Shmalko")
             (address "ashmalko@cybervisiontech.com")
-            ("X-Message-SMTP-Method" "smtp mail.cybervisiontech.com 587")))
+            ("X-Message-SMTP-Method" "smtp mail.cybervisiontech.com 465")))
           ("Personal/?.*"
            (posting-style
             (name "Alexey Shmalko")
             (address "rasen.dubi@gmail.com"))
-            ("X-Message-SMTP-Method" "smtp smtp.gmail.com 587"))))
+            ("X-Message-SMTP-Method" "smtp smtp.gmail.com 465"))))
 
   (setq gnus-fetch-old-headers 'some)
   (setq smtpmail-default-smtp-server "smtp.gmail.com"
