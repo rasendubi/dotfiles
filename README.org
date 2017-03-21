@@ -596,6 +596,21 @@ xkb_keymap {
   };
 };
 #+end_src
+**** Use Ctrl as Escape
+Use left ctrl as escape when pressed on its own.
+
+[[https://github.com/alols/xcape][XCAPE]] can do that with the next command.
+#+begin_src sh
+xcape -e 'Control_L=Escape'
+#+end_src
+
+(Of course, I need xcape in my system packages.)
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [ pkgs.xcape ];
+}
+#+end_src
 
 *** Redshift
     Redshift adjusts the color temperature of the screen according to the position of the sun. That should improve my sleep.

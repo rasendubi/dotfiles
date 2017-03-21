@@ -249,6 +249,9 @@
       services.xserver.xkbOptions = "grp:caps_toggle,grp:menu_toggle,grp_led:caps";
     }
     {
+      environment.systemPackages = [ pkgs.xcape ];
+    }
+    {
       services.redshift = {
         enable = true;
         latitude = "50.4500";
