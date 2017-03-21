@@ -1237,13 +1237,11 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
   (setq gnus-parameters
         '(("Work/?.*"
-           (display . all)
            (posting-style
             (name "Alexey Shmalko")
             (address "ashmalko@cybervisiontech.com")
             ("X-Message-SMTP-Method" "smtp mail.cybervisiontech.com 587")))
           ("Personal/?.*"
-           (display . all)
            (posting-style
             (name "Alexey Shmalko")
             (address "rasen.dubi@gmail.com"))
