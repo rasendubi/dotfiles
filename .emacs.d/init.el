@@ -511,6 +511,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
          ("C-p" . company-select-previous))
   :diminish company-mode
   :config
+  (setq-default company-dabbrev-downcase nil)
   (global-company-mode))
 
 (use-package ycmd
