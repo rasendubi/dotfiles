@@ -376,12 +376,25 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 (use-package magit
   :bind (:map evil-normal-state-map
-              ("g m" . magit-status))
+         ("g m" . magit-status))
   :diminish auto-revert-mode
   :defer 6
   :init
   (global-set-key (kbd "C-c m") (rasen/hard-way "g m"))
   :config
+  ;; evilify magit-blame
+  (evil-define-key 'normal magit-blame-mode-map (kbd "k")  'evil-next-visual-line)
+  (evil-define-key 'normal magit-blame-mode-map (kbd "j")  'evil-previous-visual-line)
+  (evil-define-key 'normal magit-blame-mode-map (kbd "gk") 'evil-next-line)
+  (evil-define-key 'normal magit-blame-mode-map (kbd "gj") 'evil-previous-line)
+  (evil-define-key 'normal magit-blame-mode-map (kbd "C-k") 'magit-blame-next-chunk)
+  (evil-define-key 'normal magit-blame-mode-map (kbd "C-j") 'magit-blame-previous-chunk)
+  (evil-define-key 'normal magit-blame-mode-map (kbd "C-K") 'magit-blame-next-chunk-same-commit)
+  (evil-define-key 'normal magit-blame-mode-map (kbd "C-J") 'magit-blame-previous-chunk-same-commit)
+  (evil-define-key 'motion magit-blame-mode-map (kbd "k")  'evil-next-line)
+  (evil-define-key 'motion magit-blame-mode-map (kbd "j")  'evil-previous-line)
+  (evil-define-key 'normal magit-blame-mode-map (kbd "SPC") (lookup-key evil-normal-state-map (kbd "SPC")))
+
   ;; Don't put files into trash can. Delete them for real.
   (setq-default magit-delete-by-moving-to-trash nil)
 
