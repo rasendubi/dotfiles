@@ -1278,6 +1278,18 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :config
   (setq notmuch-search-oldest-first nil))
 
+(use-package elisp-mode
+  :ensure nil ; built-in
+  :config
+  (evil-define-operator rasen/evil-eval (beg end type)
+    "Evaluate region."
+    (if (eq type 'block)
+        (evil-apply-on-block 'eval-region beg end nil)
+      (eval-region beg end)))
+
+  (evil-define-key 'normal emacs-lisp-mode-map (kbd "SPC e") 'eval-last-sexp)
+  (evil-define-key 'visual emacs-lisp-mode-map (kbd "SPC e") 'rasen/evil-eval))
+
 ;; For use with "Edit with Emacs" chrome plugin.
 ;; https://chrome.google.com/webstore/detail/edit-with-emacs/ljobjlafonikaiipfkggjbhkghgicgoh?hl=en
 (use-package edit-server
