@@ -259,6 +259,7 @@ in
     {
       virtualisation.virtualbox.host.enable = true;
       users.extraUsers.rasen.extraGroups = [ "vboxusers" ];
+      nixpkgs.config.virtualbox.enableExtensionPack = true;
     }
     {
       services.postgresql = {

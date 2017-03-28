@@ -543,6 +543,7 @@ Enable firewall. This disables all ports and pings.
 {
   virtualisation.virtualbox.host.enable = true;
   users.extraUsers.rasen.extraGroups = [ "vboxusers" ];
+  nixpkgs.config.virtualbox.enableExtensionPack = true;
 }
 #+end_src
 
