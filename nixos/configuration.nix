@@ -89,6 +89,8 @@ let
           efiSupport = true;
         };
         boot.loader.efi.canTouchEfiVariables = true;
+      }
+      {
         boot.initrd.luks.devices = [
           {
             name = "root";
@@ -112,12 +114,16 @@ let
         swapDevices = [
           { device = "/dev/disk/by-uuid/5a8086b0-627e-4775-ac07-b827ced6998b"; }
         ];
+      }
       {
         hardware.pulseaudio = {
           enable = true;
           support32Bit = true;
         };
         environment.systemPackages = [ pkgs.pavucontrol ];
+      }
+      {
+        networking.firewall.allowedTCPPorts = [ 1883 ];
       }
     ] else
     throw "Unknown machine";

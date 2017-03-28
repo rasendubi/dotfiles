@@ -232,11 +232,13 @@ This is my desktop computer.
     efiSupport = true;
   };
   boot.loader.efi.canTouchEfiVariables = true;
+}
 #+end_src
 
 This is LMV on LUKS setup.
 #+name: machine-ashmalko
 #+begin_src nix
+{
   boot.initrd.luks.devices = [
     {
       name = "root";
@@ -260,6 +262,7 @@ This is LMV on LUKS setup.
   swapDevices = [
     { device = "/dev/disk/by-uuid/5a8086b0-627e-4775-ac07-b827ced6998b"; }
   ];
+}
 #+end_src
 
 Use pulseaudio (multiple sound sinks, skype calls)
@@ -271,6 +274,14 @@ Use pulseaudio (multiple sound sinks, skype calls)
     support32Bit = true;
   };
   environment.systemPackages = [ pkgs.pavucontrol ];
+}
+#+end_src
+
+I'm running an MQTT implementation in there.
+#+name: machine-ashmalko
+#+begin_src nix
+{
+  networking.firewall.allowedTCPPorts = [ 1883 ];
 }
 #+end_src
 
