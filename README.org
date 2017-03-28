@@ -569,7 +569,71 @@ Enable firewall. This disables all ports and pings.
 }
 #+end_src
 
+** Mail setup
+*** Mbsync
+I use mbsync to sync my accounts and make them available offline.
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [
+    pkgs.isyncUnstable
+  ];
+}
+#+end_src
+
+Config file is =.mbsyncrc=.
+#+begin_src conf :tangle .mbsyncrc
+MaildirStore local
+Path ~/Mail/
+Inbox ~/Mail/INBOX
+SubFolders Verbatim
+
+IMAPAccount gmail
+Host imap.gmail.com
+User rasen.dubi@gmail.com
+PassCmd "pass imap.gmail.com/rasen.dubi@gmail.com"
+SSLType IMAPS
+CertificateFile /etc/ssl/certs/ca-certificates.crt
+
+IMAPStore gmail-remote
+Account gmail
+
+Channel sync-gmail-all
+Master :gmail-remote:"[Gmail]/All Mail"
+Slave :local:Personal/all
+Create Both
+SyncState *
+
+Channel sync-gmail-sent
+Master :gmail-remote:"[Gmail]/Sent Mail"
+Slave :local:Personal/sent
+Create Both
+SyncState *
+
+Group sync-gmail
+Channel sync-gmail-all
+Channel sync-gmail-sent
+
+IMAPAccount cv
+Host mail.cybervisiontech.com
+User ashmalko
+PassCmd "pass mail.cybervisiontech.com/ashmalko@cybervisiontech.com"
+SSLType IMAPS
+CertificateFile /etc/ssl/certs/ca-certificates.crt
+
+IMAPStore cv-remote
+Account cv
+
+Channel sync-cv
+Master :cv-remote:
+Slave :local:Work/
+Patterns * !Chats !Contacts !"Emailed Contacts"
+Create Both
+SyncState *
+#+end_src
+
 *** Dovecot
+Dovecot serves fetched mail to gnus.
 #+name: nixos-section
 #+begin_src nix
 {
@@ -577,10 +641,84 @@ Enable firewall. This disables all ports and pings.
     enable = true;
     enablePop3 = false;
     enableImap = true;
-    mailLocation = "maildir:/home/rasen/Mail:LAYOUT=fs";
+    mailLocation = "maildir:~/Mail:LAYOUT=fs";
   };
 }
 #+end_src
+
+*** msmtp
+Msmtp is used to send mail.
+
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [
+    pkgs.msmtp
+  ];
+}
+#+end_src
+
+Config file is =.msmtprc=.
+#+begin_src conf :tangle .msmtprc
+defaults
+auth on
+tls on
+tls_starttls off
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+logfile ~/.msmtp.log
+
+# Gmail
+account gmail
+host smtp.gmail.com
+port 465
+from rasen.dubi@gmail.com
+user rasen.dubi@gmail.com
+passwordeval "pass imap.gmail.com/rasen.dubi@gmail.com"
+
+# CyberVision
+account cv
+host mail.cybervisiontech.com
+port 465
+from ashmalko@cybervisiontech.com
+user ashmalko
+passwordeval "pass mail.cybervisiontech.com/ashmalko@cybervisiontech.com"
+
+# default
+account default : gmail
+#+end_src
+
+*** notmuch
+Notmuch is used for tagging.
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [
+    pkgs.notmuch
+  ];
+}
+#+end_src
+
+Config file is =.notmuch-config=.
+#+begin_src conf :tangle .notmuch-config
+[user]
+name=Alexey Shmalko
+primary_email=rasen.dubi@gmail.com
+other_email=ashmalko@cybervisiontech.com
+
+[database]
+path=/home/rasen/Mail
+
+[new]
+tags=new;
+ignore=.mbsyncstate;.mbsyncstate.lock;.mbsyncstate.new;.mbsyncstate.journal;.uidvalidity;dovecot-uidlist;dovecot.index;dovecot.index.log;dovecot.index.log.2;dovecot.index.cache
+
+[search]
+exclude_tags=deleted;spam
+
+[crypto]
+gpg_path=gpg2
+#+end_src
+
 ** Environment
 *** General
     I definitely use X server:
@@ -1444,7 +1582,7 @@ OPTIONS=lit_corridor, DECgraphics, showscore, showexp, time, color, hilite_pet
 
     There is a =setup.sh= script in this directory. It just links all files to =$HOME=:
 #+begin_src sh :shebang "#!/bin/sh" :tangle setup.sh :padline no
-FILES=".vimrc .vim .nvimrc .nvim .gitconfig .zshrc .zsh .tmux.conf .xxkbrc .Xresources .config/awesome .config/nvim .config/xxkb .nethackrc .emacs.d .ssh bin .config/zathura .irssi .config/xkb .config/fish"
+FILES=".vimrc .vim .nvimrc .nvim .gitconfig .zshrc .zsh .tmux.conf .Xresources .config/awesome .config/nvim .nethackrc .emacs.d .ssh bin .config/zathura .irssi .config/xkb .config/fish .msmtprc .notmuch-config .mbsyncrc"
 
 DEST=$1
 

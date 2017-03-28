@@ -273,12 +273,27 @@ in
       };
     }
     {
+      environment.systemPackages = [
+        pkgs.isyncUnstable
+      ];
+    }
+    {
       services.dovecot2 = {
         enable = true;
         enablePop3 = false;
         enableImap = true;
-        mailLocation = "maildir:/home/rasen/Mail:LAYOUT=fs";
+        mailLocation = "maildir:~/Mail:LAYOUT=fs";
       };
+    }
+    {
+      environment.systemPackages = [
+        pkgs.msmtp
+      ];
+    }
+    {
+      environment.systemPackages = [
+        pkgs.notmuch
+      ];
     }
     {
       services.xserver.enable = true;

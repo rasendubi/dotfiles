@@ -1227,19 +1227,8 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 (use-package gnus
   :config
-  (setq user-mail-address "rasen.dubi@gmail.com"
-        user-full-name "Alexey Shmalko")
-
-  ;; (setq gnus-select-method '(nnnil ""))
-  ;; (setq gnus-secondary-select-methods
-  ;;       '((nnmaildir "Personal"
-  ;;                    (directory "~/Mail/Personal")
-  ;;                    (directory-files nnheader-directory-files-safe)
-  ;;                    (get-new-mail nil))
-  ;;         (nnmaildir "Work"
-  ;;                    (directory "~/Mail/Work")
-  ;;                    (directory-files nnheader-directory-files-safe)
-  ;;                    (get-new-mail nil))))
+  (setq user-full-name "Alexey Shmalko"
+        user-mail-address "rasen.dubi@gmail.com")
 
   (setq gnus-select-method
         '(nnimap "Mail"
@@ -1252,22 +1241,19 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
         '(("Work/?.*"
            (posting-style
             (name "Alexey Shmalko")
-            (address "ashmalko@cybervisiontech.com")
-            ("X-Message-SMTP-Method" "smtp mail.cybervisiontech.com 465")))
+            (address "ashmalko@cybervisiontech.com")))
           ("Personal/?.*"
            (posting-style
             (name "Alexey Shmalko")
-            (address "rasen.dubi@gmail.com"))
-            ("X-Message-SMTP-Method" "smtp smtp.gmail.com 465"))))
+            (address "rasen.dubi@gmail.com")))))
 
   (setq gnus-fetch-old-headers 'some)
-  (setq smtpmail-default-smtp-server "smtp.gmail.com"
-        smtpmail-smtp-server "smtp.gmail.com"
-        smtpmail-smtp-service 465
-        smtpmail-stream-type 'ssl
-        send-mail-function 'smtpmail-send-it
-        message-send-mail-function 'smtpmail-send-it
-        gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]")
+  (setq gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]")
+
+  (setq message-send-mail-f-is-evil t
+        send-mail-function 'message-send-mail-with-sendmail
+        message-send-mail-function 'message-send-mail-with-sendmail
+        sendmail-program "msmtp")
 
   (setq mm-verify-option 'always)
 
