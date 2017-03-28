@@ -569,14 +569,6 @@ Enable firewall. This disables all ports and pings.
 }
 #+end_src
 
-*** Docker
-#+name: nixos-section
-#+begin_src nix
-{
-  virtualisation.docker.enable = true;
-}
-#+end_src
-
 *** Dovecot
 #+name: nixos-section
 #+begin_src nix

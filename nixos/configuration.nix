@@ -273,9 +273,6 @@ in
       };
     }
     {
-      virtualisation.docker.enable = true;
-    }
-    {
       services.dovecot2 = {
         enable = true;
         enablePop3 = false;
