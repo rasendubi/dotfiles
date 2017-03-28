@@ -21,7 +21,19 @@ Pieces not (yet) covered in this document are:
     It looks like this:
 
 #+begin_src nix :tangle nixos/configuration.nix :noweb no-export :padline no
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
+let
+  meta = import ./meta.nix;
+  machine-config =
+    if meta.name == "Larry" then [
+      <<machine-larry>>
+    ] else
+    if meta.name == "ashmalko" then [
+      <<machine-ashmalko>>
+    ] else
+    throw "Unknown machine";
+
+in
 {
   imports = [
     {
@@ -32,7 +44,7 @@ Pieces not (yet) covered in this document are:
     }
 
     <<nixos-section>>
-  ];
+  ] ++ machine-config;
 }
 #+end_src
 
@@ -97,7 +109,7 @@ Save nixos-config in the Nix store, so I can later retrieve it. The config for t
 **** Larry
     This one is a laptop that needs the proprietary driver for Wi-Fi card (this =wl= and =broadcom_sta=).
 
-#+name: nixos-section
+#+name: machine-larry
 #+begin_src nix
 {
   imports = [ <nixpkgs/nixos/modules/installer/scan/not-detected.nix> ];
@@ -111,7 +123,7 @@ Save nixos-config in the Nix store, so I can later retrieve it. The config for t
 #+end_src
 
     I have two partitions (usual "separate home" setup).
-#+name: nixos-section
+#+name: machine-larry
 #+begin_src nix
 {
   fileSystems = {
@@ -129,7 +141,7 @@ Save nixos-config in the Nix store, so I can later retrieve it. The config for t
 
 There are also two swap partitions, but one of them is from my slow hdd, so I probably shouldn't use it.
 
-#+name: nixos-section
+#+name: machine-larry
 #+begin_src nix
 {
   swapDevices = [
@@ -141,7 +153,7 @@ There are also two swap partitions, but one of them is from my slow hdd, so I pr
 #+end_src
 
     There is also Gentoo on the second drive---it's good to keep it bootable.
-#+name: nixos-section
+#+name: machine-larry
 #+begin_src nix
 {
   boot.loader.grub = {
@@ -159,7 +171,7 @@ There are also two swap partitions, but one of them is from my slow hdd, so I pr
 
     Boring stuff: 8 hyper-threads, networking ([[https://launchpad.net/wicd][wicd]]), synaptics (Larry is a laptop).
 
-#+name: nixos-section
+#+name: machine-larry
 #+begin_src nix
 {
   nix.maxJobs = 8;
@@ -182,10 +194,83 @@ There are also two swap partitions, but one of them is from my slow hdd, so I pr
 #+end_src
 
 I have nvidia video card and integrated intel-one. I don't use nvidia one, so next the line disables it:
-#+name: nixos-section
+#+name: machine-larry
 #+begin_src nix
 {
   hardware.nvidiaOptimus.disable = true;
+}
+#+end_src
+
+**** ashmalko
+This is my desktop computer.
+#+name: machine-ashmalko
+#+begin_src nix
+{
+  networking.hostName = "ashmalko";
+
+  nix.maxJobs = 4;
+  nix.buildCores = 4;
+}
+#+end_src
+
+#+name: machine-ashmalko
+#+begin_src nix
+{
+  imports = [
+    <nixpkgs/nixos/modules/installer/scan/not-detected.nix>
+  ];
+
+  boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "usb_storage" "usbhid" "sd_mod" ];
+  boot.kernelModules = [ "kvm-intel" ];
+  boot.extraModulePackages = [ ];
+
+  boot.kernelParams = [ "intel_pstate=no_hwp" ];
+  boot.loader.grub = {
+    enable = true;
+    version = 2;
+    device = "/dev/sda";
+    efiSupport = true;
+  };
+  boot.loader.efi.canTouchEfiVariables = true;
+#+end_src
+
+This is LMV on LUKS setup.
+#+name: machine-ashmalko
+#+begin_src nix
+  boot.initrd.luks.devices = [
+    {
+      name = "root";
+      device = "/dev/disk/by-uuid/a3eb801b-7771-4112-bb8d-42a9676e65de";
+      preLVM = true;
+      allowDiscards = true;
+    }
+  ];
+
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-uuid/4184-7556";
+    fsType = "vfat";
+  };
+
+  fileSystems."/" = {
+    device = "/dev/disk/by-uuid/84d89f4b-7707-4580-8dbc-ec7e15e43b52";
+    fsType = "ext4";
+    options = [ "noatime" "nodiratime" "discard" ];
+  };
+
+  swapDevices = [
+    { device = "/dev/disk/by-uuid/5a8086b0-627e-4775-ac07-b827ced6998b"; }
+  ];
+#+end_src
+
+Use pulseaudio (multiple sound sinks, skype calls)
+#+name: machine-ashmalko
+#+begin_src nix
+{
+  hardware.pulseaudio = {
+    enable = true;
+    support32Bit = true;
+  };
+  environment.systemPackages = [ pkgs.pavucontrol ];
 }
 #+end_src
 

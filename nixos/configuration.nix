@@ -1,4 +1,128 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
+let
+  meta = import ./meta.nix;
+  machine-config =
+    if meta.name == "Larry" then [
+      {
+        imports = [ <nixpkgs/nixos/modules/installer/scan/not-detected.nix> ];
+      
+        boot.initrd.availableKernelModules = [ "ahci" "xhci_hcd" ];
+        boot.initrd.kernelModules = [ "wl" ];
+      
+        boot.kernelModules = [ "kvm-intel" "wl" ];
+        boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
+      }
+      {
+        fileSystems = {
+          "/" = {
+            device = "/dev/disk/by-uuid/ba82dd25-a9e5-436f-ae76-4ee44d53b2c6";
+            fsType = "ext4";
+          };
+          "/home" = {
+            device = "/dev/disk/by-uuid/b27c07d0-aaf7-44a1-87e1-5a2cb30954ec";
+            fsType = "ext4";
+          };
+        };
+      }
+      {
+        swapDevices = [
+          # TODO: set priority
+          # { device = "/dev/disk/by-uuid/f0bd0438-3324-4295-9981-07015fa0af5e"; }
+          { device = "/dev/disk/by-uuid/75822d9d-c5f0-495f-b089-f57d0de5246d"; }
+        ];
+      }
+      {
+        boot.loader.grub = {
+          enable = true;
+          version = 2;
+          device = "/dev/sda";
+          extraEntries = ''
+            menuentry 'Gentoo' {
+              configfile (hd1,1)/grub2/grub.cfg
+            }
+          '';
+        };
+      }
+      {
+        nix.maxJobs = 8;
+        nix.buildCores = 8;
+      
+        networking = {
+          hostName = "Larry";
+      
+          useDHCP = false;
+          wicd.enable = true;
+          wireless.enable = false;
+        };
+      
+        services.xserver.synaptics = {
+          enable = true;
+          twoFingerScroll = true;
+          vertEdgeScroll = true;
+        };
+      }
+      {
+        hardware.nvidiaOptimus.disable = true;
+      }
+    ] else
+    if meta.name == "ashmalko" then [
+      {
+        networking.hostName = "ashmalko";
+      
+        nix.maxJobs = 4;
+        nix.buildCores = 4;
+      }
+      {
+        imports = [
+          <nixpkgs/nixos/modules/installer/scan/not-detected.nix>
+        ];
+      
+        boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "usb_storage" "usbhid" "sd_mod" ];
+        boot.kernelModules = [ "kvm-intel" ];
+        boot.extraModulePackages = [ ];
+      
+        boot.kernelParams = [ "intel_pstate=no_hwp" ];
+        boot.loader.grub = {
+          enable = true;
+          version = 2;
+          device = "/dev/sda";
+          efiSupport = true;
+        };
+        boot.loader.efi.canTouchEfiVariables = true;
+        boot.initrd.luks.devices = [
+          {
+            name = "root";
+            device = "/dev/disk/by-uuid/a3eb801b-7771-4112-bb8d-42a9676e65de";
+            preLVM = true;
+            allowDiscards = true;
+          }
+        ];
+      
+        fileSystems."/boot" = {
+          device = "/dev/disk/by-uuid/4184-7556";
+          fsType = "vfat";
+        };
+      
+        fileSystems."/" = {
+          device = "/dev/disk/by-uuid/84d89f4b-7707-4580-8dbc-ec7e15e43b52";
+          fsType = "ext4";
+          options = [ "noatime" "nodiratime" "discard" ];
+        };
+      
+        swapDevices = [
+          { device = "/dev/disk/by-uuid/5a8086b0-627e-4775-ac07-b827ced6998b"; }
+        ];
+      {
+        hardware.pulseaudio = {
+          enable = true;
+          support32Bit = true;
+        };
+        environment.systemPackages = [ pkgs.pavucontrol ];
+      }
+    ] else
+    throw "Unknown machine";
+
+in
 {
   imports = [
     {
@@ -27,67 +151,6 @@
         extraGroups = [ "users" "wheel" "input" ];
         initialPassword = "HelloWorld";
       };
-    }
-    {
-      imports = [ <nixpkgs/nixos/modules/installer/scan/not-detected.nix> ];
-    
-      boot.initrd.availableKernelModules = [ "ahci" "xhci_hcd" ];
-      boot.initrd.kernelModules = [ "wl" ];
-    
-      boot.kernelModules = [ "kvm-intel" "wl" ];
-      boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
-    }
-    {
-      fileSystems = {
-        "/" = {
-          device = "/dev/disk/by-uuid/ba82dd25-a9e5-436f-ae76-4ee44d53b2c6";
-          fsType = "ext4";
-        };
-        "/home" = {
-          device = "/dev/disk/by-uuid/b27c07d0-aaf7-44a1-87e1-5a2cb30954ec";
-          fsType = "ext4";
-        };
-      };
-    }
-    {
-      swapDevices = [
-        # TODO: set priority
-        # { device = "/dev/disk/by-uuid/f0bd0438-3324-4295-9981-07015fa0af5e"; }
-        { device = "/dev/disk/by-uuid/75822d9d-c5f0-495f-b089-f57d0de5246d"; }
-      ];
-    }
-    {
-      boot.loader.grub = {
-        enable = true;
-        version = 2;
-        device = "/dev/sda";
-        extraEntries = ''
-          menuentry 'Gentoo' {
-            configfile (hd1,1)/grub2/grub.cfg
-          }
-        '';
-      };
-    }
-    {
-      nix.maxJobs = 8;
-      nix.buildCores = 8;
-    
-      networking = {
-        hostName = "Larry";
-    
-        useDHCP = false;
-        wicd.enable = true;
-        wireless.enable = false;
-      };
-    
-      services.xserver.synaptics = {
-        enable = true;
-        twoFingerScroll = true;
-        vertEdgeScroll = true;
-      };
-    }
-    {
-      hardware.nvidiaOptimus.disable = true;
     }
     {
       nix.useSandbox = true;
@@ -469,5 +532,5 @@
         pkgs.nethack
       ];
     }
-  ];
+  ] ++ machine-config;
 }
