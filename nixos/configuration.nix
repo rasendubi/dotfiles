@@ -309,6 +309,9 @@ in
     {
       services.xserver.layout = "us,ua";
       services.xserver.xkbVariant = "workman,";
+    
+      # Use same config for linux console
+      i18n.consoleUseXkbConfig = true;
     }
     {
       services.xserver.xkbOptions = "grp:caps_toggle,grp:menu_toggle,grp_led:caps";

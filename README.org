@@ -655,6 +655,9 @@ Enable firewall. This disables all ports and pings.
 {
   services.xserver.layout = "us,ua";
   services.xserver.xkbVariant = "workman,";
+
+  # Use same config for linux console
+  i18n.consoleUseXkbConfig = true;
 }
 #+end_src
 
