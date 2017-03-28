@@ -430,6 +430,10 @@ in
         pkgs.xscreensaver
         pkgs.xss-lock
         pkgs.alarm-clock-applet
+        pkgs.pass
+    
+        # Used by naga setup
+        pkgs.xdotool
       ];
     }
     {
