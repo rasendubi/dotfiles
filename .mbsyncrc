@@ -1,0 +1,47 @@
+MaildirStore local
+Path ~/Mail/
+Inbox ~/Mail/INBOX
+SubFolders Verbatim
+
+IMAPAccount gmail
+Host imap.gmail.com
+User rasen.dubi@gmail.com
+PassCmd "pass imap.gmail.com/rasen.dubi@gmail.com"
+SSLType IMAPS
+CertificateFile /etc/ssl/certs/ca-certificates.crt
+
+IMAPStore gmail-remote
+Account gmail
+
+Channel sync-gmail-all
+Master :gmail-remote:"[Gmail]/All Mail"
+Slave :local:Personal/all
+Create Both
+SyncState *
+
+Channel sync-gmail-sent
+Master :gmail-remote:"[Gmail]/Sent Mail"
+Slave :local:Personal/sent
+Create Both
+SyncState *
+
+Group sync-gmail
+Channel sync-gmail-all
+Channel sync-gmail-sent
+
+IMAPAccount cv
+Host mail.cybervisiontech.com
+User ashmalko
+PassCmd "pass mail.cybervisiontech.com/ashmalko@cybervisiontech.com"
+SSLType IMAPS
+CertificateFile /etc/ssl/certs/ca-certificates.crt
+
+IMAPStore cv-remote
+Account cv
+
+Channel sync-cv
+Master :cv-remote:
+Slave :local:Work/
+Patterns * !Chats !Contacts !"Emailed Contacts"
+Create Both
+SyncState *
