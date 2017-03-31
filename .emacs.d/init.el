@@ -1283,6 +1283,21 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :config
   (setq notmuch-search-oldest-first nil))
 
+(use-package notmuch
+  :config
+  (require 'org-notmuch)
+  (evil-set-initial-state 'notmuch-search-mode 'motion)
+  (evil-define-key 'motion notmuch-search-mode-map
+    (kbd "q") 'notmuch-bury-or-kill-this-buffer
+    (kbd "g r") 'notmuch-poll-and-refresh-this-buffer
+    (kbd "RET") 'notmuch-search-show-thread
+    (kbd "*") 'notmuch-search-tag-all
+    (kbd "+") 'notmuch-search-add-tag
+    (kbd "-") 'notmuch-search-remove-tag
+    (kbd "t") 'notmuch-tag-jump
+    (kbd "T") 'notmuch-search-filter-by-tag)
+  (setq notmuch-search-oldest-first nil))
+
 (use-package elisp-mode
   :ensure nil ; built-in
   :config
