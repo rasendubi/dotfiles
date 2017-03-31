@@ -534,7 +534,7 @@ client.connect_signal(
 function razer(n, t)
     local c = client.focus
 
-    if t ~= 'down' and not (c and c.class == 'Google-chrome' and (n == 8 or n == 9))then
+    if t ~= 'down' and not (c and (c.class == 'Google-chrome' or c.class == 'google-chrome') and (n == 8 or n == 9))then
         return
     end
 
@@ -545,7 +545,7 @@ function razer(n, t)
         awful.tag.history.restore()
         return
     end
-    if c.class == 'Google-chrome' then
+    if c.class == 'Google-chrome' or c.class == 'google-chrome' then
         if n == 1 then
             awful.spawn("xdotool key Alt+Left")
         elseif n == 2 then
