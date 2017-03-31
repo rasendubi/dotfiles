@@ -1255,7 +1255,12 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
         message-send-mail-function 'message-send-mail-with-sendmail
         sendmail-program "msmtp")
 
+  (add-hook 'message-setup-hook 'mml-secure-message-sign-pgpmime)
   (setq mm-verify-option 'always)
+  (add-to-list 'mm-automatic-display "application/pgp")
+  (add-to-list 'mm-automatic-display "application/pgp-signature")
+  (add-to-list 'mm-inlined-types "application/pgp")
+  (setq gnus-buttonized-mime-types '("multipart/encrypted" "multipart/signed"))
 
   (setq gnus-check-new-newsgroups nil ;; NOTE: don't check for new groups
         gnus-save-newsrc-file nil ;; NOTE: don't write `.newsrc' file
