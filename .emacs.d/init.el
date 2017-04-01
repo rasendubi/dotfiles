@@ -820,11 +820,12 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (defun rasen/org-refile-files ()
     (rasen/org-files-in-dir "~/org"))
   ;; non-nil values work bad with ivy
-  (setq-default org-refile-use-outline-path nil)
+  (setq-default org-refile-use-outline-path 'file)
+  (setq-default org-outline-path-complete-in-steps nil)
   (setq org-refile-targets
         '(;(nil :maxlevel . 3)
           (org-agenda-files :maxlevel . 2)
-          (rasen/org-refile-files :level . 1)))
+          (rasen/org-refile-files :maxlevel . 1)))
 
   ;; org-babel
   (org-babel-do-load-languages 'org-babel-load-languages
