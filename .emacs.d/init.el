@@ -1201,6 +1201,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (setq-default web-mode-content-types-alist
                 '(("jsx" . ".*\\.js[x]?\\'")))
   (setq-default js-indent 2
+                js-indent-level 2
                 js-switch-indent-offset 2
                 web-mode-markup-indent-offset 2
                 web-mode-code-indent-offset 2
