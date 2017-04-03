@@ -1234,9 +1234,8 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
   (setq gnus-select-method
         '(nnimap "Mail"
-                 (nnimap-address "127.0.0.1")
-                 (nnimap-stream network)
-                 (nnimap-authenticator login)))
+                 (nnimap-stream shell)
+                 (nnimap-shell-program "/var/run/current-system/sw/libexec/dovecot/imap")))
   (setq gnus-secondary-select-methods nil)
 
   (setq gnus-parameters
@@ -1279,6 +1278,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :init
   (define-key gnus-group-mode-map (kbd "f") 'mbsync)
   :config
+  (setq mbsync-executable "mbsync")
   (add-hook 'mbsync-exit-hook 'gnus-group-get-new-news))
 
 (use-package notmuch

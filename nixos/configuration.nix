@@ -284,6 +284,9 @@ in
         enableImap = true;
         mailLocation = "maildir:~/Mail:LAYOUT=fs";
       };
+    
+      # dovecot has some helpers in libexec (namely, imap).
+      environment.pathsToLink = [ "/libexec/dovecot" ];
     }
     {
       environment.systemPackages = [
