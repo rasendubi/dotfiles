@@ -1271,7 +1271,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
   (require 'gnus-article-treat-patch)
   (setq ft/gnus-article-patch-conditions
-      '( "^@@ -[0-9]+,[0-9]+ \\+[0-9]+,[0-9]+ @@" )))
+        '( "^@@ -[0-9]+,[0-9]+ \\+[0-9]+,[0-9]+ @@" )))
 
 (use-package mbsync
   :commands (mbsync)
@@ -1280,10 +1280,6 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :config
   (setq mbsync-executable "mbsync")
   (add-hook 'mbsync-exit-hook 'gnus-group-get-new-news))
-
-(use-package notmuch
-  :config
-  (setq notmuch-search-oldest-first nil))
 
 (use-package notmuch
   :config
