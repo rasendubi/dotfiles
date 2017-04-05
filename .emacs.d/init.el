@@ -1126,7 +1126,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 ;; Shamelessly stealed from from https://github.com/purcell/emacs.d
 (defun rename-this-file-and-buffer (new-name)
   "Renames both current buffer and file it's visiting to NEW-NAME."
-  (interactive "sNew name: ")
+  (interactive "FNew name: ")
   (let ((name (buffer-name))
         (filename (buffer-file-name)))
     (unless filename
