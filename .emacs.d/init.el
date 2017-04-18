@@ -293,12 +293,13 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
                       :background nil
                       :underline (list :color "yellow4" :style 'wave))
 
-  (global-whitespace-mode t))
+  (add-hook 'prog-mode-hook 'whitespace-mode))
+
 
 (use-package whitespace-cleanup-mode
   :diminish whitespace-cleanup-mode
   :config
-  (whitespace-cleanup-mode 1))
+  (global-whitespace-cleanup-mode 1))
 
 (set-face-attribute 'font-lock-comment-face nil
                     :overline nil
@@ -306,7 +307,12 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
                     :background (face-attribute 'shadow :background))
 
 (use-package clean-aindent-mode
+  ;; Disabled on 2017-04-12.
+  ;;
+  ;; `whitespace-cleanup-mode' should do pretty good job at it.
+  :disabled t
   :config
+  
   (setq clean-aindent-is-simple-indent t)
   (clean-aindent-mode t))
 
@@ -411,7 +417,6 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
     ?h "HEAD" 'rasen/magit-push-head))
 
 (use-package evil-magit
-  :after magit
   :config
   (setq evil-magit-use-y-for-yank t)
 
@@ -651,7 +656,10 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :mode ("\\.\\(yml\\|yaml\\)$" . yaml-mode))
 
 (use-package markdown-mode
-  :mode ("\\.\\(markdown\\|mdown\\|md\\)$" . markdown-mode))
+  :mode ("\\.\\(markdown\\|mdown\\|md\\)$" . markdown-mode)
+  :init
+  (add-hook 'markdown-mode-hook 'visual-line-mode)
+  (add-hook 'markdown-mode-hook 'visual-fill-column-mode))
 
 (use-package undo-tree
   :diminish (undo-tree-mode global-undo-tree-mode))
