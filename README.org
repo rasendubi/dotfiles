@@ -1494,20 +1494,6 @@ set-window-option -g automatic-rename
   services.udev.packages = [ pkgs.openocd ];
 }
 #+end_src
-
-**** Arduino
-
-I teach a course for children involving Arduino programming.
-
-#+name: nixos-section
-#+begin_src nix
-{
-  environment.systemPackages = [
-    pkgs.arduino
-  ];
-}
-#+end_src
-
 *** Other terminal goodies
 #+name: nixos-section
 #+begin_src nix

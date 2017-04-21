@@ -515,11 +515,6 @@ in
     }
     {
       environment.systemPackages = [
-        pkgs.arduino
-      ];
-    }
-    {
-      environment.systemPackages = [
         pkgs.wget
         pkgs.htop
         pkgs.psmisc
