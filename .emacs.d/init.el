@@ -733,8 +733,6 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
          ("SPC c" . org-capture)
          ("SPC a" . org-agenda))
   :ensure org-plus-contrib
-  :init
-  (nmap "C-c c" (rasen/hard-way "SPC c"))
   :config
   (add-hook 'org-mode-hook (lambda ()
                              (visual-line-mode 1)
