@@ -730,6 +730,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
          :map evil-normal-state-map
          ("SPC o" . org-clock-out)
          ("SPC l" . org-clock-in-last)
+         ("SPC j" . org-clock-goto)
          ("SPC c" . org-capture)
          ("SPC a" . org-agenda))
   :ensure org-plus-contrib
