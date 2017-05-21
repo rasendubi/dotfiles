@@ -349,17 +349,8 @@ in
     }
     {
       environment.systemPackages = [
-        pkgs.kde4.oxygen_icons
-        pkgs.kde4.kwin_styles
+        pkgs.oxygen-icons5
       ];
-    }
-    {
-      environment.systemPackages = [ pkgs.oxygen-gtk2 pkgs.oxygen-gtk3 ];
-    
-      environment.shellInit = ''
-        export GTK_PATH=$GTK_PATH:${pkgs.oxygen_gtk}/lib/gtk-2.0
-        export GTK2_RC_FILES=$GTK2_RC_FILES:${pkgs.oxygen_gtk}/share/themes/oxygen-gtk/gtk-2.0/gtkrc
-      '';
     }
     {
       environment.systemPackages = [
@@ -384,11 +375,10 @@ in
     }
     {
       environment.systemPackages = [
-        pkgs.kde4.gwenview
-        pkgs.kde4.kde_baseapps # <-- dolphin
-        pkgs.kde4.kde_runtime
+        pkgs.gwenview
+        pkgs.dolphin
         pkgs.kde4.kfilemetadata
-        pkgs.kde4.filelight
+        pkgs.filelight
         pkgs.shared_mime_info
       ];
     }
