@@ -29,6 +29,33 @@ Group sync-gmail
 Channel sync-gmail-all
 Channel sync-gmail-sent
 
+IMAPAccount kaaiot
+Host imap.gmail.com
+User ashmalko@kaaiot.io
+PassCmd "pass imap.gmail.com/ashmalko@kaaiot.io"
+SSLType IMAPS
+AuthMechs *
+CertificateFile /etc/ssl/certs/ca-certificates.crt
+
+IMAPStore kaaiot-remote
+Account kaaiot
+
+Channel sync-kaaiot-all
+Master :kaaiot-remote:"[Gmail]/All Mail"
+Slave :local:KaaIoT/all
+Create Both
+SyncState *
+
+Channel sync-kaaiot-sent
+Master :kaaiot-remote:"[Gmail]/Sent Mail"
+Slave :local:KaaIoT/sent
+Create Both
+SyncState *
+
+Group sync-kaaiot
+Channel sync-kaaiot-all
+Channel sync-kaaiot-sent
+
 IMAPAccount cv
 Host mail.cybervisiontech.com
 User ashmalko

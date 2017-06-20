@@ -159,7 +159,18 @@ in
       };
     }
     {
-      nix.useSandbox = true;
+      nix.useSandbox = "relaxed";
+    }
+    {
+      services.influxdb.enable = true;
+      services.grafana = {
+        enable = true;
+        addr = "0.0.0.0";
+        port = 3000;
+    
+        domain = "ashmalko.local";
+        auth.anonymous.enable = true;
+      };
     }
     {
       services.locate = {

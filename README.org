@@ -317,80 +317,29 @@ To make package results testing better, I build them in isolated environment (fo
 #+name: nixos-section
 #+begin_src nix
 {
-  nix.useSandbox = true;
+  nix.useSandbox = "relaxed";
 }
 #+end_src
 
-**** rust-nightly
-    *Won't submit*. As nighties are unstable, it's unlikely it will be at nixpkgs.
-
-    Rust wiki [[https://nixos.org/wiki/Rust#Nightlies][recommends]] using [[https://github.com/Ericson2314/nixos-configuration/blob/nixos/user/.nixpkgs/rust-nightly.nix][Ericson2314's rustc-nightly]] package. However, it doesn't pack libstd.
-
-    You can get hash with the following command:
-#+name: rust-nightly-hash
-#+header: :var date="2016-03-11"
-#+begin_src sh
-nix-prefetch-url --type sha256 https://static.rust-lang.org/dist/$date/rust-nightly-x86_64-unknown-linux-gnu.tar.gz
-#+end_src
-
-#+RESULTS:
-
-#+name: nixpkgs-local-packages
-#+begin_src nix
-rust-nightly = callPackage ./pkgs/rust-nightly {
-  date = "2016-05-28";
-  # TODO: hash should be different depending on the system
-  hash = "0f9rx672v97f5bn6mnb1dgyczyf5f8vcjp55yvasflvln1w64krv";
-};
-#+end_src
-
-#+begin_src nix :tangle nixpkgs-local/pkgs/rust-nightly/default.nix :padline no
-{ date, hash
-, stdenv, fetchurl, zlib }:
-
-let
-  target =
-    if stdenv.system == "i686-linux" then "i686-unknown-linux-gnu" else
-    if stdenv.system == "x86_64-linux" then "x86_64-unknown-linux-gnu" else
-    if stdenv.system == "i686-darwin" then "i868-apple-darwin" else
-    if stdenv.system == "x86_64-darwin" then "x86_64-apple-darwin" else
-    abort "no snapshot to bootstrap for this platfrom (missing target triple)";
-
-in stdenv.mkDerivation rec {
-  name = "rust-nightly-${date}";
-
-  src = fetchurl {
-    url = "https://static.rust-lang.org/dist/${date}/rust-nightly-${target}.tar.gz";
-    sha256 = hash;
-  };
-
-  installPhase = ''
-    ./install.sh --prefix=$out --disable-ldconfig --without=rust-docs
-  '';
-
-  dontStrip = true;
-
-  preFixup = if stdenv.isLinux then let
-    rpath = stdenv.lib.concatStringsSep ":" [
-      "$out/lib"
-      (stdenv.lib.makeLibraryPath [ zlib ])
-      ''${stdenv.cc.cc}/lib${stdenv.lib.optionalString stdenv.is64bit "64"}''
-    ];
-  in
-  ''
-    for executable in ${stdenv.lib.concatMapStringsSep " " (s: "$out/bin/" + s) [ "cargo" "rustc" "rustdoc" ]}; do
-      patchelf --interpreter "${stdenv.glibc.out}/lib/${stdenv.cc.dynamicLinker}" \
-        --set-rpath "${rpath}" \
-        "$executable"
-    done
-    for library in $out/lib/*.so; do
-      patchelf --set-rpath "${rpath}" "$library"
-    done
-  '' else "";
-}
-#+end_src
+Note that this is ="relaxed"= instead of =true=, because I have some packages that require network to build and thus are =__noChroot=.
 
 ** Services
+*** Development setup
+
+#+name: nixos-section
+#+begin_src nix
+{
+  services.influxdb.enable = true;
+  services.grafana = {
+    enable = true;
+    addr = "0.0.0.0";
+    port = 3000;
+
+    domain = "ashmalko.local";
+    auth.anonymous.enable = true;
+  };
+}
+#+end_src
 *** Locate
     Update [[https://linux.die.net/man/1/locate][locate]] database daily.
 #+name: nixos-section
@@ -614,6 +563,33 @@ Group sync-gmail
 Channel sync-gmail-all
 Channel sync-gmail-sent
 
+IMAPAccount kaaiot
+Host imap.gmail.com
+User ashmalko@kaaiot.io
+PassCmd "pass imap.gmail.com/ashmalko@kaaiot.io"
+SSLType IMAPS
+AuthMechs *
+CertificateFile /etc/ssl/certs/ca-certificates.crt
+
+IMAPStore kaaiot-remote
+Account kaaiot
+
+Channel sync-kaaiot-all
+Master :kaaiot-remote:"[Gmail]/All Mail"
+Slave :local:KaaIoT/all
+Create Both
+SyncState *
+
+Channel sync-kaaiot-sent
+Master :kaaiot-remote:"[Gmail]/Sent Mail"
+Slave :local:KaaIoT/sent
+Create Both
+SyncState *
+
+Group sync-kaaiot
+Channel sync-kaaiot-all
+Channel sync-kaaiot-sent
+
 IMAPAccount cv
 Host mail.cybervisiontech.com
 User ashmalko
@@ -678,6 +654,14 @@ from rasen.dubi@gmail.com
 user rasen.dubi@gmail.com
 passwordeval "pass imap.gmail.com/rasen.dubi@gmail.com"
 
+# KaaIoT
+account kaaiot
+host smtp.gmail.com
+port 465
+from ashmalko@kaaiot.io
+user ashmalko@kaaiot.io
+passwordeval "pass imap.gmail.com/ashmalko@kaaiot.io"
+
 # CyberVision
 account cv
 host mail.cybervisiontech.com
@@ -706,7 +690,7 @@ Config file is =.notmuch-config=.
 [user]
 name=Alexey Shmalko
 primary_email=rasen.dubi@gmail.com
-other_email=ashmalko@cybervisiontech.com
+other_email=ashmalko@cybervisiontech.com,ashmalko@kaaiot.io
 
 [database]
 path=/home/rasen/Mail

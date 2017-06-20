@@ -1,7 +1,7 @@
 [user]
 name=Alexey Shmalko
 primary_email=rasen.dubi@gmail.com
-other_email=ashmalko@cybervisiontech.com
+other_email=ashmalko@cybervisiontech.com,ashmalko@kaaiot.io
 
 [database]
 path=/home/rasen/Mail
