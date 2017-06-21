@@ -123,7 +123,35 @@ let
         environment.systemPackages = [ pkgs.pavucontrol ];
       }
       {
-        networking.firewall.allowedTCPPorts = [ 1883 ];
+        networking.firewall.allowedTCPPorts = [ 1883 8883 3000 ];
+      
+        systemd.services.zink = {
+          description = "Zink service";
+          wantedBy = [ "multi-user.target" ];
+          after = [ "grafana.service" ];
+      
+          serviceConfig =
+            let zink =
+              pkgs.rustPlatform.buildRustPackage {
+                name = "zink-0.0.1";
+      
+                src = pkgs.fetchFromGitHub {
+                  owner = "rasendubi";
+                  repo = "zink";
+                  rev = "influxdb-0.0.1";
+                  sha256 = "1sw07p2a83s34mp69snz1znwqp8xlba8dqc5y6iqfhyc3zwwbd3w";
+                };
+      
+                depsSha256 = "1dvk5l32nrpxy7h5pfiqssx06xd72pszd8kr2f2y3ba288ck97rr";
+              };
+            in {
+              ExecStart = "${zink}/bin/zink timestamp,tagId,batteryLevel,temperature";
+              Restart = "on-failure";
+            };
+        };
+      }
+      {
+        services.avahi.interfaces = [ "enp0s31f6" ];
       }
     ] else
     throw "Unknown machine";
@@ -276,7 +304,6 @@ in
     {
       virtualisation.virtualbox.host.enable = true;
       users.extraUsers.rasen.extraGroups = [ "vboxusers" ];
-      nixpkgs.config.virtualbox.enableExtensionPack = true;
     }
     {
       services.postgresql = {
