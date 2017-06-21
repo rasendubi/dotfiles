@@ -390,6 +390,21 @@ in
         pkgs.oxygen-icons5
       ];
     }
+    (let
+      oldpkgs = import (pkgs.fetchFromGitHub {
+        owner = "NixOS";
+        repo = "nixpkgs-channels";
+        rev = "1aa77d0519ae23a0dbef6cab6f15393cfadcc454";
+        sha256 = "1gcd8938n3z0a095b0203fhxp6lddaw1ic1rl33q441m1w0i19jv";
+      }) { };
+    in {
+      environment.systemPackages = [ oldpkgs.oxygen-gtk2 oldpkgs.oxygen-gtk3 ];
+    
+      environment.shellInit = ''
+        export GTK_PATH=$GTK_PATH:${oldpkgs.oxygen_gtk}/lib/gtk-2.0
+        export GTK2_RC_FILES=$GTK2_RC_FILES:${oldpkgs.oxygen_gtk}/share/themes/oxygen-gtk/gtk-2.0/gtkrc
+      '';
+    })
     {
       environment.systemPackages = [
         pkgs.gnome3.adwaita-icon-theme
