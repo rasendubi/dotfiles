@@ -895,7 +895,7 @@ xcape -e 'Control_L=Escape'
     repo = "nixpkgs-channels";
     rev = "1aa77d0519ae23a0dbef6cab6f15393cfadcc454";
     sha256 = "1gcd8938n3z0a095b0203fhxp6lddaw1ic1rl33q441m1w0i19jv";
-  }) { };
+  }) { config = config.nixpkgs.config; };
 in {
   environment.systemPackages = [ oldpkgs.oxygen-gtk2 oldpkgs.oxygen-gtk3 ];
 
@@ -967,32 +967,23 @@ I'm not a font guru, so I just stuffed a bunch of random fonts here.
 #+end_src
 
 *** Firefox
-    Though my default browser is google-chrome, it has issues with Java plugin, so I use firefox for that:
+    Though my default browser is google-chrome, it has issues with Java plugin, so I use firefox for that. I also need an older version of firefox as it has dropped Java support in recent versions.
 #+name: nixos-section
 #+begin_src nix
-{
-  environment.systemPackages = [
-    pkgs.firefoxWrapper
-  ];
-}
-#+end_src
-
-    The following enables jre support:
-#+name: nixos-section
-#+begin_src nix
-{
-  nixpkgs.config.firefox.jre = true;
-}
-#+end_src
-
-The default java plugin (=pkgs.oraclejdk8=) has issues building, so use open alternative for now. (Actually, it works better with my windom manager so I think I'll stick with it for a while.)
-#+name: nixos-section
-#+begin_src nix
-{
-  nixpkgs.config.packageOverrides = pkgs: rec {
-    jrePlugin = pkgs.icedtea_web;
+(let
+  oldpkgs = import (pkgs.fetchFromGitHub {
+    owner = "NixOS";
+    repo = "nixpkgs-channels";
+    rev = "1aa77d0519ae23a0dbef6cab6f15393cfadcc454";
+    sha256 = "1gcd8938n3z0a095b0203fhxp6lddaw1ic1rl33q441m1w0i19jv";
+  }) { config = config.nixpkgs.config; };
+in {
+  nixpkgs.config.firefox = {
+    icedtea = true;
   };
-}
+
+  environment.systemPackages = [ oldpkgs.firefoxWrapper ];
+})
 #+end_src
 
 *** Zathura

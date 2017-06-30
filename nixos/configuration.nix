@@ -396,7 +396,7 @@ in
         repo = "nixpkgs-channels";
         rev = "1aa77d0519ae23a0dbef6cab6f15393cfadcc454";
         sha256 = "1gcd8938n3z0a095b0203fhxp6lddaw1ic1rl33q441m1w0i19jv";
-      }) { };
+      }) { config = config.nixpkgs.config; };
     in {
       environment.systemPackages = [ oldpkgs.oxygen-gtk2 oldpkgs.oxygen-gtk3 ];
     
@@ -438,19 +438,20 @@ in
     {
       environment.pathsToLink = [ "/share" ];
     }
-    {
-      environment.systemPackages = [
-        pkgs.firefoxWrapper
-      ];
-    }
-    {
-      nixpkgs.config.firefox.jre = true;
-    }
-    {
-      nixpkgs.config.packageOverrides = pkgs: rec {
-        jrePlugin = pkgs.icedtea_web;
+    (let
+      oldpkgs = import (pkgs.fetchFromGitHub {
+        owner = "NixOS";
+        repo = "nixpkgs-channels";
+        rev = "1aa77d0519ae23a0dbef6cab6f15393cfadcc454";
+        sha256 = "1gcd8938n3z0a095b0203fhxp6lddaw1ic1rl33q441m1w0i19jv";
+      }) { config = config.nixpkgs.config; };
+    in {
+      nixpkgs.config.firefox = {
+        icedtea = true;
       };
-    }
+    
+      environment.systemPackages = [ oldpkgs.firefoxWrapper ];
+    })
     {
       environment.systemPackages = [
         pkgs.zathura
