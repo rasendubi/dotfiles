@@ -1002,6 +1002,25 @@ Enable incremental search (Zathura's config goes to =~/.config/zathura/zathurarc
 set incremental-search true
 #+end_src
 
+*** Slock
+    [[http://tools.suckless.org/slock/][Slock]] is a simple X display locker and should probably not crash as xscreensaver.
+
+    Slock tries to disable OOM killer (so the locker is not killed when memory is low) and this requires a suid flag for executable. Otherwise, you get the following message.
+#+begin_src fundamental
+slock: unable to disable OOM killer. Make sure to suid or sgid slock.
+#+end_src
+
+#+name: nixos-section
+#+begin_src nix
+{
+  security.wrappers = {
+    slock = {
+      source = "${pkgs.slock}/bin/slock";
+    };
+  };
+}
+#+end_src
+
 *** Other applications
     Don't require additional setup.
 
@@ -1024,7 +1043,6 @@ set incremental-search true
     pkgs.unetbootin
     pkgs.kvm
     pkgs.thunderbird
-    pkgs.xscreensaver
     pkgs.xss-lock
     pkgs.alarm-clock-applet
     pkgs.pass

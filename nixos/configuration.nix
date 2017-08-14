@@ -458,6 +458,13 @@ in
       ];
     }
     {
+      security.wrappers = {
+        slock = {
+          source = "${pkgs.slock}/bin/slock";
+        };
+      };
+    }
+    {
       environment.systemPackages = [
         pkgs.google-chrome
         pkgs.skype
@@ -474,7 +481,6 @@ in
         pkgs.unetbootin
         pkgs.kvm
         pkgs.thunderbird
-        pkgs.xscreensaver
         pkgs.xss-lock
         pkgs.alarm-clock-applet
         pkgs.pass

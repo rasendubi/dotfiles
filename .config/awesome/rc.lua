@@ -90,9 +90,7 @@ utils.run_once("wicd-client", "wicd-client -t")
 utils.run("wmname LG3D")
 utils.run("synclient TapButton1=1 TapButton2=3 TapButton3=2 VertEdgeScroll=1")
 utils.rerun("syndaemon", "syndaemon -i 0.75 -K -t -d")
-utils.run("xscreensaver")
-utils.run("xss-lock -- xscreensaver-command -lock")
--- utils.run_once("/usr/bin/pulseaudio", "start-pulseaudio-x11")
+utils.run("xss-lock -- slock")
 -- }}}
 
 mykeyboardlayout = awful.widget.keyboardlayout()
@@ -319,19 +317,8 @@ globalkeys = awful.util.table.join(
 
     -- Unfocus all windows and turn the screen off
     awful.key({ modkey, "Mod1" }, "l", function ()
-            local saved = client.focus
             client.focus = nil
-
-            mousegrabber.run(function (p)
-                    client.focus = saved
-                    return false
-            end, 'rtl_logo')
-
-            gears.timer.start_new(
-                1, function ()
-                    awful.spawn("xset dpms force off")
-                    return false
-            end)
+            awful.spawn("xset dpms force off")
     end),
 
     -- Menubar
