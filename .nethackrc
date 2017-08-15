@@ -1,4 +1,6 @@
 OPTIONS=name:rasen
+OPTIONS=role:monk, gender:male
+OPTIONS=statushilites
 OPTIONS=pettype:dog, dogname:Fido
 OPTIONS=!autopickup
 OPTIONS=lit_corridor, DECgraphics, showscore, showexp, time, color, hilite_pet

@@ -24,14 +24,14 @@ Pieces not (yet) covered in this document are:
 { config, pkgs, lib, ... }:
 let
   meta = import ./meta.nix;
-  machine-config =
-    if meta.name == "Larry" then [
+  machine-config = lib.getAttr meta.name {
+    Larry = [
       <<machine-larry>>
-    ] else
-    if meta.name == "ashmalko" then [
+    ];
+    ashmalko = [
       <<machine-ashmalko>>
-    ] else
-    throw "Unknown machine";
+    ];
+  };
 
 in
 {
@@ -982,7 +982,7 @@ in {
     icedtea = true;
   };
 
-  environment.systemPackages = [ oldpkgs.firefoxWrapper ];
+  environment.systemPackages = [ pkgs.firefox-esr ];
 })
 #+end_src
 
@@ -1475,36 +1475,14 @@ bind r source-file ~/.tmux.conf \; display-message "Config reloaded..."
 set-window-option -g automatic-rename
 #+end_src
 
-*** Haskell
-    Needed to work with Haskell:
-#+name: nixos-section
-#+begin_src nix
-{
-  environment.systemPackages = [
-    pkgs.ghc
-    pkgs.haskellPackages.ghc-mod
-    pkgs.stack
-    pkgs.cabal-install
-    pkgs.cabal2nix
-  ];
-}
-#+end_src
-
 *** Embedded
     The following packages provide compiler, ARM cross-compiler, debugger, and terminal.
 #+name: nixos-section
 #+begin_src nix
 {
   environment.systemPackages = [
-    pkgs.gnumake
-    pkgs.cmake
-    pkgs.binutils
-    pkgs.gcc
-    pkgs.gcc-arm-embedded
-    (pkgs.gdb.override { multitarget = true; })
     pkgs.minicom
     pkgs.openocd
-    pkgs.expect
     pkgs.telnet
   ];
 }
@@ -1592,6 +1570,8 @@ set-window-option -g automatic-rename
 
 #+begin_src fundamental :tangle .nethackrc :padline no
 OPTIONS=name:rasen
+OPTIONS=role:monk, gender:male
+OPTIONS=statushilites
 OPTIONS=pettype:dog, dogname:Fido
 OPTIONS=!autopickup
 OPTIONS=lit_corridor, DECgraphics, showscore, showexp, time, color, hilite_pet

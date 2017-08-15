@@ -4,6 +4,7 @@ import datetime
 import dateutil.parser as dateutil
 import json
 import re
+import os
 
 def default_parser(class_, instance, role, title):
     if class_:
@@ -40,8 +41,12 @@ def google_chrome(class_, instance, role, title):
             website = res.group(2)
             path = res.group(3)
             if website == 'https://www.youtube.com' and path == 'watch':
-                youtube_name = re.match('^(.*) - YouTube$', page_title).group(1)
-                return [class_, website, youtube_name]
+                m = re.match('^(.*) - YouTube$', page_title)
+                if m:
+                    youtube_name = m.group(1)
+                    return [class_, website, youtube_name]
+                else:
+                    return [class_, website]
             if website == 'https://github.com':
                 r = re.match('^([^/]*)(/([^/]*))?.*$', path)
                 if r:
@@ -67,6 +72,10 @@ def skype_title_to_category(class_, instance, role, title):
 
         return [class_, name]
     return [class_]
+
+@class_parser('.zathura-wrapped', '.zathura-wrapped_')
+def zathura_title_to_category(class_, instance, role, title):
+    return ['zathura', title]
 
 @class_parser('Emacs')
 def emacs_title_to_category(class_, instance, role, title):
@@ -129,48 +138,68 @@ def add_time(c, start, end, delta):
         totals[s] += delta
         by_day[start.date()][s] += delta
 
+cur_pos = 0
 current = None
+cur_id = 0
 
-# print('dataRaw = [')
-cur_id = 1
-with open('/home/rasen/log.txt', 'r', errors='replace') as f:
-    for line in f.readlines():
-        x = json.loads(line)
-        c = category(x)
-        # print(x, c)
+statefile = '/home/rasen/.log.txt.procstate'
 
-        if ((x['activity'] == 'title' and current[1] != c) or
-            (x['activity'] == 'unfocus')):
+if os.path.exists(statefile):
+    with open(statefile, 'r') as f:
+        state = json.loads(f.read())
+        cur_pos = state['cur_pos']
+        current = state['current']
+        cur_id  = state['cur_id']
 
-            # handle poweroffs
-            if current:
-                start = dateutil.parse(current[0]['time'])
-                end = dateutil.parse(x['time'])
+try:
+    with open('/home/rasen/log.txt', 'r', errors='replace') as f:
+        for _ in range(cur_pos):
+            next(f)
 
-                # if start < dateutil.parse('2017-02-06T00:00:00+02:00'):
-                #     continue
+        with open('/home/rasen/log.txt.processed', 'a+') as out:
+            for line in f:
+                x = json.loads(line)
+                c = category(x)
 
-                delta = end - start
-                if delta.total_seconds() != 0:
-                    print(json.dumps({
-                        "id": cur_id,
-                        "start": start.isoformat(),
-                        "end": end.isoformat(),
-                        "content": category_to_string(c),
-                        "group": c[0],
-                    }), ",", sep='')
-                    print(current[0]['time'], end - start, current[1])
-                    add_time(c, start, end, delta)
-                    cur_id += 1
+                if ((x['activity'] == 'title' and current[1] != c) or
+                    (x['activity'] == 'unfocus')):
 
-            if x['activity'] == 'unfocus':
-                current = None
-            else:
-                current = (x, c)
-        elif x['activity'] == 'focus':
-            current = (x, c)
+                    # handle poweroffs
+                    if current:
+                        start = dateutil.parse(current[0]['time'])
+                        end = dateutil.parse(x['time'])
+
+                        delta = end - start
+                        if delta.total_seconds() != 0:
+                            out.write(json.dumps({
+                                "id": cur_id,
+                                "start": start.isoformat(),
+                                "end": end.isoformat(),
+                                "duration": int(delta.total_seconds()),
+                                "category": current[1],
+                                "instance": current[0].get('instance'),
+                                "class": current[0].get('class'),
+                                "role": current[0].get('role'),
+                                "title": current[0].get('title'),
+                            }))
+                            out.write('\n')
+                            add_time(c, start, end, delta)
+                            cur_id += 1
+
+                    if x['activity'] == 'unfocus':
+                        current = None
+                    else:
+                        current = (x, c)
+                elif x['activity'] == 'focus':
+                    current = (x, c)
+
+                cur_pos += 1
+finally:
+    with open(statefile, 'w') as f:
+        f.write(json.dumps({'current': current, 'cur_id': cur_id, 'cur_pos': cur_pos}))
+
 # print('];')
-print()
+# print()
 
 # print('taskNames = [')
 # results = sorted(list(totals.items()), key=lambda x: x[1].total_seconds(), reverse=True)
@@ -179,15 +208,15 @@ print()
 #     # print(v, k)
 # print('];')
 
-def print_totals(totals):
-    results = sorted(list(totals.items()), key=lambda x: x[1].total_seconds(), reverse=True)
-    # results = sorted(list(totals.items()), key=lambda x: x[0])
-    for (k, v) in results:
-        print(v, k)
-
-print_totals(totals)
-
-for (day, totals) in sorted(list(by_day.items()), key=lambda x: x[0]):
-    print()
-    print('Totals for', day.isoformat())
-    print_totals(totals)
+# def print_totals(totals):
+#     results = sorted(list(totals.items()), key=lambda x: x[1].total_seconds(), reverse=True)
+#     # results = sorted(list(totals.items()), key=lambda x: x[0])
+#     for (k, v) in results:
+#         print(v, k)
+#
+# print_totals(totals)
+#
+# for (day, totals) in sorted(list(by_day.items()), key=lambda x: x[0]):
+#     print()
+#     print('Totals for', day.isoformat())
+#     print_totals(totals)

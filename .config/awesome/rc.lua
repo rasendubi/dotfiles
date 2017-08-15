@@ -85,7 +85,6 @@ menubar.utils.terminal = terminal -- Set the terminal for applications that requ
 -- }}}
 
 -- Autostart {{{
-utils.run_once("kbdd")
 utils.run_once("wicd-client", "wicd-client -t")
 utils.run("wmname LG3D")
 utils.run("synclient TapButton1=1 TapButton2=3 TapButton3=2 VertEdgeScroll=1")

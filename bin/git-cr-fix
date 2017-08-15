@@ -26,7 +26,7 @@ remote_url = Popen(['git', 'remote', 'get-url', remote], stdout=PIPE).communicat
 repo = re.search('github.com[:/](.*/.*)\.git', remote_url.decode('utf-8')).group(1)
 
 myremote_url = Popen(['git', 'remote', 'get-url', myremote], stdout=PIPE).communicate()[0]
-myname = re.search('github.com[:/](.*)/.*\.git', myremote_url.decode('utf-8')).group(1)
+myname = re.search('github.com[:/](.*)/.*(\.git)?', myremote_url.decode('utf-8')).group(1)
 
 url = "https://api.github.com/repos/{}/pulls/{}".format(repo, pr)
 

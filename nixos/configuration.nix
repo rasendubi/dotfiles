@@ -1,8 +1,8 @@
 { config, pkgs, lib, ... }:
 let
   meta = import ./meta.nix;
-  machine-config =
-    if meta.name == "Larry" then [
+  machine-config = lib.getAttr meta.name {
+    Larry = [
       {
         imports = [ <nixpkgs/nixos/modules/installer/scan/not-detected.nix> ];
       
@@ -64,8 +64,8 @@ let
       {
         hardware.nvidiaOptimus.disable = true;
       }
-    ] else
-    if meta.name == "ashmalko" then [
+    ];
+    ashmalko = [
       {
         networking.hostName = "ashmalko";
       
@@ -153,8 +153,8 @@ let
       {
         services.avahi.interfaces = [ "enp0s31f6" ];
       }
-    ] else
-    throw "Unknown machine";
+    ];
+  };
 
 in
 {
@@ -450,7 +450,7 @@ in
         icedtea = true;
       };
     
-      environment.systemPackages = [ oldpkgs.firefoxWrapper ];
+      environment.systemPackages = [ pkgs.firefox-esr ];
     })
     {
       environment.systemPackages = [
@@ -536,24 +536,8 @@ in
     }
     {
       environment.systemPackages = [
-        pkgs.ghc
-        pkgs.haskellPackages.ghc-mod
-        pkgs.stack
-        pkgs.cabal-install
-        pkgs.cabal2nix
-      ];
-    }
-    {
-      environment.systemPackages = [
-        pkgs.gnumake
-        pkgs.cmake
-        pkgs.binutils
-        pkgs.gcc
-        pkgs.gcc-arm-embedded
-        (pkgs.gdb.override { multitarget = true; })
         pkgs.minicom
         pkgs.openocd
-        pkgs.expect
         pkgs.telnet
       ];
     }
