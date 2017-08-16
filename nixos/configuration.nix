@@ -521,6 +521,11 @@ in
       users.defaultUserShell = pkgs.fish;
     }
     {
+      environment.systemPackages = [
+        pkgs.qrencode
+      ];
+    }
+    {
       programs.zsh.enable = true;
     }
     {

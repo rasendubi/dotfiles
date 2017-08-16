@@ -1184,6 +1184,24 @@ fish is a cool shell, but I haven't yet configured it properly to switch to it f
 }
 #+end_src
 
+The next section goes to =.config/fish/functions/showqr.fish=. That's a function I use for displaying arbitrary text (mainly passwords stored with =pass=) as a QR code without any temporary files.
+
+#+begin_src fish :tangle .config/fish/functions/showqr.fish
+function showqr
+  tr -d '\n' | qrencode -t png -o - | feh -
+end
+#+end_src
+
+It uses =qrencode= package:
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [
+    pkgs.qrencode
+  ];
+}
+#+end_src
+
 *** Zsh
     Zsh is my default shell:
 #+name: nixos-section
