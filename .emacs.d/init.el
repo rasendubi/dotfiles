@@ -346,13 +346,8 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (use-package ivy
   :demand
   :bind (:map evil-normal-state-map
-         ("SPC b" . ivy-switch-buffer)
-         ("\\ \\ b" . rasen/use-spc-b))
+         ("SPC b" . ivy-switch-buffer))
   :diminish ivy-mode
-  :init
-  (defun rasen/use-spc-b ()
-    (interactive)
-    (error "Don't use this key! Use SPC b instead"))
   :config
   ;; Don't start input with ^
   (setq-default ivy-initial-inputs-alist nil)

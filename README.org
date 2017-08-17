@@ -1567,7 +1567,7 @@ set-window-option -g automatic-rename
 #+end_src
 
 *** Embedded
-    The following packages provide a termiinal emulator, Open On-Chip Debugger, and telnet.
+    The following packages provide a termiinal emulator, Open On-Chip Debugger, telnet, and logic analyzer.
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1575,6 +1575,7 @@ set-window-option -g automatic-rename
     pkgs.minicom
     pkgs.openocd
     pkgs.telnet
+    pkgs.saleae-logic
   ];
 }
 #+end_src

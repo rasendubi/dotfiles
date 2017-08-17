@@ -611,6 +611,7 @@ in
         pkgs.minicom
         pkgs.openocd
         pkgs.telnet
+        pkgs.saleae-logic
       ];
     }
     {
