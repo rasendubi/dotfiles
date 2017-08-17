@@ -61,8 +61,6 @@
     br  = branch
     s   = status
     re  = reset --hard
-    dp  = push origin HEAD:refs/drafts/master
-    pp  = push origin HEAD:refs/publish/master
     r   = rebase
     rc  = rebase --continue
     ri  = rebase -i
@@ -70,13 +68,6 @@
     t   = tag
     su  = submodule update --init --recursive
     bi  = bisect
-    bg  = bisect good
-    bb  = bisect bad
-    bis = bisect start
-    bir = bisect reset
 
 [url "git@github.com:"]
     pushInsteadOf = https://github.com/
-
-[url "git://github.com/ghc/packages-"]
-    insteadOf = git://github.com/ghc/packages/

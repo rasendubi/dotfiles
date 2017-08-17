@@ -436,11 +436,6 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (evil-magit-define-key evil-magit-state 'magit-mode-map
                          "g m" 'rasen/magit-fco-master))
 
-(use-package magithub
-  :after magit
-  :config
-  (magithub-feature-autoinject t))
-
 (use-package evil-magit
   :after magit
   :config
@@ -1193,16 +1188,16 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :commands (web-mode)
   :init
   (add-to-list 'auto-mode-alist '("\\.js\\'" . web-mode))
-  :config
-  (setq-default web-mode-content-types-alist
-                '(("jsx" . ".*\\.js[x]?\\'")))
   (setq-default js-indent 2
                 js-indent-level 2
                 js-switch-indent-offset 2
                 web-mode-markup-indent-offset 2
                 web-mode-code-indent-offset 2
-                web-mode-attr-indent-offset 2
-                ))
+                web-mode-attr-indent-offset 2)
+  :config
+  (setq-default web-mode-content-types-alist
+                '(("jsx" . ".*\\.js[x]?\\'")))
+  )
 
 (add-to-list 'load-path "~/.emacs.d/site-lisp/")
 

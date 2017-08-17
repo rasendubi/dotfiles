@@ -64,6 +64,60 @@ let
       {
         hardware.nvidiaOptimus.disable = true;
       }
+      {
+        services.logstash = {
+          enable = true;
+          inputConfig = ''
+            file {
+              path => "/home/rasen/log.txt.processed"
+              sincedb_path => "/home/rasen/.log.txt.sincedb"
+              codec => "json"
+              start_position => "beginning"
+              tags => [ "awesomewm" ]
+              type => "awesomewm"
+            }
+            file {
+              path => "/home/rasen/log.txt.ashmalko"
+              sincedb_path => "/home/rasen/.log.txt.ashmalko.sincedb"
+              codec => "json"
+              start_position => "beginning"
+              tags => [ "awesomewm" ]
+              type => "awesomewm"
+            }
+          '';
+          filterConfig = ''
+            if [path] == "/home/rasen/log.txt.ashmalko" {
+              mutate {
+                replace => [ "host", "ashmalko" ]
+              }
+            }
+          '';
+          outputConfig = ''
+            elasticsearch {
+              index => "quantified-self"
+              document_type => "awesomewm"
+            }
+          '';
+        };
+      
+        services.elasticsearch = {
+          enable = true;
+          cluster_name = "ashmalko";
+          extraConf = ''
+            node.name: "${meta.name}"
+          '';
+        };
+      
+        services.kibana = {
+          enable = true;
+        };
+      }
+      {
+        networking.localCommands = ''
+          ip route del 10.2.0.0/22 via 10.7.0.52 2> /dev/null || true
+          ip route add 10.2.0.0/22 via 10.7.0.52
+        '';
+      }
     ];
     ashmalko = [
       {
@@ -123,7 +177,20 @@ let
         environment.systemPackages = [ pkgs.pavucontrol ];
       }
       {
-        networking.firewall.allowedTCPPorts = [ 1883 8883 3000 ];
+        services.gitolite = {
+          enable = true;
+          user = "git";
+          adminPubkey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDJhMhxIwZJgIY6CNSNEH+BetF/WCUtDFY2KTIl8LcvXNHZTh4ZMc5shTOS/ROT4aH8Awbm0NjMdW33J5tFMN8T7q89YZS8hbBjLEh8J04Y+kndjnllDXU6NnIr/AenMPIZxJZtSvWYx+f3oO6thvkZYcyzxvA5Vi6V1cGx6ni0Kizq/WV/mE/P1nNbwuN3C4lCtiBC9duvoNhp65PctQNohnKQs0vpQcqVlfqBsjQ7hhj2Fjg+Ofmt5NkL+NhKQNqfkYN5QyIAulucjmFAieKR4qQBABopl2F6f8D9IjY8yH46OCrgss4WTf+wxW4EBw/QEfNoKWkgVoZtxXP5pqAz rasen@Larry";
+        };
+      }
+      {
+        services.avahi.interfaces = [ "enp0s31f6" ];
+      }
+      {
+        networking.firewall.allowedTCPPorts = [
+          1883 8883 # Zink
+          3000      # Grafana
+        ];
       
         systemd.services.zink = {
           description = "Zink service";
@@ -149,9 +216,24 @@ let
               Restart = "on-failure";
             };
         };
+      
+        services.influxdb.enable = true;
+      
+        services.grafana = {
+          enable = true;
+          addr = "0.0.0.0";
+          port = 3000;
+      
+          domain = "ashmalko.local";
+          auth.anonymous.enable = true;
+        };
       }
       {
-        services.avahi.interfaces = [ "enp0s31f6" ];
+        networking.nat = {
+          enable = true;
+          internalInterfaces = [ "tap0" ];
+          externalInterface = [ "enp0s31f6" ];
+        };
       }
     ];
   };
@@ -188,17 +270,6 @@ in
     }
     {
       nix.useSandbox = "relaxed";
-    }
-    {
-      services.influxdb.enable = true;
-      services.grafana = {
-        enable = true;
-        addr = "0.0.0.0";
-        port = 3000;
-    
-        domain = "ashmalko.local";
-        auth.anonymous.enable = true;
-      };
     }
     {
       services.locate = {
@@ -264,18 +335,16 @@ in
       programs.mosh.enable = true;
     }
     {
-      services.gitolite = {
-        enable = true;
-        user = "git";
-        adminPubkey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDJhMhxIwZJgIY6CNSNEH+BetF/WCUtDFY2KTIl8LcvXNHZTh4ZMc5shTOS/ROT4aH8Awbm0NjMdW33J5tFMN8T7q89YZS8hbBjLEh8J04Y+kndjnllDXU6NnIr/AenMPIZxJZtSvWYx+f3oO6thvkZYcyzxvA5Vi6V1cGx6ni0Kizq/WV/mE/P1nNbwuN3C4lCtiBC9duvoNhp65PctQNohnKQs0vpQcqVlfqBsjQ7hhj2Fjg+Ofmt5NkL+NhKQNqfkYN5QyIAulucjmFAieKR4qQBABopl2F6f8D9IjY8yH46OCrgss4WTf+wxW4EBw/QEfNoKWkgVoZtxXP5pqAz rasen@Larry";
-      };
-    }
-    {
       services.dnsmasq = {
         enable = true;
     
         # These are used in addition to resolv.conf
-        servers = [ "8.8.8.8" "8.8.4.4" ];
+        servers = [
+          "/cybervisiontech.com/10.2.2.45"
+          "/kaaiot.io/10.2.2.45"
+          "8.8.8.8"
+          "8.8.4.4"
+        ];
     
         extraConfig = ''
           listen-address=127.0.0.1
@@ -291,6 +360,16 @@ in
       environment.etc."resolv.conf.head".text = ''
         nameserver 127.0.0.1
       '';
+    
+      systemd.services.wicd.preStart = let
+        dhclient_conf_template = pkgs.writeText "dhclient.conf.template" ''
+          prepend domain-name-servers 127.0.0.1;
+          send host-name "${meta.name}";
+        '';
+      in ''
+        mkdir -p /var/lib/wicd/
+        cp ${dhclient_conf_template} /var/lib/wicd/dhclient.conf.template
+      '';
     }
     {
       networking.firewall = {
@@ -304,11 +383,6 @@ in
     {
       virtualisation.virtualbox.host.enable = true;
       users.extraUsers.rasen.extraGroups = [ "vboxusers" ];
-    }
-    {
-      services.postgresql = {
-        enable = true;
-      };
     }
     {
       environment.systemPackages = [
@@ -360,7 +434,6 @@ in
     {
       environment.systemPackages = [
         pkgs.wmname
-        pkgs.kbdd
         pkgs.xclip
         pkgs.scrot
       ];
@@ -438,20 +511,13 @@ in
     {
       environment.pathsToLink = [ "/share" ];
     }
-    (let
-      oldpkgs = import (pkgs.fetchFromGitHub {
-        owner = "NixOS";
-        repo = "nixpkgs-channels";
-        rev = "1aa77d0519ae23a0dbef6cab6f15393cfadcc454";
-        sha256 = "1gcd8938n3z0a095b0203fhxp6lddaw1ic1rl33q441m1w0i19jv";
-      }) { config = config.nixpkgs.config; };
-    in {
+    {
       nixpkgs.config.firefox = {
         icedtea = true;
       };
     
       environment.systemPackages = [ pkgs.firefox-esr ];
-    })
+    }
     {
       environment.systemPackages = [
         pkgs.zathura
@@ -523,6 +589,7 @@ in
     {
       environment.systemPackages = [
         pkgs.qrencode
+        pkgs.feh
       ];
     }
     {
@@ -571,13 +638,9 @@ in
     
         pkgs.patchelf
     
-        pkgs.man-pages
-        pkgs.stdman
-        pkgs.posix_man_pages
-        pkgs.stdmanpages
-    
         pkgs.nix-repl
         pkgs.nox
+    
         pkgs.python
         pkgs.python3
       ];

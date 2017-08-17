@@ -52,7 +52,7 @@ This =<<nixos-section>>= is replaced by other parts of this doc.
 
 *** Default locations
 
-    This moves nixos configuration from the default location to the dotfiles/nixos/configuration.nix.
+    This moves nixos configuration from the default location to the =dotfiles/nixos/configuration.nix=.
 
     This also disables channel mechanism and makes nixos use Nixpkgs in the =dotfiles/channels= directory. I usually follow nixpkgs-unstable, but that gives me more control.
 
@@ -76,7 +76,7 @@ sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix
 
 *** Save config
 
-Save nixos-config in the Nix store, so I can later retrieve it. The config for the current system is located at =/var/run/current-system/configuration.nix=.
+Save nixos-config in the Nix store, so I can retrieve it later. The config for the current ly running system is located at =/var/run/current-system/configuration.nix=.
 
 #+name: nixos-section
 #+begin_src nix
@@ -84,6 +84,8 @@ Save nixos-config in the Nix store, so I can later retrieve it. The config for t
   system.copySystemConfiguration = true;
 }
 #+end_src
+
+This setting copies only the =configuration.nix= file, which works pretty nice as I have only one configuration file and don't split it.
 
 *** Users
     I'm the only user of the system:
@@ -104,7 +106,7 @@ Save nixos-config in the Nix store, so I can later retrieve it. The config for t
 
 *** Machines
 #+name: Machines section
-    I have two machines. Currently, only one is running NixOS, but I hope to eventually transfer the second one to NixOS, too.
+    I have two machines both running NixOS.
 
 **** Larry
     This one is a laptop that needs the proprietary driver for Wi-Fi card (this =wl= and =broadcom_sta=).
@@ -201,8 +203,63 @@ I have nvidia video card and integrated intel-one. I don't use nvidia one, so ne
 }
 #+end_src
 
+***** Quantified Self
+ELK stack to gather information about my computer activity.
+
+#+name: machine-larry
+#+begin_src nix
+{
+  services.logstash = {
+    enable = true;
+    inputConfig = ''
+      file {
+        path => "/home/rasen/log.txt.processed"
+        sincedb_path => "/home/rasen/.log.txt.sincedb"
+        codec => "json"
+        start_position => "beginning"
+        tags => [ "awesomewm" ]
+        type => "awesomewm"
+      }
+      file {
+        path => "/home/rasen/log.txt.ashmalko"
+        sincedb_path => "/home/rasen/.log.txt.ashmalko.sincedb"
+        codec => "json"
+        start_position => "beginning"
+        tags => [ "awesomewm" ]
+        type => "awesomewm"
+      }
+    '';
+    filterConfig = ''
+      if [path] == "/home/rasen/log.txt.ashmalko" {
+        mutate {
+          replace => [ "host", "ashmalko" ]
+        }
+      }
+    '';
+    outputConfig = ''
+      elasticsearch {
+        index => "quantified-self"
+        document_type => "awesomewm"
+      }
+    '';
+  };
+
+  services.elasticsearch = {
+    enable = true;
+    cluster_name = "ashmalko";
+    extraConf = ''
+      node.name: "${meta.name}"
+    '';
+  };
+
+  services.kibana = {
+    enable = true;
+  };
+}
+#+end_src
+
 **** ashmalko
-This is my desktop computer.
+This is my desktop corporate computer.
 #+name: machine-ashmalko
 #+begin_src nix
 {
@@ -235,7 +292,7 @@ This is my desktop computer.
 }
 #+end_src
 
-This is LMV on LUKS setup.
+This is encrypted LVM on LUKS setup.
 #+name: machine-ashmalko
 #+begin_src nix
 {
@@ -265,7 +322,7 @@ This is LMV on LUKS setup.
 }
 #+end_src
 
-Use pulseaudio (multiple sound sinks, skype calls)
+Use pulseaudio (multiple sound sinks, skype calls). =pavucontrol= is PulseAudio Volume Control---a nice package for controlling pulseaudio settings.
 #+name: machine-ashmalko
 #+begin_src nix
 {
@@ -277,11 +334,37 @@ Use pulseaudio (multiple sound sinks, skype calls)
 }
 #+end_src
 
+***** Gitolite
+    I host some git repos on my machine:
+#+name: machine-ashmalko
+#+begin_src nix
+{
+  services.gitolite = {
+    enable = true;
+    user = "git";
+    adminPubkey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDJhMhxIwZJgIY6CNSNEH+BetF/WCUtDFY2KTIl8LcvXNHZTh4ZMc5shTOS/ROT4aH8Awbm0NjMdW33J5tFMN8T7q89YZS8hbBjLEh8J04Y+kndjnllDXU6NnIr/AenMPIZxJZtSvWYx+f3oO6thvkZYcyzxvA5Vi6V1cGx6ni0Kizq/WV/mE/P1nNbwuN3C4lCtiBC9duvoNhp65PctQNohnKQs0vpQcqVlfqBsjQ7hhj2Fjg+Ofmt5NkL+NhKQNqfkYN5QyIAulucjmFAieKR4qQBABopl2F6f8D9IjY8yH46OCrgss4WTf+wxW4EBw/QEfNoKWkgVoZtxXP5pqAz rasen@Larry";
+  };
+}
+#+end_src
+
+I expose some repos for the folks here, so relax avahi rules for they to discover my machine by =ashmalko.local= rather than remember my IP address.
+#+name: machine-ashmalko
+#+begin_src nix
+{
+  services.avahi.interfaces = [ "enp0s31f6" ];
+}
+#+end_src
+
+***** Zink
+
 I'm running an MQTT implementation in there.
 #+name: machine-ashmalko
 #+begin_src nix
 {
-  networking.firewall.allowedTCPPorts = [ 1883 8883 3000 ];
+  networking.firewall.allowedTCPPorts = [
+    1883 8883 # Zink
+    3000      # Grafana
+  ];
 
   systemd.services.zink = {
     description = "Zink service";
@@ -307,21 +390,50 @@ I'm running an MQTT implementation in there.
         Restart = "on-failure";
       };
   };
+
+  services.influxdb.enable = true;
+
+  services.grafana = {
+    enable = true;
+    addr = "0.0.0.0";
+    port = 3000;
+
+    domain = "ashmalko.local";
+    auth.anonymous.enable = true;
+  };
 }
 #+end_src
 
-It is under a corporate firewall, so security is relaxed for local network.
+*** Networking tricks
+I want to access my corporate network from my home laptop when I need to. I have a VPN up between my laptop and corporate desktop, so the solution is to use my corporate desktop as a router.
+
+On Larry, route all corporate network traffic via ashmalko:
+#+name: machine-larry
+#+begin_src nix
+{
+  networking.localCommands = ''
+    ip route del 10.2.0.0/22 via 10.7.0.52 2> /dev/null || true
+    ip route add 10.2.0.0/22 via 10.7.0.52
+  '';
+}
+#+end_src
+
+On ashmalko, rewrite packages from Larry into internal network. (Which is called "external" in the routing sense.)
 #+name: machine-ashmalko
 #+begin_src nix
 {
-  services.avahi.interfaces = [ "enp0s31f6" ];
+  networking.nat = {
+    enable = true;
+    internalInterfaces = [ "tap0" ];
+    externalInterface = [ "enp0s31f6" ];
+  };
 }
 #+end_src
 
 *** Local overlay
-    As a responsible NixOS user, I refuse to install software blindly with =sudo make install=. That's why I should write my own nix-expressions. I keep them in my local overlay until they're merged upstream.
+    As a responsible NixOS user, I refuse to install software blindly with =sudo make install=. That's why I must write my own nix-expressions. I keep them in my local overlay until they're merged upstream.
 
-    The entry is just a set of all my packages in =nixpkgs-local/default.nix=:
+    The entry point is just a set of all my packages in =nixpkgs-local/default.nix=:
 #+begin_src nix :tangle nixpkgs-local/default.nix :noweb no-export :padline no
 { pkgs ? import <nixpkgs> { } }:
 
@@ -354,25 +466,9 @@ To make package results testing better, I build them in isolated environment (fo
 }
 #+end_src
 
-Note that this is ="relaxed"= instead of =true=, because I have some packages that require network to build and thus are =__noChroot=.
+Note that this is ="relaxed"= instead of =true=, because I have some packages that require a network to build and thus are =__noChroot=.
 
 ** Services
-*** Development setup
-
-#+name: nixos-section
-#+begin_src nix
-{
-  services.influxdb.enable = true;
-  services.grafana = {
-    enable = true;
-    addr = "0.0.0.0";
-    port = 3000;
-
-    domain = "ashmalko.local";
-    auth.anonymous.enable = true;
-  };
-}
-#+end_src
 *** Locate
     Update [[https://linux.die.net/man/1/locate][locate]] database daily.
 #+name: nixos-section
@@ -469,19 +565,6 @@ The following lines are needed to start avahi-daemon automatically. The default 
 }
 #+end_src
 
-*** Gitolite
-    I host some git repos on my machines:
-#+name: nixos-section
-#+begin_src nix
-{
-  services.gitolite = {
-    enable = true;
-    user = "git";
-    adminPubkey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDJhMhxIwZJgIY6CNSNEH+BetF/WCUtDFY2KTIl8LcvXNHZTh4ZMc5shTOS/ROT4aH8Awbm0NjMdW33J5tFMN8T7q89YZS8hbBjLEh8J04Y+kndjnllDXU6NnIr/AenMPIZxJZtSvWYx+f3oO6thvkZYcyzxvA5Vi6V1cGx6ni0Kizq/WV/mE/P1nNbwuN3C4lCtiBC9duvoNhp65PctQNohnKQs0vpQcqVlfqBsjQ7hhj2Fjg+Ofmt5NkL+NhKQNqfkYN5QyIAulucjmFAieKR4qQBABopl2F6f8D9IjY8yH46OCrgss4WTf+wxW4EBw/QEfNoKWkgVoZtxXP5pqAz rasen@Larry";
-  };
-}
-#+end_src
-
 *** dnsmasq
 
 Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
@@ -493,7 +576,12 @@ Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
     enable = true;
 
     # These are used in addition to resolv.conf
-    servers = [ "8.8.8.8" "8.8.4.4" ];
+    servers = [
+      "/cybervisiontech.com/10.2.2.45"
+      "/kaaiot.io/10.2.2.45"
+      "8.8.8.8"
+      "8.8.4.4"
+    ];
 
     extraConfig = ''
       listen-address=127.0.0.1
@@ -508,6 +596,16 @@ Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
   # That will prepend dnsmasq server to /etc/resolv.conf (dhcpcd-specific)
   environment.etc."resolv.conf.head".text = ''
     nameserver 127.0.0.1
+  '';
+
+  systemd.services.wicd.preStart = let
+    dhclient_conf_template = pkgs.writeText "dhclient.conf.template" ''
+      prepend domain-name-servers 127.0.0.1;
+      send host-name "${meta.name}";
+    '';
+  in ''
+    mkdir -p /var/lib/wicd/
+    cp ${dhclient_conf_template} /var/lib/wicd/dhclient.conf.template
   '';
 }
 #+end_src
@@ -536,17 +634,6 @@ Enable firewall. This disables all ports and pings.
 {
   virtualisation.virtualbox.host.enable = true;
   users.extraUsers.rasen.extraGroups = [ "vboxusers" ];
-}
-#+end_src
-
-*** Postgres
-    Local postgres database for development.
-#+name: nixos-section
-#+begin_src nix
-{
-  services.postgresql = {
-    enable = true;
-  };
 }
 #+end_src
 
@@ -800,7 +887,6 @@ gpg_path=gpg2
 {
   environment.systemPackages = [
     pkgs.wmname
-    pkgs.kbdd
     pkgs.xclip
     pkgs.scrot
   ];
@@ -831,7 +917,7 @@ gpg_path=gpg2
 
 **** Layout indicator
 
-     I use built-in awesome layout indicator.
+     I use built-in awesome layout indicator. See [[.config/awesome/rc.lua]] for more details.
 
 **** Custom keyboard modification
 #+begin_src fundamental :tangle .config/xkb/my
@@ -846,6 +932,9 @@ xkb_keymap {
   };
 };
 #+end_src
+
+(Not sure I actually use it.)
+
 **** Use Ctrl as Escape
 Use left ctrl as escape when pressed on its own.
 
@@ -863,7 +952,11 @@ xcape -e 'Control_L=Escape'
 #+end_src
 
 *** Redshift
-    Redshift adjusts the color temperature of the screen according to the position of the sun. That should improve my sleep.
+    Redshift adjusts the color temperature of the screen according to the position of the sun.
+
+    Blue light blocks [[https://en.wikipedia.org/wiki/Melatonin][melatonin]] (sleep harmone) secretion, so you feel less sleepy when you stare at computer screen.
+    Redshift blocks some blue light (making screen more red), which should improve melatonin secretion and restore sleepiness (which is a good thing).
+
 #+name: nixos-section
 #+begin_src nix
 {
@@ -887,6 +980,7 @@ xcape -e 'Control_L=Escape'
 }
 #+end_src
 
+The next is a back-port of =oxygen-gtk= theme, which was removed with remove of KDE4 from nixpkgs.
 #+name: nixos-section
 #+begin_src nix
 (let
@@ -919,7 +1013,7 @@ The theme has some issues with deadbeef, so I install adwaita icons to make dead
 
 *** Fonts
 
-I'm not a font guru, so I just stuffed a bunch of random fonts here.
+I'm not a font guru, so I just stuffed a bunch of random fonts in here.
 
 #+name: nixos-section
 #+begin_src nix
@@ -958,7 +1052,7 @@ I'm not a font guru, so I just stuffed a bunch of random fonts here.
 }
 #+end_src
 
-    KDE apps may have issues with mime types without this:
+    KDE apps might have issues with mime types without this:
 #+name: nixos-section
 #+begin_src nix
 {
@@ -967,23 +1061,16 @@ I'm not a font guru, so I just stuffed a bunch of random fonts here.
 #+end_src
 
 *** Firefox
-    Though my default browser is google-chrome, it has issues with Java plugin, so I use firefox for that. I also need an older version of firefox as it has dropped Java support in recent versions.
+    Though my default browser is google-chrome, it has issues with Java plugin, so I use firefox for that. I also use Extended Support Release, which still supports Java.
 #+name: nixos-section
 #+begin_src nix
-(let
-  oldpkgs = import (pkgs.fetchFromGitHub {
-    owner = "NixOS";
-    repo = "nixpkgs-channels";
-    rev = "1aa77d0519ae23a0dbef6cab6f15393cfadcc454";
-    sha256 = "1gcd8938n3z0a095b0203fhxp6lddaw1ic1rl33q441m1w0i19jv";
-  }) { config = config.nixpkgs.config; };
-in {
+{
   nixpkgs.config.firefox = {
     icedtea = true;
   };
 
   environment.systemPackages = [ pkgs.firefox-esr ];
-})
+}
 #+end_src
 
 *** Zathura
@@ -1003,9 +1090,9 @@ set incremental-search true
 #+end_src
 
 *** Slock
-    [[http://tools.suckless.org/slock/][Slock]] is a simple X display locker and should probably not crash as xscreensaver.
+    [[http://tools.suckless.org/slock/][Slock]] is a simple X display locker and should probably not crash as xscreensaver does.
 
-    Slock tries to disable OOM killer (so the locker is not killed when memory is low) and this requires a suid flag for executable. Otherwise, you get the following message.
+    Slock tries to disable OOM killer (so the locker is not killed when memory is low) and this requires a suid flag for executable. Otherwise, you get the following message:
 #+begin_src fundamental
 slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 #+end_src
@@ -1091,7 +1178,7 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 }
 #+end_src
 
-   Urxvt gets its setting from =.Xresources= file. If you ever want to reload it on-the-fly, type the following (or press =C-c C-c= if you're in emacs):
+   Urxvt gets its setting from =.Xresources= file. If you ever want to reload it on-the-fly, type the following (or press =C-c C-c= if you're reading this document in emacs now):
 #+begin_src sh
 xrdb ~/.Xresources
 #+end_src
@@ -1174,7 +1261,7 @@ URxvt*color15:    #d0d0d0
 
 *** fish
 
-fish is a cool shell, but I haven't yet configured it properly to switch to it for my day-to-day work.
+[[https://fishshell.com/][fish]] is a cool shell, I use it as my default for day-to-day work.
 
 #+name: nixos-section
 #+begin_src nix
@@ -1184,7 +1271,9 @@ fish is a cool shell, but I haven't yet configured it properly to switch to it f
 }
 #+end_src
 
-The next section goes to =.config/fish/functions/showqr.fish=. That's a function I use for displaying arbitrary text (mainly passwords stored with =pass=) as a QR code without any temporary files.
+**** Show QR codes
+
+The next section goes to =.config/fish/functions/showqr.fish=. That's a function I use for displaying arbitrary text (mainly passwords stored with =pass=) as a QR code without any temporary files. (=tr= is used to drop trailing newline.)
 
 #+begin_src fish :tangle .config/fish/functions/showqr.fish
 function showqr
@@ -1192,18 +1281,19 @@ function showqr
 end
 #+end_src
 
-It uses =qrencode= package:
+It uses =qrencode= and =feh= packages:
 #+name: nixos-section
 #+begin_src nix
 {
   environment.systemPackages = [
     pkgs.qrencode
+    pkgs.feh
   ];
 }
 #+end_src
 
 *** Zsh
-    Zsh is my default shell:
+    Zsh is my secondary shell. I use it when I need sh compatibility. (fish is not sh compliant.)
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1212,10 +1302,6 @@ It uses =qrencode= package:
 #+end_src
 
 **** Prompt
-    My prompt looks like this (though, the font is different; colors are also wrong at GitHub):
-
-#+html: <pre style="color:#d0d0d0; background-color:#101010"><span style="color:#80ff00; font-weight:bold">rasen@Larry</span> <span style="color:#5f5fee; font-weight:bold">directory</span>(<span style="color:#bb88dd; font-weight:bold">master</span>|<span style="color:#30309b">+8</span>…) <span style="color:#5f5fee; font-weight:bold">%</span> command <span style="float:right">[0] 1:25</span></pre>
-
 #+begin_src shell-script :tangle .zshrc :padline no
 source $HOME/.zsh/git-prompt/zshrc.sh
 
@@ -1418,8 +1504,6 @@ fi
     br  = branch
     s   = status
     re  = reset --hard
-    dp  = push origin HEAD:refs/drafts/master
-    pp  = push origin HEAD:refs/publish/master
     r   = rebase
     rc  = rebase --continue
     ri  = rebase -i
@@ -1427,10 +1511,6 @@ fi
     t   = tag
     su  = submodule update --init --recursive
     bi  = bisect
-    bg  = bisect good
-    bb  = bisect bad
-    bis = bisect start
-    bir = bisect reset
 #+end_src
 
 Always push to github with ssh keys instead of login/password.
@@ -1438,13 +1518,6 @@ Always push to github with ssh keys instead of login/password.
 #+begin_src gitconfig :tangle .gitconfig
 [url "git@github.com:"]
     pushInsteadOf = https://github.com/
-#+end_src
-
-    The next is needed for proper resolving of GHC submodules:
-
-#+begin_src gitconfig :tangle .gitconfig
-[url "git://github.com/ghc/packages-"]
-    insteadOf = git://github.com/ghc/packages/
 #+end_src
 
 *** tmux
@@ -1457,7 +1530,7 @@ Always push to github with ssh keys instead of login/password.
 }
 #+end_src
 
-    I like =C-a= as a prefix.
+    Use =C-a= as a prefix.
 #+begin_src conf-space :tangle .tmux.conf :padline no
 set -g prefix C-a
 unbind-key C-b
@@ -1494,7 +1567,7 @@ set-window-option -g automatic-rename
 #+end_src
 
 *** Embedded
-    The following packages provide compiler, ARM cross-compiler, debugger, and terminal.
+    The following packages provide a termiinal emulator, Open On-Chip Debugger, and telnet.
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1539,15 +1612,23 @@ set-window-option -g automatic-rename
 
     pkgs.patchelf
 
+    pkgs.nix-repl
+    pkgs.nox
+
+    pkgs.python
+    pkgs.python3
+  ];
+}
+#+end_src
+
+This install a number of default man pages for the linux/posix system.
+#+begin_src nix
+{
+  environment.systemPackages = [
     pkgs.man-pages
     pkgs.stdman
     pkgs.posix_man_pages
     pkgs.stdmanpages
-
-    pkgs.nix-repl
-    pkgs.nox
-    pkgs.python
-    pkgs.python3
   ];
 }
 #+end_src
