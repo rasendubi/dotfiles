@@ -232,7 +232,7 @@ let
         networking.nat = {
           enable = true;
           internalInterfaces = [ "tap0" ];
-          externalInterface = [ "enp0s31f6" ];
+          externalInterface = "enp0s31f6";
         };
       }
     ];
