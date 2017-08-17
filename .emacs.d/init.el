@@ -187,6 +187,11 @@ point reaches the beginning or end of the buffer, stop there."
 
   (nmap "\\ \\"   (lookup-key (current-global-map) (kbd "C-x")))
   (vmap "\\ \\"   (lookup-key (current-global-map) (kbd "C-x")))
+  (nmap "\\ \\" (rasen/hard-way "RET"))
+  (vmap "\\ \\" (rasen/hard-way "RET"))
+
+  (nmap "RET"   (lookup-key (current-global-map) (kbd "C-x")))
+  (vmap "RET"   (lookup-key (current-global-map) (kbd "C-x")))
 
   (nmap "SPC q"   'rasen/quit-other)
 
@@ -339,7 +344,15 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
     (kbd "g r")   'recompile))
 
 (use-package ivy
+  :demand
+  :bind (:map evil-normal-state-map
+         ("SPC b" . ivy-switch-buffer)
+         ("\\ \\ b" . rasen/use-spc-b))
   :diminish ivy-mode
+  :init
+  (defun rasen/use-spc-b ()
+    (interactive)
+    (error "Don't use this key! Use SPC b instead"))
   :config
   ;; Don't start input with ^
   (setq-default ivy-initial-inputs-alist nil)
