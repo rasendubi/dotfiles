@@ -840,6 +840,11 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (setq org-ditaa-jar-path "~/.nix-profile/lib/ditaa.jar")
   (setq org-plantuml-jar-path "~/.nix-profile/lib/plantuml.jar"))
 
+(use-package org-download
+  ;; TODO: bind screenshot command to <print> in org-mode
+  :config
+  (setq-default org-download-screenshot-method "scrot -s %s"))
+
 (use-package htmlize
   :defer t)
 
