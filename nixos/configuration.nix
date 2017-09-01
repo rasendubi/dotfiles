@@ -361,10 +361,16 @@ in
         nameserver 127.0.0.1
       '';
     
+      # dhclient-specific.
+      #
+      # This prepends local dnsmasq to the list of domain name servers.
+      #
+      # The supersede host-name line resolves the issue when DHCP overrides my machine name.
+      # For more info, see https://support.cumulusnetworks.com/hc/en-us/articles/218289767-Hostname-Configured-in-etc-hostname-Is-Superseded-by-the-DHCP-hostname-Option-
       systemd.services.wicd.preStart = let
         dhclient_conf_template = pkgs.writeText "dhclient.conf.template" ''
           prepend domain-name-servers 127.0.0.1;
-          send host-name "${meta.name}";
+          supersede host-name "$_HOSTNAME";
         '';
       in ''
         mkdir -p /var/lib/wicd/
