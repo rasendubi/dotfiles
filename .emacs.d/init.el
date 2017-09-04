@@ -414,6 +414,8 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
   (setq-default magit-completing-read-function 'ivy-completing-read)
 
+  ;; TODO: detach head
+
   (defun rasen/magit-push-head (target args)
     "Push HEAD to a branch read in the minibuffer."
     (interactive
@@ -443,11 +445,6 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
     (magit-checkout "origin/master"))
   (evil-magit-define-key evil-magit-state 'magit-mode-map
                          "g m" 'rasen/magit-fco-master))
-
-(use-package evil-magit
-  :after magit
-  :config
-  (setq evil-magit-use-y-for-yank t))
 
 (use-package diff-hl
   ; :disabled t
@@ -1196,6 +1193,14 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 (use-package pip-requirements
   :mode "^requirements.txt$")
+
+(use-package go-mode
+  :mode "\\.go$")
+
+(use-package octave
+  :commands (octave-mode)
+  :init
+  (add-to-list 'auto-mode-alist '("\\.m$" . octave-mode)))
 
 (use-package web-mode
   :commands (web-mode)
