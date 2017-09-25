@@ -224,17 +224,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (define-key minibuffer-local-isearch-map [escape] 'minibuffer-keyboard-quit))
 
 ;; Some highlighting for f, F, t, T commands
-(use-package evil-quickscope
-  :bind (:map evil-normal-state-map
-         ("f" . evil-quickscope-find-char-to)
-         ("F" . evil-quickscope-find-char-backward-to)
-         ("t" . evil-quickscope-find-char)
-         ("T" . evil-quickscope-find-char-backward)
-         :map evil-motion-state-map
-         ("f" . evil-quickscope-find-char-to)
-         ("F" . evil-quickscope-find-char-backward-to)
-         ("t" . evil-quickscope-find-char)
-         ("T" . evil-quickscope-find-char-backward)))
+(use-package evil-quickscope)
 
 (use-package evil-numbers
   :bind (:map evil-normal-state-map
