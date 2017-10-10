@@ -200,16 +200,16 @@ let
           serviceConfig =
             let zink =
               pkgs.rustPlatform.buildRustPackage {
-                name = "zink-0.0.1";
+                name = "zink-0.0.3";
       
                 src = pkgs.fetchFromGitHub {
                   owner = "rasendubi";
                   repo = "zink";
-                  rev = "influxdb-0.0.1";
-                  sha256 = "1sw07p2a83s34mp69snz1znwqp8xlba8dqc5y6iqfhyc3zwwbd3w";
+                  rev = "influxdb-0.0.3";
+                  sha256 = "0sxw2jdabnw4q1kha176gz3glg4f1c6mag1i6242y0y579zf49lr";
                 };
       
-                depsSha256 = "1dvk5l32nrpxy7h5pfiqssx06xd72pszd8kr2f2y3ba288ck97rr";
+                depsSha256 = "1j7mipqd1n146xds8136c9dq87af821yfw4qk3m40531m9zw4pi4";
               };
             in {
               ExecStart = "${zink}/bin/zink timestamp,tagId,batteryLevel,temperature";
