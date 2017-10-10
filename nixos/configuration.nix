@@ -236,6 +236,61 @@ let
         };
       }
     ];
+    omicron = [
+      {
+        imports = [
+          <nixpkgs/nixos/modules/installer/scan/not-detected.nix>
+        ];
+      
+        boot.initrd.availableKernelModules = [ "xhci_pci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
+        boot.kernelModules = [ "kvm-intel" ];
+        boot.extraModulePackages = [ ];
+      
+        nix.maxJobs = lib.mkDefault 4;
+      
+        powerManagement.cpuFreqGovernor = "powersave";
+      
+        boot.loader.systemd-boot.enable = true;
+        boot.loader.efi.canTouchEfiVariables = true;
+        boot.initrd.luks.devices = [
+          {
+            name = "root";
+            device = "/dev/disk/by-uuid/8b591c68-48cb-49f0-b4b5-2cdf14d583dc";
+            preLVM = true;
+          }
+        ];
+        fileSystems."/boot" = {
+          device = "/dev/disk/by-uuid/BA72-5382";
+          fsType = "vfat";
+        };
+        fileSystems."/" = {
+          device = "/dev/disk/by-uuid/434a4977-ea2c-44c0-b363-e7cf6e947f00";
+          fsType = "ext4";
+          options = [ "noatime" "nodiratime" "discard" ];
+        };
+        fileSystems."/home" = {
+          device = "/dev/disk/by-uuid/8bfa73e5-c2f1-424e-9f5c-efb97090caf9";
+          fsType = "ext4";
+          options = [ "noatime" "nodiratime" "discard" ];
+        };
+        swapDevices = [
+          { device = "/dev/disk/by-uuid/26a19f99-4f3a-4bd5-b2ed-359bed344b1e"; }
+        ];
+        networking = {
+          hostName = "omicron";
+      
+          useDHCP = false;
+          wicd.enable = true;
+          wireless.enable = false;
+        };
+      
+        services.xserver.synaptics = {
+          enable = true;
+          twoFingerScroll = true;
+          vertEdgeScroll = true;
+        };
+      }
+    ];
   };
 
 in

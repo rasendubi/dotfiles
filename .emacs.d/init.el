@@ -78,9 +78,9 @@
   "Check if the FONT exists."
   (and (display-graphic-p) (not (null (x-list-fonts font)))))
 
-(cond ((rasen/font-exists-p "Terminess Powerline-12")
+(cond ((rasen/font-exists-p "Terminess Powerline")
        (set-face-attribute 'default nil :font "Terminess Powerline-12"))
-      ((rasen/font-exists-p "Terminus-12")
+      ((rasen/font-exists-p "Terminus")
        (set-face-attribute 'default nil :font "Terminus-12")))
 
 (setq inhibit-startup-screen t)
