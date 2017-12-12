@@ -314,6 +314,14 @@ globalkeys = awful.util.table.join(
             awful.spawn("amixer set Master 2%-")
     end),
 
+    -- Brightness
+    awful.key({ }, "XF86MonBrightnessUp", function ()
+            awful.spawn("xbacklight -inc 10")
+    end),
+    awful.key({ }, "XF86MonBrightnessDown", function ()
+            awful.spawn("xbacklight -dec 10")
+    end),
+
     -- Unfocus all windows and turn the screen off
     awful.key({ modkey, "Mod1" }, "l", function ()
             client.focus = nil
