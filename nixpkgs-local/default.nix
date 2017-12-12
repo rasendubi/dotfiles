@@ -8,7 +8,7 @@ let
   };
 
   self = rec {
-    
+    imapnotify = (import ./imapnotify { inherit pkgs; }).imapnotify;
   };
 
 in self

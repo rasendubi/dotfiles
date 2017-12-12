@@ -1307,6 +1307,24 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (evil-define-key 'normal emacs-lisp-mode-map (kbd "SPC e") 'eval-last-sexp)
   (evil-define-key 'visual emacs-lisp-mode-map (kbd "SPC e") 'rasen/evil-eval))
 
+(use-package prodigy
+  :init
+  (prodigy-define-tag
+   :name 'email
+   :ready-message "Connected to server")
+  (prodigy-define-service
+   :name "imapnotify-gmail"
+   :command "imapnotify"
+   :args (list "-c" (expand-file-name "imapnotify-gmail-config.js" dotfiles-directory))
+   :tags '(email)
+   :kill-signal 'sigkill)
+  (prodigy-define-service
+   :name "imapnotify-kaaiot"
+   :command "imapnotify"
+   :args (list "-c" (expand-file-name "imapnotify-kaaiot-config.js" dotfiles-directory))
+   :tags '(email)
+   :kill-signal 'sigkill))
+
 ;; For use with "Edit with Emacs" chrome plugin.
 ;; https://chrome.google.com/webstore/detail/edit-with-emacs/ljobjlafonikaiipfkggjbhkghgicgoh?hl=en
 (use-package edit-server

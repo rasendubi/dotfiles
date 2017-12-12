@@ -539,6 +539,160 @@ To make package results testing better, I build them in isolated environment (fo
 
 Note that this is ="relaxed"= instead of =true=, because I have some packages that require a network to build and thus are =__noChroot=.
 
+*** imapnotify
+
+[[https://www.npmjs.com/package/imapnotify][imapnotify]] is a nodejs package for listening to IMAP updates.
+
+#+name: nixpkgs-local-packages
+#+begin_src nix
+imapnotify = (import ./imapnotify { inherit pkgs; }).imapnotify;
+#+end_src
+
+To generate all Nix files use the following steps.
+
+This goes to =nixpkgs-local/imapnotify/node-packages.json= file:
+#+begin_src json :tangle nixpkgs-local/imapnotify/node-packages.json
+["imapnotify"]
+#+end_src
+
+To generate the rest of Nix files, execute from =nixpkgs-local/imapnotify= directory:
+#+begin_src sh :dir nixpkgs-local/imapnotify :results output
+nix-shell -p nodePackages.node2nix --run 'node2nix -i node-packages.json 2>&1'
+#+end_src
+
+#+RESULTS:
+#+begin_example
+info attempt registry request try #1 at 9:09:36 PM
+http request GET http://registry.npmjs.org/imapnotify
+http 200 http://registry.npmjs.org/imapnotify
+info attempt registry request try #1 at 9:09:36 PM
+http request GET http://registry.npmjs.org/imap
+http 200 http://registry.npmjs.org/imap
+info attempt registry request try #1 at 9:09:36 PM
+http request GET http://registry.npmjs.org/optimist
+http 200 http://registry.npmjs.org/optimist
+info attempt registry request try #1 at 9:09:36 PM
+http request GET http://registry.npmjs.org/printf
+http 200 http://registry.npmjs.org/printf
+info attempt registry request try #1 at 9:09:36 PM
+http request GET http://registry.npmjs.org/winston
+http 200 http://registry.npmjs.org/winston
+info attempt registry request try #1 at 9:09:36 PM
+http request GET http://registry.npmjs.org/mkdirp
+http 200 http://registry.npmjs.org/mkdirp
+info attempt registry request try #1 at 9:09:36 PM
+http request GET http://registry.npmjs.org/xenvar
+http 200 http://registry.npmjs.org/xenvar
+info attempt registry request try #1 at 9:09:36 PM
+http request GET http://registry.npmjs.org/bunyan
+http 200 http://registry.npmjs.org/bunyan
+info attempt registry request try #1 at 9:09:36 PM
+http request GET http://registry.npmjs.org/utf7
+http 200 http://registry.npmjs.org/utf7
+info attempt registry request try #1 at 9:09:36 PM
+http request GET http://registry.npmjs.org/readable-stream
+http 200 http://registry.npmjs.org/readable-stream
+info attempt registry request try #1 at 9:09:36 PM
+http request GET http://registry.npmjs.org/semver
+http 200 http://registry.npmjs.org/semver
+info attempt registry request try #1 at 9:09:36 PM
+http request GET http://registry.npmjs.org/core-util-is
+http 200 http://registry.npmjs.org/core-util-is
+info attempt registry request try #1 at 9:09:36 PM
+http request GET http://registry.npmjs.org/isarray
+http 200 http://registry.npmjs.org/isarray
+info attempt registry request try #1 at 9:09:37 PM
+http request GET http://registry.npmjs.org/string_decoder
+http 200 http://registry.npmjs.org/string_decoder
+info attempt registry request try #1 at 9:09:37 PM
+http request GET http://registry.npmjs.org/inherits
+http 200 http://registry.npmjs.org/inherits
+info attempt registry request try #1 at 9:09:37 PM
+http request GET http://registry.npmjs.org/wordwrap
+http 200 http://registry.npmjs.org/wordwrap
+info attempt registry request try #1 at 9:09:37 PM
+http request GET http://registry.npmjs.org/minimist
+http 200 http://registry.npmjs.org/minimist
+info attempt registry request try #1 at 9:09:37 PM
+http request GET http://registry.npmjs.org/async
+http 200 http://registry.npmjs.org/async
+info attempt registry request try #1 at 9:09:37 PM
+http request GET http://registry.npmjs.org/colors
+http 200 http://registry.npmjs.org/colors
+info attempt registry request try #1 at 9:09:37 PM
+http request GET http://registry.npmjs.org/cycle
+http 200 http://registry.npmjs.org/cycle
+info attempt registry request try #1 at 9:09:37 PM
+http request GET http://registry.npmjs.org/eyes
+http 200 http://registry.npmjs.org/eyes
+info attempt registry request try #1 at 9:09:37 PM
+http request GET http://registry.npmjs.org/isstream
+http 200 http://registry.npmjs.org/isstream
+info attempt registry request try #1 at 9:09:37 PM
+http request GET http://registry.npmjs.org/pkginfo
+http 200 http://registry.npmjs.org/pkginfo
+info attempt registry request try #1 at 9:09:37 PM
+http request GET http://registry.npmjs.org/stack-trace
+http 200 http://registry.npmjs.org/stack-trace
+info attempt registry request try #1 at 9:09:37 PM
+http request GET http://registry.npmjs.org/minimist
+http 200 http://registry.npmjs.org/minimist
+info attempt registry request try #1 at 9:09:37 PM
+http request GET http://registry.npmjs.org/dtrace-provider
+http 200 http://registry.npmjs.org/dtrace-provider
+info attempt registry request try #1 at 9:09:37 PM
+http request GET http://registry.npmjs.org/mv
+http 200 http://registry.npmjs.org/mv
+info attempt registry request try #1 at 9:09:37 PM
+http request GET http://registry.npmjs.org/safe-json-stringify
+http 200 http://registry.npmjs.org/safe-json-stringify
+info attempt registry request try #1 at 9:09:37 PM
+http request GET http://registry.npmjs.org/moment
+http 200 http://registry.npmjs.org/moment
+info attempt registry request try #1 at 9:09:37 PM
+http request GET http://registry.npmjs.org/nan
+http 200 http://registry.npmjs.org/nan
+info attempt registry request try #1 at 9:09:37 PM
+http request GET http://registry.npmjs.org/ncp
+http 200 http://registry.npmjs.org/ncp
+info attempt registry request try #1 at 9:09:37 PM
+http request GET http://registry.npmjs.org/rimraf
+http 200 http://registry.npmjs.org/rimraf
+info attempt registry request try #1 at 9:09:38 PM
+http request GET http://registry.npmjs.org/glob
+http 200 http://registry.npmjs.org/glob
+info attempt registry request try #1 at 9:09:38 PM
+http request GET http://registry.npmjs.org/inflight
+http 200 http://registry.npmjs.org/inflight
+info attempt registry request try #1 at 9:09:38 PM
+http request GET http://registry.npmjs.org/inherits
+http 200 http://registry.npmjs.org/inherits
+info attempt registry request try #1 at 9:09:38 PM
+http request GET http://registry.npmjs.org/minimatch
+http 200 http://registry.npmjs.org/minimatch
+info attempt registry request try #1 at 9:09:38 PM
+http request GET http://registry.npmjs.org/once
+http 200 http://registry.npmjs.org/once
+info attempt registry request try #1 at 9:09:38 PM
+http request GET http://registry.npmjs.org/path-is-absolute
+http 200 http://registry.npmjs.org/path-is-absolute
+info attempt registry request try #1 at 9:09:38 PM
+http request GET http://registry.npmjs.org/wrappy
+http 200 http://registry.npmjs.org/wrappy
+info attempt registry request try #1 at 9:09:38 PM
+http request GET http://registry.npmjs.org/brace-expansion
+http 200 http://registry.npmjs.org/brace-expansion
+info attempt registry request try #1 at 9:09:38 PM
+http request GET http://registry.npmjs.org/balanced-match
+http 200 http://registry.npmjs.org/balanced-match
+info attempt registry request try #1 at 9:09:38 PM
+http request GET http://registry.npmjs.org/concat-map
+http 200 http://registry.npmjs.org/concat-map
+info attempt registry request try #1 at 9:09:38 PM
+http request GET http://registry.npmjs.org/wrappy
+http 200 http://registry.npmjs.org/wrappy
+#+end_example
+
 ** Services
 *** Locate
     Update [[https://linux.die.net/man/1/locate][locate]] database daily.
@@ -815,6 +969,52 @@ Slave :local:Work/
 Patterns * !Chats !Contacts !"Emailed Contacts"
 Create Both
 SyncState *
+#+end_src
+
+*** imapnotify
+
+#+begin_src js :tangle imapnotify-gmail-config.js
+var child_process = require('child_process');
+
+function getStdout(cmd) {
+  var stdout = child_process.execSync(cmd);
+  return stdout.toString().trim();
+}
+
+exports.host = "imap.gmail.com";
+exports.port = 993;
+exports.tls = true;
+exports.username = "rasen.dubi@gmail.com";
+exports.password = getStdout("pass imap.gmail.com/rasen.dubi@gmail.com");
+exports.onNotify = "mbsync sync-gmail";
+// exports.onNotifyPost = {
+//   "mail": "emacsclient  -e '(gnus-group-get-new-news)'",
+//   "update": "emacsclient  -e '(gnus-group-get-new-news)'",
+//   "expunge": "emacsclient  -e '(gnus-group-get-new-news)'",
+// };
+exports.boxes = [ "INBOX" ];
+#+end_src
+
+#+begin_src js :tangle imapnotify-kaaiot-config.js
+var child_process = require('child_process');
+
+function getStdout(cmd) {
+  var stdout = child_process.execSync(cmd);
+  return stdout.toString().trim();
+}
+
+exports.host = "imap.gmail.com";
+exports.port = 993;
+exports.tls = true;
+exports.username = "ashmalko@kaaiot.io";
+exports.password = getStdout("pass imap.gmail.com/ashmalko@kaaiot.io");
+exports.onNotify = "mbsync sync-kaaiot";
+// exports.onNotifyPost = {
+//   "mail": "emacsclient  -e '(gnus-group-get-new-news)'",
+//   "update": "emacsclient  -e '(gnus-group-get-new-news)'",
+//   "expunge": "emacsclient  -e '(gnus-group-get-new-news)'",
+// };
+exports.boxes = [ "INBOX" ];
 #+end_src
 
 *** Dovecot
