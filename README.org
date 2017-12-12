@@ -749,6 +749,12 @@ Slave :local:Personal/all
 Create Both
 SyncState *
 
+Channel sync-gmail-spam
+Master :gmail-remote:"[Gmail]/Spam"
+Slave :local:Personal/spam
+Create Both
+SyncState *
+
 Channel sync-gmail-sent
 Master :gmail-remote:"[Gmail]/Sent Mail"
 Slave :local:Personal/sent
@@ -757,6 +763,7 @@ SyncState *
 
 Group sync-gmail
 Channel sync-gmail-all
+Channel sync-gmail-spam
 Channel sync-gmail-sent
 
 IMAPAccount kaaiot
@@ -764,7 +771,6 @@ Host imap.gmail.com
 User ashmalko@kaaiot.io
 PassCmd "pass imap.gmail.com/ashmalko@kaaiot.io"
 SSLType IMAPS
-AuthMechs *
 CertificateFile /etc/ssl/certs/ca-certificates.crt
 
 IMAPStore kaaiot-remote
@@ -776,6 +782,12 @@ Slave :local:KaaIoT/all
 Create Both
 SyncState *
 
+Channel sync-kaaiot-spam
+Master :kaaiot-remote:"[Gmail]/Spam"
+Slave :local:KaaIoT/spam
+Create Both
+SyncState *
+
 Channel sync-kaaiot-sent
 Master :kaaiot-remote:"[Gmail]/Sent Mail"
 Slave :local:KaaIoT/sent
@@ -784,6 +796,7 @@ SyncState *
 
 Group sync-kaaiot
 Channel sync-kaaiot-all
+Channel sync-kaaiot-spam
 Channel sync-kaaiot-sent
 
 IMAPAccount cv
