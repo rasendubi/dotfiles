@@ -234,6 +234,19 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (use-package smartrep
   :commands (smartrep-read-event-loop))
 
+(use-package quail
+  :ensure nil ; built-in?
+  :config
+  (add-to-list 'quail-keyboard-layout-alist
+               '("workman" . "\
+                              \
+  1!2@3#4$5%6^7&8*9(0)-_=+`~  \
+  qQdDrRwWbBjJfFuUpP;:[{]}\\|  \
+  aAsShHtTgGyYnNeEoOiI'\"      \
+  zZxXmMcCvVkKlL,<.>/?        \
+                              "))
+  (quail-set-keyboard-layout "workman"))
+
 (use-package key-chord
   :disabled t
   :if (not android-p)
