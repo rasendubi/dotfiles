@@ -484,9 +484,12 @@ in
       services.xserver.displayManager.slim.enable = true;
     }
     {
-      services.xserver.windowManager.awesome = {
-        enable = true;
-        luaModules = [ pkgs.luaPackages.luafilesystem pkgs.luaPackages.cjson ];
+      services.xserver.windowManager = {
+        default = "awesome";
+        awesome = {
+          enable = true;
+          luaModules = [ pkgs.luaPackages.luafilesystem pkgs.luaPackages.cjson ];
+        };
       };
     }
     {

@@ -650,8 +650,10 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (use-package markdown-mode
   :mode ("\\.\\(markdown\\|mdown\\|md\\)$" . markdown-mode)
   :init
-  (add-hook 'markdown-mode-hook 'visual-line-mode)
-  (add-hook 'markdown-mode-hook 'visual-fill-column-mode))
+  (add-hook 'markdown-mode-hook 'visual-line-mode))
+
+(use-package edit-indirect
+  :after markdown-mode)
 
 (use-package undo-tree
   :diminish (undo-tree-mode global-undo-tree-mode))

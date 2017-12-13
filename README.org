@@ -1156,9 +1156,12 @@ gpg_path=gpg2
 #+name: nixos-section
 #+begin_src nix
 {
-  services.xserver.windowManager.awesome = {
-    enable = true;
-    luaModules = [ pkgs.luaPackages.luafilesystem pkgs.luaPackages.cjson ];
+  services.xserver.windowManager = {
+    default = "awesome";
+    awesome = {
+      enable = true;
+      luaModules = [ pkgs.luaPackages.luafilesystem pkgs.luaPackages.cjson ];
+    };
   };
 }
 #+end_src
