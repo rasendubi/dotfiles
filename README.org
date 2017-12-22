@@ -693,6 +693,24 @@ http request GET http://registry.npmjs.org/wrappy
 http 200 http://registry.npmjs.org/wrappy
 #+end_example
 
+*** heroku
+#+name: nixpkgs-local-packages
+#+begin_src nix
+heroku = (import ./heroku { inherit pkgs; }).heroku-cli;
+#+end_src
+
+To generate all Nix files use the following steps.
+
+This goes to =nixpkgs-local/heroku/node-packages.json= file:
+#+begin_src json :mkdirp yes :tangle nixpkgs-local/heroku/node-packages.json
+["heroku-cli"]
+#+end_src
+
+To generate the rest of Nix files, execute the following command from =nixpkgs-local/heroku= directory (note that you need a fresh nixpkgs-unstable):
+#+begin_src sh :dir nixpkgs-local/heroku :results output
+nix-shell -p nodePackages.node2nix --run 'node2nix -8 -i node-packages.json 2>&1'
+#+end_src
+
 ** Services
 *** Locate
     Update [[https://linux.die.net/man/1/locate][locate]] database daily.

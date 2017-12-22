@@ -9,6 +9,7 @@ let
 
   self = rec {
     imapnotify = (import ./imapnotify { inherit pkgs; }).imapnotify;
+    heroku = (import ./heroku { inherit pkgs; }).heroku-cli;
   };
 
 in self
