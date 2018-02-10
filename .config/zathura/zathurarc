@@ -1,1 +1,3 @@
+map j scroll up
+map k scroll down
 set incremental-search true

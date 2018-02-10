@@ -15,10 +15,10 @@ Pieces not (yet) covered in this document are:
 - scripts at =bin/=;
 - irssi config at =.irssi=;
 
-** NixOS
-    I'm a [[http://nixos.org/][NixOS]] user. What's cool about it is that I can describe all my system configuration in one file (=/etc/nixos/configuration.nix=), so I can just copy it to other machine, call =nixos-rebuild= and have system with the same software, system settings, etc.
+* NixOS
+I'm a [[http://nixos.org/][NixOS]] user. What's cool about it is that I can describe all my system configuration in one file (=/etc/nixos/configuration.nix=), so I can just copy it to other machine, call =nixos-rebuild= and have system with the same software, system settings, etc.
 
-    It looks like this:
+It looks like this:
 
 #+begin_src nix :tangle nixos/configuration.nix :noweb no-export :padline no
 { config, pkgs, lib, ... }:
@@ -53,7 +53,7 @@ in
 
 This =<<nixos-section>>= is replaced by other parts of this doc.
 
-*** Default locations
+** Default locations
 
     This moves nixos configuration from the default location to the =dotfiles/nixos/configuration.nix=.
 
@@ -77,9 +77,9 @@ If you want to override default configuration location, use =-I= flag:
 sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix
 #+end_src
 
-*** Save config
+** Save config
 
-Save nixos-config in the Nix store, so I can retrieve it later. The config for the current ly running system is located at =/var/run/current-system/configuration.nix=.
+Save nixos-config in the Nix store, so I can retrieve it later. The config for the currently running system is located at =/var/run/current-system/configuration.nix=.
 
 #+name: nixos-section
 #+begin_src nix
@@ -90,8 +90,8 @@ Save nixos-config in the Nix store, so I can retrieve it later. The config for t
 
 This setting copies only the =configuration.nix= file, which works pretty nice as I have only one configuration file and don't split it.
 
-*** Users
-    I'm the only user of the system:
+** Users
+I'm the only user of the system:
 
 #+name: nixos-section
 #+begin_src nix
@@ -105,14 +105,14 @@ This setting copies only the =configuration.nix= file, which works pretty nice a
 }
 #+end_src
 
-    =initialPassword= is used only first time when user is created. It must be changed as soon as possible with =passwd=.
+=initialPassword= is used only first time when user is created. It must be changed as soon as possible with =passwd=.
 
-*** Machines
+** Machines
 #+name: Machines section
-    I have three machines running NixOS.
+I have three machines running NixOS.
 
-**** Larry
-    This one is a laptop that needs the proprietary driver for Wi-Fi card (this =wl= and =broadcom_sta=).
+*** Larry
+This one is a laptop that needs the proprietary driver for Wi-Fi card (this =wl= and =broadcom_sta=).
 
 #+name: machine-larry
 #+begin_src nix
@@ -127,7 +127,7 @@ This setting copies only the =configuration.nix= file, which works pretty nice a
 }
 #+end_src
 
-    I have two partitions (usual "separate home" setup).
+I have two partitions (usual "separate home" setup).
 #+name: machine-larry
 #+begin_src nix
 {
@@ -157,7 +157,7 @@ There are also two swap partitions, but one of them is from my slow hdd, so I pr
 }
 #+end_src
 
-    There is also Gentoo on the second drive---it's good to keep it bootable.
+There is also Gentoo on the second drive---it's good to keep it bootable.
 #+name: machine-larry
 #+begin_src nix
 {
@@ -174,7 +174,7 @@ There are also two swap partitions, but one of them is from my slow hdd, so I pr
 }
 #+end_src
 
-    Boring stuff: 8 hyper-threads, networking ([[https://launchpad.net/wicd][wicd]]), synaptics (Larry is a laptop).
+Boring stuff: 8 hyper-threads, networking ([[https://launchpad.net/wicd][wicd]]), synaptics (Larry is a laptop).
 
 #+name: machine-larry
 #+begin_src nix
@@ -198,7 +198,7 @@ There are also two swap partitions, but one of them is from my slow hdd, so I pr
 }
 #+end_src
 
-I have nvidia video card and integrated intel-one. I don't use nvidia one, so next the line disables it:
+I have nvidia video card and integrated intel one. I don't use nvidia one, so next the line disables it:
 #+name: machine-larry
 #+begin_src nix
 {
@@ -206,7 +206,7 @@ I have nvidia video card and integrated intel-one. I don't use nvidia one, so ne
 }
 #+end_src
 
-***** Quantified Self
+**** Quantified Self
 ELK stack to gather information about my computer activity.
 
 #+name: machine-larry
@@ -231,11 +231,24 @@ ELK stack to gather information about my computer activity.
         tags => [ "awesomewm" ]
         type => "awesomewm"
       }
+      file {
+        path => "/home/rasen/log.txt.omicron"
+        sincedb_path => "/home/rasen/.log.txt.omicron.sincedb"
+        codec => "json"
+        start_position => "beginning"
+        tags => [ "awesomewm" ]
+        type => "awesomewm"
+      }
     '';
     filterConfig = ''
       if [path] == "/home/rasen/log.txt.ashmalko" {
         mutate {
           replace => [ "host", "ashmalko" ]
+        }
+      }
+      if [path] == "/home/rasen/log.txt.omicron" {
+        mutate {
+          replace => [ "host", "omicron" ]
         }
       }
     '';
@@ -261,8 +274,8 @@ ELK stack to gather information about my computer activity.
 }
 #+end_src
 
-**** ashmalko
-This is my desktop corporate computer.
+*** ashmalko
+This is my corporate desktop computer.
 #+name: machine-ashmalko
 #+begin_src nix
 {
@@ -325,20 +338,8 @@ This is encrypted LVM on LUKS setup.
 }
 #+end_src
 
-Use pulseaudio (multiple sound sinks, skype calls). =pavucontrol= is PulseAudio Volume Control---a nice package for controlling pulseaudio settings.
-#+name: machine-ashmalko
-#+begin_src nix
-{
-  hardware.pulseaudio = {
-    enable = true;
-    support32Bit = true;
-  };
-  environment.systemPackages = [ pkgs.pavucontrol ];
-}
-#+end_src
-
-***** Gitolite
-    I host some git repos on my machine:
+**** Gitolite
+I host some git repos on my machine:
 #+name: machine-ashmalko
 #+begin_src nix
 {
@@ -358,7 +359,7 @@ I expose some repos for the folks here, so relax avahi rules for they to discove
 }
 #+end_src
 
-***** Zink
+**** Zink
 
 I'm running an MQTT implementation in there.
 #+name: machine-ashmalko
@@ -407,8 +408,8 @@ I'm running an MQTT implementation in there.
 }
 #+end_src
 
-**** omicron
-     This is my small Dell XPS 13.
+*** omicron
+This is my small Dell XPS 13.
 #+name: machine-omicron
 #+begin_src nix
 {
@@ -468,15 +469,14 @@ Wireless networking.
     wireless.enable = false;
   };
 
-  services.xserver.synaptics = {
+  services.xserver.libinput = {
     enable = true;
-    twoFingerScroll = true;
-    vertEdgeScroll = true;
+    accelSpeed = "0.7";
   };
 }
 #+end_src
-*** Networking tricks
-I want to access my corporate network from my home laptop when I need to. I have a VPN up between my laptop and corporate desktop, so the solution is to use my corporate desktop as a router.
+** Networking tricks
+I want to access my corporate network from my home laptop when I need to. I have a VPN up between my laptops and corporate desktop, so the solution is to use my corporate desktop as a router.
 
 On Larry, route all corporate network traffic via ashmalko:
 #+name: machine-larry
@@ -501,10 +501,18 @@ On ashmalko, rewrite packages from Larry into internal network. (Which is called
 }
 #+end_src
 
-*** Local overlay
-    As a responsible NixOS user, I refuse to install software blindly with =sudo make install=. That's why I must write my own nix-expressions. I keep them in my local overlay until they're merged upstream.
+** Local overlay
+As a responsible NixOS user, I refuse to install software blindly with =sudo make install=. That's why I must write my own nix-expressions. I keep them in my local overlay until they're merged upstream.
 
-    The entry point is just a set of all my packages in =nixpkgs-local/default.nix=:
+Store separate overlays in a directory:
+#+name: nixos-section
+#+begin_src nix
+{
+  nix.nixPath = [ "nixpkgs-overlays=/home/rasen/dotfiles/nixpkgs-overlays" ];
+}
+#+end_src
+
+The entry point is just a set of all my packages in =nixpkgs-local/default.nix=:
 #+begin_src nix :tangle nixpkgs-local/default.nix :noweb no-export :padline no
 { pkgs ? import <nixpkgs> { } }:
 
@@ -538,6 +546,92 @@ To make package results testing better, I build them in isolated environment (fo
 #+end_src
 
 Note that this is ="relaxed"= instead of =true=, because I have some packages that require a network to build and thus are =__noChroot=.
+
+*** gitbook
+
+#+name: nixpkgs-local-packages
+#+begin_src nix
+gitbook-cli = (import ./gitbook { inherit pkgs; }).gitbook-cli;
+#+end_src
+
+To generate all Nix files use the following steps.
+
+This goes to =nixpkgs-local/gitbook/node-packages.json= file:
+#+begin_src json :tangle nixpkgs-local/gitbook/node-packages.json :mkdirp yes
+["gitbook-cli"]
+#+end_src
+
+To generate the rest of Nix files, execute from =nixpkgs-local/gitbook= directory:
+#+begin_src sh :dir nixpkgs-local/gitbook :results output :async
+nix-shell -p nodePackages.node2nix --run 'node2nix -i node-packages.json 2>&1'
+#+end_src
+
+#+RESULTS:
+#+begin_example
+info attempt registry request try #1 at 2:41:54 PM
+http request GET http://registry.npmjs.org/gitbook-cli
+http 200 http://registry.npmjs.org/gitbook-cli
+info attempt registry request try #1 at 2:41:54 PM
+http request GET http://registry.npmjs.org/q
+http 200 http://registry.npmjs.org/q
+info attempt registry request try #1 at 2:41:54 PM
+http request GET http://registry.npmjs.org/lodash
+http 200 http://registry.npmjs.org/lodash
+info attempt registry request try #1 at 2:41:54 PM
+http request GET http://registry.npmjs.org/semver
+http 200 http://registry.npmjs.org/semver
+info attempt registry request try #1 at 2:41:54 PM
+http request GET http://registry.npmjs.org/npmi
+http 200 http://registry.npmjs.org/npmi
+info attempt registry request try #1 at 2:41:54 PM
+http request GET http://registry.npmjs.org/tmp
+http 200 http://registry.npmjs.org/tmp
+info attempt registry request try #1 at 2:41:54 PM
+http request GET http://registry.npmjs.org/commander
+http 200 http://registry.npmjs.org/commander
+info attempt registry request try #1 at 2:41:54 PM
+http request GET http://registry.npmjs.org/optimist
+http 200 http://registry.npmjs.org/optimist
+info attempt registry request try #1 at 2:41:54 PM
+http request GET http://registry.npmjs.org/fs-extra
+http 200 http://registry.npmjs.org/fs-extra
+info attempt registry request try #1 at 2:41:54 PM
+http request GET http://registry.npmjs.org/bash-color
+http 200 http://registry.npmjs.org/bash-color
+info attempt registry request try #1 at 2:41:54 PM
+http request GET http://registry.npmjs.org/npm
+http 200 http://registry.npmjs.org/npm
+info attempt registry request try #1 at 2:41:55 PM
+http request GET http://registry.npmjs.org/user-home
+http 200 http://registry.npmjs.org/user-home
+info attempt registry request try #1 at 2:41:55 PM
+http request GET http://registry.npmjs.org/npm
+http 200 http://registry.npmjs.org/npm
+info attempt registry request try #1 at 2:41:55 PM
+http request GET http://registry.npmjs.org/semver
+http 200 http://registry.npmjs.org/semver
+info attempt registry request try #1 at 2:41:56 PM
+http request GET http://registry.npmjs.org/os-tmpdir
+http 200 http://registry.npmjs.org/os-tmpdir
+info attempt registry request try #1 at 2:41:56 PM
+http request GET http://registry.npmjs.org/wordwrap
+http 200 http://registry.npmjs.org/wordwrap
+info attempt registry request try #1 at 2:41:56 PM
+http request GET http://registry.npmjs.org/minimist
+http 200 http://registry.npmjs.org/minimist
+info attempt registry request try #1 at 2:41:56 PM
+http request GET http://registry.npmjs.org/graceful-fs
+http 200 http://registry.npmjs.org/graceful-fs
+info attempt registry request try #1 at 2:41:56 PM
+http request GET http://registry.npmjs.org/jsonfile
+http 200 http://registry.npmjs.org/jsonfile
+info attempt registry request try #1 at 2:41:56 PM
+http request GET http://registry.npmjs.org/universalify
+http 200 http://registry.npmjs.org/universalify
+info attempt registry request try #1 at 2:41:56 PM
+http request GET http://registry.npmjs.org/os-homedir
+http 200 http://registry.npmjs.org/os-homedir
+#+end_example
 
 *** imapnotify
 
@@ -711,9 +805,31 @@ To generate the rest of Nix files, execute the following command from =nixpkgs-l
 nix-shell -p nodePackages.node2nix --run 'node2nix -8 -i node-packages.json 2>&1'
 #+end_src
 
-** Services
-*** Locate
-    Update [[https://linux.die.net/man/1/locate][locate]] database daily.
+** Meltdown
+#+name: nixos-section
+#+begin_src nix
+{
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+}
+#+end_src
+* Services
+** PulseAudio
+Use pulseaudio (multiple sound sinks, skype calls). =pavucontrol= is PulseAudio Volume Control---a nice utility for controlling pulseaudio settings.
+
+Also, Pulseaudio is a requirement for Firefox Quantum.
+#+name: machine-ashmalko
+#+begin_src nix
+{
+  hardware.pulseaudio = {
+    enable = true;
+    support32Bit = true;
+  };
+
+  environment.systemPackages = [ pkgs.pavucontrol ];
+}
+#+end_src
+** Locate
+Update [[https://linux.die.net/man/1/locate][locate]] database daily.
 #+name: nixos-section
 #+begin_src nix
 {
@@ -723,7 +839,7 @@ nix-shell -p nodePackages.node2nix --run 'node2nix -8 -i node-packages.json 2>&1
   };
 }
 #+end_src
-*** OpenVPN
+** OpenVPN
     All my computers are members of the VPN:
 #+name: nixos-section
 #+begin_src nix
@@ -747,7 +863,8 @@ nix-shell -p nodePackages.node2nix --run 'node2nix -8 -i node-packages.json 2>&1
 }
 #+end_src
 
-    Avahi is needed to allow resolution of =.local= names. For example, you can access this computer by =larry.local= if we meet at the same local network.
+** Avahi
+Avahi is needed to allow resolution of =.local= names. For example, you can access this computer by =larry.local= if we meet at the same local network.
 #+name: nixos-section
 #+begin_src nix
 {
@@ -773,8 +890,7 @@ The following lines are needed to start avahi-daemon automatically. The default 
   systemd.services.avahi-daemon.after = [ "openvpn-kaa.target" ];
 }
 #+end_src
-
-*** SSH
+** SSH
 #+name: nixos-section
 #+begin_src nix
 {
@@ -799,7 +915,7 @@ The following lines are needed to start avahi-daemon automatically. The default 
 }
 #+end_src
 
-**** Mosh
+*** Mosh
 [[https://mosh.mit.edu/][Mosh (mobile shell)]] is a cool addition to ssh.
 #+name: nixos-section
 #+begin_src nix
@@ -808,7 +924,7 @@ The following lines are needed to start avahi-daemon automatically. The default 
 }
 #+end_src
 
-*** dnsmasq
+** dnsmasq
 
 Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
 
@@ -859,7 +975,21 @@ Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
 }
 #+end_src
 
-*** Firewall
+** Syncthing
+I use Syncthing to sync my org-mode files to my phone.
+
+#+name: nixos-section
+#+begin_src nix
+{
+  services.syncthing = {
+    enable = true;
+    user = "rasen";
+    dataDir = "/home/rasen/.config/syncthing";
+    openDefaultPorts = true;
+  };
+}
+#+end_src
+** Firewall
 
 Enable firewall. This disables all ports and pings.
 
@@ -876,18 +1006,23 @@ Enable firewall. This disables all ports and pings.
 }
 #+end_src
 
-*** VirtualBox
+** Development
+#+name: nixos-section
+#+begin_src nix
+{
+  services.postgresql.enable = true;
+  services.redis.enable = true;
+}
+#+end_src
 
 #+name: nixos-section
 #+begin_src nix
 {
-  virtualisation.virtualbox.host.enable = true;
-  users.extraUsers.rasen.extraGroups = [ "vboxusers" ];
+  virtualisation.docker.enable = true;
 }
 #+end_src
-
-** Mail setup
-*** Mbsync
+* Mail setup
+** Mbsync
 I use mbsync to sync my accounts and make them available offline.
 #+name: nixos-section
 #+begin_src nix
@@ -970,26 +1105,9 @@ Group sync-kaaiot
 Channel sync-kaaiot-all
 Channel sync-kaaiot-spam
 Channel sync-kaaiot-sent
-
-IMAPAccount cv
-Host mail.cybervisiontech.com
-User ashmalko
-PassCmd "pass mail.cybervisiontech.com/ashmalko@cybervisiontech.com"
-SSLType IMAPS
-CertificateFile /etc/ssl/certs/ca-certificates.crt
-
-IMAPStore cv-remote
-Account cv
-
-Channel sync-cv
-Master :cv-remote:
-Slave :local:Work/
-Patterns * !Chats !Contacts !"Emailed Contacts"
-Create Both
-SyncState *
 #+end_src
 
-*** imapnotify
+** imapnotify
 
 #+begin_src js :tangle imapnotify-gmail-config.js
 var child_process = require('child_process');
@@ -1035,7 +1153,7 @@ exports.onNotify = "mbsync sync-kaaiot";
 exports.boxes = [ "INBOX" ];
 #+end_src
 
-*** Dovecot
+** Dovecot
 Dovecot serves fetched mail to gnus.
 #+name: nixos-section
 #+begin_src nix
@@ -1052,7 +1170,7 @@ Dovecot serves fetched mail to gnus.
 }
 #+end_src
 
-*** msmtp
+** msmtp
 Msmtp is used to send mail.
 
 #+name: nixos-section
@@ -1096,12 +1214,9 @@ port 465
 from ashmalko@cybervisiontech.com
 user ashmalko
 passwordeval "pass mail.cybervisiontech.com/ashmalko@cybervisiontech.com"
-
-# default
-account default : gmail
 #+end_src
 
-*** notmuch
+** notmuch
 Notmuch is used for tagging.
 #+name: nixos-section
 #+begin_src nix
@@ -1133,9 +1248,9 @@ exclude_tags=deleted;spam
 gpg_path=gpg2
 #+end_src
 
-** Environment
-*** General
-    I definitely use X server:
+* Environment
+** General
+I definitely use X server:
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1143,7 +1258,7 @@ gpg_path=gpg2
 }
 #+end_src
 
-    Use English as my only supported locale:
+Use English as my only supported locale:
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1151,7 +1266,7 @@ gpg_path=gpg2
 }
 #+end_src
 
-    Setup timezone:
+Setup timezone:
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1159,8 +1274,8 @@ gpg_path=gpg2
 }
 #+end_src
 
-*** Login manager
-    I use SLiM. It stands for Simple Login Manager. It's fast and has little dependencies. The projects is dead since 2014, but still works fine, so I keep using it.
+** Login manager
+I use SLiM. It stands for Simple Login Manager. It's fast and has little dependencies. The projects is dead since 2014, but still works fine, so I keep using it.
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1168,12 +1283,13 @@ gpg_path=gpg2
 }
 #+end_src
 
-*** Window manager
-    I use [[http://awesome.naquadah.org/][awesome wm]]:
+** Window manager
+I use [[http://awesome.naquadah.org/][awesome wm]]:
 
 #+name: nixos-section
 #+begin_src nix
 {
+  services.xserver.displayManager.slim.enable = true;
   services.xserver.windowManager = {
     default = "awesome";
     awesome = {
@@ -1184,7 +1300,7 @@ gpg_path=gpg2
 }
 #+end_src
 
-    Disabling xterm makes awesome wm a default choice in slim:
+Disabling xterm makes awesome wm a default choice in slim:
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1192,21 +1308,24 @@ gpg_path=gpg2
 }
 #+end_src
 
-    These packages are used by my awesome wm setup:
+These packages are used by my awesome wm setup:
 #+name: nixos-section
 #+begin_src nix
 {
   environment.systemPackages = [
     pkgs.wmname
     pkgs.xclip
-    pkgs.scrot
+    pkgs.escrotum
+
+    # Control screen brightness
+    pkgs.xorg.xbacklight
   ];
 }
 #+end_src
 
-*** Keyboard
-**** Layouts
-    I use English and Ukrainian layouts. I also use Russian symbols, but they are on the third level.
+** Keyboard
+*** Layouts
+I use English and Ukrainian layouts. I also use Russian symbols, but they are on the third level.
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1218,7 +1337,7 @@ gpg_path=gpg2
 }
 #+end_src
 
-    I toggle between them with either Caps Lock, or Menu key---I have two different keyboards, and one doesn't have Menu when Caps Lock is too far on the second. I never use Caps Lock--the feature, so it's nice to have Caps LED indicate alternate layouts.
+I toggle between them with either Caps Lock, or Menu key---I have two different keyboards, and one doesn't have Menu when Caps Lock is too far on the second. I never use Caps Lock--the feature, so it's nice to have Caps LED indicate alternate layouts.
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1226,11 +1345,11 @@ gpg_path=gpg2
 }
 #+end_src
 
-**** Layout indicator
+*** Layout indicator
 
-     I use built-in awesome layout indicator. See [[.config/awesome/rc.lua]] for more details.
+I use built-in awesome layout indicator. See [[.config/awesome/rc.lua]] for more details.
 
-**** Custom keyboard modification
+*** Custom keyboard modification
 #+begin_src fundamental :tangle .config/xkb/my
 xkb_keymap {
   xkb_keycodes  { include "evdev+aliases(qwerty)"};
@@ -1246,27 +1365,11 @@ xkb_keymap {
 
 (Not sure I actually use it.)
 
-**** Use Ctrl as Escape
-Use left ctrl as escape when pressed on its own.
+** Redshift
+Redshift adjusts the color temperature of the screen according to the position of the sun.
 
-[[https://github.com/alols/xcape][XCAPE]] can do that with the next command.
-#+begin_src sh
-xcape -e 'Control_L=Escape'
-#+end_src
-
-(Of course, I need xcape in my system packages.)
-#+name: nixos-section
-#+begin_src nix
-{
-  environment.systemPackages = [ pkgs.xcape ];
-}
-#+end_src
-
-*** Redshift
-    Redshift adjusts the color temperature of the screen according to the position of the sun.
-
-    Blue light blocks [[https://en.wikipedia.org/wiki/Melatonin][melatonin]] (sleep harmone) secretion, so you feel less sleepy when you stare at computer screen.
-    Redshift blocks some blue light (making screen more red), which should improve melatonin secretion and restore sleepiness (which is a good thing).
+Blue light blocks [[https://en.wikipedia.org/wiki/Melatonin][melatonin]] (sleep harmone) secretion, so you feel less sleepy when you stare at computer screen.
+Redshift blocks some blue light (making screen more red), which should improve melatonin secretion and restore sleepiness (which is a good thing).
 
 #+name: nixos-section
 #+begin_src nix
@@ -1279,9 +1382,9 @@ xcape -e 'Control_L=Escape'
 }
 #+end_src
 
-** Look and Feel
-*** Qt theme
-    This makes apps look like in KDE:
+* Look and Feel
+** Qt theme
+This makes apps look like in KDE:
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1311,7 +1414,7 @@ in {
 })
 #+end_src
 
-**** TODO Find a way to make deadbeef use oxygen theme
+*** TODO Find a way to make deadbeef use oxygen theme
 The theme has some issues with deadbeef, so I install adwaita icons to make deadbeef usable.
 #+name: nixos-section
 #+begin_src nix
@@ -1322,7 +1425,7 @@ The theme has some issues with deadbeef, so I install adwaita icons to make dead
 }
 #+end_src
 
-*** Fonts
+** Fonts
 
 I'm not a font guru, so I just stuffed a bunch of random fonts in here.
 
@@ -1346,24 +1449,70 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
 }
 #+end_src
 
-** Applications
-    Here go applications (almost) every normal user needs.
-*** KDE apps
-    I don't use full KDE but some apps are definitely nice.
+** HiDPI
+These are for omicron-only.
+
+#+begin_src fundamental :tangle .Xresources
+Xft.dpi: 276
+Xcursor.size: 64
+#+end_src
+
+#+name: machine-omicron
+#+begin_src nix
+{
+  i18n = {
+    consolePackages = [
+      pkgs.terminus_font
+    ];
+    consoleFont = "ter-132n";
+  };
+}
+#+end_src
+
+#+name: machine-omicron
+#+begin_src nix
+{
+  boot.loader.grub.gfxmodeEfi = "1024x768";
+}
+#+end_src
+
+#+name: machine-omicron
+#+begin_src nix
+{
+  services.xserver.dpi = 276;
+}
+#+end_src
+
+* Applications
+Here go applications (almost) every normal user needs.
+** GPG
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [
+    pkgs.gnupg
+  ];
+  programs.gnupg.agent = {
+    enable = true;
+  };
+}
+#+end_src
+** KDE apps
+I don't use full KDE but some apps are definitely nice.
 #+name: nixos-section
 #+begin_src nix
 {
   environment.systemPackages = [
     pkgs.gwenview
     pkgs.dolphin
-    pkgs.kde4.kfilemetadata
+    pkgs.kdeFrameworks.kfilemetadata
     pkgs.filelight
     pkgs.shared_mime_info
   ];
 }
 #+end_src
 
-    KDE apps might have issues with mime types without this:
+KDE apps might have issues with mime types without this:
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1371,8 +1520,31 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
 }
 #+end_src
 
+** Browsers
+*** Google Chrome
+Google Chrome used to be my default browser and I still use it from time to time.
+
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [
+    pkgs.google-chrome
+  ];
+}
+#+end_src
 *** Firefox
-    Though my default browser is google-chrome, it has issues with Java plugin, so I use firefox for that. I also use Extended Support Release, which still supports Java.
+I use Firefox Quantum as my default browser now.
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [
+    pkgs.firefox-devedition-bin
+  ];
+}
+#+end_src
+
+I also need an old Firefox with Java support. I use Firefox Extended Support Release for that. It clashes with firefox-devedition, so I do some renaming .
+
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1380,12 +1552,16 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
     icedtea = true;
   };
 
-  environment.systemPackages = [ pkgs.firefox-esr ];
+  environment.systemPackages = [
+    (pkgs.runCommand "firefox-esr" { preferLocalBuild = true; } ''
+      mkdir -p $out/bin
+      ln -s ${pkgs.firefox-esr}/bin/firefox $out/bin/firefox-esr
+    '')
+  ];
 }
 #+end_src
-
-*** Zathura
-    Zathura is a cool document viewer with Vim-like bindings.
+** Zathura
+[[https://pwmt.org/projects/zathura/][Zathura]] is a cool document viewer with Vim-like bindings.
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1400,10 +1576,17 @@ Enable incremental search (Zathura's config goes to =~/.config/zathura/zathurarc
 set incremental-search true
 #+end_src
 
-*** Slock
-    [[http://tools.suckless.org/slock/][Slock]] is a simple X display locker and should probably not crash as xscreensaver does.
+These are my rebinding for Workman layout (swap j/k):
+#+begin_src fudamental :tangle .config/zathura/zathurarc :padline no
+map j scroll up
+map k scroll down
+#+end_src
 
-    Slock tries to disable OOM killer (so the locker is not killed when memory is low) and this requires a suid flag for executable. Otherwise, you get the following message:
+** Screen locking
+*** Slock
+[[http://tools.suckless.org/slock/][Slock]] is a simple X display locker and should probably not crash as xscreensaver does.
+
+Slock tries to disable OOM killer (so the locker is not killed when memory is low) and this requires a suid flag for executable. Otherwise, you get the following message:
 #+begin_src fundamental
 slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 #+end_src
@@ -1419,41 +1602,49 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 }
 #+end_src
 
-*** Other applications
-    Don't require additional setup.
+*** xss-lock
+[[https://bitbucket.org/raymonad/xss-lock][xss-lock]] is a small utility to plug a screen locker into screen saver extension for X. This automatically activates selected screensaver after a period of user inactivity, or when system goes to sleep.
+
+#+begin_src nix
+{
+  environment.systemPackages = [
+    pkgs.xss-lock
+  ];
+}
+#+end_src
+
+** Other applications
+Don't require additional setup.
 
 #+name: nixos-section
 #+begin_src nix
 {
   environment.systemPackages = [
-    pkgs.google-chrome
-    pkgs.skype
     pkgs.libreoffice
     pkgs.qbittorrent
     pkgs.calibre
     pkgs.mnemosyne
     pkgs.deadbeef
-    pkgs.wine
+
     pkgs.vlc
     pkgs.mplayer
     pkgs.smplayer
-    pkgs.gparted
-    pkgs.unetbootin
-    pkgs.kvm
-    pkgs.thunderbird
-    pkgs.xss-lock
+
     pkgs.alarm-clock-applet
     pkgs.pass
 
     # Used by naga setup
     pkgs.xdotool
+
+    pkgs.hledger
+    pkgs.drive
   ];
 }
 #+end_src
 
-** Development
-*** Editors
-    I'm a seasoned Vim user, but I've switched to emacs now.
+* Development
+** Editors
+I'm a seasoned Vim user, but I've switched to emacs.
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1464,7 +1655,7 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 }
 #+end_src
 
-    The following packages are needed for emacs plugins:
+The following packages are needed for emacs plugins:
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1477,9 +1668,9 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 }
 #+end_src
 
-*** rxvt-unicode
+** rxvt-unicode
 
-   I use urxvt as my terminal emulator:
+I use urxvt as my terminal emulator:
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1489,16 +1680,16 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 }
 #+end_src
 
-   Urxvt gets its setting from =.Xresources= file. If you ever want to reload it on-the-fly, type the following (or press =C-c C-c= if you're reading this document in emacs now):
+Urxvt gets its setting from =.Xresources= file. If you ever want to reload it on-the-fly, type the following (or press =C-c C-c= if you're reading this document in emacs now):
 #+begin_src sh
 xrdb ~/.Xresources
 #+end_src
 
 #+RESULTS:
 
-**** General setup
+*** General setup
 
-    See [[http://pod.tst.eu/http://cvs.schmorp.de/rxvt-unicode/doc/rxvt.1.pod][rxvt-unicode documentation]] for the full reference.
+See [[http://pod.tst.eu/http://cvs.schmorp.de/rxvt-unicode/doc/rxvt.1.pod][rxvt-unicode documentation]] for the full reference.
 
 #+begin_src conf-xdefaults :tangle .Xresources :padline no
 urxvt.loginShell:         true
@@ -1511,23 +1702,23 @@ urxvt.scrollTtyKeypress:  true
 urxvt.secondaryScroll:    true
 #+end_src
 
-    The next piece disables annoying message when pressing Ctrl+Shift:
+The next piece disables annoying message when pressing Ctrl+Shift:
 #+begin_src conf-xdefaults :tangle .Xresources
 urxvt.iso14755: False
 #+end_src
 
-    +Copy-paste with Ctrl+Shift+C, Ctrl+Shift+V:+
++Copy-paste with Ctrl+Shift+C, Ctrl+Shift+V:+
 
-    From [[https://github.com/muennich/urxvt-perls][urxvt-perls]]:
-    #+begin_quote
-    Since version 9.20 rxvt-unicode natively supports copying to and pasting from the CLIPBOARD buffer with the Ctrl-Meta-c and Ctrl-Meta-v key bindings. The clipboard.autocopy setting is provided by the selection_to_clipboard extension shipped with rxvt-unicode.
-    #+end_quote
+From [[https://github.com/muennich/urxvt-perls][urxvt-perls]]:
+#+begin_quote
+Since version 9.20 rxvt-unicode natively supports copying to and pasting from the CLIPBOARD buffer with the Ctrl-Meta-c and Ctrl-Meta-v key bindings. The clipboard.autocopy setting is provided by the selection_to_clipboard extension shipped with rxvt-unicode.
+#+end_quote
 
-    That means, I don't need perl extensions at all.
+That means, I don't need perl extensions at all.
 
-**** Font
+*** Font
 
-    I use Terminus font.
+I use Terminus font.
 
 #+name: nixos-section
 #+begin_src nix
@@ -1545,9 +1736,9 @@ urxvt.iso14755: False
 URxvt.font: xft:Terminus:normal:size=12
 #+end_src
 
-**** Color theme
+*** Color theme
 
-    I like Molokai color theme.
+I like Molokai color theme.
 
 #+begin_src conf-xdefaults :tangle .Xresources
 URxvt*background: #101010
@@ -1570,7 +1761,7 @@ URxvt*color14:    #4eb4fa
 URxvt*color15:    #d0d0d0
 #+end_src
 
-*** fish
+** fish
 
 [[https://fishshell.com/][fish]] is a cool shell, I use it as my default for day-to-day work.
 
@@ -1582,7 +1773,7 @@ URxvt*color15:    #d0d0d0
 }
 #+end_src
 
-**** Show QR codes
+*** Show QR codes
 
 The next section goes to =.config/fish/functions/showqr.fish=. That's a function I use for displaying arbitrary text (mainly passwords stored with =pass=) as a QR code without any temporary files. (=tr= is used to drop trailing newline.)
 
@@ -1603,8 +1794,8 @@ It uses =qrencode= and =feh= packages:
 }
 #+end_src
 
-*** Zsh
-    Zsh is my secondary shell. I use it when I need sh compatibility. (fish is not sh compliant.)
+** Zsh
+Zsh is my secondary shell. I use it when I need sh compatibility. (fish is not sh compliant.)
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1612,7 +1803,7 @@ It uses =qrencode= and =feh= packages:
 }
 #+end_src
 
-**** Prompt
+*** Prompt
 #+begin_src shell-script :tangle .zshrc :padline no
 source $HOME/.zsh/git-prompt/zshrc.sh
 
@@ -1625,7 +1816,7 @@ RPROMPT="[%?] %T"
 git submodule update --init --recursive
 #+end_src
 
-**** Aliases
+*** Aliases
     Nothing special, but ~g=git~ is a real timesaver.
 #+begin_src shell-script :tangle .zshrc
 alias ls='ls --color=auto'
@@ -1634,7 +1825,7 @@ alias grep='grep --color=auto'
 alias g="git"
 #+end_src
 
-**** PATH
+*** PATH
     Install stuff in =~/.local/=; =~/bin/= is for my helper scripts (linked to =bin= directory in dotfiles repo).
 
 #+begin_src shell-script :tangle .zshrc
@@ -1644,7 +1835,7 @@ export PATH="${HOME}/.local/bin:${PATH}"
 export LD_LIBRARY_PATH="${HOME}/.local/lib:${LD_LIBRARY_PATH}"
 #+end_src
 
-**** Other
+*** Other
     This part was written long time ago; I'm not sure I understand and use all of it:
 #+begin_src shell-script :tangle .zshrc
 autoload -U compinit promptinit
@@ -1731,7 +1922,7 @@ fi
 #+end_src
     /TODO review this/
 
-*** git
+** git
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1742,7 +1933,7 @@ fi
 }
 #+end_src
 
-    Basic info: my name, email, ui, editor, [[https://git-scm.com/blog/2010/03/08/rerere.html][rerere]].
+Basic info: my name, email, ui, editor, [[https://git-scm.com/blog/2010/03/08/rerere.html][rerere]].
 
 #+begin_src gitconfig :tangle .gitconfig :padline no
 [user]
@@ -1774,7 +1965,7 @@ fi
     enabled = true
 #+end_src
 
-    Configure signing with [[https://www.gnupg.org/][gpg]].
+Configure signing with [[https://www.gnupg.org/][gpg]].
 #+begin_src gitconfig :tangle .gitconfig
 [user]
     signingkey = EB3066C3
@@ -1786,7 +1977,7 @@ fi
     gpgSign = if-asked
 #+end_src
 
-    I have *LOTS* of aliases:
+I have *LOTS* of aliases:
 
 #+begin_src gitconfig :tangle .gitconfig
 [alias]
@@ -1831,7 +2022,7 @@ Always push to github with ssh keys instead of login/password.
     pushInsteadOf = https://github.com/
 #+end_src
 
-*** tmux
+** tmux
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1877,8 +2068,8 @@ bind r source-file ~/.tmux.conf \; display-message "Config reloaded..."
 set-window-option -g automatic-rename
 #+end_src
 
-*** Embedded
-    The following packages provide a termiinal emulator, Open On-Chip Debugger, telnet, and logic analyzer.
+** Embedded
+The following packages provide a termiinal emulator, Open On-Chip Debugger, telnet, and logic analyzer.
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1891,7 +2082,7 @@ set-window-option -g automatic-rename
 }
 #+end_src
 
-    To allow user use openocd without sudo, we should add him to =plugdev= group and install openocd udev rules:
+To allow user use openocd without sudo, we should add him to =plugdev= group and install openocd udev rules:
 
 #+name: nixos-section
 #+begin_src nix
@@ -1899,10 +2090,10 @@ set-window-option -g automatic-rename
   users.extraGroups.plugdev = { };
   users.extraUsers.rasen.extraGroups = [ "plugdev" "dialout" ];
 
-  services.udev.packages = [ pkgs.openocd ];
+  services.udev.packages = [ pkgs.openocd pkgs.android-udev-rules ];
 }
 #+end_src
-*** Other terminal goodies
+** Other terminal goodies
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1919,7 +2110,6 @@ set-window-option -g automatic-rename
     pkgs.file
     pkgs.which
     pkgs.whois
-    pkgs.gnupg
     pkgs.utillinuxCurses
 
     pkgs.patchelf
@@ -1933,6 +2123,7 @@ set-window-option -g automatic-rename
 }
 #+end_src
 
+** Man pages
 This install a number of default man pages for the linux/posix system.
 #+begin_src nix
 {
@@ -1945,9 +2136,9 @@ This install a number of default man pages for the linux/posix system.
 }
 #+end_src
 
-** Games
-*** Steam
-    We need the following package:
+* Games
+** Steam
+We need the following package:
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1957,7 +2148,7 @@ This install a number of default man pages for the linux/posix system.
 }
 #+end_src
 
-    It's also required to enable 32-bit support for opengl and pulseaudio:
+It's also required to enable 32-bit support for opengl and pulseaudio:
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1966,8 +2157,8 @@ This install a number of default man pages for the linux/posix system.
 }
 #+end_src
 
-*** Nethack
-    I play nethack rarely, but still nice to have my setting in sync.
+** Nethack
+I play nethack rarely, but still nice to have my setting in sync.
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1977,7 +2168,7 @@ This install a number of default man pages for the linux/posix system.
 }
 #+end_src
 
-   The following sets my default name, selects a dog, and disables auto-pickup; the last line makes interface a bit friendlier.
+The following sets my default name, selects a dog, and disables auto-pickup; the last line makes interface a bit friendlier.
 
 #+begin_src fundamental :tangle .nethackrc :padline no
 OPTIONS=name:rasen
@@ -1988,10 +2179,10 @@ OPTIONS=!autopickup
 OPTIONS=lit_corridor, DECgraphics, showscore, showexp, time, color, hilite_pet
 #+end_src
 
-** Meta
-*** Setup
+* Meta
+** Setup
 
-    There is a =setup.sh= script in this directory. It just links all files to =$HOME=:
+There is a =setup.sh= script in this directory. It just links all files to =$HOME=:
 #+begin_src sh :shebang "#!/bin/sh" :tangle setup.sh :padline no
 FILES=".vimrc .vim .nvimrc .nvim .gitconfig .zshrc .zsh .tmux.conf .Xresources .config/awesome .config/nvim .nethackrc .emacs.d .ssh bin .config/zathura .irssi .config/xkb .config/fish .msmtprc .notmuch-config .mbsyncrc"
 
@@ -2026,8 +2217,8 @@ for FILE in $FILES; do
 done
 #+end_src
 
-**** Install fisherman
-     [[https://github.com/fisherman/fisherman][Fisherman]] is a plugin for fish.
+*** Install fisherman
+[[https://github.com/fisherman/fisherman][Fisherman]] is a plugin manager for fish.
 #+begin_src sh :tangle setup.sh
 if [ ! -e "$DEST/.config/fish/functions/fisher.fish" ]; then
     read -r -p "Install fisherman and all plugins? [y/N] " response
@@ -2041,6 +2232,66 @@ if [ ! -e "$DEST/.config/fish/functions/fisher.fish" ]; then
 fi
 #+end_src
 
-# Local Variables:
-# org-src-preserve-indentation: t
-# End:
+* Private                                                             :crypt:
+-----BEGIN PGP MESSAGE-----
+
+hQEMA0dwtg6M7gMLAQgAi/FOQZSf4wdRUx66ZR4CN273S+YQ8h+F6EfPQt3pl2Ti
+At3LKtYK9Yec9orwz53WtGI9/sdC9PudZLWdwrpDgGM6e5ZA0uWglfNxTn7J2X48
+4vuOItl0kJm5bF2LKd/3nAejcJ5JKyRs5OB+iLwlGSBJS4ZkTOa0+sfcc8IWpGEI
+BDQbDGCuc15bOivIvYX7r16hPXQU5hEeVbl/zxU0onOhyWGloX89NnKfV/dHz7Qa
+yuGNFAYsx1ULLLirBWETPNNyWYsT72fLFdF4j801I3QdMKp5/bsnoWqHvvIsIe+K
+lcJK0Tq00HWBWYVDeITQzYrMmxe+HWH6WYiPP4nW4tLrAafsBhSwHaNa2TA3+fd6
+HLBvmyzkwlsRnJuK5ptbHzhC1wIWTndSw9ns8v5Hi1S2bKm4FBo2gYUJsxgbt/tl
+alMAn5B7h+nwkeRrBwvOrCn/gvtkAEG+prdpibSK5kCszKa5OieGaYlLnKTgodNg
+E7G8MVFygn6aWCPYKjJjwBMCdJGJs8gfMwox2kAyCMnohkqUVmGIVCcY3179BzF1
+BNt0HpHMr8GHpdLtKPCo96rbupVZeZt9QmJEa0uelkdsOTYjoGp16sdwvwg90eRW
+tnqq1dbMBLJSaclk3XtvNFB1WBWijxNg5mVaybt18WiYzvAvsIFDpiFsUZ6eQn/j
+90GxcCq6ioN6eLVLzEGuaTGuJz74wfQxX2RfQRvL1y2NU1FzuYs9APMMOEEk0FU9
+AE0uL1x1TuonDgf8gSFRP/y2QWBa75Gkl4DlZOm5zuaimKDqUG1/K8HhAuawFtvN
+TAfdK7cX6vPsssLd250PpIKL4ZMwEW6WntZIlF15sHf8mMVJ+GZQNVTZ8VeiuXvC
+OufDBPdO/xDw4zF/q2V6AoLIQIeq24ozlE4/JkiYYdzAXEAiGbf6MKPOd7aKw9Og
+AAqih2TMaCcRfJ+Z8HBeddi2qADoR5vxBZLARzQ0SIeEZrxuCzyNVVYJo9FlFRUh
+mxLdKh8gDEErPRhZuq3fIl56AYcBIYLoaMQgtvZqPBIueaHvdzbE7m7bfd/Pr9u1
+2tvkQX8r3D0TQU7m8VEZg2xq8BEIHOrLdFFhoG+negkDyi0mI68hhfqbymoH1yV7
+EXGTmd8LhkYYQjPzZ5ZJnpPB43V7wHt2wT7MOfey/WVwvIisQvMoCcQbtCe/cs1D
+tmCqaIXvJ7tu1vL3bNpISFS6OyEE4GWUsa+UsSoNe5l7Yb9HzJm1gUVGhHvwoPjG
+oblOgBbvdb8tbcfmaHF58yFto55sld6doOp/oXW2SHQ1fTsjtkRfYAi77pmvjY07
+o7+6v5FKP4IdRl8QcejGg4ZiFMPMi+LF5N8zei+ZBxQPlzFNmhI4xkN/ZlawzTJM
+qxczYygDe/omGe66RVRdt5zUqzgPqKdw9dVF7Z0Qk3GmRQ3lS/hIN3b3/4K1H+kJ
+a4BxAxzD9Kh3f0TmsmzK1UbW0k1KVirm8h+FjexW2pVE08bMCVAlMDIanG9SukSJ
+wEOkaFmSOKH5SlXpF2V4IgLDj6Jx04IcHPNBjCRItkDwwTcCQ4ceaoSlhYYaP9t2
+7W7/mWHuluGpAaOqm0P3C+RYkwHtDrILOB0LleJhdRLPSulhQX5UlL5Lr1RZd1h5
+ZJ2Yiy+yB0zXGusndrRHPmCnvrQqB8TUABflmC7N22DgJiK6YCOlsW5h9Ezx4iW5
+RoKkMHoDQ7sYWxl80lOrR+0kOR02ixoel3aBwIPYHHaTX9GIvaEBZ9v6oUo/zR1U
+6Hc31ewsJmSbJXxiHkJYS0yApvsJkEF7BcqgbmYPdww2CunnmpKmVDV293E2SMPU
+3lFa09+icXmutWuej1PXHmLve9w88rfvoifMEjVxUAenSqFUz2QXLxcb4YiXQzOm
+ibtmr66mrY9Vi49B2lT2cuHkZWgyFS27B6d1eluSOEL3kSgs0xDXc4e3UHpAflb7
+3I1EIN/6dyc06WNjeHeS3h4njhZjW/DAQrRF/Sxqpt8WyZpJDgtGswXwGHSyF8RB
+L1hZMtVu0dXkWIifs+v9jPYxNrQZlyIckOqAT6aGkulJPXm7oOJyegfZOfdrI27X
+TYRDc7zoIErZV6uNC1xmN6xUF/b2ilDJj/E26mpFCkGdxIIdGqCw+qRROjiZk8yr
+qNHbkLLVSNf7ISDiYQ1fIcM7qS4o3tEp/Q9i2cnnih3iDmK2A5yrLDSPKHa6snFZ
+JRsbxRTWa1BOdexmbtlAt5bv706c95qMMmfxA/QH6o5/bsG/VVZAkejv1VcgJ/CQ
+QPTmJ/0zD2R1xqsRNlamt2uq1xDuXhE4QrrWXEqUkO36LHPpKyeYxQYp/2/L+GDy
+DhNQ/FATQ1W4HjTF0Cgyw3xetaEAwY+8DCtpATpbmIF6o4L1IGjBf2Y0EcAXv/lJ
+BhDdD4XxYM4UzvNuB6qPX3lTULwiGSWGLwFHcQJ1ypRFkme/qPiIsmkCyTHyTRID
+WEYqM5mOUdoNVAnTSmuLw5QZKcMldfPRTQVKglnT2Ava/FKpuPpPPxUpU4gcSNqO
+4ZK/hiI+JN74J/jZos/DRdZCLx2Lj1oS7NfLqtABLQQHtOmLnMVnDTvzLpeBjOM7
+wnyoYotKebGkEXdDqeY9qxH/PRc/ayyuNMdNysgwFfgWx9SxsxsN3bdJQ63aGwSA
+DLpPzYxb7/figje9Y8l9VJlJKPpdCYgFm9G2aWYzxBwZonh4iaF/i8EhUW2AMuL9
+9XC/B8ze9XJTM0okj0nzCo1atZK/UEnG5usxQNCxojBKvoYTDOYt/f33YSVsWs8n
+8P70CrBiaEA5b/Q43TEdf6JL1eZj3m6NRiU1x66tZu3s3qcwqxN3JNJtqa6pQA71
+6mBSoxiBgMGqvbiuMQW7zlgyrZuPAFhFTymoINmRRh5ofJiic7qEMAmxBvFea5Cp
+R+4bsM+oycLggK//f1lC22/o2Bdic8MkgJRfo6Xv9H5DNG+0F0mOPNgZCWeuUfFW
+/2mA9b4qbYqVjYBssboGkIBkpdWA4ylE6A91/w+DHOi2FJpvvfvh7gXv6K1ZdBAB
+RCt7mctSDxn6w78uM7DGHKTA/GNCy3J9Vkj6mj5UNZe0stPR8YhkP9BILM96Vs/s
+LOADLW/nVC+XWmPJ+btonh5235ZBzS9MjxYieNBncsweUK1rSqpk2zpV9qcEt/9N
+yiKH9+LuADNLXp36M9H1GKbRm1TB2loIWRe4MiSnU2sKXBcIkuDTRdTHwvs1Npjh
+jGm7uZGFWlojp21tww2T5LBNlHMujYAuPxbcS0xlzFVuzgfUWvzmCUlRp1zT4Nyd
+NYgqkMrFnWeQK9+/bzJqwuywLtRIiR1IWiXIepBbivYVrX2u7/xBzLOlWKcKY9hx
+leelthSzT074W25kpeR5hxUQlZyn/iXjxFpndHrfL4IBbiGOZMFeGYAhK9Apj1L7
+UNHC+VjqtvwpVy2vxXH8TJSNyi2yMB6+a0gLX82DAVaP0b+43iqkyTayYPi8UfvI
+WAP44ScJcxSV1mYEj+BWWfFvXgJfVDPkJXCQkWNJvKbHBGIg3ciibyT4Y9QpQzHi
+CPA/RoXBsZUMwqUpUfd3mukxPDvXSMceqjsSVEZp1JzDyIBqGAd4sus3PaxM1uwm
+bpAykhzO82qCsYwu12czEFFEHltFOwpZr0eZRAATkA==
+=7Hzf
+-----END PGP MESSAGE-----

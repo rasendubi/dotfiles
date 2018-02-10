@@ -146,6 +146,15 @@ cnoremap <C-E> <lt>Esc>
 nnoremap H ^
 nnoremap L $
 vnoremap L g_
+
+nnoremap j k
+nnoremap k j
+nnoremap gj gk
+nnoremap gk gj
+vnoremap j k
+vnoremap k j
+vnoremap gj gk
+vnoremap gk gj
 " }}}
 
 " Window manipulation {{{

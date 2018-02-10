@@ -335,7 +335,7 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
              browse-url-of-file)
   :config
   (setq browse-url-browser-function 'browse-url-generic
-        browse-url-generic-program "google-chrome-stable"))
+        browse-url-generic-program "firefox-devedition"))
 
 (use-package compile
   :config
@@ -572,8 +572,8 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   ;; Use Nix for default build/test command
   (projectile-register-project-type 'haskell-stack
                                     '("stack.yaml")
-                                    "stack build --nix"
-                                    "stack build --nix --test")
+                                    :compile "stack build --nix"
+                                    :test "stack build --nix --test")
 
   (define-key haskell-mode-map [f8] 'haskell-navigate-imports)
   (define-key haskell-mode-map (kbd "C-c C-b") 'haskell-compile)
@@ -650,7 +650,9 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 (use-package markdown-mode
   :mode ("\\.\\(markdown\\|mdown\\|md\\)$" . markdown-mode)
   :init
-  (add-hook 'markdown-mode-hook 'visual-line-mode))
+  (add-hook 'markdown-mode-hook 'visual-line-mode)
+  :config
+  (setq markdown-fontify-code-blocks-natively t))
 
 (use-package edit-indirect
   :after markdown-mode)
@@ -736,20 +738,81 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (defun rasen/org-files-in-dir (dir)
     (f-files dir
              (lambda (file) (f-ext? file "org"))
-             t))
+             nil))
 
   ;; save CLOSED timestamp when task is done
   (setq org-log-done t)
+
+  ;; Do not indent inside tasks
+  (setq org-adapt-indentation nil)
 
   ;; (setcdr (assoc "\\.pdf\\'" org-file-apps) "zathura %s")
 
   (setq org-directory "~/org"
         org-default-notes-file "~/org/refile.org"
-        org-agenda-files '("~/org/notes.org" "~/org/heutagogy.org"))
+        org-agenda-files (rasen/org-files-in-dir "~/org"))
 
   (setq-default org-todo-keywords
-                '((sequence "SOMEDAY" "TODO" "|" "DONE" "CANCELED")))
+                '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d)")
+                  (sequence "|" "CANCELED(c@)")
+                  (sequence "WAIT(w@)" "|")))
+  (setq-default org-use-fast-todo-selection t)
+  (setq-default org-todo-keyword-faces
+                '(("TODO"     . (:foreground "dodger blue" :weight bold))
+                  ("NEXT"     . (:box t :foreground "red" :weight bold))
+                  ("WAIT"     . (:box t :foreground "magenta" :weight bold))
+                  ("DONE"     . (:foreground "grey" :weight bold))
+                  ("CANCELED" . (:foreground "gray" :weight bold))))
   (setq-default org-todo-repeat-to-state "TODO")
+
+  (evil-define-key 'normal org-mode-map (kbd "SPC t") 'org-todo)
+
+  (setq org-agenda-span 6
+        org-agenda-start-day "-1d")
+
+  (setq org-tags-exclude-from-inheritance '("PROJECT"))
+  (setq org-stuck-projects
+        '("+PROJECT/-DONE-CANCELED-WAIT" ("NEXT" "WAIT") nil ""))
+
+  ;; default work-view
+  ;; - all work-related NEXT and WAIT tasks (without WAIT in initiatives?)
+  ;; next items
+  ;; non-work view
+  (setq org-agenda-custom-commands
+        '(("N" todo "NEXT")
+          ("n" todo-tree "NEXT")
+          ("k" "Kaa view"
+           ((agenda)
+            (tags "+TODO=\"NEXT\"|+TODO=\"WAIT\"-Initiative"))
+           ((org-agenda-files '("~/org/kaa.org"))
+            (org-agenda-start-with-clockreport-mode t)
+            (org-agenda-clockreport-parameter-plist '(:step day :stepskip0 :fileskip0))))
+          ("h" tags "-CATEGORY={kaa}+TODO=\"NEXT\"")
+          ("p" tags "+PROJECT/-DONE-CANCELED")
+          ))
+
+  (require 'org-feed)
+  (setq org-feed-default-template "* TODO %h\n:PROPERTIES:\n:CREATED: %U\n:END:\n%a")
+  (setq org-feed-alist
+        '(("Lambda the Ultimate"
+           "http://lambda-the-ultimate.org/rss.xml"
+           "~/org/feeds.org" "LtU")
+          ("Reddit > Programming"
+           "https://www.reddit.com/r/programming/top/.rss"
+           "~/org/feeds.org" "/r/programming"
+           :parse-feed org-feed-parse-atom-feed
+           :parse-entry org-feed-parse-atom-entry)
+          ("Reddit > Rust"
+           "https://www.reddit.com/r/rust/top/.rss"
+           "~/org/feeds.org" "/r/rust"
+           :parse-feed org-feed-parse-atom-feed
+           :parse-entry org-feed-parse-atom-entry)
+          ("Reddit > Haskell"
+           "https://www.reddit.com/r/haskell/top/.rss"
+           "~/org/feeds.org" "/r/haskell"
+           :parse-feed org-feed-parse-atom-feed
+           :parse-entry org-feed-parse-atom-entry)
+          ))
 
   ;; org-drill
   (require 'org-drill)
@@ -774,24 +837,26 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
     (save-restriction (apply f r)))
   (advice-add 'org-update-dblock :around #'rasen/advice-org-update-dblock)
 
+  (defun rasen/strip-url-from-title (title)
+    (message "stripping: %s" title)
+    (replace-regexp-in-string " \\[[^]]*\\]\\[[^]]*\\]$" "" title))
+
   ;; org-capture
   (setq org-capture-templates
         `(("u"
            "Task: Read this URL"
            entry
-           (file+headline "tasks.org" "Articles To Read")
-           ,(concat "* TODO Read article: '%:description'\nURL: %c\n\n")
-           :empty-lines 1
+           (file+headline "refile.org" "Articles To Read")
+           ,(concat "* TODO %(rasen/strip-url-from-title \"%:description\")\n%:link\n")
            :immediate-finish t)
 
           ("w"
            "Capture web snippet"
            entry
            (file+headline "my-facts.org" "Inbox")
-           ,(concat "* Fact: '%:description'       :"
+           ,(concat "* Fact: '%(rasen/strip-url-from-title \"%:description\")'       :"
                     (format "%s" org-drill-question-tag)
-                    ":\n:PROPERTIES:\n:DATE_ADDED: %u\n:SOURCE_URL: %c\n:END:\n%i\n%?\n")
-           :empty-lines 1
+                    ":\n:PROPERTIES:\n:CREATED: %U\n:SOURCE_URL: %:link\n:END:\n%i\n%?\n")
            :immediate-finish t)
 
           ("f"
@@ -800,15 +865,20 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
            (file+headline "my-facts.org" "Inbox")
            ,(concat "* Fact: '%f'       :"
                     (format "%s" org-drill-question-tag)
-                    ":\n:PROPERTIES:\n:DATE_ADDED: %u\n:SOURCE_URL: [[%l][%f]]\n:END:\n%i\n%?\n")
-           :empty-lines 1
+                    ":\n:PROPERTIES:\n:CREATED: %U\n:SOURCE_URL: [[%l][%f]]\n:END:\n%i\n%?\n")
            :immediate-finish t)
 
           ("t" "todo" entry (file "~/org/refile.org")
-           "* TODO %?\n%U\n%a\n" :clock-in t :clock-resume t)
+           "* TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n" :clock-in t :clock-resume t)
+
+          ("m" "meeting" entry (file "~/org/refile.org")
+           "* %?   :Meeting:\n" :clock-in t :clock-resume t)
 
           ("n" "note" entry (file "~/org/refile.org")
-           "* %? :NOTE:\n\n%a\n" :clock-in t :clock-resume t)))
+           "* %?\n\n%a\n" :clock-in t :clock-resume t)))
+
+  ;; Instanly go into insert mode on capture.
+  (add-hook 'org-capture-mode-hook 'evil-insert-state)
 
   ;; %l in org-capture fails with multiline context, so use only the
   ;; first line as a context
@@ -828,6 +898,8 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
           (org-agenda-files :maxlevel . 2)
           (rasen/org-refile-files :maxlevel . 1)))
 
+  (setq-default org-archive-default-command 'org-archive-to-archive-sibling)
+
   ;; org-babel
   (org-babel-do-load-languages 'org-babel-load-languages
                                '((emacs-lisp . t)
@@ -835,7 +907,40 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
                                  (ditaa . t)
                                  (plantuml . t)))
   (setq org-ditaa-jar-path "~/.nix-profile/lib/ditaa.jar")
-  (setq org-plantuml-jar-path "~/.nix-profile/lib/plantuml.jar"))
+  (setq org-plantuml-jar-path "~/.nix-profile/lib/plantuml.jar")
+
+  (org-add-link-type "irfc" 'irfc-visit)
+
+  (require 'org-crypt)
+  (org-crypt-use-before-save-magic)
+  (setq org-tags-exclude-from-inheritance '("crypt"))
+  (setq org-crypt-key "rasen.dubi@gmail.com")
+  (add-hook 'org-babel-pre-tangle-hook 'org-decrypt-entries t)
+
+  ;; variable-pitch fonts
+  (defun rasen/adjoin-to-list-or-symbol (element list-or-symbol)
+    (let ((list (if (not (listp list-or-symbol))
+                    (list list-or-symbol)
+                  list-or-symbol)))
+      (require 'cl-lib)
+      (cl-adjoin element list)))
+
+  (dolist (face '(org-code
+                  org-block
+                  org-block-begin-line
+                  org-table
+                  org-special-keyword
+                  org-tag
+                  ; org-block-background
+                  ))
+    (set-face-attribute
+     face nil
+     :inherit
+     (rasen/adjoin-to-list-or-symbol
+      'fixed-pitch
+      (face-attribute face :inherit))))
+
+  )
 
 (use-package org-download
   ;; TODO: bind screenshot command to <print> in org-mode
@@ -1059,9 +1164,10 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
 
 (use-package irfc
   :commands (irfc-visit irfc-mode)
+  :init
+  (setq-default irfc-assoc-mode t)
   :config
-  (setq irfc-directory "~/tmp"
-        irfc-assoc-mode t))
+  (setq irfc-directory "~/tmp"))
 
 ;; Debugging
 (use-package gud
@@ -1187,8 +1293,8 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :init
   (add-hook 'org-mode-hook
             (lambda ()
-              (setq-local fill-column 100)
-              (visual-fill-column-mode)))
+              (setq-local fill-column 81)
+              (visual-fill-column-mode t)))
   :config
   (setq-default visual-fill-column-center-text t
                 visual-fill-column-fringes-outside-margins nil))
@@ -1257,6 +1363,10 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
            (posting-style
             (name "Alexey Shmalko")
             (address "ashmalko@cybervisiontech.com")))
+          ("KaaIoT/?.*"
+           (posting-style
+            (name "Alexey Shmalko")
+            (address "ashmalko@kaaiot.io")))
           ("Personal/?.*"
            (posting-style
             (name "Alexey Shmalko")
@@ -1265,7 +1375,11 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (setq gnus-fetch-old-headers 'some)
   (setq gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]")
 
-  (setq message-send-mail-f-is-evil t
+  (setq message-sendmail-f-is-evil t
+        message-sendmail-envelope-from nil ; 'header
+        message-sendmail-extra-arguments '("--read-envelope-from")
+
+        mail-specify-envelope-from nil
         send-mail-function 'message-send-mail-with-sendmail
         message-send-mail-function 'message-send-mail-with-sendmail
         sendmail-program "msmtp")
@@ -1339,6 +1453,14 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
    :args (list "-c" (expand-file-name "imapnotify-kaaiot-config.js" dotfiles-directory))
    :tags '(email)
    :kill-signal 'sigkill))
+
+(use-package jinja2-mode
+  :mode "\\.j2$")
+
+(use-package ledger-mode
+  :mode "\\.journal$"
+  :config
+  (setq ledger-binary-path "hledger"))
 
 ;; For use with "Edit with Emacs" chrome plugin.
 ;; https://chrome.google.com/webstore/detail/edit-with-emacs/ljobjlafonikaiipfkggjbhkghgicgoh?hl=en

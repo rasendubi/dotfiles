@@ -205,8 +205,9 @@ end)
 
 -- {{{ Key bindings
 globalkeys = awful.util.table.join(
-    awful.key({ modkey,           }, "s",      hotkeys_popup.show_help,
-              {description="show help", group="awesome"}),
+    -- awful.key({ modkey,           }, "s",      hotkeys_popup.show_help,
+    --           {description="show help", group="awesome"}),
+    awful.key({ modkey,           }, "s", function () client.focus.sticky = not client.focus.sticky  end),
     awful.key({ modkey,           }, "a", function ()
             naughty.notify{ text = selection() }
     end),
@@ -541,7 +542,7 @@ function razer(n, t)
         awful.tag.history.restore()
         return
     end
-    if c.class == 'Google-chrome' or c.class == 'google-chrome' then
+    if c.class == 'Google-chrome' or c.class == 'google-chrome' or c.class == 'Firefox Developer Edition' then
         if n == 1 then
             awful.spawn("xdotool key Alt+Left")
         elseif n == 2 then
