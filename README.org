@@ -174,21 +174,13 @@ There is also Gentoo on the second drive---it's good to keep it bootable.
 }
 #+end_src
 
-Boring stuff: 8 hyper-threads, networking ([[https://launchpad.net/wicd][wicd]]), synaptics (Larry is a laptop).
+Boring stuff: 8 hyper-threads, synaptics (Larry is a laptop).
 
 #+name: machine-larry
 #+begin_src nix
 {
   nix.maxJobs = 8;
   nix.buildCores = 8;
-
-  networking = {
-    hostName = "Larry";
-
-    useDHCP = false;
-    wicd.enable = true;
-    wireless.enable = false;
-  };
 
   services.xserver.synaptics = {
     enable = true;
@@ -279,8 +271,6 @@ This is my corporate desktop computer.
 #+name: machine-ashmalko
 #+begin_src nix
 {
-  networking.hostName = "ashmalko";
-
   nix.maxJobs = 4;
   nix.buildCores = 4;
 }
@@ -427,11 +417,13 @@ This is my small Dell XPS 13.
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+}
 #+end_src
 
 Same LVM on LUKS setup as =ashmalko= uses.
 #+name: machine-omicron
 #+begin_src nix
+{
   boot.initrd.luks.devices = [
     {
       name = "root";
@@ -456,19 +448,13 @@ Same LVM on LUKS setup as =ashmalko= uses.
   swapDevices = [
     { device = "/dev/disk/by-uuid/26a19f99-4f3a-4bd5-b2ed-359bed344b1e"; }
   ];
+}
 #+end_src
 
-Wireless networking.
+Clickpad:
 #+name: machine-omicron
 #+begin_src nix
-  networking = {
-    hostName = "omicron";
-
-    useDHCP = false;
-    wicd.enable = true;
-    wireless.enable = false;
-  };
-
+{
   services.xserver.libinput = {
     enable = true;
     accelSpeed = "0.7";
@@ -813,11 +799,31 @@ nix-shell -p nodePackages.node2nix --run 'node2nix -8 -i node-packages.json 2>&1
 }
 #+end_src
 * Services
+** NetworkManager
+#+name: nixos-section
+#+begin_src nix
+{
+  networking = {
+    hostName = meta.name;
+
+    networkmanager.enable = true;
+
+    # disable wpa_supplicant
+    wireless.enable = false;
+  };
+
+  users.extraUsers.rasen.extraGroups = [ "networkmanager" ];
+
+  environment.systemPackages = [
+    pkgs.networkmanagerapplet
+  ];
+}
+#+end_src
 ** PulseAudio
 Use pulseaudio (multiple sound sinks, skype calls). =pavucontrol= is PulseAudio Volume Control---a nice utility for controlling pulseaudio settings.
 
 Also, Pulseaudio is a requirement for Firefox Quantum.
-#+name: machine-ashmalko
+#+name: nixos-section
 #+begin_src nix
 {
   hardware.pulseaudio = {
@@ -881,15 +887,6 @@ Avahi is needed to allow resolution of =.local= names. For example, you can acce
 }
 #+end_src
 
-The following lines are needed to start avahi-daemon automatically. The default service is wantedBy "if-up.target" which doesn't seem to be activated (maybe because of wicd).
-
-#+name: nixos-section
-#+begin_src nix
-{
-  systemd.services.avahi-daemon.wantedBy = [ "multi-user.target" ];
-  systemd.services.avahi-daemon.after = [ "openvpn-kaa.target" ];
-}
-#+end_src
 ** SSH
 #+name: nixos-section
 #+begin_src nix
@@ -949,29 +946,6 @@ Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
       no-negcache
     '';
   };
-
-  # Put the text in /etc/resolv.conf.head
-  #
-  # That will prepend dnsmasq server to /etc/resolv.conf (dhcpcd-specific)
-  environment.etc."resolv.conf.head".text = ''
-    nameserver 127.0.0.1
-  '';
-
-  # dhclient-specific.
-  #
-  # This prepends local dnsmasq to the list of domain name servers.
-  #
-  # The supersede host-name line resolves the issue when DHCP overrides my machine name.
-  # For more info, see https://support.cumulusnetworks.com/hc/en-us/articles/218289767-Hostname-Configured-in-etc-hostname-Is-Superseded-by-the-DHCP-hostname-Option-
-  systemd.services.wicd.preStart = let
-    dhclient_conf_template = pkgs.writeText "dhclient.conf.template" ''
-      prepend domain-name-servers 127.0.0.1;
-      supersede host-name "$_HOSTNAME";
-    '';
-  in ''
-    mkdir -p /var/lib/wicd/
-    cp ${dhclient_conf_template} /var/lib/wicd/dhclient.conf.template
-  '';
 }
 #+end_src
 
@@ -1605,6 +1579,7 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 *** xss-lock
 [[https://bitbucket.org/raymonad/xss-lock][xss-lock]] is a small utility to plug a screen locker into screen saver extension for X. This automatically activates selected screensaver after a period of user inactivity, or when system goes to sleep.
 
+#+name: nixos-section
 #+begin_src nix
 {
   environment.systemPackages = [
