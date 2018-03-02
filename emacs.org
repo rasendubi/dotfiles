@@ -1,0 +1,1289 @@
+#+PROPERTY: header-args :noweb yes :comments noweb :padline no :results silent
+
+* Configuration infrastructure
+** Bootstrap
+Emacs does not source this file automatically, so I need to instruct it to. Check [[https://orgmode.org/worg/org-contrib/babel/intro.html#emacs-initialization][org-babel documentation]] for more info. The following snippet is an adaptation of that idea and goes to my =.emacs.d/init.el=.
+
+#+begin_src emacs-lisp :tangle .emacs.d/init.el
+;;; init.el --- The start of my configuration
+;;; Commentary:
+;;; Code:
+
+(package-initialize)
+
+(defvar rasen/dotfiles-directory
+  (file-name-as-directory
+   (expand-file-name ".." (file-name-directory (file-truename user-init-file))))
+  "The path to the dotfiles directory.")
+
+(require 'org-install)
+(require 'ob-tangle)
+
+(org-babel-load-file (expand-file-name "emacs.org" rasen/dotfiles-directory))
+;;; init.el ends here
+#+end_src
+
+You might notice that I don't change load-path---that's because my setup relies on =org-plus-contrib= to be installed by NixOS.
+** package
+I use =package= for installing emacs packages (besides a couple of packages installed with Nix). This is standard and comes built-in with emacs.
+
+#+begin_src emacs-lisp
+(require 'package)
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+(add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/") t)
+(add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
+; (package-initialize)
+#+end_src
+** use-package
+[[https://github.com/jwiegley/use-package][use-package]] is a cool emacs library that helps managing emacs configuration making it simpler and more structured. It is the core of my configuration infrastructure and is required
+
+*** Auto-install
+I used to have the following code to auto-install =use-package= on start, but now I install the package with Nix, so it is not needed.
+
+#+begin_src emacs-lisp :tangle no
+(when (not (package-installed-p 'use-package))
+  (package-refresh-contents)
+  (package-install 'use-package))
+#+end_src
+*** Initialize
+#+begin_src emacs-lisp
+(setq use-package-always-ensure t)
+; (setq use-package-verbose t)
+(eval-when-compile
+  (require 'use-package))
+(require 'bind-key)
+#+end_src
+** Other
+Quickly open configuration file.
+
+#+begin_src emacs-lisp
+  (global-set-key
+   (kbd "<f12>")
+   (lambda ()
+     (interactive)
+     (find-file (expand-file-name "emacs.org" rasen/dotfiles-directory))))
+#+end_src
+* Evil
+** General
+#+begin_src emacs-lisp
+(use-package evil
+  :config
+  <<evil-config>>
+  (evil-mode 1))
+#+end_src
+
+A couple of functions to make configuration a little bit easier.
+#+name: evil-config
+#+begin_src emacs-lisp :tangle no
+  (defun nmap (key action)
+    (define-key evil-normal-state-map (kbd key) action))
+  (defun vmap (key action)
+    (define-key evil-visual-state-map (kbd key) action))
+  (defun imap (key action)
+    (define-key evil-insert-state-map (kbd key) action))
+  (defun mmap (key action)
+    (define-key evil-motion-state-map (kbd key) action))
+#+end_src
+
+Use =SPC= as one of leaders.
+
+#+name: evil-config
+#+begin_src emacs-lisp :tangle no
+  (nmap "SPC" nil)
+  (vmap "SPC" nil)
+  (mmap "SPC" nil)
+#+end_src
+
+Hard way: prohibit usage of keybinding I have more efficient binding for.
+#+name: evil-config
+#+begin_src emacs-lisp :tangle no
+  (defmacro rasen/hard-way (key)
+    `(lambda () (interactive) (error "Don't use this key! Use %s instead" ,key)))
+#+end_src
+
+Prohibit usage of arrows.
+#+name: evil-config
+#+begin_src emacs-lisp :tangle no
+  (nmap "<left>"  (rasen/hard-way "h"))
+  (nmap "<up>"    (rasen/hard-way "j"))
+  (nmap "<down>"  (rasen/hard-way "k"))
+  (nmap "<right>" (rasen/hard-way "l"))
+  (mmap "<left>"  (rasen/hard-way "h"))
+  (mmap "<up>"    (rasen/hard-way "j"))
+  (mmap "<down>"  (rasen/hard-way "k"))
+  (mmap "<right>" (rasen/hard-way "l"))
+#+end_src
+
+Swap =.= and =;=.
+#+name: evil-config
+#+begin_src emacs-lisp
+  (nmap "."       'evil-repeat-find-char)
+  (nmap ";"       'evil-repeat)
+  (nmap "C-;"     'evil-repeat-pop)
+  (nmap "g."      'goto-last-change)
+#+end_src
+
+#+name: evil-config
+#+begin_src emacs-lisp :tangle no
+(nmap "SPC ;" 'eval-expression)
+#+end_src
+
+Close other window.
+#+name: evil-config
+#+begin_src emacs-lisp :tangle no
+  (defun rasen/quit-other ()
+    (interactive)
+    (other-window 1)
+    (quit-window))
+
+  (nmap "SPC q"   'rasen/quit-other)
+#+end_src
+
+Move to beginning/end of line with =H= and =L= respectively.
+#+name: evil-config
+#+begin_src emacs-lisp :tangle no
+  (defun rasen/smart-move-beginning-of-line (arg)
+    "Move point back to indentation of beginning of line.
+
+Move point to the first non-whitespace character on this line.
+If point is already there, move to the beginning of the line.
+Effectively toggle between the first non-whitespace character and
+the beginning of the line.
+
+If ARG is not nil or 1, move forward ARG - 1 lines first.  If
+point reaches the beginning or end of the buffer, stop there."
+    (interactive "^p")
+    (setq arg (or arg 1))
+
+    ;; Move lines first
+    (when (/= arg 1)
+      (let ((line-move-visual nil))
+        (forward-line (1- arg))))
+
+    (let ((orig-point (point)))
+      (back-to-indentation)
+      (when (= orig-point (point))
+        (move-beginning-of-line 1))))
+
+  (nmap "H" 'rasen/smart-move-beginning-of-line)
+  (vmap "H" 'rasen/smart-move-beginning-of-line)
+  (mmap "H" 'rasen/smart-move-beginning-of-line)
+  (nmap "L" 'evil-end-of-line)
+  (vmap "L" 'evil-end-of-line)
+  (mmap "L" 'evil-end-of-line)
+#+end_src
+
+Save buffer with =SPC SPC=.
+#+name: evil-config
+#+begin_src emacs-lisp :tangle no
+  (nmap "SPC SPC" 'save-buffer)
+#+end_src
+
+** Swap k and j
+With workman layout, =j= is located on qwerty =y= and =k=---on qwerty =n=; thus =j= is higher than =k=, and it is not convenient to press lower key for going up. Just swap them.
+#+name: evil-config
+#+begin_src emacs-lisp :tangle no
+(nmap "k"       'evil-next-visual-line)
+(nmap "j"       'evil-previous-visual-line)
+(nmap "gk"      'evil-next-line)
+(nmap "gj"      'evil-previous-line)
+(mmap "k"       'evil-next-line)
+(mmap "j"       'evil-previous-line)
+
+(nmap "C-h"     'windmove-left)
+(nmap "C-k"     'windmove-down)
+(nmap "C-j"     'windmove-up)
+(nmap "C-l"     'windmove-right)
+(mmap "C-h"     'windmove-left)
+(mmap "C-k"     'windmove-down)
+(mmap "C-j"     'windmove-up)
+(mmap "C-l"     'windmove-right)
+#+end_src
+** evil-numbers
+I use Vim's =C-a= and =C-x= (increment/decrement number at point) a lot.
+=evil-numbers= provides that functionality for evil.
+#+begin_src emacs-lisp
+(use-package evil-numbers
+  :after evil
+  :bind (:map evil-normal-state-map
+         ("C-a" . evil-numbers/inc-at-pt)
+         ("C-x" . evil-numbers/dec-at-pt)))
+#+end_src
+
+Now, remap =C-x= to =RET=. (Because =C-x= is used for decrementing numbers.)
+#+name: evil-config
+#+begin_src emacs-lisp :tangle no
+(nmap "RET" (lookup-key (current-global-map) (kbd "C-x")))
+(vmap "RET" (lookup-key (current-global-map) (kbd "C-x")))
+#+end_src
+** Evilify compile mode
+#+begin_src emacs-lisp
+(use-package compile
+  :config
+  (setq compilation-scroll-output t)
+  (evil-add-hjkl-bindings compilation-mode-map 'motion
+    (kbd "SPC x") (lookup-key evil-motion-state-map (kbd "SPC x"))
+    (kbd "g")     nil
+    (kbd "g g")   'evil-goto-first-line
+    (kbd "g r")   'recompile))
+#+end_src
+
+And evil commands to go to navigate errors.
+#+name: evil-config
+#+begin_src emacs-lisp :tangle no
+  (nmap "SPC ,"   'previous-error)
+  (nmap "SPC ."   'next-error)
+  (nmap "M-,"     'previous-error)
+  (nmap "M-."     'next-error)
+#+end_src
+* General
+** Common options
+Use single-key =y/n= instead of a more verbose =yes/no=.
+#+begin_src emacs-lisp
+(fset 'yes-or-no-p 'y-or-n-p)
+#+end_src
+
+Do not use tabs for indentation.
+#+begin_src emacs-lisp
+  (setq-default indent-tabs-mode nil)
+#+end_src
+
+Make '_' a part of words, so commands like =evil-forward-word-begin= work properly.
+#+begin_src emacs-lisp
+  (add-hook 'prog-mode-hook
+            (lambda () (modify-syntax-entry ?_ "w")))
+#+end_src
+** Don't clutter system
+Save custom configuration in the =~/.emacs.d/custom.el= file so emacs does not clutter =init.el=.
+#+begin_src emacs-lisp
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+(load custom-file t)
+#+end_src
+
+Don't clutter the current directory with backups. Save them in a separate directory.
+#+begin_src emacs-lisp
+(setq backup-directory-alist '(("." . "~/.emacs.d/backups")))
+#+end_src
+** emacs-server
+#+begin_src emacs-lisp
+(load "server")
+(unless (server-running-p)
+  (server-start))
+#+end_src
+** ivy
+#+begin_src emacs-lisp
+(use-package ivy
+  :demand
+  :bind (:map evil-normal-state-map
+         ("SPC b" . ivy-switch-buffer))
+  :diminish ivy-mode
+  :config
+#+end_src
+
+Do not start input with =^= and ignore the case.
+#+begin_src emacs-lisp
+  (setq-default ivy-initial-inputs-alist nil)
+  (setq-default ivy-re-builders-alist '((t . ivy--regex-ignore-order)))
+#+end_src
+
+The normal =C-j= is not placed conveniently on Workman layout, so move its function to =C-e= (which is qwerty =k=).
+#+begin_src emacs-lisp
+  (define-key ivy-minibuffer-map (kbd "C-e") 'ivy-alt-done)
+  (define-key ivy-minibuffer-map (kbd "C-M-e") 'ivy-immediate-done)
+#+end_src
+
+#+begin_src emacs-lisp
+  (ivy-mode 1))
+#+end_src
+** counsel
+#+begin_src emacs-lisp
+  (use-package counsel
+    :demand
+    :diminish counsel-mode
+    :bind (:map evil-normal-state-map
+           ("SPC x" . counsel-M-x)
+           ("SPC f" . counsel-find-file)
+           ("g /"   . counsel-git-grep)
+           :map evil-visual-state-map
+           ("SPC x" . counsel-M-x)
+           :map evil-motion-state-map
+           ("SPC x" . counsel-M-x)
+           :map read-expression-map
+           ("C-r" . counsel-expression-history))
+    :config
+    (counsel-mode 1))
+#+end_src
+** whitespace
+A good mode to highlight whitespace issues (leading/trainiling spaces/newlines) and too long lines.
+#+begin_src emacs-lisp
+(use-package whitespace
+  :diminish (global-whitespace-mode
+             whitespace-mode
+             whitespace-newline-mode)
+  :config
+  (setq-default whitespace-line-column 120
+                whitespace-style '(face
+                                   tab-mark
+                                   empty
+                                   trailing
+                                   lines-tail))
+#+end_src
+
+Original face overrides foreground, so you don't see syntax highlight. Use underlines to show characters past limit.
+#+begin_src emacs-lisp
+  (set-face-attribute 'whitespace-line nil
+                      :foreground nil
+                      :background nil
+                      :underline (list :color "yellow4" :style 'wave))
+#+end_src
+
+Activate the mode in all programming modes.
+#+begin_src emacs-lisp
+  (add-hook 'prog-mode-hook 'whitespace-mode))
+#+end_src
+** whitespace-cleanup
+Fix whitespaces on file save.
+#+begin_src emacs-lisp
+(use-package whitespace-cleanup-mode
+  :diminish whitespace-cleanup-mode
+  :config
+  (global-whitespace-cleanup-mode 1))
+#+end_src
+** undo-tree
+It's enable by default. Just diminish it.
+#+begin_src emacs-lisp
+(use-package undo-tree
+  :diminish (undo-tree-mode global-undo-tree-mode))
+#+end_src
+** which-key
+[[https://github.com/justbur/emacs-which-key][which-key]] is a minor mode for Emacs that displays the key bindings following your currently entered incomplete command (a prefix) in a popup.
+#+begin_src emacs-lisp
+(use-package which-key
+  :defer 2
+  :diminish which-key-mode
+  :config
+  (which-key-mode))
+#+end_src
+** projectile
+#+begin_src emacs-lisp
+(use-package projectile
+  :bind (:map evil-normal-state-map
+         ("SPC p p" . projectile-switch-project)
+         ("SPC p &" . projectile-run-async-shell-command-in-root)
+         ("SPC p !" . projectile-run-shell-command-in-root)
+         ;; That works much better than the default
+         ("g f"     . projectile-find-file-dwim)
+         ("U"       . projectile-find-file)
+         ("<f3>"    . projectile-test-project)
+         ("<f4>"    . projectile-compile-project)
+         ("<f5>"    . projectile-run-project))
+  :commands (projectile-project-name)
+  :init
+  ;; Save default just in case
+  (nmap "g F" 'find-file-at-point)
+  ;; g F was bound to `evil-find-file-at-point-with-line'
+  ;; I've never used it though
+  :diminish projectile-mode
+  :config
+  ;; Use the prefix arg if you want to change the compilation command
+  (setq-default compilation-read-command nil)
+
+  (setq-default projectile-use-git-grep t)
+
+  (setq-default projectile-completion-system 'ivy)
+  (projectile-mode))
+#+end_src
+
+#+begin_src emacs-lisp
+
+(use-package counsel-projectile
+  :after projectile
+  :config
+  (counsel-projectile-mode))
+#+end_src
+** magit
+#+begin_src emacs-lisp
+(use-package magit
+  :bind (:map evil-normal-state-map
+         ("g m" . magit-status))
+  :diminish auto-revert-mode
+  ; :defer 6
+  :init
+  (global-set-key (kbd "C-c m") (rasen/hard-way "g m"))
+  :config
+  <<magit-config>>
+  )
+#+end_src
+
+Do not put files into trash can. Delete them for real.
+#+name: magit-config
+#+begin_src emacs-lisp :tangle no
+  (setq-default magit-delete-by-moving-to-trash nil)
+#+end_src
+
+#+name: magit-config
+#+begin_src emacs-lisp :tangle no
+  (setq-default magit-completing-read-function 'ivy-completing-read)
+#+end_src
+
+*** Evil
+Evilify magit-mode.
+#+begin_src emacs-lisp
+  (use-package evil-magit
+    :config
+    <<evil-magit-config>>
+    )
+#+end_src
+
+#+begin_src emacs-lisp
+    (setq evil-magit-use-y-for-yank t)
+
+#+end_src
+
+Evilify magit-blame.
+#+name: evil-magit-config
+#+begin_src emacs-lisp :tangle no
+  (dolist (state '(normal motion))
+    (evil-define-key state magit-blame-mode-map (kbd "k")  'evil-next-visual-line)
+    (evil-define-key state magit-blame-mode-map (kbd "j")  'evil-previous-visual-line)
+    (evil-define-key state magit-blame-mode-map (kbd "gk") 'evil-next-line)
+    (evil-define-key state magit-blame-mode-map (kbd "gj") 'evil-previous-line)
+    (evil-define-key state magit-blame-mode-map (kbd "C-k") 'magit-blame-next-chunk)
+    (evil-define-key state magit-blame-mode-map (kbd "C-j") 'magit-blame-previous-chunk)
+    (evil-define-key state magit-blame-mode-map (kbd "C-K") 'magit-blame-next-chunk-same-commit)
+    (evil-define-key state magit-blame-mode-map (kbd "C-J") 'magit-blame-previous-chunk-same-commit))
+
+  (dolist (state (list evil-magit-state 'visual))
+    (evil-define-key state magit-mode-map (kbd "j")   'evil-previous-visual-line)
+    (evil-define-key state magit-mode-map (kbd "k")   'evil-next-visual-line)
+    (evil-define-key state magit-mode-map (kbd "C-j") 'magit-section-backward)
+    (evil-define-key state magit-mode-map (kbd "C-k") 'magit-section-forward)
+    (evil-define-key state magit-mode-map (kbd "gj")  'magit-section-backward-sibling)
+    (evil-define-key state magit-mode-map (kbd "gk")  'magit-section-forward-sibling))
+
+  (evil-define-key 'normal magit-blame-mode-map (kbd "SPC") (lookup-key evil-normal-state-map (kbd "SPC")))
+#+end_src
+
+*** Custom commands
+**** git push HEAD ...
+Add a magit command to push =HEAD= into a specified ref.
+#+name: magit-config
+#+begin_src emacs-lisp :tangle no
+  (defun rasen/magit-push-head (target args)
+    "Push HEAD to a branch read in the minibuffer."
+    (interactive
+     (list (magit-read-remote-branch "Push HEAD to"
+                                     nil nil nil 'confirm)
+           (magit-push-arguments)))
+    (magit-git-push "HEAD" target args))
+
+  (magit-define-popup-action 'magit-push-popup
+    ?h "HEAD" 'rasen/magit-push-head)
+#+end_src
+
+**** git fetch origin/master && git checkout origin/master
+(evil-magit)
+#+name: evil-magit-config
+#+begin_src emacs-lisp :tangle no
+  (defun rasen/magit-fco-master ()
+    "Fetch origin/master and checkout it."
+    (interactive)
+    (magit-fetch "origin" "master")
+    (magit-checkout "origin/master"))
+
+  (evil-magit-define-key evil-magit-state 'magit-mode-map
+                         "g m" 'rasen/magit-fco-master)
+#+end_src
+***** TODO Make it normal magit command and generalize to fetch-checkout anything
+**** TODO add a detach head command (git checkout HEAD)
+*** GPG
+Sign commits by default.
+#+name: magit-config
+#+begin_src emacs-lisp
+  (setq magit-commit-arguments '("--gpg-sign=DCEF7BCCEB3066C3"))
+#+end_src
+
+Show commit signatures in log.
+#+name: magit-config
+#+begin_src emacs-lisp
+  (setq magit-log-arguments '("--graph" "--decorate" "--show-signature" "-n256"))
+#+end_src
+** diff-hl
+[[https://github.com/dgutov/diff-hl][diff-hl]] is an emacs package to highlight uncommitted changes.
+#+begin_src emacs-lisp
+(use-package diff-hl
+  :after magit
+  :config
+  ; (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
+  ; (unless (display-graphic-p)
+  ;   (diff-hl-margin-mode t))
+  ; (diff-hl-flydiff-mode t)
+  (global-diff-hl-mode t))
+#+end_src
+** yasnippet
+#+begin_src emacs-lisp
+  (use-package yasnippet
+    :defer 5
+    :diminish yas-minor-mode
+    :config
+    (yas-global-mode 1)
+
+    (setq rasen/snippets-directory
+          (file-name-as-directory
+           (expand-file-name ".emacs.d/snippets" rasen/dotfiles-directory)))
+
+    (make-directory rasen/snippets-directory t)
+    (yas-load-directory rasen/snippets-directory)
+
+    (add-hook 'term-mode-hook (lambda ()
+                                (setq-local yas-dont-activate-functions t))))
+#+end_src
+** company
+Company mode provides autocomplete features.
+#+begin_src emacs-lisp
+(use-package company
+  :defer 2
+  :bind (:map evil-insert-state-map
+         ("C-n" . company-complete-common-or-cycle)
+         ("C-p" . company-select-previous))
+  :diminish company-mode
+  :config
+  (setq-default company-dabbrev-downcase nil)
+  (global-company-mode))
+#+end_src
+** Hippie expand
+#+begin_src emacs-lisp
+  (use-package hippie-exp
+    :bind (:map evil-insert-state-map
+           ("C-/" . hippie-expand))
+    :config
+    (setq hippie-expand-try-functions-list
+          '(try-expand-dabbrev-visible
+            try-expand-dabbrev
+            try-expand-dabbrev-all-buffers
+            try-complete-file-name-partially
+            try-complete-file-name
+            try-expand-line
+            try-expand-list)))
+#+end_src
+** Helpers
+Shamelessly stealed from from https://github.com/purcell/emacs.d.
+#+begin_src emacs-lisp
+(defun rename-this-file-and-buffer (new-name)
+  "Renames both current buffer and file it's visiting to NEW-NAME."
+  (interactive "FNew name: ")
+  (let ((name (buffer-name))
+        (filename (buffer-file-name)))
+    (unless filename
+      (error "Buffer '%s' is not visiting file!" name))
+    (if (get-buffer new-name)
+        (message "A buffer named '%s' already exists!" new-name)
+      (progn
+        (when (file-exists-p filename)
+          (rename-file filename new-name 1))
+        (rename-buffer new-name)
+        (set-visited-file-name new-name)))))
+
+(defun delete-this-file-and-buffer ()
+  "Delete the current file, and kill the buffer."
+  (interactive)
+  (or (buffer-file-name) (error "No file is currently being edited"))
+  (when (yes-or-no-p (format "Really delete '%s'?"
+                             (file-name-nondirectory buffer-file-name)))
+    (delete-file (buffer-file-name))
+    (kill-this-buffer)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun add-to-path (str)
+  "Add an STR to the PATH environment variable."
+  (setenv "PATH" (concat str ":" (getenv "PATH"))))
+#+end_src
+* Org-mode
+#+begin_src emacs-lisp
+(use-package org
+  :mode ("\\.org$" . org-mode)
+  :defer 5
+  :bind (("C-c a" . org-agenda)
+         ("C-c l" . org-store-link)
+         ("C-c b" . org-iswitchb)
+         :map evil-normal-state-map
+         ("SPC o" . org-clock-out)
+         ("SPC l" . org-clock-in-last)
+         ("SPC j" . org-clock-goto)
+         ("SPC c" . org-capture)
+         ("SPC a" . org-agenda))
+  :ensure org-plus-contrib
+  :init
+  <<org-init>>
+  :config
+  <<org-config>>
+  )
+#+end_src
+
+Do not indent inside tasks
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (setq org-adapt-indentation nil)
+#+end_src
+
+Use =whitespace-mode= in Org (but don't show too long lines).
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (add-hook 'org-mode-hook (lambda ()
+                             (setq-local whitespace-style '(face
+                                                            tab-mark
+                                                            empty
+                                                            trailing))
+                             (whitespace-mode t)))
+#+end_src
+
+My directory for org files.
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (setq rasen/org-directory "~/org")
+#+end_src
+
+My helper to find all org files in a directory.
+#+name: org-config
+#+begin_src emacs-lisp
+  (defun rasen/org-files-in-dir (dir)
+    (f-files dir
+             (lambda (file) (f-ext? file "org"))
+             nil))
+#+end_src
+
+Package for =f-files= and =f-ext?= functions.
+#+name: org-init
+#+begin_src emacs-lisp :tangle no
+(use-package f
+  :commands (f-files f-ext?))
+#+end_src
+** Drill
+For some reason, org-drill fails to load with the following error:
+#+begin_quote
+Debugger entered--Lisp error: (void-function copy-list)
+  copy-list((1 (quote org-drill-visible-cloze-face) nil))
+  org-drill--compute-cloze-keywords()
+  (defvar org-drill-cloze-keywords (org-drill--compute-cloze-keywords) nil)
+  require(org-drill)
+#+end_quote
+
+I [[https://stackoverflow.com/a/35463983][googled it up]] and =copy-list= seems to be defined in =cl=, so load it first:
+#+name: org-config
+#+begin_src emacs-lisp
+  (require 'cl)
+#+end_src
+
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (require 'org-drill)
+  (setq org-drill-scope (rasen/org-files-in-dir "~/org/drill"))
+  (add-to-list 'org-modules 'org-drill)
+#+end_src
+** Todo
+Use the following states: =TODO= =NEXT= =DONE= =CANCELED= =WAIT=.
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (setq-default org-todo-keywords
+                '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d)")
+                  (sequence "|" "CANCELED(c@)")
+                  (sequence "WAIT(w@)" "|")))
+  (setq-default org-todo-keyword-faces
+                '(("TODO"     . (:foreground "dodger blue" :weight bold))
+                  ("NEXT"     . (:box t :foreground "red" :weight bold))
+                  ("WAIT"     . (:box t :foreground "magenta" :weight bold))
+                  ("DONE"     . (:foreground "grey" :weight bold))
+                  ("CANCELED" . (:foreground "gray" :weight bold))))
+  (setq-default org-use-fast-todo-selection t)
+#+end_src
+
+Switch task state with =SPC t=.
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (evil-define-key 'normal org-mode-map (kbd "SPC t") 'org-todo)
+#+end_src
+
+When repeated task is finished, go back to =TODO= state.
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (setq-default org-todo-repeat-to-state "TODO")
+#+end_src
+
+Save =CLOSED= timestamp when task is done.
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (setq org-log-done t)
+#+end_src
+** Clocking
+Remove clocks with 0 duration.
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (setq-default org-clock-out-remove-zero-time-clocks t)
+#+end_src
+
+Save more last clocks.
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (setq-default org-clock-history-length 10)
+#+end_src
+** Capture
+My capture templates.
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (setq org-capture-templates
+        `(("u"
+           "Task: Read this URL"
+           entry
+           (file+headline "refile.org" "Articles To Read")
+           ,(concat "* TODO %(rasen/strip-url-from-title \"%:description\")\n%:link\n")
+           :immediate-finish t)
+
+          ("w"
+           "Capture web snippet"
+           entry
+           (file+headline "my-facts.org" "Inbox")
+           ,(concat "* Fact: '%(rasen/strip-url-from-title \"%:description\")'       :"
+                    (format "%s" org-drill-question-tag)
+                    ":\n:PROPERTIES:\n:CREATED: %U\n:SOURCE_URL: %:link\n:END:\n%i\n%?\n")
+           :immediate-finish t)
+
+          ("f"
+           "Capture normal snippet"
+           entry
+           (file+headline "my-facts.org" "Inbox")
+           ,(concat "* Fact: '%f'       :"
+                    (format "%s" org-drill-question-tag)
+                    ":\n:PROPERTIES:\n:CREATED: %U\n:SOURCE_URL: [[%l][%f]]\n:END:\n%i\n%?\n")
+           :immediate-finish t)
+
+          ("t" "todo" entry (file "~/org/refile.org")
+           "* TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n" :clock-in t :clock-resume t)
+
+          ("m" "meeting" entry (file "~/org/refile.org")
+           "* %?   :Meeting:\n" :clock-in t :clock-resume t)
+
+          ("n" "note" entry (file "~/org/refile.org")
+           "* %?\n\n%a\n" :clock-in t :clock-resume t)))
+#+end_src
+
+Instanly go into insert mode on capture.
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (add-hook 'org-capture-mode-hook 'evil-insert-state)
+#+end_src
+
+=%l= in org-capture fails with multiline context, so use only the first line as a context.
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (setq org-context-in-file-links 1)
+#+end_src
+** Refile
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (defun rasen/org-refile-files ()
+    (rasen/org-files-in-dir rasen/org-directory))
+
+  ;; non-nil values work bad with ivy
+  (setq-default org-refile-use-outline-path 'file)
+  (setq-default org-outline-path-complete-in-steps nil)
+
+  (setq org-refile-targets
+        '(;(nil :maxlevel . 3)
+          (org-agenda-files :maxlevel . 2)
+          (rasen/org-refile-files :maxlevel . 1)))
+#+end_src
+** Archive
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (setq-default org-archive-default-command 'org-archive-to-archive-sibling)
+#+end_src
+** Agenda
+Set my org files location.
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+
+  (setq org-directory "~/org"
+        org-default-notes-file "~/org/refile.org"
+        org-agenda-files (rasen/org-files-in-dir "~/org"))
+#+end_src
+
+Configure my agenda view.
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (setq org-agenda-span 6
+        org-agenda-start-day "-1d")
+
+  (setq org-agenda-custom-commands
+        '(("N" tags "+TODO=\"NEXT\"-PROJECT|+TODO=\"WAIT\"-PROJECT")
+          ("n" todo-tree "NEXT")
+          ("k" "Kaa view"
+           ((agenda)
+            (tags "+TODO=\"NEXT\"-PROJECT|+TODO=\"WAIT\"-PROJECT"))
+           ((org-agenda-files '("~/org/kaa.org"))
+            ; (org-agenda-start-with-clockreport-mode t)
+            (org-agenda-clockreport-parameter-plist '(:step day :stepskip0 :fileskip0))))
+          ("h" tags "-CATEGORY={kaa}+TODO=\"NEXT\"")
+          ("p" tags "+PROJECT/-DONE-CANCELED")
+          ))
+#+end_src
+
+Configure stuck projects.
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (setq org-tags-exclude-from-inheritance '("PROJECT"))
+  (setq org-stuck-projects
+        '("+PROJECT/-DONE-CANCELED-WAIT" ("NEXT" "WAIT") nil ""))
+#+end_src
+** Babel
+Code-hightlight (fontify) org-babel (=#+begin_src=) blocks.
+
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (setq org-src-fontify-natively t)
+#+end_src
+** Export
+Fix exporting for confluence.
+
+=ox-confluence= has an issue with verbatim---it doesn't redefine verbatim translation, so =org-ascii-verbatim= is used. The following makes =org-ascii-verbatim= produce proper confluence fixed-width block.
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (add-to-list 'org-modules 'ox-confluence)
+  (setq org-ascii-verbatim-format "\{\{%s\}\}")
+#+end_src
+** Crypt
+Allow encrypted entries in org files.
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (require 'org-crypt)
+  (org-crypt-use-before-save-magic)
+  (setq org-tags-exclude-from-inheritance '("crypt"))
+  (setq org-crypt-key "rasen.dubi@gmail.com")
+  (add-hook 'org-babel-pre-tangle-hook 'org-decrypt-entries t)
+#+end_src
+** snippets
+*** lowercase
+Make default lowercase. I don't like shouting =#+BEGIN_SRC= and prefer calm =#+begin_src=.
+
+This also sets =begin_example= to =E= (instead of default =e=).
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (setq org-structure-template-alist
+        '(("s" "#+begin_src ?\n\n#+end_src" "<src lang=\"?\">\n\n</src>")
+          ("E" "#+begin_example\n?\n#+end_example" "<example>\n?\n</example>")
+          ("q" "#+begin_quote\n?\n#+end_quote" "<quote>\n?\n</quote>")
+          ("v" "#+begin_verse\n?\n#+end_verse" "<verse>\n?\n</verse>")
+          ("V" "#+begin_verbatim\n?\n#+end_verbatim" "<verbatim>\n?\n</verbatim>")
+          ("c" "#+begin_center\n?\n#+end_center" "<center>\n?\n</center>")
+          ("l" "#+begin_latex\n?\n#+end_latex" "<literal style=\"latex\">\n?\n</literal>")
+          ("L" "#+latex: " "<literal style=\"latex\">?</literal>")
+          ("h" "#+begin_html\n?\n#+end_html" "<literal style=\"html\">\n?\n</literal>")
+          ("H" "#+html: " "<literal style=\"html\">?</literal>")
+          ("a" "#+begin_ascii\n?\n#+end_ascii" "")
+          ("A" "#+ascii: " "")
+          ("i" "#+index: ?" "#+index: ?")
+          ("I" "#+include: %file ?" "<include file=%file markup=\"?\">")))
+#+end_src
+
+These can be invoked with =< x TAB= where =x= is the letter from the above list. (e.g., =< s TAB= expands to src block.)
+*** name attribute
+I use =#+name:= attribute often.
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (add-to-list 'org-structure-template-alist
+               '("n" "#+name: ?" ""))
+#+end_src
+*** emacs-lisp block
+Insert Emacs Lisp code block. Used a lot in this file.
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (add-to-list 'org-structure-template-alist
+               '("e" "#+begin_src emacs-lisp\n?\n#+end_src" "<src lang=\"emacs-lisp\">\n?\n</src>"))
+#+end_src
+* Languages
+** Emacs lisp
+#+begin_src emacs-lisp
+(use-package elisp-mode
+  :ensure nil ; built-in
+  :config
+  <<elisp-mode-config>>
+  )
+#+end_src
+
+Eval last sexp Vim-style.
+#+name: elisp-mode-config
+#+begin_src emacs-lisp :tangle no
+  (evil-define-operator rasen/evil-eval (beg end type)
+    "Evaluate region."
+    (if (eq type 'block)
+        (evil-apply-on-block 'eval-region beg end nil)
+      (eval-region beg end)))
+
+  (evil-define-key 'normal emacs-lisp-mode-map (kbd "SPC e") 'eval-last-sexp)
+  (evil-define-key 'visual emacs-lisp-mode-map (kbd "SPC e") 'rasen/evil-eval)
+#+end_src
+** Nix
+Pretty self-explaining.
+#+begin_src emacs-lisp
+(use-package nix-mode
+  :mode "\\.nix$")
+#+end_src
+** C/C++
+*** Doxygen
+This const is taken from doxymacs and is subject to GPLv2. I've copied it my dotfiles as I don't need all doxymacs features and setup is non-trivial. (It requires compilation, there is no melpa package.)
+#+begin_src emacs-lisp
+(defconst doxymacs-doxygen-keywords
+  (list
+   (list
+    ;; One shot keywords that take no arguments
+    (concat "\\([@\\\\]\\(brief\\|li\\|\\(end\\)?code\\|sa"
+            "\\|note\\|\\(end\\)?verbatim\\|return\\|arg\\|fn"
+            "\\|hideinitializer\\|showinitializer"
+            "\\|parblock\\|endparblock"
+            ;; FIXME
+            ;; How do I get & # < > % to work?
+            ;;"\\|\\\\&\\|\\$\\|\\#\\|<\\|>\\|\\%"
+            "\\|internal\\|nosubgrouping\\|author\\|date\\|endif"
+            "\\|invariant\\|post\\|pre\\|remarks\\|since\\|test\\|version"
+            "\\|\\(end\\)?htmlonly\\|\\(end\\)?latexonly\\|f\\$\\|file"
+            "\\|\\(end\\)?xmlonly\\|\\(end\\)?manonly\\|property"
+            "\\|mainpage\\|name\\|overload\\|typedef\\|deprecated\\|par"
+            "\\|addindex\\|line\\|skip\\|skipline\\|until\\|see"
+            "\\|endlink\\|callgraph\\|endcond\\|else\\)\\)\\>")
+    '(0 font-lock-keyword-face prepend))
+   ;; attention, warning, etc. given a different font
+   (list
+    "\\([@\\\\]\\(attention\\|warning\\|todo\\|bug\\)\\)\\>"
+    '(0 font-lock-warning-face prepend))
+   ;; keywords that take a variable name as an argument
+   (list
+    (concat "\\([@\\\\]\\(param\\(?:\\s-*\\[\\(?:in\\|out\\|in,out\\)\\]\\)?"
+            "\\|a\\|namespace\\|relates\\(also\\)?"
+            "\\|var\\|def\\)\\)\\s-+\\(\\sw+\\)")
+    '(1 font-lock-keyword-face prepend)
+    '(4 font-lock-variable-name-face prepend))
+   ;; keywords that take a type name as an argument
+   (list
+    (concat "\\([@\\\\]\\(class\\|struct\\|union\\|exception\\|enum"
+            "\\|throw\\|interface\\|protocol\\)\\)\\s-+\\(\\(\\sw\\|:\\)+\\)")
+    '(1 font-lock-keyword-face prepend)
+    '(3 font-lock-type-face prepend))
+   ;; keywords that take a function name as an argument
+   (list
+    "\\([@\\\\]retval\\)\\s-+\\([^ \t\n]+\\)"
+    '(1 font-lock-keyword-face prepend)
+    '(2 font-lock-function-name-face prepend))
+   ;; bold
+   (list
+    "\\([@\\\\]b\\)\\s-+\\([^ \t\n]+\\)"
+    '(1 font-lock-keyword-face prepend)
+    '(2 (quote bold) prepend))
+   ;; code
+   (list
+    "\\([@\\\\][cp]\\)\\s-+\\([^ \t\n]+\\)"
+    '(1 font-lock-keyword-face prepend)
+    '(2 (quote underline) prepend))
+   ;; italics/emphasised
+   (list
+    "\\([@\\\\]e\\(m\\)?\\)\\s-+\\([^ \t\n]+\\)"
+    '(1 font-lock-keyword-face prepend)
+    '(3 (quote italic) prepend))
+   ;; keywords that take a list
+   (list
+    "\\([@\\\\]ingroup\\)\\s-+\\(\\(\\sw+\\s-*\\)+\\)\\s-*$"
+    '(1 font-lock-keyword-face prepend)
+    '(2 font-lock-string-face prepend))
+   ;; one argument that can contain arbitrary non-whitespace stuff
+   (list
+    (concat "\\([@\\\\]\\(link\\|copydoc\\|xrefitem"
+            "\\|if\\(not\\)?\\|elseif\\)\\)"
+            "\\s-+\\([^ \t\n]+\\)")
+    '(1 font-lock-keyword-face prepend)
+    '(4 font-lock-string-face prepend))
+   ;; one optional argument that can contain arbitrary non-whitespace stuff
+   (list
+    "\\([@\\\\]\\(cond\\|dir\\)\\(\\s-+[^ \t\n]+\\)?\\)"
+    '(1 font-lock-keyword-face prepend)
+    '(3 font-lock-string-face prepend t))
+   ;; one optional argument with no space between
+   (list
+    "\\([@\\\\]\\(~\\)\\([^ \t\n]+\\)?\\)"
+    '(1 font-lock-keyword-face prepend)
+    '(3 font-lock-string-face prepend t))
+   ;; one argument that has to be a filename
+   (list
+    (concat "\\([@\\\\]\\(example\\|\\(dont\\)?include\\|includelineno"
+            "\\|htmlinclude\\|verbinclude\\)\\)\\s-+"
+            "\\(\"?[~:\\/a-zA-Z0-9_. ]+\"?\\)")
+    '(1 font-lock-keyword-face prepend)
+    '(4 font-lock-string-face prepend))
+   ;; dotfile <file> ["caption"]
+   (list
+    (concat "\\([@\\\\]dotfile\\)\\s-+"
+            "\\(\"?[~:\\/a-zA-Z0-9_. ]+\"?\\)\\(\\s-+\"[^\"]+\"\\)?")
+    '(1 font-lock-keyword-face prepend)
+    '(2 font-lock-string-face prepend)
+    '(3 font-lock-string-face prepend t))
+   ;; image <format> <file> ["caption"] [<sizeindication>=<size>]
+   (list
+    "\\([@\\\\]image\\)\\s-+\\(html\\|latex\\)\\s-+\\(\"?[~:\\/a-zA-Z0-9_. ]+\"?\\)\\(\\s-+\"[^\"]+\"\\)?\\(\\s-+\\sw+=[0-9]+\\sw+\\)?"
+    '(1 font-lock-keyword-face prepend)
+    '(2 font-lock-string-face prepend)
+    '(3 font-lock-string-face prepend)
+    '(4 font-lock-string-face prepend t)
+    '(5 font-lock-string-face prepend t))
+   ;; one argument that has to be a word
+   (list
+    (concat "\\([@\\\\]\\(addtogroup\\|defgroup\\|weakgroup"
+            "\\|page\\|anchor\\|ref\\|section\\|subsection\\|subsubsection\\|paragraph"
+            "\\)\\)\\s-+\\(\\sw+\\)")
+    '(1 font-lock-keyword-face prepend)
+    '(3 font-lock-string-face prepend))))
+
+(defconst doxygen-font-lock-keywords
+  `((,(lambda (limit)
+        (c-font-lock-doc-comments "/\\(\\*[\\*!]\\|/[/!]\\)<?" limit
+          doxymacs-doxygen-keywords)))))
+
+(setq c-doc-comment-style '((java-mode . javadoc)
+                            (pike-mode . autodoc)
+                            (c-mode . doxygen)
+                            (c++-mode . doxygen)))
+#+end_src
+** Python
+#+begin_src emacs-lisp
+(use-package pip-requirements
+  :mode "^requirements.txt$")
+#+end_src
+** Ledger / Hledger
+#+begin_src emacs-lisp
+(use-package ledger-mode
+  :mode "\\.journal$"
+  :config
+  (setq ledger-binary-path "hledger")
+  (add-hook 'ledger-mode-hook 'orgstruct-mode))
+#+end_src
+** Markdown
+#+begin_src emacs-lisp
+(use-package markdown-mode
+  :mode ("\\.\\(markdown\\|mdown\\|md\\)$" . markdown-mode)
+  :init
+  (add-hook 'markdown-mode-hook 'visual-line-mode)
+  :config
+  (setq markdown-fontify-code-blocks-natively t))
+#+end_src
+
+Package edit-indirect needed to edit code blocks.
+#+begin_src emacs-lisp
+(use-package edit-indirect
+  :after markdown-mode)
+#+end_src
+** JSON
+#+begin_src emacs-lisp
+(use-package json-mode
+  :mode "\\.json$")
+#+end_src
+** YAML
+#+begin_src emacs-lisp
+(use-package yaml-mode
+  :mode ("\\.\\(yml\\|yaml\\)$" . yaml-mode))
+#+end_src
+** Jinja2
+#+begin_src emacs-lisp
+(use-package jinja2-mode
+  :mode "\\.j2$")
+#+end_src
+** gitconfig
+#+begin_src emacs-lisp
+(use-package gitconfig-mode
+  :mode "^\\.gitconfig$")
+#+end_src
+* Mail setup
+** gnus
+#+begin_src emacs-lisp
+(use-package gnus
+  :config
+  (setq user-full-name "Alexey Shmalko"
+        user-mail-address "rasen.dubi@gmail.com")
+
+  (setq gnus-select-method
+        '(nnimap "Mail"
+                 (nnimap-stream shell)
+                 (nnimap-shell-program "/var/run/current-system/sw/libexec/dovecot/imap")))
+  (setq gnus-secondary-select-methods nil)
+
+  (setq gnus-parameters
+        '(("Work/?.*"
+           (posting-style
+            (name "Alexey Shmalko")
+            (address "ashmalko@cybervisiontech.com")))
+          ("KaaIoT/?.*"
+           (posting-style
+            (name "Alexey Shmalko")
+            (address "ashmalko@kaaiot.io")))
+          ("Personal/?.*"
+           (posting-style
+            (name "Alexey Shmalko")
+            (address "rasen.dubi@gmail.com")))))
+
+  (setq gnus-fetch-old-headers 'some)
+  (setq gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]")
+
+  (setq message-sendmail-f-is-evil t
+        message-sendmail-envelope-from nil ; 'header
+        message-sendmail-extra-arguments '("--read-envelope-from")
+
+        mail-specify-envelope-from nil
+        send-mail-function 'message-send-mail-with-sendmail
+        message-send-mail-function 'message-send-mail-with-sendmail
+        sendmail-program "msmtp")
+
+  (add-hook 'message-setup-hook 'mml-secure-message-sign-pgpmime)
+  (setq mm-verify-option 'always)
+  ; (add-to-list 'mm-automatic-display "application/pgp")
+  ; (add-to-list 'mm-automatic-display "application/pgp-signature")
+  ; (add-to-list 'mm-inlined-types "application/pgp")
+  (setq gnus-buttonized-mime-types '("multipart/encrypted" "multipart/signed"))
+
+  (setq gnus-check-new-newsgroups nil ;; NOTE: don't check for new groups
+        gnus-save-newsrc-file nil ;; NOTE: don't write `.newsrc' file
+        gnus-read-newsrc-file nil ;; NOTE: don't read it, either
+        gnus-interactive-exit nil
+        gnus-save-killed-list nil)
+
+  ;; TODO uncomment
+  ; (require 'gnus-article-treat-patch)
+  ; (setq ft/gnus-article-patch-conditions
+  ;       '( "^@@ -[0-9]+,[0-9]+ \\+[0-9]+,[0-9]+ @@" ))
+)
+#+end_src
+** mbsync
+#+begin_src emacs-lisp
+(use-package mbsync
+  :bind (:map gnus-group-mode-map
+         ("f" . mbsync))
+  :config
+  (setq mbsync-executable "mbsync")
+  (add-hook 'mbsync-exit-hook 'gnus-group-get-new-news))
+#+end_src
+* Workman
+** quail
+Emacs has built-in capability to change keyboard layout (for insert state only), which is triggered by =C-\=. In order to work properly, Emacs needs to know my keyboard layout.
+#+begin_src emacs-lisp
+  (use-package quail
+    :ensure nil ; built-in?
+    :config
+    (add-to-list 'quail-keyboard-layout-alist
+                 '("workman" . "\
+                                \
+    1!2@3#4$5%6^7&8*9(0)-_=+`~  \
+    qQdDrRwWbBjJfFuUpP;:[{]}\\|  \
+    aAsShHtTgGyYnNeEoOiI'\"      \
+    zZxXmMcCvVkKlL,<.>/?        \
+                                "))
+    (quail-set-keyboard-layout "workman"))
+#+end_src
+* Look and feel
+** Remove the clutter
+Hide menu, toolbar, scrollbar.
+#+begin_src emacs-lisp
+(tool-bar-mode -1)
+(menu-bar-mode -1)
+(scroll-bar-mode -1)
+#+end_src
+
+Do not show startup screen.
+#+begin_src emacs-lisp
+(setq inhibit-startup-screen t)
+#+end_src
+** Color scheme
+I use airline with molokai color scheme.
+
+#+begin_src emacs-lisp
+(use-package airline-themes
+  :config
+  (require 'cl)
+  (setq-default powerline-display-mbsync-info t)
+  (load-theme 'airline-molokai t)
+
+  (add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
+  (load-theme 'molokai t))
+#+end_src
+** Font
+#+begin_src emacs-lisp
+(defun rasen/font-exists-p (font)
+  "Check if the FONT exists."
+  (and (display-graphic-p) (not (null (x-list-fonts font)))))
+
+(defun rasen/set-my-fonts ()
+  (cond ((rasen/font-exists-p "Terminess Powerline")
+         (set-face-attribute 'fixed-pitch nil :family "Terminess Powerline" :height 160)
+         (set-face-attribute 'default nil :family "Terminess Powerline" :height 160))
+        ((rasen/font-exists-p "Terminus")
+         (set-face-attribute 'fixed-pitch nil :family "Terminus" :height 160)
+         (set-face-attribute 'default nil :family "Terminus" :height 160))))
+
+(rasen/set-my-fonts)
+#+end_src
+
+Apply my font setting when new frame is created (useful when emacs is started in daemon mode).
+#+begin_src emacs-lisp
+  (defun rasen/font-hook (frame)
+    (select-frame frame)
+    (rasen/set-my-fonts))
+
+  (add-hook 'after-make-frame-functions 'rasen/font-hook)
+#+end_src
+** Misc
+Hightlight parentheses, show current column.
+#+begin_src emacs-lisp
+  (show-paren-mode 1)
+  (column-number-mode 1)
+#+end_src
+
+Highlight current line.
+#+begin_src emacs-lisp
+  (global-hl-line-mode)
+#+end_src
+
+Draw block cursor as wide as the glyph under it.
+For example, if a block cursor is over a tab, it will be drawn as wide as that tab on the display.
+#+begin_src emacs-lisp
+  (setq-default x-stretch-cursor t)
+#+end_src
+
+
+=scroll-margin= is a number of lines of margin at the top and bottom of a window. Scroll the window whenever point gets within this many lines of the top or bottom of the window. (=scroll-conservatively= should be greater than 100 to never recenter point. Value 1 helps, but eventually recenters cursor if you scroll too fast.)
+#+begin_src emacs-lisp
+  (setq scroll-margin 3
+        scroll-conservatively 101)
+#+end_src
+
+Center all text in the buffer in some modes.
+#+begin_src emacs-lisp
+(use-package visual-fill-column
+  :commands (visual-fill-column-mode)
+  :init
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (setq-local fill-column 81)
+              (visual-line-mode t)
+              (visual-fill-column-mode t)))
+  :config
+  (setq-default visual-fill-column-center-text t
+                visual-fill-column-fringes-outside-margins nil))
+#+end_src
+
+Add a little bit of highlighting for the cursor, when buffer scrolls, so I don't lose it.
+#+begin_src emacs-lisp
+(use-package beacon
+  :diminish beacon-mode
+  :config
+  (beacon-mode 1))
+#+end_src
+* Quantified self
+Add project name to the title, so I can later analyze my app usage.
+#+begin_src emacs-lisp
+(setq-default frame-title-format
+              '("[%m] " (:eval (projectile-project-name))))
+#+end_src

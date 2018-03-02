@@ -386,3 +386,9 @@ cmap w!! w! !sudo tee % >/dev/null
 if has('nvim')
 	tnoremap <Esc><Esc> <C-\><C-n>
 end
+
+" workman fixes
+nnoremap j k
+nnoremap k j
+vnoremap j k
+vnoremap k j
