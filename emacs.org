@@ -9,6 +9,8 @@ Emacs does not source this file automatically, so I need to instruct it to. Chec
 ;;; Commentary:
 ;;; Code:
 
+(require 'package)
+(setq package-enable-at-startup nil)
 (package-initialize)
 
 (defvar rasen/dotfiles-directory
@@ -566,6 +568,14 @@ Company mode provides autocomplete features.
             try-expand-line
             try-expand-list)))
 #+end_src
+** Color identifiers
+#+begin_src emacs-lisp
+(use-package color-identifiers-mode
+  :commands (color-identifiers-mode
+             global-color-identifiers-mode)
+  :diminish (color-identifiers-mode
+             global-color-identifiers-mode))
+#+end_src
 ** Helpers
 Shamelessly stealed from https://github.com/purcell/emacs.d.
 #+begin_src emacs-lisp
@@ -1054,6 +1064,22 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 #+begin_src emacs-lisp
 (use-package pip-requirements
   :mode "^requirements.txt$")
+#+end_src
+** JavaScript
+#+begin_src emacs-lisp
+(use-package js2-mode
+  :mode "\\.js$"
+  :init
+  (add-hook 'js2-mode-hook 'color-identifiers-mode)
+  :config
+  (setq-default js2-strict-trailing-comma-warning nil))
+#+end_src
+** Lua
+#+begin_src emacs-lisp
+(use-package lua-mode
+  :mode ("\\.lua$" . lua-mode)
+  :config
+  (setq lua-indent-level 4))
 #+end_src
 ** Ledger / Hledger
 #+begin_src emacs-lisp

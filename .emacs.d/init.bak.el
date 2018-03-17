@@ -218,13 +218,6 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   :init
   (add-hook 'c-mode-hook 'hs-minor-mode))
 
-(use-package color-identifiers-mode
-  :defer 3
-  :diminish (color-identifiers-mode
-             global-color-identifiers-mode)
-  :config
-  (global-color-identifiers-mode))
-
 (use-package cmake-mode
   :mode ("^CMakeLists\\.txt$" . cmake-mode)
   :config
@@ -250,10 +243,6 @@ the it takes a second \\[keyboard-quit]] to abort the minibuffer."
   (add-hook 'rust-mode-hook #'racer-mode)
   (add-hook 'racer-mode-hook #'eldoc-mode))
 
-(use-package lua-mode
-  :mode ("\\.lua$" . lua-mode)
-  :config
-  (setq lua-indent-level 4))
 
 (use-package rainbow-delimiters
   :commands (rainbow-delimiters-mode)
