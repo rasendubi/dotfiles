@@ -1471,6 +1471,29 @@ Here go applications (almost) every normal user needs.
   };
 }
 #+end_src
+** password-store
+Install [[https://www.passwordstore.org/][password-store]] along with [[https://github.com/tadfisher/pass-otp][one-time password extension]].
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [
+    pkgs.pass
+    pkgs.pass-otp
+  ];
+}
+#+end_src
+
+The following section is required for pass to find the OTP extension.
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.pathsToLink = [ "/lib/password-store/extensions" ];
+  environment.variables = {
+    PASSWORD_STORE_EXTENSIONS_DIR = "/nix/var/nix/profiles/system/sw/lib/password-store/extensions";
+    PASSWORD_STORE_ENABLE_EXTENSIONS = "true";
+  };
+}
+#+end_src
 ** KDE apps
 I don't use full KDE but some apps are definitely nice.
 #+name: nixos-section
@@ -1606,7 +1629,6 @@ Don't require additional setup.
     pkgs.smplayer
 
     pkgs.alarm-clock-applet
-    pkgs.pass
 
     # Used by naga setup
     pkgs.xdotool
