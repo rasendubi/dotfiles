@@ -326,7 +326,15 @@ globalkeys = awful.util.table.join(
     -- Unfocus all windows and turn the screen off
     awful.key({ modkey, "Mod1" }, "l", function ()
             client.focus = nil
-            awful.spawn("xset dpms force off")
+            awful.spawn("slock")
+            gears.timer {
+                timeout = 2,
+                autostart = true,
+                single_shot = true,
+                callback = function ()
+                    awful.spawn("xset dpms force off")
+                end,
+            }
     end),
 
     -- Menubar
