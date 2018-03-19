@@ -85,11 +85,8 @@ menubar.utils.terminal = terminal -- Set the terminal for applications that requ
 -- }}}
 
 -- Autostart {{{
-utils.run_once("wicd-client", "wicd-client -t")
 utils.run("wmname LG3D")
-utils.run("synclient TapButton1=1 TapButton2=3 TapButton3=2 VertEdgeScroll=1")
-utils.rerun("syndaemon", "syndaemon -i 0.75 -K -t -d")
-utils.run("xss-lock -- slock")
+utils.run("xss-lock -- ~/dotfiles/bin/onlock.sh")
 -- }}}
 
 mykeyboardlayout = awful.widget.keyboardlayout()
@@ -327,16 +324,8 @@ globalkeys = awful.util.table.join(
 
     -- Unfocus all windows and turn the screen off
     awful.key({ modkey, "Mod1" }, "l", function ()
-            client.focus = nil
+            xss_lock()
             awful.spawn("slock")
-            gears.timer {
-                timeout = 2,
-                autostart = true,
-                single_shot = true,
-                callback = function ()
-                    awful.spawn("xset dpms force off")
-                end,
-            }
     end),
 
     -- Menubar
@@ -587,4 +576,16 @@ function razer(n, t)
     else
         awful.spawn('xdotool key F' .. tostring(n + 12))
     end
+end
+
+function xss_lock()
+    client.focus = nil
+    gears.timer {
+        timeout = 2,
+        autostart = true,
+        single_shot = true,
+        callback = function ()
+            awful.spawn("xset dpms force off")
+        end,
+    }
 end
