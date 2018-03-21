@@ -373,11 +373,11 @@ I'm running an MQTT implementation in there.
           src = pkgs.fetchFromGitHub {
             owner = "rasendubi";
             repo = "zink";
-            rev = "influxdb-0.0.3";
-            sha256 = "0sxw2jdabnw4q1kha176gz3glg4f1c6mag1i6242y0y579zf49lr";
+            rev = "influxdb-0.0.4";
+            sha256 = "0mnpss2is57y0ncdxwnal62w6yn4691b8lmka4fl3pyxhsblhww4";
           };
 
-          depsSha256 = "1j7mipqd1n146xds8136c9dq87af821yfw4qk3m40531m9zw4pi4";
+          cargoSha256 = "02v7nnsc0dbzd7kkfng0kgzwdlc85j1h7znzjpps7gcm3jz41lwz";
         };
       in {
         ExecStart = "${zink}/bin/zink timestamp,tagId,batteryLevel,temperature";
