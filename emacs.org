@@ -413,6 +413,12 @@ It's enable by default. Just diminish it.
   :config
   (counsel-projectile-mode))
 #+end_src
+
+Install [[https://nicolas.petton.fr/blog/mutli-occur-on-projects.html][noccur]] to multi-occur project-wide.
+
+#+begin_src emacs-lisp
+(use-package noccur)
+#+end_src
 ** magit
 #+begin_src emacs-lisp
 (use-package magit
