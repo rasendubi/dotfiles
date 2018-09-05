@@ -95,6 +95,14 @@ mykeyboardlayout = awful.widget.keyboardlayout()
 -- Create a textclock widget
 mytextclock = wibox.widget.textclock()
 
+local tracking_widget = wibox.widget{
+    markup = '',
+    align = 'center',
+    valign = 'center',
+    widget = wibox.widget.textbox,
+}
+logging = true
+
 -- Create a wibox for each screen and add it
 local taglist_buttons = awful.util.table.join(
                     awful.button({ }, 1, function(t) t:view_only() end),
@@ -189,6 +197,7 @@ awful.screen.connect_for_each_screen(function(s)
         },
         s.mytasklist, -- Middle widget
         { -- Right widgets
+            tracking_widget,
             layout = wibox.layout.fixed.horizontal,
             battery_widget,
             mykeyboardlayout,
@@ -204,6 +213,10 @@ end)
 globalkeys = awful.util.table.join(
     -- awful.key({ modkey,           }, "s",      hotkeys_popup.show_help,
     --           {description="show help", group="awesome"}),
+    awful.key({ modkey, "Shift"   }, "t", function ()
+            tracking_widget:set_markup_silently(logging and '!!! Not tracking !!!' or '')
+            logging = not logging
+    end),
     awful.key({ modkey,           }, "s", function () client.focus.sticky = not client.focus.sticky  end),
     awful.key({ modkey,           }, "a", function ()
             naughty.notify{ text = selection() }
@@ -491,6 +504,10 @@ local log_file = assert(io.open("log.txt", "ab"))
 awesome.connect_signal("exit", function () log_file:close() end)
 
 function log_entry(activity, c)
+    if not logging then
+        return
+    end
+
     log_file:write(cjson.encode{
         time = os.date("%FT%T%z"),
         activity = activity,
