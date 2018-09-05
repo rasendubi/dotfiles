@@ -47,14 +47,6 @@ let
         nix.maxJobs = 8;
         nix.buildCores = 8;
       
-        networking = {
-          hostName = "Larry";
-      
-          useDHCP = false;
-          wicd.enable = true;
-          wireless.enable = false;
-        };
-      
         services.xserver.synaptics = {
           enable = true;
           twoFingerScroll = true;
@@ -84,11 +76,24 @@ let
               tags => [ "awesomewm" ]
               type => "awesomewm"
             }
+            file {
+              path => "/home/rasen/log.txt.omicron"
+              sincedb_path => "/home/rasen/.log.txt.omicron.sincedb"
+              codec => "json"
+              start_position => "beginning"
+              tags => [ "awesomewm" ]
+              type => "awesomewm"
+            }
           '';
           filterConfig = ''
             if [path] == "/home/rasen/log.txt.ashmalko" {
               mutate {
                 replace => [ "host", "ashmalko" ]
+              }
+            }
+            if [path] == "/home/rasen/log.txt.omicron" {
+              mutate {
+                replace => [ "host", "omicron" ]
               }
             }
           '';
@@ -121,8 +126,6 @@ let
     ];
     ashmalko = [
       {
-        networking.hostName = "ashmalko";
-      
         nix.maxJobs = 4;
         nix.buildCores = 4;
       }
@@ -170,13 +173,6 @@ let
         ];
       }
       {
-        hardware.pulseaudio = {
-          enable = true;
-          support32Bit = true;
-        };
-        environment.systemPackages = [ pkgs.pavucontrol ];
-      }
-      {
         services.gitolite = {
           enable = true;
           user = "git";
@@ -205,11 +201,11 @@ let
                 src = pkgs.fetchFromGitHub {
                   owner = "rasendubi";
                   repo = "zink";
-                  rev = "influxdb-0.0.3";
-                  sha256 = "0sxw2jdabnw4q1kha176gz3glg4f1c6mag1i6242y0y579zf49lr";
+                  rev = "influxdb-0.0.4";
+                  sha256 = "0mnpss2is57y0ncdxwnal62w6yn4691b8lmka4fl3pyxhsblhww4";
                 };
       
-                depsSha256 = "1j7mipqd1n146xds8136c9dq87af821yfw4qk3m40531m9zw4pi4";
+                cargoSha256 = "02v7nnsc0dbzd7kkfng0kgzwdlc85j1h7znzjpps7gcm3jz41lwz";
               };
             in {
               ExecStart = "${zink}/bin/zink timestamp,tagId,batteryLevel,temperature";
@@ -252,6 +248,8 @@ let
       
         boot.loader.systemd-boot.enable = true;
         boot.loader.efi.canTouchEfiVariables = true;
+      }
+      {
         boot.initrd.luks.devices = [
           {
             name = "root";
@@ -276,19 +274,26 @@ let
         swapDevices = [
           { device = "/dev/disk/by-uuid/26a19f99-4f3a-4bd5-b2ed-359bed344b1e"; }
         ];
-        networking = {
-          hostName = "omicron";
-      
-          useDHCP = false;
-          wicd.enable = true;
-          wireless.enable = false;
-        };
-      
-        services.xserver.synaptics = {
+      }
+      {
+        services.xserver.libinput = {
           enable = true;
-          twoFingerScroll = true;
-          vertEdgeScroll = true;
+          accelSpeed = "0.7";
         };
+      }
+      {
+        i18n = {
+          consolePackages = [
+            pkgs.terminus_font
+          ];
+          consoleFont = "ter-132n";
+        };
+      }
+      {
+        boot.loader.grub.gfxmodeEfi = "1024x768";
+      }
+      {
+        services.xserver.dpi = 276;
       }
     ];
   };
@@ -324,7 +329,37 @@ in
       };
     }
     {
+      nix.nixPath = [ "nixpkgs-overlays=/home/rasen/dotfiles/nixpkgs-overlays" ];
+    }
+    {
       nix.useSandbox = "relaxed";
+    }
+    {
+      boot.kernelPackages = pkgs.linuxPackages_latest;
+    }
+    {
+      networking = {
+        hostName = meta.name;
+    
+        networkmanager.enable = true;
+    
+        # disable wpa_supplicant
+        wireless.enable = false;
+      };
+    
+      users.extraUsers.rasen.extraGroups = [ "networkmanager" ];
+    
+      environment.systemPackages = [
+        pkgs.networkmanagerapplet
+      ];
+    }
+    {
+      hardware.pulseaudio = {
+        enable = true;
+        support32Bit = true;
+      };
+    
+      environment.systemPackages = [ pkgs.pavucontrol ];
     }
     {
       services.locate = {
@@ -363,10 +398,6 @@ in
       };
     }
     {
-      systemd.services.avahi-daemon.wantedBy = [ "multi-user.target" ];
-      systemd.services.avahi-daemon.after = [ "openvpn-kaa.target" ];
-    }
-    {
       services.openssh = {
         enable = true;
         passwordAuthentication = false;
@@ -395,8 +426,6 @@ in
     
         # These are used in addition to resolv.conf
         servers = [
-          "/cybervisiontech.com/10.2.2.45"
-          "/kaaiot.io/10.2.2.45"
           "8.8.8.8"
           "8.8.4.4"
         ];
@@ -408,29 +437,14 @@ in
           no-negcache
         '';
       };
-    
-      # Put the text in /etc/resolv.conf.head
-      #
-      # That will prepend dnsmasq server to /etc/resolv.conf (dhcpcd-specific)
-      environment.etc."resolv.conf.head".text = ''
-        nameserver 127.0.0.1
-      '';
-    
-      # dhclient-specific.
-      #
-      # This prepends local dnsmasq to the list of domain name servers.
-      #
-      # The supersede host-name line resolves the issue when DHCP overrides my machine name.
-      # For more info, see https://support.cumulusnetworks.com/hc/en-us/articles/218289767-Hostname-Configured-in-etc-hostname-Is-Superseded-by-the-DHCP-hostname-Option-
-      systemd.services.wicd.preStart = let
-        dhclient_conf_template = pkgs.writeText "dhclient.conf.template" ''
-          prepend domain-name-servers 127.0.0.1;
-          supersede host-name "$_HOSTNAME";
-        '';
-      in ''
-        mkdir -p /var/lib/wicd/
-        cp ${dhclient_conf_template} /var/lib/wicd/dhclient.conf.template
-      '';
+    }
+    {
+      services.syncthing = {
+        enable = true;
+        user = "rasen";
+        dataDir = "/home/rasen/.config/syncthing";
+        openDefaultPorts = true;
+      };
     }
     {
       networking.firewall = {
@@ -442,8 +456,31 @@ in
       };
     }
     {
-      virtualisation.virtualbox.host.enable = true;
-      users.extraUsers.rasen.extraGroups = [ "vboxusers" ];
+      services.postgresql.enable = true;
+      services.couchdb = {
+        enable = true;
+    
+        package = pkgs.couchdb2;
+    
+        extraConfig = ''
+          [httpd]
+          enable_cors = true
+    
+          [cors]
+          origins = *
+          credentials = true
+    
+          [couch_peruser]
+          enable = true
+          delete_dbs = true
+    
+          [chttpd]
+          authentication_handlers = {couch_httpd_auth, proxy_authentication_handler}, {couch_httpd_auth, cookie_authentication_handler}, {couch_httpd_auth, default_authentication_handler}
+        '';
+      };
+    }
+    {
+      virtualisation.docker.enable = true;
     }
     {
       environment.systemPackages = [
@@ -484,6 +521,7 @@ in
       services.xserver.displayManager.slim.enable = true;
     }
     {
+      services.xserver.displayManager.slim.enable = true;
       services.xserver.windowManager = {
         default = "awesome";
         awesome = {
@@ -499,7 +537,10 @@ in
       environment.systemPackages = [
         pkgs.wmname
         pkgs.xclip
-        pkgs.scrot
+        pkgs.escrotum
+    
+        # Control screen brightness
+        pkgs.xorg.xbacklight
       ];
     }
     {
@@ -511,9 +552,6 @@ in
     }
     {
       services.xserver.xkbOptions = "grp:caps_toggle,grp:menu_toggle,grp_led:caps";
-    }
-    {
-      environment.systemPackages = [ pkgs.xcape ];
     }
     {
       services.redshift = {
@@ -576,12 +614,34 @@ in
       environment.pathsToLink = [ "/share" ];
     }
     {
+      environment.systemPackages = [
+        pkgs.google-chrome
+      ];
+    }
+    {
+      environment.systemPackages = [
+        pkgs.firefox-devedition-bin
+      ];
+    }
+    (let
+      oldpkgs = import (pkgs.fetchFromGitHub {
+        owner = "NixOS";
+        repo = "nixpkgs-channels";
+        rev = "14cbeaa892da1d2f058d186b2d64d8b49e53a6fb";
+        sha256 = "0lfhkf9vxx2l478mvbmwm70zj3vfn9365yax7kvm7yp07b5gclbr";
+      }) { config = config.nixpkgs.config; };
+    in {
       nixpkgs.config.firefox = {
         icedtea = true;
       };
     
-      environment.systemPackages = [ pkgs.firefox-esr ];
-    }
+      environment.systemPackages = [
+        (pkgs.runCommand "firefox-esr" { preferLocalBuild = true; } ''
+          mkdir -p $out/bin
+          ln -s ${oldpkgs.firefox-esr}/bin/firefox $out/bin/firefox-esr
+        '')
+      ];
+    })
     {
       environment.systemPackages = [
         pkgs.zathura
@@ -596,42 +656,52 @@ in
     }
     {
       environment.systemPackages = [
-        pkgs.google-chrome
-        pkgs.skype
+        pkgs.xss-lock
+      ];
+    }
+    {
+      environment.systemPackages = [
         pkgs.libreoffice
         pkgs.qbittorrent
-        pkgs.calibre
-        pkgs.mnemosyne
         pkgs.deadbeef
-        pkgs.wine
+    
         pkgs.vlc
         pkgs.mplayer
         pkgs.smplayer
-        pkgs.gparted
-        pkgs.unetbootin
-        pkgs.kvm
-        pkgs.thunderbird
-        pkgs.xss-lock
-        pkgs.alarm-clock-applet
-        pkgs.pass
+    
+        # pkgs.alarm-clock-applet
     
         # Used by naga setup
         pkgs.xdotool
+    
+        pkgs.hledger
+        pkgs.drive
       ];
     }
     {
       environment.systemPackages = [
         (pkgs.vim_configurable.override { python3 = true; })
-        pkgs.emacs
       ];
     }
     {
       environment.systemPackages = [
-        pkgs.ycmd
-        pkgs.rustracer
-        pkgs.ditaa
-        pkgs.jre
+        pkgs.atom
       ];
+    }
+    {
+      services.emacs = {
+        enable = true;
+        defaultEditor = true;
+        package = (pkgs.emacsPackagesNgGen pkgs.emacs).emacsWithPackages (epkgs:
+          [
+            epkgs.orgPackages.org-plus-contrib
+    
+            epkgs.melpaStablePackages.use-package
+    
+            pkgs.ycmd
+          ]
+        );
+      };
     }
     {
       environment.systemPackages = [
@@ -682,7 +752,7 @@ in
       users.extraGroups.plugdev = { };
       users.extraUsers.rasen.extraGroups = [ "plugdev" "dialout" ];
     
-      services.udev.packages = [ pkgs.openocd ];
+      services.udev.packages = [ pkgs.openocd pkgs.android-udev-rules ];
     }
     {
       environment.systemPackages = [
@@ -698,12 +768,10 @@ in
         pkgs.file
         pkgs.which
         pkgs.whois
-        pkgs.gnupg
         pkgs.utillinuxCurses
     
         pkgs.patchelf
     
-        pkgs.nix-repl
         pkgs.nox
     
         pkgs.python
@@ -712,7 +780,7 @@ in
     }
     {
       environment.systemPackages = [
-        pkgs.steam
+        # pkgs.steam
       ];
     }
     {

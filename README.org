@@ -43,7 +43,7 @@ in
       nixpkgs.config.allowUnfree = true;
 
       # The NixOS release to be compatible with for stateful data such as databases.
-      system.nixos.stateVersion = "15.09";
+      system.stateVersion = "15.09";
     }
 
     <<nixos-section>>
@@ -619,160 +619,6 @@ http request GET http://registry.npmjs.org/os-homedir
 http 200 http://registry.npmjs.org/os-homedir
 #+end_example
 
-*** imapnotify
-
-[[https://www.npmjs.com/package/imapnotify][imapnotify]] is a nodejs package for listening to IMAP updates.
-
-#+name: nixpkgs-local-packages
-#+begin_src nix
-imapnotify = (import ./imapnotify { inherit pkgs; }).imapnotify;
-#+end_src
-
-To generate all Nix files use the following steps.
-
-This goes to =nixpkgs-local/imapnotify/node-packages.json= file:
-#+begin_src json :tangle nixpkgs-local/imapnotify/node-packages.json
-["imapnotify"]
-#+end_src
-
-To generate the rest of Nix files, execute from =nixpkgs-local/imapnotify= directory:
-#+begin_src sh :dir nixpkgs-local/imapnotify :results output
-nix-shell -p nodePackages.node2nix --run 'node2nix -i node-packages.json 2>&1'
-#+end_src
-
-#+RESULTS:
-#+begin_example
-info attempt registry request try #1 at 9:09:36 PM
-http request GET http://registry.npmjs.org/imapnotify
-http 200 http://registry.npmjs.org/imapnotify
-info attempt registry request try #1 at 9:09:36 PM
-http request GET http://registry.npmjs.org/imap
-http 200 http://registry.npmjs.org/imap
-info attempt registry request try #1 at 9:09:36 PM
-http request GET http://registry.npmjs.org/optimist
-http 200 http://registry.npmjs.org/optimist
-info attempt registry request try #1 at 9:09:36 PM
-http request GET http://registry.npmjs.org/printf
-http 200 http://registry.npmjs.org/printf
-info attempt registry request try #1 at 9:09:36 PM
-http request GET http://registry.npmjs.org/winston
-http 200 http://registry.npmjs.org/winston
-info attempt registry request try #1 at 9:09:36 PM
-http request GET http://registry.npmjs.org/mkdirp
-http 200 http://registry.npmjs.org/mkdirp
-info attempt registry request try #1 at 9:09:36 PM
-http request GET http://registry.npmjs.org/xenvar
-http 200 http://registry.npmjs.org/xenvar
-info attempt registry request try #1 at 9:09:36 PM
-http request GET http://registry.npmjs.org/bunyan
-http 200 http://registry.npmjs.org/bunyan
-info attempt registry request try #1 at 9:09:36 PM
-http request GET http://registry.npmjs.org/utf7
-http 200 http://registry.npmjs.org/utf7
-info attempt registry request try #1 at 9:09:36 PM
-http request GET http://registry.npmjs.org/readable-stream
-http 200 http://registry.npmjs.org/readable-stream
-info attempt registry request try #1 at 9:09:36 PM
-http request GET http://registry.npmjs.org/semver
-http 200 http://registry.npmjs.org/semver
-info attempt registry request try #1 at 9:09:36 PM
-http request GET http://registry.npmjs.org/core-util-is
-http 200 http://registry.npmjs.org/core-util-is
-info attempt registry request try #1 at 9:09:36 PM
-http request GET http://registry.npmjs.org/isarray
-http 200 http://registry.npmjs.org/isarray
-info attempt registry request try #1 at 9:09:37 PM
-http request GET http://registry.npmjs.org/string_decoder
-http 200 http://registry.npmjs.org/string_decoder
-info attempt registry request try #1 at 9:09:37 PM
-http request GET http://registry.npmjs.org/inherits
-http 200 http://registry.npmjs.org/inherits
-info attempt registry request try #1 at 9:09:37 PM
-http request GET http://registry.npmjs.org/wordwrap
-http 200 http://registry.npmjs.org/wordwrap
-info attempt registry request try #1 at 9:09:37 PM
-http request GET http://registry.npmjs.org/minimist
-http 200 http://registry.npmjs.org/minimist
-info attempt registry request try #1 at 9:09:37 PM
-http request GET http://registry.npmjs.org/async
-http 200 http://registry.npmjs.org/async
-info attempt registry request try #1 at 9:09:37 PM
-http request GET http://registry.npmjs.org/colors
-http 200 http://registry.npmjs.org/colors
-info attempt registry request try #1 at 9:09:37 PM
-http request GET http://registry.npmjs.org/cycle
-http 200 http://registry.npmjs.org/cycle
-info attempt registry request try #1 at 9:09:37 PM
-http request GET http://registry.npmjs.org/eyes
-http 200 http://registry.npmjs.org/eyes
-info attempt registry request try #1 at 9:09:37 PM
-http request GET http://registry.npmjs.org/isstream
-http 200 http://registry.npmjs.org/isstream
-info attempt registry request try #1 at 9:09:37 PM
-http request GET http://registry.npmjs.org/pkginfo
-http 200 http://registry.npmjs.org/pkginfo
-info attempt registry request try #1 at 9:09:37 PM
-http request GET http://registry.npmjs.org/stack-trace
-http 200 http://registry.npmjs.org/stack-trace
-info attempt registry request try #1 at 9:09:37 PM
-http request GET http://registry.npmjs.org/minimist
-http 200 http://registry.npmjs.org/minimist
-info attempt registry request try #1 at 9:09:37 PM
-http request GET http://registry.npmjs.org/dtrace-provider
-http 200 http://registry.npmjs.org/dtrace-provider
-info attempt registry request try #1 at 9:09:37 PM
-http request GET http://registry.npmjs.org/mv
-http 200 http://registry.npmjs.org/mv
-info attempt registry request try #1 at 9:09:37 PM
-http request GET http://registry.npmjs.org/safe-json-stringify
-http 200 http://registry.npmjs.org/safe-json-stringify
-info attempt registry request try #1 at 9:09:37 PM
-http request GET http://registry.npmjs.org/moment
-http 200 http://registry.npmjs.org/moment
-info attempt registry request try #1 at 9:09:37 PM
-http request GET http://registry.npmjs.org/nan
-http 200 http://registry.npmjs.org/nan
-info attempt registry request try #1 at 9:09:37 PM
-http request GET http://registry.npmjs.org/ncp
-http 200 http://registry.npmjs.org/ncp
-info attempt registry request try #1 at 9:09:37 PM
-http request GET http://registry.npmjs.org/rimraf
-http 200 http://registry.npmjs.org/rimraf
-info attempt registry request try #1 at 9:09:38 PM
-http request GET http://registry.npmjs.org/glob
-http 200 http://registry.npmjs.org/glob
-info attempt registry request try #1 at 9:09:38 PM
-http request GET http://registry.npmjs.org/inflight
-http 200 http://registry.npmjs.org/inflight
-info attempt registry request try #1 at 9:09:38 PM
-http request GET http://registry.npmjs.org/inherits
-http 200 http://registry.npmjs.org/inherits
-info attempt registry request try #1 at 9:09:38 PM
-http request GET http://registry.npmjs.org/minimatch
-http 200 http://registry.npmjs.org/minimatch
-info attempt registry request try #1 at 9:09:38 PM
-http request GET http://registry.npmjs.org/once
-http 200 http://registry.npmjs.org/once
-info attempt registry request try #1 at 9:09:38 PM
-http request GET http://registry.npmjs.org/path-is-absolute
-http 200 http://registry.npmjs.org/path-is-absolute
-info attempt registry request try #1 at 9:09:38 PM
-http request GET http://registry.npmjs.org/wrappy
-http 200 http://registry.npmjs.org/wrappy
-info attempt registry request try #1 at 9:09:38 PM
-http request GET http://registry.npmjs.org/brace-expansion
-http 200 http://registry.npmjs.org/brace-expansion
-info attempt registry request try #1 at 9:09:38 PM
-http request GET http://registry.npmjs.org/balanced-match
-http 200 http://registry.npmjs.org/balanced-match
-info attempt registry request try #1 at 9:09:38 PM
-http request GET http://registry.npmjs.org/concat-map
-http 200 http://registry.npmjs.org/concat-map
-info attempt registry request try #1 at 9:09:38 PM
-http request GET http://registry.npmjs.org/wrappy
-http 200 http://registry.npmjs.org/wrappy
-#+end_example
-
 *** heroku
 #+name: nixpkgs-local-packages
 #+begin_src nix
@@ -933,8 +779,6 @@ Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
 
     # These are used in addition to resolv.conf
     servers = [
-      "/cybervisiontech.com/10.2.2.45"
-      "/kaaiot.io/10.2.2.45"
       "8.8.8.8"
       "8.8.4.4"
     ];
@@ -985,7 +829,27 @@ Enable firewall. This disables all ports and pings.
 #+begin_src nix
 {
   services.postgresql.enable = true;
-  services.redis.enable = true;
+  services.couchdb = {
+    enable = true;
+
+    package = pkgs.couchdb2;
+
+    extraConfig = ''
+      [httpd]
+      enable_cors = true
+
+      [cors]
+      origins = *
+      credentials = true
+
+      [couch_peruser]
+      enable = true
+      delete_dbs = true
+
+      [chttpd]
+      authentication_handlers = {couch_httpd_auth, proxy_authentication_handler}, {couch_httpd_auth, cookie_authentication_handler}, {couch_httpd_auth, default_authentication_handler}
+    '';
+  };
 }
 #+end_src
 
@@ -1046,87 +910,7 @@ Group sync-gmail
 Channel sync-gmail-all
 Channel sync-gmail-spam
 Channel sync-gmail-sent
-
-IMAPAccount kaaiot
-Host imap.gmail.com
-User ashmalko@kaaiot.io
-PassCmd "pass imap.gmail.com/ashmalko@kaaiot.io"
-SSLType IMAPS
-CertificateFile /etc/ssl/certs/ca-certificates.crt
-
-IMAPStore kaaiot-remote
-Account kaaiot
-
-Channel sync-kaaiot-all
-Master :kaaiot-remote:"[Gmail]/All Mail"
-Slave :local:KaaIoT/all
-Create Both
-SyncState *
-
-Channel sync-kaaiot-spam
-Master :kaaiot-remote:"[Gmail]/Spam"
-Slave :local:KaaIoT/spam
-Create Both
-SyncState *
-
-Channel sync-kaaiot-sent
-Master :kaaiot-remote:"[Gmail]/Sent Mail"
-Slave :local:KaaIoT/sent
-Create Both
-SyncState *
-
-Group sync-kaaiot
-Channel sync-kaaiot-all
-Channel sync-kaaiot-spam
-Channel sync-kaaiot-sent
 #+end_src
-
-** imapnotify
-
-#+begin_src js :tangle imapnotify-gmail-config.js
-var child_process = require('child_process');
-
-function getStdout(cmd) {
-  var stdout = child_process.execSync(cmd);
-  return stdout.toString().trim();
-}
-
-exports.host = "imap.gmail.com";
-exports.port = 993;
-exports.tls = true;
-exports.username = "rasen.dubi@gmail.com";
-exports.password = getStdout("pass imap.gmail.com/rasen.dubi@gmail.com");
-exports.onNotify = "mbsync sync-gmail";
-// exports.onNotifyPost = {
-//   "mail": "emacsclient  -e '(gnus-group-get-new-news)'",
-//   "update": "emacsclient  -e '(gnus-group-get-new-news)'",
-//   "expunge": "emacsclient  -e '(gnus-group-get-new-news)'",
-// };
-exports.boxes = [ "INBOX" ];
-#+end_src
-
-#+begin_src js :tangle imapnotify-kaaiot-config.js
-var child_process = require('child_process');
-
-function getStdout(cmd) {
-  var stdout = child_process.execSync(cmd);
-  return stdout.toString().trim();
-}
-
-exports.host = "imap.gmail.com";
-exports.port = 993;
-exports.tls = true;
-exports.username = "ashmalko@kaaiot.io";
-exports.password = getStdout("pass imap.gmail.com/ashmalko@kaaiot.io");
-exports.onNotify = "mbsync sync-kaaiot";
-// exports.onNotifyPost = {
-//   "mail": "emacsclient  -e '(gnus-group-get-new-news)'",
-//   "update": "emacsclient  -e '(gnus-group-get-new-news)'",
-//   "expunge": "emacsclient  -e '(gnus-group-get-new-news)'",
-// };
-exports.boxes = [ "INBOX" ];
-#+end_src
-
 ** Dovecot
 Dovecot serves fetched mail to gnus.
 #+name: nixos-section
@@ -1172,22 +956,6 @@ port 465
 from rasen.dubi@gmail.com
 user rasen.dubi@gmail.com
 passwordeval "pass imap.gmail.com/rasen.dubi@gmail.com"
-
-# KaaIoT
-account kaaiot
-host smtp.gmail.com
-port 465
-from ashmalko@kaaiot.io
-user ashmalko@kaaiot.io
-passwordeval "pass imap.gmail.com/ashmalko@kaaiot.io"
-
-# CyberVision
-account cv
-host mail.cybervisiontech.com
-port 465
-from ashmalko@cybervisiontech.com
-user ashmalko
-passwordeval "pass mail.cybervisiontech.com/ashmalko@cybervisiontech.com"
 #+end_src
 
 ** notmuch
@@ -1540,11 +1308,18 @@ I use Firefox Quantum as my default browser now.
 }
 #+end_src
 
-I also need an old Firefox with Java support. I use Firefox Extended Support Release for that. It clashes with firefox-devedition, so I do some renaming .
+I also need an old Firefox with Java support. I use Firefox Extended Support Release for that (pinned to the latest version with Java support). It clashes with firefox-devedition, so I do some renaming here.
 
 #+name: nixos-section
 #+begin_src nix
-{
+(let
+  oldpkgs = import (pkgs.fetchFromGitHub {
+    owner = "NixOS";
+    repo = "nixpkgs-channels";
+    rev = "14cbeaa892da1d2f058d186b2d64d8b49e53a6fb";
+    sha256 = "0lfhkf9vxx2l478mvbmwm70zj3vfn9365yax7kvm7yp07b5gclbr";
+  }) { config = config.nixpkgs.config; };
+in {
   nixpkgs.config.firefox = {
     icedtea = true;
   };
@@ -1552,10 +1327,10 @@ I also need an old Firefox with Java support. I use Firefox Extended Support Rel
   environment.systemPackages = [
     (pkgs.runCommand "firefox-esr" { preferLocalBuild = true; } ''
       mkdir -p $out/bin
-      ln -s ${pkgs.firefox-esr}/bin/firefox $out/bin/firefox-esr
+      ln -s ${oldpkgs.firefox-esr}/bin/firefox $out/bin/firefox-esr
     '')
   ];
-}
+})
 #+end_src
 ** Zathura
 [[https://pwmt.org/projects/zathura/][Zathura]] is a cool document viewer with Vim-like bindings.
@@ -1620,15 +1395,13 @@ Don't require additional setup.
   environment.systemPackages = [
     pkgs.libreoffice
     pkgs.qbittorrent
-    pkgs.calibre
-    pkgs.mnemosyne
     pkgs.deadbeef
 
     pkgs.vlc
     pkgs.mplayer
     pkgs.smplayer
 
-    pkgs.alarm-clock-applet
+    # pkgs.alarm-clock-applet
 
     # Used by naga setup
     pkgs.xdotool
@@ -1638,7 +1411,6 @@ Don't require additional setup.
   ];
 }
 #+end_src
-
 * Development
 ** Editors
 I'm a seasoned Vim user, but I've switched to emacs.
@@ -1675,7 +1447,6 @@ Start emacs as a daemon:
         epkgs.melpaStablePackages.use-package
 
         pkgs.ycmd
-        pkgs.rustracer
       ]
     );
   };
@@ -2130,7 +1901,6 @@ To allow user use openocd without sudo, we should add him to =plugdev= group and
 
     pkgs.patchelf
 
-    pkgs.nix-repl
     pkgs.nox
 
     pkgs.python
@@ -2251,68 +2021,21 @@ fi
 * Private                                                             :crypt:
 -----BEGIN PGP MESSAGE-----
 
-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
-M0iVSTY4BsmCb1WGD12ol40=
-=v0Vb
+hQEMA0dwtg6M7gMLAQf/QpR6Lh2e1IFNECvvQW0/EH/NSmgM+CUcxjvM9iCNnire
+KZKH3yXMOEeFQ57RHQi/wZbHq8GWKgjCJI2JTTJDLf/9muP8FObVHJ90S/ElMqiS
+dgIprndkhK8w6Y3Ffa6QRAtAoQ0bDm1d5pkuMpaAWY70TAEc+FV8H6RVT8LqD0+6
+tXqJza0TF/kKCDLghZFIXZ7dMCxikj6JmEZsS+J/Y/zGRLw/85PJsmfGQRBiXFww
+MjZUKYRtk0Rz/oQ23bSh+DvHg+dK3+PzlvK+7JKZ67BHxj4DAvYBRHlcVfR2gFFe
+RM18Iv3aUcPn0Kq34Trfbo8LaJdyfdoj3+Ir3YCIjdLBBQGYAlE3LQxY7eU8RW43
+8BqivWZ/uxF/d6KFaP88FMtq3WKx/xq7V3nEsNVlQj4EcO2Wal/ZG4fNaXrelPv4
+N2Lz1Bo05j1af4j9K4co1Ll6QfuxvrAcvHoj3qV2FYcDffvjKJMcZnSErdmSbREE
+bRICHLkKcWS9szN4GqMgfLXVVNHZBgIzc42p0jMufLml4b16LA/W9hlrGvcohSZA
+t0se7lynLIklRk75ec099+GZNIeXQWFlmS+0b7pixytgZPXPl3fODD4yUzdREfaG
+LAhVOEuefRX6O0jG0jZ/CNrfGO5KXvHJUygRRY4gAKTZ2KsT1RtVZA2gOReSTsRa
+SBIOj9oHinmsPG86lb3Kmbp13TByMsxsWeIlw7xiFf/He+cIgLGKyfBgz5dzSkMD
+Cw7HW7XLcApO21LYMqgHQX16UI0mTCjoa+56J/fTezctYqgNQ+qAkD2I6QK7cqe1
+72eHZRtkIZ9LfcAliilKCy27wDrCdgq9IbEsmgE43xidck67Ds4K8TgGqMIT1Znw
+vlESOlflGlL4fhWu33/p3NRTJ6XOIntSuf52M9cNPjrT/eijlfTSQyNkkVbT9KT6
+kOTt1d7n2w==
+=3F6S
 -----END PGP MESSAGE-----
