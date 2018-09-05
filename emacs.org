@@ -297,6 +297,13 @@ The normal =C-j= is not placed conveniently on Workman layout, so move its funct
 #+begin_src emacs-lisp
   (ivy-mode 1))
 #+end_src
+** smex
+I use smex for improved =counsel-M-x= (show most frequently used commands first).
+#+begin_src emacs-lisp
+(use-package smex
+  :config
+  (smex-initialize))
+#+end_src
 ** counsel
 #+begin_src emacs-lisp
   (use-package counsel
