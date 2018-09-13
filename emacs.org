@@ -773,6 +773,17 @@ Save more last clocks.
   (setq-default org-clock-history-length 10)
 #+end_src
 ** Capture
+I use an extension that adds page url to the title (used for page tracking). Strip it down here
+#+name: org-config
+#+begin_src emacs-lisp
+  (defun rasen/strip-url-from-title (title)
+    (message "stripping: %s" title)
+    (replace-regexp-in-string
+     " @ [^ ]*$"
+     ""
+     (replace-regexp-in-string " \\[[^]]*\\]\\[[^]]*\\]$" "" title)))
+#+end_src
+
 My capture templates.
 #+name: org-config
 #+begin_src emacs-lisp :tangle no
@@ -810,6 +821,12 @@ My capture templates.
 
           ("n" "note" entry (file "~/org/refile.org")
            "* %?\n\n%a\n" :clock-in t :clock-resume t)))
+#+end_src
+
+Enable org-protocol.
+#+name: org-config
+#+begin_src emacs-lisp
+(require 'org-protocol)
 #+end_src
 
 Instanly go into insert mode on capture.
