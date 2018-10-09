@@ -1169,7 +1169,49 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
     (setq-default js2-strict-trailing-comma-warning nil))
 
 (use-package rjsx-mode
-  :mode "\\.js$")
+  :mode "\\.js$"
+  :config
+  (setq-default js-indent-level 2))
+#+end_src
+** Typescript
+#+begin_src emacs-lisp
+(use-package typescript
+  :config
+  (setq-default typescript-indent-level 2))
+#+end_src
+
+#+begin_src emacs-lisp
+  (use-package tide
+    :after (typescript-mode company flycheck web-mode)
+    :commands (tide-setup tide-hl-identifier-mode tide-format-before-save)
+    :init
+    (add-hook 'typescript-mode-hook 'tide-setup)
+    (add-hook 'typescript-mode-hook 'tide-hl-identifier-mode)
+    (add-hook 'typescript-mode-hook 'company-mode)
+    ; (add-hook 'before-save 'tide-format-before-save)
+    ; :hook ((typescript-mode . tide-setup)
+    ;        (typescript-mode . tide-hl-identifier-mode)
+    ;        (before-save . tide-format-before-save))
+    (defun setup-tide-mode ()
+      (interactive)
+      (tide-setup)
+      (flycheck-mode +1)
+      (setq flycheck-check-syntax-automatically '(save mode-enabled))
+      (eldoc-mode +1)
+      (tide-hl-identifier-mode +1)
+      (company-mode +1))
+
+    (add-hook 'web-mode-hook
+              (lambda ()
+                (when (or (string-equal "tsx" (file-name-extension buffer-file-name))
+                          (string-equal "ts" (file-name-extension buffer-file-name)))
+                  (typescript-mode))))
+    )
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package flycheck-jest
+  :after flycheck)
 #+end_src
 ** PHP
 #+begin_src emacs-lisp
@@ -1182,6 +1224,8 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
     :commands (web-mode)
     :init
     (add-to-list 'auto-mode-alist '("\\.blade.php\\'" . web-mode))
+    (add-to-list 'auto-mode-alist '("\\.ts\\'" . web-mode))
+    (add-to-list 'auto-mode-alist '("\\.tsx\\'" . web-mode))
     :config
     (setq web-mode-engines-alist
           '(("php"    . "\\.phtml\\'")
