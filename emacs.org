@@ -1257,6 +1257,11 @@ Package edit-indirect needed to edit code blocks.
 (use-package restclient
   :mode "\\.http$")
 #+end_src
+** terraform
+#+begin_src emacs-lisp
+(use-package terraform-mode
+  :mode "\\.tf$")
+#+end_src
 * Mail setup
 ** gnus
 #+begin_src emacs-lisp
