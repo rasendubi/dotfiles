@@ -558,7 +558,7 @@ function razer(n, t)
         awful.tag.history.restore()
         return
     end
-    if c.class == 'Google-chrome' or c.class == 'google-chrome' or c.class == 'Firefox Developer Edition' then
+    if c.class == 'Google-chrome' or c.class == 'google-chrome' or c.class == 'Firefox Developer Edition' or c.class == 'Firefox' then
         if n == 1 then
             awful.spawn("xdotool key Alt+Left")
         elseif n == 2 then

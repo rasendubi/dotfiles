@@ -1262,6 +1262,15 @@ The following section is required for pass to find the OTP extension.
   };
 }
 #+end_src
+
+Install [[https://github.com/browserpass/browserpass][browserpass]] firefox extension backend.
+#+name: nixos-section
+#+begin_src nix
+{
+  programs.browserpass.enable = true;
+}
+#+end_src
+
 ** KDE apps
 I don't use full KDE but some apps are definitely nice.
 #+name: nixos-section
@@ -1303,7 +1312,8 @@ I use Firefox Quantum as my default browser now.
 #+begin_src nix
 {
   environment.systemPackages = [
-    pkgs.firefox-devedition-bin
+    pkgs.firefox
+    pkgs.icedtea_web
   ];
 }
 #+end_src
@@ -1318,7 +1328,7 @@ I also need an old Firefox with Java support. I use Firefox Extended Support Rel
     repo = "nixpkgs-channels";
     rev = "14cbeaa892da1d2f058d186b2d64d8b49e53a6fb";
     sha256 = "0lfhkf9vxx2l478mvbmwm70zj3vfn9365yax7kvm7yp07b5gclbr";
-  }) { config = config.nixpkgs.config; };
+  }) { config = { firefox.icedtea = true; }; };
 in {
   nixpkgs.config.firefox = {
     icedtea = true;
@@ -1401,7 +1411,7 @@ Don't require additional setup.
     pkgs.mplayer
     pkgs.smplayer
 
-    # pkgs.alarm-clock-applet
+    pkgs.alarm-clock-applet
 
     # Used by naga setup
     pkgs.xdotool
