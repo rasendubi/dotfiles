@@ -866,7 +866,7 @@ I use mbsync to sync my accounts and make them available offline.
 #+begin_src nix
 {
   environment.systemPackages = [
-    pkgs.isyncUnstable
+    pkgs.isync
   ];
 }
 #+end_src
@@ -974,17 +974,17 @@ Config file is =.notmuch-config=.
 [user]
 name=Alexey Shmalko
 primary_email=rasen.dubi@gmail.com
-other_email=ashmalko@cybervisiontech.com,ashmalko@kaaiot.io
+other_email=ashmalko@cybervisiontech.com,ashmalko@kaaiot.io,ashmalko@doctoright.org
 
 [database]
 path=/home/rasen/Mail
 
 [new]
-tags=new;
-ignore=.mbsyncstate;.mbsyncstate.lock;.mbsyncstate.new;.mbsyncstate.journal;.uidvalidity;dovecot-uidlist;dovecot.index;dovecot.index.log;dovecot.index.log.2;dovecot.index.cache
+tags=inbox;
+ignore=.mbsyncstate;.mbsyncstate.lock;.mbsyncstate.new;.mbsyncstate.journal;.uidvalidity;dovecot-uidlist;dovecot-keywords;dovecot.index;dovecot.index.log;dovecot.index.log.2;dovecot.index.cache;/^archive/
 
 [search]
-exclude_tags=deleted;spam
+exclude_tags=deleted;spam;muted;
 
 [crypto]
 gpg_path=gpg2
@@ -1405,7 +1405,9 @@ Don't require additional setup.
   environment.systemPackages = [
     pkgs.libreoffice
     pkgs.qbittorrent
+    pkgs.google-play-music-desktop-player
     pkgs.deadbeef
+    pkgs.tdesktop # Telegram
 
     pkgs.vlc
     pkgs.mplayer
@@ -1915,6 +1917,11 @@ To allow user use openocd without sudo, we should add him to =plugdev= group and
 
     pkgs.python
     pkgs.python3
+
+    pkgs.awscli
+    pkgs.nodejs-10_x
+    pkgs.shellcheck
+    # pkgs.haskellPackages.ghc-mod
   ];
 }
 #+end_src
@@ -1935,7 +1942,7 @@ This install a number of default man pages for the linux/posix system.
 * Games
 ** Steam
 We need the following package:
-#+name: nixos-section
+# #+name: nixos-section
 #+begin_src nix
 {
   environment.systemPackages = [
@@ -1945,14 +1952,13 @@ We need the following package:
 #+end_src
 
 It's also required to enable 32-bit support for opengl and pulseaudio:
-#+name: nixos-section
+# #+name: nixos-section
 #+begin_src nix
 {
   hardware.opengl.driSupport32Bit = true;
   hardware.pulseaudio.support32Bit = true;
 }
 #+end_src
-
 ** Nethack
 I play nethack rarely, but still nice to have my setting in sync.
 #+name: nixos-section
@@ -2031,21 +2037,21 @@ fi
 * Private                                                             :crypt:
 -----BEGIN PGP MESSAGE-----
 
-hQEMA0dwtg6M7gMLAQf/QpR6Lh2e1IFNECvvQW0/EH/NSmgM+CUcxjvM9iCNnire
-KZKH3yXMOEeFQ57RHQi/wZbHq8GWKgjCJI2JTTJDLf/9muP8FObVHJ90S/ElMqiS
-dgIprndkhK8w6Y3Ffa6QRAtAoQ0bDm1d5pkuMpaAWY70TAEc+FV8H6RVT8LqD0+6
-tXqJza0TF/kKCDLghZFIXZ7dMCxikj6JmEZsS+J/Y/zGRLw/85PJsmfGQRBiXFww
-MjZUKYRtk0Rz/oQ23bSh+DvHg+dK3+PzlvK+7JKZ67BHxj4DAvYBRHlcVfR2gFFe
-RM18Iv3aUcPn0Kq34Trfbo8LaJdyfdoj3+Ir3YCIjdLBBQGYAlE3LQxY7eU8RW43
-8BqivWZ/uxF/d6KFaP88FMtq3WKx/xq7V3nEsNVlQj4EcO2Wal/ZG4fNaXrelPv4
-N2Lz1Bo05j1af4j9K4co1Ll6QfuxvrAcvHoj3qV2FYcDffvjKJMcZnSErdmSbREE
-bRICHLkKcWS9szN4GqMgfLXVVNHZBgIzc42p0jMufLml4b16LA/W9hlrGvcohSZA
-t0se7lynLIklRk75ec099+GZNIeXQWFlmS+0b7pixytgZPXPl3fODD4yUzdREfaG
-LAhVOEuefRX6O0jG0jZ/CNrfGO5KXvHJUygRRY4gAKTZ2KsT1RtVZA2gOReSTsRa
-SBIOj9oHinmsPG86lb3Kmbp13TByMsxsWeIlw7xiFf/He+cIgLGKyfBgz5dzSkMD
-Cw7HW7XLcApO21LYMqgHQX16UI0mTCjoa+56J/fTezctYqgNQ+qAkD2I6QK7cqe1
-72eHZRtkIZ9LfcAliilKCy27wDrCdgq9IbEsmgE43xidck67Ds4K8TgGqMIT1Znw
-vlESOlflGlL4fhWu33/p3NRTJ6XOIntSuf52M9cNPjrT/eijlfTSQyNkkVbT9KT6
-kOTt1d7n2w==
-=3F6S
+hQEMA0dwtg6M7gMLAQgAhXy1R6VK9R0/2Pgd2dcaB/QEaOnLy6ioWbL5Tmr89mo/
+BKxHH4NME1uQHOTt4fRuyjdC/SBQEssFJ2xvHhY/mcp4OdjTsYIkfEfkA6unpCVf
+Ov0T28im7ROh+gqi+nh1GviMjVM1N8vKxkjwf6nMEAm9b4RcPSq6LPnp+HhC03Tx
+KjVbFkK/0g89LtlNzVveAslu1B4pCJzAU433hIPinib8TH9so/q6ogCdPVjTOfQ7
+iS8JCIKCKercV+o3Qvatz4wmcNmVDPnA4GIt2pBGZ4EocgKzb3vZpdqtMCHmwZkN
+fjTzOJ033PurlNe3pmRUxZ12INgfjC5aWQ3uzeYpP9LBDwGcZCI110cDxDpejSEA
+RCfIkicVT6Q/VK/b4dDppoPAHaO6VfynrlXH6kuMkEKuQqNVzGlPYCpMdiVY6nI2
+5xaStW8EX+Xtw3KT8U5YRxv6LkcFKZt8qImigYPgns1E8G3v9TaYNXCmH7YDJLL2
+74ZALCrJ3DUPEIQgaLGrOzKd25/87yPfBHPDpSeSHGouEn6RYsFaGD8lNe34yOxV
+CSwltQ1O7pIUcFf5H1ayy23ASakM0KzbZ4KrPHmWQuoI8F61HM+jsTAUuXJkv1dZ
+6pj6pdPcC/2Jwz+A3TiUxc0DbZtGAB6qqrvwiIN5WdHDQLcNuqehhs1GsMFvkdX0
+6lQpgqGE+JZbUZlE45BVkxSL+6VfEJY6U5rCQDWkX0IqoMYJnkLhH/nAYU5gyJuX
+2DcJZYqSBFwi0PoyPTr1bMQbI1T3i+Ev1MwpOg7N5biKL/XkP/mEkHFCvS3LOrgx
+EzEamzrV6sxzMMUcnAVq7UqEBW/TpenKuN1e6W9AY4ZFDcxsbB5s76PER61nU3BS
+wDBv/JXK8138uPZFAF4o35pat7nECBUOSj/aTefklpxdCP4K2BFTsChMZZWNk8lG
+40Z3eGSqWW1hFRFHjK5WTrM=
+=GfAt
 -----END PGP MESSAGE-----

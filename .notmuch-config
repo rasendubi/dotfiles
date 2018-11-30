@@ -1,17 +1,17 @@
 [user]
 name=Alexey Shmalko
 primary_email=rasen.dubi@gmail.com
-other_email=ashmalko@cybervisiontech.com,ashmalko@kaaiot.io
+other_email=ashmalko@cybervisiontech.com,ashmalko@kaaiot.io,ashmalko@doctoright.org
 
 [database]
 path=/home/rasen/Mail
 
 [new]
-tags=new;
-ignore=.mbsyncstate;.mbsyncstate.lock;.mbsyncstate.new;.mbsyncstate.journal;.uidvalidity;dovecot-uidlist;dovecot.index;dovecot.index.log;dovecot.index.log.2;dovecot.index.cache
+tags=inbox;
+ignore=.mbsyncstate;.mbsyncstate.lock;.mbsyncstate.new;.mbsyncstate.journal;.uidvalidity;dovecot-uidlist;dovecot-keywords;dovecot.index;dovecot.index.log;dovecot.index.log.2;dovecot.index.cache;/^archive/
 
 [search]
-exclude_tags=deleted;spam
+exclude_tags=deleted;spam;muted;
 
 [crypto]
 gpg_path=gpg2
