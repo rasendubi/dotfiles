@@ -1236,7 +1236,34 @@ Here go applications (almost) every normal user needs.
   ];
   programs.gnupg.agent = {
     enable = true;
+    enableSSHSupport = true;
   };
+
+  systemd.user.sockets.gpg-agent-ssh = {
+    wantedBy = [ "sockets.target" ];
+    listenStreams = [ "%t/gnupg/S.gpg-agent.ssh" ];
+    socketConfig = {
+      FileDescriptorName = "ssh";
+      Service = "gpg-agent.service";
+      SocketMode = "0600";
+      DirectoryMode = "0700";
+    };
+  };
+
+  services.pcscd.enable = true;
+}
+#+end_src
+** Yubikey
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [
+    pkgs.yubikey-manager
+    pkgs.yubikey-personalization
+    pkgs.yubikey-personalization-gui
+  ];
+
+  services.udev.packages = [ pkgs.yubikey-personalization ];
 }
 #+end_src
 ** password-store
