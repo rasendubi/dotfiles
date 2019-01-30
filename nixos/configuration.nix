@@ -3,234 +3,10 @@ let
   meta = import ./meta.nix;
   machine-config = lib.getAttr meta.name {
     Larry = [
-      {
-        imports = [ <nixpkgs/nixos/modules/installer/scan/not-detected.nix> ];
       
-        boot.initrd.availableKernelModules = [ "ahci" "xhci_hcd" ];
-        boot.initrd.kernelModules = [ "wl" ];
-      
-        boot.kernelModules = [ "kvm-intel" "wl" ];
-        boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
-      }
-      {
-        fileSystems = {
-          "/" = {
-            device = "/dev/disk/by-uuid/ba82dd25-a9e5-436f-ae76-4ee44d53b2c6";
-            fsType = "ext4";
-          };
-          "/home" = {
-            device = "/dev/disk/by-uuid/b27c07d0-aaf7-44a1-87e1-5a2cb30954ec";
-            fsType = "ext4";
-          };
-        };
-      }
-      {
-        swapDevices = [
-          # TODO: set priority
-          # { device = "/dev/disk/by-uuid/f0bd0438-3324-4295-9981-07015fa0af5e"; }
-          { device = "/dev/disk/by-uuid/75822d9d-c5f0-495f-b089-f57d0de5246d"; }
-        ];
-      }
-      {
-        boot.loader.grub = {
-          enable = true;
-          version = 2;
-          device = "/dev/sda";
-          extraEntries = ''
-            menuentry 'Gentoo' {
-              configfile (hd1,1)/grub2/grub.cfg
-            }
-          '';
-        };
-      }
-      {
-        nix.maxJobs = 8;
-        nix.buildCores = 8;
-      
-        services.xserver.synaptics = {
-          enable = true;
-          twoFingerScroll = true;
-          vertEdgeScroll = true;
-        };
-      }
-      {
-        hardware.nvidiaOptimus.disable = true;
-      }
-      {
-        services.logstash = {
-          enable = true;
-          inputConfig = ''
-            file {
-              path => "/home/rasen/log.txt.processed"
-              sincedb_path => "/home/rasen/.log.txt.sincedb"
-              codec => "json"
-              start_position => "beginning"
-              tags => [ "awesomewm" ]
-              type => "awesomewm"
-            }
-            file {
-              path => "/home/rasen/log.txt.ashmalko"
-              sincedb_path => "/home/rasen/.log.txt.ashmalko.sincedb"
-              codec => "json"
-              start_position => "beginning"
-              tags => [ "awesomewm" ]
-              type => "awesomewm"
-            }
-            file {
-              path => "/home/rasen/log.txt.omicron"
-              sincedb_path => "/home/rasen/.log.txt.omicron.sincedb"
-              codec => "json"
-              start_position => "beginning"
-              tags => [ "awesomewm" ]
-              type => "awesomewm"
-            }
-          '';
-          filterConfig = ''
-            if [path] == "/home/rasen/log.txt.ashmalko" {
-              mutate {
-                replace => [ "host", "ashmalko" ]
-              }
-            }
-            if [path] == "/home/rasen/log.txt.omicron" {
-              mutate {
-                replace => [ "host", "omicron" ]
-              }
-            }
-          '';
-          outputConfig = ''
-            elasticsearch {
-              index => "quantified-self"
-              document_type => "awesomewm"
-            }
-          '';
-        };
-      
-        services.elasticsearch = {
-          enable = true;
-          cluster_name = "ashmalko";
-          extraConf = ''
-            node.name: "${meta.name}"
-          '';
-        };
-      
-        services.kibana = {
-          enable = true;
-        };
-      }
-      {
-        networking.localCommands = ''
-          ip route del 10.2.0.0/22 via 10.7.0.52 2> /dev/null || true
-          ip route add 10.2.0.0/22 via 10.7.0.52
-        '';
-      }
     ];
     ashmalko = [
-      {
-        nix.maxJobs = 4;
-        nix.buildCores = 4;
-      }
-      {
-        imports = [
-          <nixpkgs/nixos/modules/installer/scan/not-detected.nix>
-        ];
       
-        boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "usb_storage" "usbhid" "sd_mod" ];
-        boot.kernelModules = [ "kvm-intel" ];
-        boot.extraModulePackages = [ ];
-      
-        boot.kernelParams = [ "intel_pstate=no_hwp" ];
-        boot.loader.grub = {
-          enable = true;
-          version = 2;
-          device = "/dev/sda";
-          efiSupport = true;
-        };
-        boot.loader.efi.canTouchEfiVariables = true;
-      }
-      {
-        boot.initrd.luks.devices = [
-          {
-            name = "root";
-            device = "/dev/disk/by-uuid/a3eb801b-7771-4112-bb8d-42a9676e65de";
-            preLVM = true;
-            allowDiscards = true;
-          }
-        ];
-      
-        fileSystems."/boot" = {
-          device = "/dev/disk/by-uuid/4184-7556";
-          fsType = "vfat";
-        };
-      
-        fileSystems."/" = {
-          device = "/dev/disk/by-uuid/84d89f4b-7707-4580-8dbc-ec7e15e43b52";
-          fsType = "ext4";
-          options = [ "noatime" "nodiratime" "discard" ];
-        };
-      
-        swapDevices = [
-          { device = "/dev/disk/by-uuid/5a8086b0-627e-4775-ac07-b827ced6998b"; }
-        ];
-      }
-      {
-        services.gitolite = {
-          enable = true;
-          user = "git";
-          adminPubkey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDJhMhxIwZJgIY6CNSNEH+BetF/WCUtDFY2KTIl8LcvXNHZTh4ZMc5shTOS/ROT4aH8Awbm0NjMdW33J5tFMN8T7q89YZS8hbBjLEh8J04Y+kndjnllDXU6NnIr/AenMPIZxJZtSvWYx+f3oO6thvkZYcyzxvA5Vi6V1cGx6ni0Kizq/WV/mE/P1nNbwuN3C4lCtiBC9duvoNhp65PctQNohnKQs0vpQcqVlfqBsjQ7hhj2Fjg+Ofmt5NkL+NhKQNqfkYN5QyIAulucjmFAieKR4qQBABopl2F6f8D9IjY8yH46OCrgss4WTf+wxW4EBw/QEfNoKWkgVoZtxXP5pqAz rasen@Larry";
-        };
-      }
-      {
-        services.avahi.interfaces = [ "enp0s31f6" ];
-      }
-      {
-        networking.firewall.allowedTCPPorts = [
-          1883 8883 # Zink
-          3000      # Grafana
-        ];
-      
-        systemd.services.zink = {
-          description = "Zink service";
-          wantedBy = [ "multi-user.target" ];
-          after = [ "grafana.service" ];
-      
-          serviceConfig =
-            let zink =
-              pkgs.rustPlatform.buildRustPackage {
-                name = "zink-0.0.3";
-      
-                src = pkgs.fetchFromGitHub {
-                  owner = "rasendubi";
-                  repo = "zink";
-                  rev = "influxdb-0.0.4";
-                  sha256 = "0mnpss2is57y0ncdxwnal62w6yn4691b8lmka4fl3pyxhsblhww4";
-                };
-      
-                cargoSha256 = "02v7nnsc0dbzd7kkfng0kgzwdlc85j1h7znzjpps7gcm3jz41lwz";
-              };
-            in {
-              ExecStart = "${zink}/bin/zink timestamp,tagId,batteryLevel,temperature";
-              Restart = "on-failure";
-            };
-        };
-      
-        services.influxdb.enable = true;
-      
-        services.grafana = {
-          enable = true;
-          addr = "0.0.0.0";
-          port = 3000;
-      
-          domain = "ashmalko.local";
-          auth.anonymous.enable = true;
-        };
-      }
-      {
-        networking.nat = {
-          enable = true;
-          internalInterfaces = [ "tap0" ];
-          externalInterface = "enp0s31f6";
-        };
-      }
     ];
     omicron = [
       {
@@ -335,7 +111,15 @@ in
       nix.useSandbox = "relaxed";
     }
     {
-      boot.kernelPackages = pkgs.linuxPackages_latest;
+      hardware.bluetooth.enable = true;
+      hardware.pulseaudio = {
+        enable = true;
+    
+        # NixOS allows either a lightweight build (default) or full build
+        # of PulseAudio to be installed.  Only the full build has
+        # Bluetooth support, so it must be selected here.
+        package = pkgs.pulseaudioFull;
+      };
     }
     {
       networking = {
@@ -401,15 +185,18 @@ in
       services.openssh = {
         enable = true;
         passwordAuthentication = false;
-    
-        # Disable default firewall rules
+      };
+    }
+    {
+      services.openssh = {
+        # Doing this won't open firewall for everybody.
         ports = [];
         listenAddresses = [
           { addr = "0.0.0.0"; port = 22; }
         ];
       };
     
-      # allow ssh from VPN network only
+      # Open firewall for tap0 only
       networking.firewall = {
         extraCommands = ''
           ip46tables -D INPUT -i tap0 -p tcp -m tcp --dport 22 -j ACCEPT 2> /dev/null || true
@@ -476,6 +263,11 @@ in
     
           [chttpd]
           authentication_handlers = {couch_httpd_auth, proxy_authentication_handler}, {couch_httpd_auth, cookie_authentication_handler}, {couch_httpd_auth, default_authentication_handler}
+    
+          [couch_httpd_auth]
+          proxy_use_secret = true
+          # no worries—this is a non-secure development secret
+          secret = b4034a82d6a8e1fe27fa6ae0ac18fc09
         '';
       };
     }
@@ -484,7 +276,7 @@ in
     }
     {
       environment.systemPackages = [
-        pkgs.isyncUnstable
+        pkgs.isync
       ];
     }
     {
@@ -526,6 +318,12 @@ in
         default = "awesome";
         awesome = {
           enable = true;
+          package = (import (pkgs.fetchFromGitHub {
+            owner = "dtzWill";
+            repo = "nixpkgs";
+            rev = "update/awesome-4.3";
+            sha256 = "1mga1fz6r5jmilyiclzdg7wwzxf0fpzcqj2h0hvfr129x8sblzdx";
+          }) {}).awesome;
           luaModules = [ pkgs.luaPackages.luafilesystem pkgs.luaPackages.cjson ];
         };
       };
@@ -603,9 +401,56 @@ in
     }
     {
       environment.systemPackages = [
+        pkgs.gnupg
+      ];
+      programs.gnupg.agent = {
+        enable = true;
+        enableSSHSupport = true;
+      };
+    
+      systemd.user.sockets.gpg-agent-ssh = {
+        wantedBy = [ "sockets.target" ];
+        listenStreams = [ "%t/gnupg/S.gpg-agent.ssh" ];
+        socketConfig = {
+          FileDescriptorName = "ssh";
+          Service = "gpg-agent.service";
+          SocketMode = "0600";
+          DirectoryMode = "0700";
+        };
+      };
+    
+      services.pcscd.enable = true;
+    }
+    {
+      environment.systemPackages = [
+        pkgs.yubikey-manager
+        pkgs.yubikey-personalization
+        pkgs.yubikey-personalization-gui
+      ];
+    
+      services.udev.packages = [ pkgs.yubikey-personalization ];
+    }
+    {
+      environment.systemPackages = [
+        pkgs.pass
+        pkgs.pass-otp
+      ];
+    }
+    {
+      environment.pathsToLink = [ "/lib/password-store/extensions" ];
+      environment.variables = {
+        PASSWORD_STORE_EXTENSIONS_DIR = "/nix/var/nix/profiles/system/sw/lib/password-store/extensions";
+        PASSWORD_STORE_ENABLE_EXTENSIONS = "true";
+      };
+    }
+    {
+      programs.browserpass.enable = true;
+    }
+    {
+      environment.systemPackages = [
         pkgs.gwenview
         pkgs.dolphin
-        pkgs.kde4.kfilemetadata
+        pkgs.kdeFrameworks.kfilemetadata
         pkgs.filelight
         pkgs.shared_mime_info
       ];
@@ -620,7 +465,8 @@ in
     }
     {
       environment.systemPackages = [
-        pkgs.firefox-devedition-bin
+        pkgs.firefox
+        pkgs.icedtea_web
       ];
     }
     (let
@@ -629,7 +475,7 @@ in
         repo = "nixpkgs-channels";
         rev = "14cbeaa892da1d2f058d186b2d64d8b49e53a6fb";
         sha256 = "0lfhkf9vxx2l478mvbmwm70zj3vfn9365yax7kvm7yp07b5gclbr";
-      }) { config = config.nixpkgs.config; };
+      }) { config = { firefox.icedtea = true; }; };
     in {
       nixpkgs.config.firefox = {
         icedtea = true;
@@ -663,13 +509,14 @@ in
       environment.systemPackages = [
         pkgs.libreoffice
         pkgs.qbittorrent
+        pkgs.google-play-music-desktop-player
         pkgs.deadbeef
+        pkgs.tdesktop # Telegram
     
-        pkgs.vlc
         pkgs.mplayer
         pkgs.smplayer
     
-        # pkgs.alarm-clock-applet
+        pkgs.alarm-clock-applet
     
         # Used by naga setup
         pkgs.xdotool
@@ -681,11 +528,7 @@ in
     {
       environment.systemPackages = [
         (pkgs.vim_configurable.override { python3 = true; })
-      ];
-    }
-    {
-      environment.systemPackages = [
-        pkgs.atom
+        pkgs.neovim
       ];
     }
     {
@@ -763,11 +606,9 @@ in
         pkgs.unzip
         pkgs.unrar
         pkgs.p7zip
-        pkgs.irssi
         pkgs.bind
         pkgs.file
         pkgs.which
-        pkgs.whois
         pkgs.utillinuxCurses
     
         pkgs.patchelf
@@ -776,16 +617,13 @@ in
     
         pkgs.python
         pkgs.python3
+    
+        pkgs.awscli
+        pkgs.nodejs-10_x
+        pkgs.shellcheck
+    
+        pkgs.irssi
       ];
-    }
-    {
-      environment.systemPackages = [
-        # pkgs.steam
-      ];
-    }
-    {
-      hardware.opengl.driSupport32Bit = true;
-      hardware.pulseaudio.support32Bit = true;
     }
     {
       environment.systemPackages = [

@@ -730,7 +730,7 @@ Use the following states: =TODO= =NEXT= =DONE= =CANCELED= =WAIT=.
 #+name: org-config
 #+begin_src emacs-lisp :tangle no
   (setq-default org-todo-keywords
-                '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d)")
+                '((sequence "TODO(t)" "NEXT(n!)" "|" "DONE(d!)")
                   (sequence "|" "CANCELED(c@)")
                   (sequence "WAIT(w@)" "|")))
   (setq-default org-todo-keyword-faces
@@ -752,6 +752,12 @@ When repeated task is finished, go back to =TODO= state.
 #+name: org-config
 #+begin_src emacs-lisp :tangle no
   (setq-default org-todo-repeat-to-state "TODO")
+#+end_src
+
+Log state changes to "LOGBOOK" drawer.
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (setq-default org-log-into-drawer 't)
 #+end_src
 
 Save =CLOSED= timestamp when task is done.
@@ -791,7 +797,7 @@ My capture templates.
            "Task: Read this URL"
            entry
            (file+headline "refile.org" "Articles To Read")
-           ,(concat "* TODO %(rasen/strip-url-from-title \"%:description\")\n%:link\n")
+           ,(concat "* TODO %(rasen/strip-url-from-title \"%:description\")\n:PROPERTIES:\n:CREATED: %U\n:END:\n%:link\n")
            :immediate-finish t)
 
           ("w"
@@ -802,6 +808,10 @@ My capture templates.
                     (format "%s" org-drill-question-tag)
                     ":\n:PROPERTIES:\n:CREATED: %U\n:SOURCE_URL: %:link\n:END:\n%i\n%?\n")
            :immediate-finish t)
+
+          ("j" "Journal entry" plain
+           (file+datetree+prompt "~/org/journal.org")
+           "%?\n")
 
           ("f"
            "Capture normal snippet"
@@ -816,10 +826,10 @@ My capture templates.
            "* TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n" :clock-in t :clock-resume t)
 
           ("m" "meeting" entry (file "~/org/refile.org")
-           "* %?   :Meeting:\n" :clock-in t :clock-resume t)
+           "* %?   :Meeting:\n:PROPERTIES:\n:CREATED: %U\n:END:\n" :clock-in t :clock-resume t)
 
           ("n" "note" entry (file "~/org/refile.org")
-           "* %?\n\n%a\n" :clock-in t :clock-resume t)))
+           "* %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n" :clock-in t :clock-resume t)))
 #+end_src
 
 Enable org-protocol.
@@ -863,7 +873,6 @@ Instanly go into insert mode on capture.
 Set my org files location.
 #+name: org-config
 #+begin_src emacs-lisp :tangle no
-
   (setq org-directory "~/org"
         org-default-notes-file "~/org/refile.org"
         org-agenda-files (rasen/org-files-in-dir "~/org"))
@@ -953,6 +962,23 @@ Insert Emacs Lisp code block. Used a lot in this file.
 #+begin_src emacs-lisp :tangle no
   (add-to-list 'org-structure-template-alist
                '("e" "#+begin_src emacs-lisp\n?\n#+end_src" "<src lang=\"emacs-lisp\">\n?\n</src>"))
+#+end_src
+** Pomodoro
+#+begin_src emacs-lisp
+(use-package org-pomodoro
+  :commands (org-pomodoro)
+  :config
+  (setq org-pomodoro-keep-killed-pomodoro-time t)
+)
+#+end_src
+** Habits
+#+name: org-config
+#+begin_src emacs-lisp :tangle no
+  (require 'org-habit)
+  (setq org-habit-show-habits-only-for-today t)
+  (setq org-habit-preceding-days 25)
+  (setq org-habit-following-days 3)
+  ; (add-to-list 'org-modules 'org-habit)
 #+end_src
 * Languages
 ** Emacs lisp
@@ -1213,6 +1239,20 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 (use-package flycheck-jest
   :after flycheck)
 #+end_src
+** Purescript
+#+begin_src emacs-lisp
+(use-package purescript-mode
+  :mode "\\.purs$"
+  :config
+  (add-hook 'purescript-mode-hook 'turn-on-purescript-indentation))
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package psc-ide
+  :commands (psc-ide-mode)
+  :init
+  (add-hook 'purescript-mode-hook 'psc-ide-mode))
+#+end_src
 ** PHP
 #+begin_src emacs-lisp
 (use-package php-mode
@@ -1365,6 +1405,63 @@ Package edit-indirect needed to edit code blocks.
   :config
   (setq mbsync-executable "mbsync")
   (add-hook 'mbsync-exit-hook 'gnus-group-get-new-news))
+#+end_src
+** notmuch
+#+begin_src emacs-lisp
+  (use-package notmuch
+    :config
+    (setq notmuch-archive-tags '("-unread"))
+    (setq notmuch-saved-searches
+          '(
+            (:name "unread" :query "tag:unread and not tag:nixos" :key "u")
+            (:name "unread-inbox" :query "tag:inbox and tag:unread" :key "i")
+            (:name "unread-nixos" :query "tag:unread and tag:nixos and not tag:nixpkgs" :key "n")
+            (:name "unread-nixpkgs" :query "tag:unread and tag:nixpkgs" :key "p")
+            (:name "unread-triage" :query "tag:unread and tag:nixpkgs-participating" :key "t")
+            (:name "unread-doctoright" :query "tag:unread and tag:doctoright" :key "d")
+            (:name "unread-other" :query "tag:unread and not tag:nixos and not tag:inbox and not tag:doctoright" :key "o")
+            (:name "flagged" :query "tag:flagged" :key "f")
+            (:name "personal" :query "tag:personal" :key "P")
+            (:name "doctoright" :query "tag:doctoright" :key "D")
+            (:name "sent" :query "tag:sent" :key "s")
+            (:name "drafts" :query "tag:draft" :key "r")
+            (:name "all mail" :query "*" :key "a")))
+    (setq notmuch-hello-sections
+          '(; notmuch-hello-insert-header
+            notmuch-hello-insert-saved-searches
+            ; notmuch-hello-insert-search
+            notmuch-hello-insert-alltags
+            notmuch-hello-insert-recent-searches
+            ; notmuch-hello-insert-footer
+           ))
+    (setq-default notmuch-show-indent-content nil)
+
+    (define-key 'notmuch-hello-mode-map "g" 'notmuch-refresh-all-buffers)
+    (define-key 'notmuch-search-mode-map "g" 'notmuch-refresh-all-buffers)
+    (define-key 'notmuch-show-mode-map "g" 'notmuch-refresh-all-buffers)
+
+    (define-key 'notmuch-search-mode-map "k" 'notmuch-search-archive-thread)
+    (define-key 'notmuch-show-mode-map "k" 'notmuch-show-archive-thread-then-next)
+    ; remap old function
+    (define-key 'notmuch-search-mode-map "K" 'notmuch-tag-jump)
+    (define-key 'notmuch-show-mode-map "K" 'notmuch-tag-jump)
+
+    (define-key 'notmuch-show-mode-map (kbd "M-u")
+      (lambda ()
+        (interactive)
+        (notmuch-show-tag '("+unread"))))
+
+    ; notmuch-tag-formats
+
+    (setq-default notmuch-tagging-keys
+                  '(("a" notmuch-archive-tags "Archive")
+                    ("u" notmuch-show-mark-read-tags "Mark read")
+                    ("m" ("+muted") "Mute")
+                    ("f" ("+flagged") "Flag")
+                    ("s" ("+spam" "-inbox") "Mark as spam")
+                    ("d" ("+deleted" "-inbox") "Delete")))
+
+    (require 'org-notmuch))
 #+end_src
 * Workman
 ** quail

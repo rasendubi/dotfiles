@@ -36,52 +36,35 @@ Channel sync-gmail-all
 Channel sync-gmail-spam
 Channel sync-gmail-sent
 
-IMAPAccount kaaiot
+IMAPAccount ps
 Host imap.gmail.com
-User ashmalko@kaaiot.io
-PassCmd "pass imap.gmail.com/ashmalko@kaaiot.io"
+User ashmalko@doctoright.org
+PassCmd "pass imap.gmail.com/ashmalko@doctoright.org"
 SSLType IMAPS
 CertificateFile /etc/ssl/certs/ca-certificates.crt
 
-IMAPStore kaaiot-remote
-Account kaaiot
+IMAPStore ps-remote
+Account ps
 
-Channel sync-kaaiot-all
-Master :kaaiot-remote:"[Gmail]/All Mail"
-Slave :local:KaaIoT/all
+Channel sync-ps-all
+Master :ps-remote:"[Gmail]/All Mail"
+Slave :local:protocolstandard/all
 Create Both
 SyncState *
 
-Channel sync-kaaiot-spam
-Master :kaaiot-remote:"[Gmail]/Spam"
-Slave :local:KaaIoT/spam
+Channel sync-ps-spam
+Master :ps-remote:"[Gmail]/Spam"
+Slave :local:protocolstandard/spam
 Create Both
 SyncState *
 
-Channel sync-kaaiot-sent
-Master :kaaiot-remote:"[Gmail]/Sent Mail"
-Slave :local:KaaIoT/sent
+Channel sync-ps-sent
+Master :ps-remote:"[Gmail]/Sent Mail"
+Slave :local:protocolstandard/sent
 Create Both
 SyncState *
 
-Group sync-kaaiot
-Channel sync-kaaiot-all
-Channel sync-kaaiot-spam
-Channel sync-kaaiot-sent
-
-IMAPAccount cv
-Host mail.cybervisiontech.com
-User ashmalko
-PassCmd "pass mail.cybervisiontech.com/ashmalko@cybervisiontech.com"
-SSLType IMAPS
-CertificateFile /etc/ssl/certs/ca-certificates.crt
-
-IMAPStore cv-remote
-Account cv
-
-Channel sync-cv
-Master :cv-remote:
-Slave :local:Work/
-Patterns * !Chats !Contacts !"Emailed Contacts"
-Create Both
-SyncState *
+Group sync-ps
+Channel sync-ps-all
+Channel sync-ps-spam
+Channel sync-ps-sent

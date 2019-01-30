@@ -8,7 +8,6 @@ let
   };
 
   self = rec {
-    gitbook-cli = (import ./gitbook { inherit pkgs; }).gitbook-cli;
     heroku = (import ./heroku { inherit pkgs; }).heroku-cli;
   };
 

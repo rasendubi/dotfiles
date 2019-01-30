@@ -9,7 +9,7 @@ urxvt.secondaryScroll:    true
 
 urxvt.iso14755: False
 
-URxvt.font: xft:Terminus:normal:size=12
+URxvt.font: -*-terminus-medium-r-normal-*-32-*-*-*-*-*-iso10646-1
 
 URxvt*background: #101010
 URxvt*foreground: #d0d0d0
@@ -29,3 +29,6 @@ URxvt*color12:    #5f5fee
 URxvt*color13:    #bb88dd
 URxvt*color14:    #4eb4fa
 URxvt*color15:    #d0d0d0
+
+Xft.dpi: 276
+Xcursor.size: 64

@@ -109,295 +109,7 @@ I'm the only user of the system:
 
 ** Machines
 #+name: Machines section
-I have three machines running NixOS.
-
-*** Larry
-This one is a laptop that needs the proprietary driver for Wi-Fi card (this =wl= and =broadcom_sta=).
-
-#+name: machine-larry
-#+begin_src nix
-{
-  imports = [ <nixpkgs/nixos/modules/installer/scan/not-detected.nix> ];
-
-  boot.initrd.availableKernelModules = [ "ahci" "xhci_hcd" ];
-  boot.initrd.kernelModules = [ "wl" ];
-
-  boot.kernelModules = [ "kvm-intel" "wl" ];
-  boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
-}
-#+end_src
-
-I have two partitions (usual "separate home" setup).
-#+name: machine-larry
-#+begin_src nix
-{
-  fileSystems = {
-    "/" = {
-      device = "/dev/disk/by-uuid/ba82dd25-a9e5-436f-ae76-4ee44d53b2c6";
-      fsType = "ext4";
-    };
-    "/home" = {
-      device = "/dev/disk/by-uuid/b27c07d0-aaf7-44a1-87e1-5a2cb30954ec";
-      fsType = "ext4";
-    };
-  };
-}
-#+end_src
-
-There are also two swap partitions, but one of them is from my slow hdd, so I probably shouldn't use it.
-
-#+name: machine-larry
-#+begin_src nix
-{
-  swapDevices = [
-    # TODO: set priority
-    # { device = "/dev/disk/by-uuid/f0bd0438-3324-4295-9981-07015fa0af5e"; }
-    { device = "/dev/disk/by-uuid/75822d9d-c5f0-495f-b089-f57d0de5246d"; }
-  ];
-}
-#+end_src
-
-There is also Gentoo on the second drive---it's good to keep it bootable.
-#+name: machine-larry
-#+begin_src nix
-{
-  boot.loader.grub = {
-    enable = true;
-    version = 2;
-    device = "/dev/sda";
-    extraEntries = ''
-      menuentry 'Gentoo' {
-        configfile (hd1,1)/grub2/grub.cfg
-      }
-    '';
-  };
-}
-#+end_src
-
-Boring stuff: 8 hyper-threads, synaptics (Larry is a laptop).
-
-#+name: machine-larry
-#+begin_src nix
-{
-  nix.maxJobs = 8;
-  nix.buildCores = 8;
-
-  services.xserver.synaptics = {
-    enable = true;
-    twoFingerScroll = true;
-    vertEdgeScroll = true;
-  };
-}
-#+end_src
-
-I have nvidia video card and integrated intel one. I don't use nvidia one, so next the line disables it:
-#+name: machine-larry
-#+begin_src nix
-{
-  hardware.nvidiaOptimus.disable = true;
-}
-#+end_src
-
-**** Quantified Self
-ELK stack to gather information about my computer activity.
-
-#+name: machine-larry
-#+begin_src nix
-{
-  services.logstash = {
-    enable = true;
-    inputConfig = ''
-      file {
-        path => "/home/rasen/log.txt.processed"
-        sincedb_path => "/home/rasen/.log.txt.sincedb"
-        codec => "json"
-        start_position => "beginning"
-        tags => [ "awesomewm" ]
-        type => "awesomewm"
-      }
-      file {
-        path => "/home/rasen/log.txt.ashmalko"
-        sincedb_path => "/home/rasen/.log.txt.ashmalko.sincedb"
-        codec => "json"
-        start_position => "beginning"
-        tags => [ "awesomewm" ]
-        type => "awesomewm"
-      }
-      file {
-        path => "/home/rasen/log.txt.omicron"
-        sincedb_path => "/home/rasen/.log.txt.omicron.sincedb"
-        codec => "json"
-        start_position => "beginning"
-        tags => [ "awesomewm" ]
-        type => "awesomewm"
-      }
-    '';
-    filterConfig = ''
-      if [path] == "/home/rasen/log.txt.ashmalko" {
-        mutate {
-          replace => [ "host", "ashmalko" ]
-        }
-      }
-      if [path] == "/home/rasen/log.txt.omicron" {
-        mutate {
-          replace => [ "host", "omicron" ]
-        }
-      }
-    '';
-    outputConfig = ''
-      elasticsearch {
-        index => "quantified-self"
-        document_type => "awesomewm"
-      }
-    '';
-  };
-
-  services.elasticsearch = {
-    enable = true;
-    cluster_name = "ashmalko";
-    extraConf = ''
-      node.name: "${meta.name}"
-    '';
-  };
-
-  services.kibana = {
-    enable = true;
-  };
-}
-#+end_src
-
-*** ashmalko
-This is my corporate desktop computer.
-#+name: machine-ashmalko
-#+begin_src nix
-{
-  nix.maxJobs = 4;
-  nix.buildCores = 4;
-}
-#+end_src
-
-#+name: machine-ashmalko
-#+begin_src nix
-{
-  imports = [
-    <nixpkgs/nixos/modules/installer/scan/not-detected.nix>
-  ];
-
-  boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "usb_storage" "usbhid" "sd_mod" ];
-  boot.kernelModules = [ "kvm-intel" ];
-  boot.extraModulePackages = [ ];
-
-  boot.kernelParams = [ "intel_pstate=no_hwp" ];
-  boot.loader.grub = {
-    enable = true;
-    version = 2;
-    device = "/dev/sda";
-    efiSupport = true;
-  };
-  boot.loader.efi.canTouchEfiVariables = true;
-}
-#+end_src
-
-This is encrypted LVM on LUKS setup.
-#+name: machine-ashmalko
-#+begin_src nix
-{
-  boot.initrd.luks.devices = [
-    {
-      name = "root";
-      device = "/dev/disk/by-uuid/a3eb801b-7771-4112-bb8d-42a9676e65de";
-      preLVM = true;
-      allowDiscards = true;
-    }
-  ];
-
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-uuid/4184-7556";
-    fsType = "vfat";
-  };
-
-  fileSystems."/" = {
-    device = "/dev/disk/by-uuid/84d89f4b-7707-4580-8dbc-ec7e15e43b52";
-    fsType = "ext4";
-    options = [ "noatime" "nodiratime" "discard" ];
-  };
-
-  swapDevices = [
-    { device = "/dev/disk/by-uuid/5a8086b0-627e-4775-ac07-b827ced6998b"; }
-  ];
-}
-#+end_src
-
-**** Gitolite
-I host some git repos on my machine:
-#+name: machine-ashmalko
-#+begin_src nix
-{
-  services.gitolite = {
-    enable = true;
-    user = "git";
-    adminPubkey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDJhMhxIwZJgIY6CNSNEH+BetF/WCUtDFY2KTIl8LcvXNHZTh4ZMc5shTOS/ROT4aH8Awbm0NjMdW33J5tFMN8T7q89YZS8hbBjLEh8J04Y+kndjnllDXU6NnIr/AenMPIZxJZtSvWYx+f3oO6thvkZYcyzxvA5Vi6V1cGx6ni0Kizq/WV/mE/P1nNbwuN3C4lCtiBC9duvoNhp65PctQNohnKQs0vpQcqVlfqBsjQ7hhj2Fjg+Ofmt5NkL+NhKQNqfkYN5QyIAulucjmFAieKR4qQBABopl2F6f8D9IjY8yH46OCrgss4WTf+wxW4EBw/QEfNoKWkgVoZtxXP5pqAz rasen@Larry";
-  };
-}
-#+end_src
-
-I expose some repos for the folks here, so relax avahi rules for they to discover my machine by =ashmalko.local= rather than remember my IP address.
-#+name: machine-ashmalko
-#+begin_src nix
-{
-  services.avahi.interfaces = [ "enp0s31f6" ];
-}
-#+end_src
-
-**** Zink
-
-I'm running an MQTT implementation in there.
-#+name: machine-ashmalko
-#+begin_src nix
-{
-  networking.firewall.allowedTCPPorts = [
-    1883 8883 # Zink
-    3000      # Grafana
-  ];
-
-  systemd.services.zink = {
-    description = "Zink service";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "grafana.service" ];
-
-    serviceConfig =
-      let zink =
-        pkgs.rustPlatform.buildRustPackage {
-          name = "zink-0.0.3";
-
-          src = pkgs.fetchFromGitHub {
-            owner = "rasendubi";
-            repo = "zink";
-            rev = "influxdb-0.0.4";
-            sha256 = "0mnpss2is57y0ncdxwnal62w6yn4691b8lmka4fl3pyxhsblhww4";
-          };
-
-          cargoSha256 = "02v7nnsc0dbzd7kkfng0kgzwdlc85j1h7znzjpps7gcm3jz41lwz";
-        };
-      in {
-        ExecStart = "${zink}/bin/zink timestamp,tagId,batteryLevel,temperature";
-        Restart = "on-failure";
-      };
-  };
-
-  services.influxdb.enable = true;
-
-  services.grafana = {
-    enable = true;
-    addr = "0.0.0.0";
-    port = 3000;
-
-    domain = "ashmalko.local";
-    auth.anonymous.enable = true;
-  };
-}
-#+end_src
-
+I currently have only one machine.
 *** omicron
 This is my small Dell XPS 13.
 #+name: machine-omicron
@@ -461,32 +173,6 @@ Clickpad:
   };
 }
 #+end_src
-** Networking tricks
-I want to access my corporate network from my home laptop when I need to. I have a VPN up between my laptops and corporate desktop, so the solution is to use my corporate desktop as a router.
-
-On Larry, route all corporate network traffic via ashmalko:
-#+name: machine-larry
-#+begin_src nix
-{
-  networking.localCommands = ''
-    ip route del 10.2.0.0/22 via 10.7.0.52 2> /dev/null || true
-    ip route add 10.2.0.0/22 via 10.7.0.52
-  '';
-}
-#+end_src
-
-On ashmalko, rewrite packages from Larry into internal network. (Which is called "external" in the routing sense.)
-#+name: machine-ashmalko
-#+begin_src nix
-{
-  networking.nat = {
-    enable = true;
-    internalInterfaces = [ "tap0" ];
-    externalInterface = "enp0s31f6";
-  };
-}
-#+end_src
-
 ** Local overlay
 As a responsible NixOS user, I refuse to install software blindly with =sudo make install=. That's why I must write my own nix-expressions. I keep them in my local overlay until they're merged upstream.
 
@@ -533,92 +219,6 @@ To make package results testing better, I build them in isolated environment (fo
 
 Note that this is ="relaxed"= instead of =true=, because I have some packages that require a network to build and thus are =__noChroot=.
 
-*** gitbook
-
-#+name: nixpkgs-local-packages
-#+begin_src nix
-gitbook-cli = (import ./gitbook { inherit pkgs; }).gitbook-cli;
-#+end_src
-
-To generate all Nix files use the following steps.
-
-This goes to =nixpkgs-local/gitbook/node-packages.json= file:
-#+begin_src json :tangle nixpkgs-local/gitbook/node-packages.json :mkdirp yes
-["gitbook-cli"]
-#+end_src
-
-To generate the rest of Nix files, execute from =nixpkgs-local/gitbook= directory:
-#+begin_src sh :dir nixpkgs-local/gitbook :results output :async
-nix-shell -p nodePackages.node2nix --run 'node2nix -i node-packages.json 2>&1'
-#+end_src
-
-#+RESULTS:
-#+begin_example
-info attempt registry request try #1 at 2:41:54 PM
-http request GET http://registry.npmjs.org/gitbook-cli
-http 200 http://registry.npmjs.org/gitbook-cli
-info attempt registry request try #1 at 2:41:54 PM
-http request GET http://registry.npmjs.org/q
-http 200 http://registry.npmjs.org/q
-info attempt registry request try #1 at 2:41:54 PM
-http request GET http://registry.npmjs.org/lodash
-http 200 http://registry.npmjs.org/lodash
-info attempt registry request try #1 at 2:41:54 PM
-http request GET http://registry.npmjs.org/semver
-http 200 http://registry.npmjs.org/semver
-info attempt registry request try #1 at 2:41:54 PM
-http request GET http://registry.npmjs.org/npmi
-http 200 http://registry.npmjs.org/npmi
-info attempt registry request try #1 at 2:41:54 PM
-http request GET http://registry.npmjs.org/tmp
-http 200 http://registry.npmjs.org/tmp
-info attempt registry request try #1 at 2:41:54 PM
-http request GET http://registry.npmjs.org/commander
-http 200 http://registry.npmjs.org/commander
-info attempt registry request try #1 at 2:41:54 PM
-http request GET http://registry.npmjs.org/optimist
-http 200 http://registry.npmjs.org/optimist
-info attempt registry request try #1 at 2:41:54 PM
-http request GET http://registry.npmjs.org/fs-extra
-http 200 http://registry.npmjs.org/fs-extra
-info attempt registry request try #1 at 2:41:54 PM
-http request GET http://registry.npmjs.org/bash-color
-http 200 http://registry.npmjs.org/bash-color
-info attempt registry request try #1 at 2:41:54 PM
-http request GET http://registry.npmjs.org/npm
-http 200 http://registry.npmjs.org/npm
-info attempt registry request try #1 at 2:41:55 PM
-http request GET http://registry.npmjs.org/user-home
-http 200 http://registry.npmjs.org/user-home
-info attempt registry request try #1 at 2:41:55 PM
-http request GET http://registry.npmjs.org/npm
-http 200 http://registry.npmjs.org/npm
-info attempt registry request try #1 at 2:41:55 PM
-http request GET http://registry.npmjs.org/semver
-http 200 http://registry.npmjs.org/semver
-info attempt registry request try #1 at 2:41:56 PM
-http request GET http://registry.npmjs.org/os-tmpdir
-http 200 http://registry.npmjs.org/os-tmpdir
-info attempt registry request try #1 at 2:41:56 PM
-http request GET http://registry.npmjs.org/wordwrap
-http 200 http://registry.npmjs.org/wordwrap
-info attempt registry request try #1 at 2:41:56 PM
-http request GET http://registry.npmjs.org/minimist
-http 200 http://registry.npmjs.org/minimist
-info attempt registry request try #1 at 2:41:56 PM
-http request GET http://registry.npmjs.org/graceful-fs
-http 200 http://registry.npmjs.org/graceful-fs
-info attempt registry request try #1 at 2:41:56 PM
-http request GET http://registry.npmjs.org/jsonfile
-http 200 http://registry.npmjs.org/jsonfile
-info attempt registry request try #1 at 2:41:56 PM
-http request GET http://registry.npmjs.org/universalify
-http 200 http://registry.npmjs.org/universalify
-info attempt registry request try #1 at 2:41:56 PM
-http request GET http://registry.npmjs.org/os-homedir
-http 200 http://registry.npmjs.org/os-homedir
-#+end_example
-
 *** heroku
 #+name: nixpkgs-local-packages
 #+begin_src nix
@@ -637,12 +237,22 @@ To generate the rest of Nix files, execute the following command from =nixpkgs-l
 nix-shell -p nodePackages.node2nix --run 'node2nix -8 -i node-packages.json 2>&1'
 #+end_src
 
-** Meltdown
+** Bluetooth
+I have a bluetooth headset, so this enables bluetooth audio in NixOS.
+
 #+name: nixos-section
 #+begin_src nix
-{
-  boot.kernelPackages = pkgs.linuxPackages_latest;
-}
+  {
+    hardware.bluetooth.enable = true;
+    hardware.pulseaudio = {
+      enable = true;
+
+      # NixOS allows either a lightweight build (default) or full build
+      # of PulseAudio to be installed.  Only the full build has
+      # Bluetooth support, so it must be selected here.
+      package = pkgs.pulseaudioFull;
+    };
+  }
 #+end_src
 * Services
 ** NetworkManager
@@ -692,7 +302,7 @@ Update [[https://linux.die.net/man/1/locate][locate]] database daily.
 }
 #+end_src
 ** OpenVPN
-    All my computers are members of the VPN:
+All my computers are members of the VPN:
 #+name: nixos-section
 #+begin_src nix
 {
@@ -716,7 +326,7 @@ Update [[https://linux.die.net/man/1/locate][locate]] database daily.
 #+end_src
 
 ** Avahi
-Avahi is needed to allow resolution of =.local= names. For example, you can access this computer by =larry.local= if we meet at the same local network.
+Avahi is needed to allow resolution of =.local= names. For example, you can access this computer by =larry.local= if we meet at the same local network. (Probably not, as it only works in the OpenVPN network.)
 #+name: nixos-section
 #+begin_src nix
 {
@@ -732,7 +342,6 @@ Avahi is needed to allow resolution of =.local= names. For example, you can acce
   };
 }
 #+end_src
-
 ** SSH
 #+name: nixos-section
 #+begin_src nix
@@ -740,15 +349,23 @@ Avahi is needed to allow resolution of =.local= names. For example, you can acce
   services.openssh = {
     enable = true;
     passwordAuthentication = false;
+  };
+}
+#+end_src
 
-    # Disable default firewall rules
+Allow SSH access from my VPN network only.
+#+name: nixos-section
+#+begin_src nix
+{
+  services.openssh = {
+    # Doing this won't open firewall for everybody.
     ports = [];
     listenAddresses = [
       { addr = "0.0.0.0"; port = 22; }
     ];
   };
 
-  # allow ssh from VPN network only
+  # Open firewall for tap0 only
   networking.firewall = {
     extraCommands = ''
       ip46tables -D INPUT -i tap0 -p tcp -m tcp --dport 22 -j ACCEPT 2> /dev/null || true
@@ -757,7 +374,6 @@ Avahi is needed to allow resolution of =.local= names. For example, you can acce
   };
 }
 #+end_src
-
 *** Mosh
 [[https://mosh.mit.edu/][Mosh (mobile shell)]] is a cool addition to ssh.
 #+name: nixos-section
@@ -766,9 +382,7 @@ Avahi is needed to allow resolution of =.local= names. For example, you can acce
   programs.mosh.enable = true;
 }
 #+end_src
-
 ** dnsmasq
-
 Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
 
 #+name: nixos-section
@@ -792,7 +406,6 @@ Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
   };
 }
 #+end_src
-
 ** Syncthing
 I use Syncthing to sync my org-mode files to my phone.
 
@@ -808,7 +421,6 @@ I use Syncthing to sync my org-mode files to my phone.
 }
 #+end_src
 ** Firewall
-
 Enable firewall. This disables all ports and pings.
 
 #+name: nixos-section
@@ -823,7 +435,6 @@ Enable firewall. This disables all ports and pings.
   };
 }
 #+end_src
-
 ** Development
 #+name: nixos-section
 #+begin_src nix
@@ -848,6 +459,11 @@ Enable firewall. This disables all ports and pings.
 
       [chttpd]
       authentication_handlers = {couch_httpd_auth, proxy_authentication_handler}, {couch_httpd_auth, cookie_authentication_handler}, {couch_httpd_auth, default_authentication_handler}
+
+      [couch_httpd_auth]
+      proxy_use_secret = true
+      # no worries—this is a non-secure development secret
+      secret = b4034a82d6a8e1fe27fa6ae0ac18fc09
     '';
   };
 }
@@ -927,7 +543,6 @@ Dovecot serves fetched mail to gnus.
   environment.pathsToLink = [ "/libexec/dovecot" ];
 }
 #+end_src
-
 ** msmtp
 Msmtp is used to send mail.
 
@@ -957,7 +572,6 @@ from rasen.dubi@gmail.com
 user rasen.dubi@gmail.com
 passwordeval "pass imap.gmail.com/rasen.dubi@gmail.com"
 #+end_src
-
 ** notmuch
 Notmuch is used for tagging.
 #+name: nixos-section
@@ -989,7 +603,51 @@ exclude_tags=deleted;spam;muted;
 [crypto]
 gpg_path=gpg2
 #+end_src
+** ashmalko@doctoright.org email
+The same setup for my work email.
+#+begin_src conf :tangle .mbsyncrc
+IMAPAccount ps
+Host imap.gmail.com
+User ashmalko@doctoright.org
+PassCmd "pass imap.gmail.com/ashmalko@doctoright.org"
+SSLType IMAPS
+CertificateFile /etc/ssl/certs/ca-certificates.crt
 
+IMAPStore ps-remote
+Account ps
+
+Channel sync-ps-all
+Master :ps-remote:"[Gmail]/All Mail"
+Slave :local:protocolstandard/all
+Create Both
+SyncState *
+
+Channel sync-ps-spam
+Master :ps-remote:"[Gmail]/Spam"
+Slave :local:protocolstandard/spam
+Create Both
+SyncState *
+
+Channel sync-ps-sent
+Master :ps-remote:"[Gmail]/Sent Mail"
+Slave :local:protocolstandard/sent
+Create Both
+SyncState *
+
+Group sync-ps
+Channel sync-ps-all
+Channel sync-ps-spam
+Channel sync-ps-sent
+#+end_src
+
+#+begin_src conf :tangle .msmtprc
+account ps
+host smtp.gmail.com
+port 465
+from ashmalko@doctoright.org
+user ashmalko@doctoright.org
+passwordeval "pass imap.google.com/ashmalko@doctoright.org"
+#+end_src
 * Environment
 ** General
 I definitely use X server:
@@ -1015,7 +673,6 @@ Setup timezone:
   time.timeZone = "Europe/Kiev";
 }
 #+end_src
-
 ** Login manager
 I use SLiM. It stands for Simple Login Manager. It's fast and has little dependencies. The projects is dead since 2014, but still works fine, so I keep using it.
 #+name: nixos-section
@@ -1024,7 +681,6 @@ I use SLiM. It stands for Simple Login Manager. It's fast and has little depende
   services.xserver.displayManager.slim.enable = true;
 }
 #+end_src
-
 ** Window manager
 I use [[http://awesome.naquadah.org/][awesome wm]]:
 
@@ -1064,7 +720,6 @@ These packages are used by my awesome wm setup:
   ];
 }
 #+end_src
-
 ** Keyboard
 *** Layouts
 I use English and Ukrainian layouts. I also use Russian symbols, but they are on the third level.
@@ -1086,27 +741,8 @@ I toggle between them with either Caps Lock, or Menu key---I have two different 
   services.xserver.xkbOptions = "grp:caps_toggle,grp:menu_toggle,grp_led:caps";
 }
 #+end_src
-
 *** Layout indicator
-
 I use built-in awesome layout indicator. See [[.config/awesome/rc.lua]] for more details.
-
-*** Custom keyboard modification
-#+begin_src fundamental :tangle .config/xkb/my
-xkb_keymap {
-  xkb_keycodes  { include "evdev+aliases(qwerty)"};
-  xkb_types     { include "complete"};
-  xkb_compat    { include "complete+ledcaps(group_lock)"};
-  xkb_geometry  { include "pc(pc105)"};
-
-  xkb_symbols "my" {
-    include "pc+us+ru:2+inet(evdev)+group(menu_toggle)"
-  };
-};
-#+end_src
-
-(Not sure I actually use it.)
-
 ** Redshift
 Redshift adjusts the color temperature of the screen according to the position of the sun.
 
@@ -1123,7 +759,6 @@ Redshift blocks some blue light (making screen more red), which should improve m
   };
 }
 #+end_src
-
 * Look and Feel
 ** Qt theme
 This makes apps look like in KDE:
@@ -1168,7 +803,6 @@ The theme has some issues with deadbeef, so I install adwaita icons to make dead
 #+end_src
 
 ** Fonts
-
 I'm not a font guru, so I just stuffed a bunch of random fonts in here.
 
 #+name: nixos-section
@@ -1190,7 +824,6 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
   };
 }
 #+end_src
-
 ** HiDPI
 These are for omicron-only.
 
@@ -1224,7 +857,6 @@ Xcursor.size: 64
   services.xserver.dpi = 276;
 }
 #+end_src
-
 * Applications
 Here go applications (almost) every normal user needs.
 ** GPG
@@ -1297,7 +929,6 @@ Install [[https://github.com/browserpass/browserpass][browserpass]] firefox exte
   programs.browserpass.enable = true;
 }
 #+end_src
-
 ** KDE apps
 I don't use full KDE but some apps are definitely nice.
 #+name: nixos-section
@@ -1320,7 +951,6 @@ KDE apps might have issues with mime types without this:
   environment.pathsToLink = [ "/share" ];
 }
 #+end_src
-
 ** Browsers
 *** Google Chrome
 Google Chrome used to be my default browser and I still use it from time to time.
@@ -1390,7 +1020,6 @@ These are my rebinding for Workman layout (swap j/k):
 map j scroll up
 map k scroll down
 #+end_src
-
 ** Screen locking
 *** Slock
 [[http://tools.suckless.org/slock/][Slock]] is a simple X display locker and should probably not crash as xscreensaver does.
@@ -1410,7 +1039,6 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
   };
 }
 #+end_src
-
 *** xss-lock
 [[https://bitbucket.org/raymonad/xss-lock][xss-lock]] is a small utility to plug a screen locker into screen saver extension for X. This automatically activates selected screensaver after a period of user inactivity, or when system goes to sleep.
 
@@ -1422,7 +1050,6 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
   ];
 }
 #+end_src
-
 ** Other applications
 Don't require additional setup.
 
@@ -1436,7 +1063,6 @@ Don't require additional setup.
     pkgs.deadbeef
     pkgs.tdesktop # Telegram
 
-    pkgs.vlc
     pkgs.mplayer
     pkgs.smplayer
 
@@ -1458,16 +1084,7 @@ I'm a seasoned Vim user, but I've switched to emacs.
 {
   environment.systemPackages = [
     (pkgs.vim_configurable.override { python3 = true; })
-  ];
-}
-#+end_src
-
-I also use Atom for the teletype feature. (Use it for collaboration.)
-#+name: nixos-section
-#+begin_src nix
-{
-  environment.systemPackages = [
-    pkgs.atom
+    pkgs.neovim
   ];
 }
 #+end_src
@@ -1492,7 +1109,6 @@ Start emacs as a daemon:
 }
 #+end_src
 ** rxvt-unicode
-
 I use urxvt as my terminal emulator:
 #+name: nixos-section
 #+begin_src nix
@@ -1507,11 +1123,7 @@ Urxvt gets its setting from =.Xresources= file. If you ever want to reload it on
 #+begin_src sh
 xrdb ~/.Xresources
 #+end_src
-
-#+RESULTS:
-
 *** General setup
-
 See [[http://pod.tst.eu/http://cvs.schmorp.de/rxvt-unicode/doc/rxvt.1.pod][rxvt-unicode documentation]] for the full reference.
 
 #+begin_src conf-xdefaults :tangle .Xresources :padline no
@@ -1538,9 +1150,7 @@ Since version 9.20 rxvt-unicode natively supports copying to and pasting from th
 #+end_quote
 
 That means, I don't need perl extensions at all.
-
 *** Font
-
 I use Terminus font.
 
 #+name: nixos-section
@@ -1561,9 +1171,7 @@ URxvt.font: -*-terminus-medium-r-normal-*-32-*-*-*-*-*-iso10646-1
 
 # I used this line before:
 # URxvt.font: xft:Terminus:normal:size=12
-
 *** Color theme
-
 I like Molokai color theme.
 
 #+begin_src conf-xdefaults :tangle .Xresources
@@ -1586,9 +1194,7 @@ URxvt*color13:    #bb88dd
 URxvt*color14:    #4eb4fa
 URxvt*color15:    #d0d0d0
 #+end_src
-
 ** fish
-
 [[https://fishshell.com/][fish]] is a cool shell, I use it as my default for day-to-day work.
 
 #+name: nixos-section
@@ -1598,9 +1204,7 @@ URxvt*color15:    #d0d0d0
   users.defaultUserShell = pkgs.fish;
 }
 #+end_src
-
 *** Show QR codes
-
 The next section goes to =.config/fish/functions/showqr.fish=. That's a function I use for displaying arbitrary text (mainly passwords stored with =pass=) as a QR code without any temporary files. (=tr= is used to drop trailing newline.)
 
 #+begin_src fish :tangle .config/fish/functions/showqr.fish
@@ -1619,7 +1223,6 @@ It uses =qrencode= and =feh= packages:
   ];
 }
 #+end_src
-
 ** Zsh
 Zsh is my secondary shell. I use it when I need sh compatibility. (fish is not sh compliant.)
 #+name: nixos-section
@@ -1628,7 +1231,6 @@ Zsh is my secondary shell. I use it when I need sh compatibility. (fish is not s
   programs.zsh.enable = true;
 }
 #+end_src
-
 *** Prompt
 #+begin_src shell-script :tangle .zshrc :padline no
 source $HOME/.zsh/git-prompt/zshrc.sh
@@ -1641,18 +1243,16 @@ RPROMPT="[%?] %T"
 #+begin_src sh
 git submodule update --init --recursive
 #+end_src
-
 *** Aliases
-    Nothing special, but ~g=git~ is a real timesaver.
+Nothing special, but ~g=git~ is a real timesaver.
 #+begin_src shell-script :tangle .zshrc
 alias ls='ls --color=auto'
 alias grep='grep --color=auto'
 
 alias g="git"
 #+end_src
-
 *** PATH
-    Install stuff in =~/.local/=; =~/bin/= is for my helper scripts (linked to =bin= directory in dotfiles repo).
+Install stuff in =~/.local/=; =~/bin/= is for my helper scripts (linked to =bin= directory in dotfiles repo).
 
 #+begin_src shell-script :tangle .zshrc
 export PATH="${HOME}/bin:${PATH}"
@@ -1660,9 +1260,8 @@ export PATH="${HOME}/.local/bin:${PATH}"
 
 export LD_LIBRARY_PATH="${HOME}/.local/lib:${LD_LIBRARY_PATH}"
 #+end_src
-
 *** Other
-    This part was written long time ago; I'm not sure I understand and use all of it:
+This part was written long time ago; I'm not sure I understand and use all of it:
 #+begin_src shell-script :tangle .zshrc
 autoload -U compinit promptinit
 autoload -U colors
@@ -1847,7 +1446,6 @@ Always push to github with ssh keys instead of login/password.
 [url "git@github.com:"]
     pushInsteadOf = https://github.com/
 #+end_src
-
 ** tmux
 #+name: nixos-section
 #+begin_src nix
@@ -1858,14 +1456,14 @@ Always push to github with ssh keys instead of login/password.
 }
 #+end_src
 
-    Use =C-a= as a prefix.
+Use =C-a= as a prefix.
 #+begin_src conf-space :tangle .tmux.conf :padline no
 set -g prefix C-a
 unbind-key C-b
 bind-key C-a send-prefix
 #+end_src
 
-    /TODO describe other settings/
+/TODO describe other settings/
 #+begin_src conf-space :tangle .tmux.conf
 # To make vim work properly
 set -g default-terminal "screen-256color"
@@ -1893,7 +1491,6 @@ bind r source-file ~/.tmux.conf \; display-message "Config reloaded..."
 
 set-window-option -g automatic-rename
 #+end_src
-
 ** Embedded
 The following packages provide a termiinal emulator, Open On-Chip Debugger, telnet, and logic analyzer.
 #+name: nixos-section
@@ -1931,11 +1528,9 @@ To allow user use openocd without sudo, we should add him to =plugdev= group and
     pkgs.unzip
     pkgs.unrar
     pkgs.p7zip
-    pkgs.irssi
     pkgs.bind
     pkgs.file
     pkgs.which
-    pkgs.whois
     pkgs.utillinuxCurses
 
     pkgs.patchelf
@@ -1948,11 +1543,11 @@ To allow user use openocd without sudo, we should add him to =plugdev= group and
     pkgs.awscli
     pkgs.nodejs-10_x
     pkgs.shellcheck
-    # pkgs.haskellPackages.ghc-mod
+
+    pkgs.irssi
   ];
 }
 #+end_src
-
 ** Man pages
 This install a number of default man pages for the linux/posix system.
 #+begin_src nix
@@ -1965,7 +1560,6 @@ This install a number of default man pages for the linux/posix system.
   ];
 }
 #+end_src
-
 * Games
 ** Steam
 We need the following package:
@@ -2007,7 +1601,6 @@ OPTIONS=pettype:dog, dogname:Fido
 OPTIONS=!autopickup
 OPTIONS=lit_corridor, DECgraphics, showscore, showexp, time, color, hilite_pet
 #+end_src
-
 * Meta
 ** Setup
 
@@ -2061,24 +1654,4 @@ if [ ! -e "$DEST/.config/fish/functions/fisher.fish" ]; then
 fi
 #+end_src
 
-* Private                                                             :crypt:
------BEGIN PGP MESSAGE-----
-
-hQEMA0dwtg6M7gMLAQgAhXy1R6VK9R0/2Pgd2dcaB/QEaOnLy6ioWbL5Tmr89mo/
-BKxHH4NME1uQHOTt4fRuyjdC/SBQEssFJ2xvHhY/mcp4OdjTsYIkfEfkA6unpCVf
-Ov0T28im7ROh+gqi+nh1GviMjVM1N8vKxkjwf6nMEAm9b4RcPSq6LPnp+HhC03Tx
-KjVbFkK/0g89LtlNzVveAslu1B4pCJzAU433hIPinib8TH9so/q6ogCdPVjTOfQ7
-iS8JCIKCKercV+o3Qvatz4wmcNmVDPnA4GIt2pBGZ4EocgKzb3vZpdqtMCHmwZkN
-fjTzOJ033PurlNe3pmRUxZ12INgfjC5aWQ3uzeYpP9LBDwGcZCI110cDxDpejSEA
-RCfIkicVT6Q/VK/b4dDppoPAHaO6VfynrlXH6kuMkEKuQqNVzGlPYCpMdiVY6nI2
-5xaStW8EX+Xtw3KT8U5YRxv6LkcFKZt8qImigYPgns1E8G3v9TaYNXCmH7YDJLL2
-74ZALCrJ3DUPEIQgaLGrOzKd25/87yPfBHPDpSeSHGouEn6RYsFaGD8lNe34yOxV
-CSwltQ1O7pIUcFf5H1ayy23ASakM0KzbZ4KrPHmWQuoI8F61HM+jsTAUuXJkv1dZ
-6pj6pdPcC/2Jwz+A3TiUxc0DbZtGAB6qqrvwiIN5WdHDQLcNuqehhs1GsMFvkdX0
-6lQpgqGE+JZbUZlE45BVkxSL+6VfEJY6U5rCQDWkX0IqoMYJnkLhH/nAYU5gyJuX
-2DcJZYqSBFwi0PoyPTr1bMQbI1T3i+Ev1MwpOg7N5biKL/XkP/mEkHFCvS3LOrgx
-EzEamzrV6sxzMMUcnAVq7UqEBW/TpenKuN1e6W9AY4ZFDcxsbB5s76PER61nU3BS
-wDBv/JXK8138uPZFAF4o35pat7nECBUOSj/aTefklpxdCP4K2BFTsChMZZWNk8lG
-40Z3eGSqWW1hFRFHjK5WTrM=
-=GfAt
------END PGP MESSAGE-----
+* Private                                                             :crypt-:
