@@ -693,9 +693,6 @@ These packages are used by my awesome wm setup:
     pkgs.wmname
     pkgs.xclip
     pkgs.escrotum
-
-    # Control screen brightness
-    pkgs.xorg.xbacklight
   ];
 }
 #+end_src
@@ -736,6 +733,29 @@ Redshift blocks some blue light (making screen more red), which should improve m
     latitude = "50.4500";
     longitude = "30.5233";
   };
+}
+#+end_src
+** Screen brightness
+=xbacklight= stopped working recently. =acpilight= is a drop-in replacement.
+#+name: nixos-section
+#+begin_src nix
+{
+  hardware.acpilight.enable = true;
+  environment.systemPackages = [
+    pkgs.acpilight
+  ];
+  users.extraUsers.rasen.extraGroups = [ "video" ];
+}
+#+end_src
+
+acpilight wasn't added to modules-list when module was added to nixpkgs.
+Submitted fix upstream: https://github.com/NixOS/nixpkgs/pull/57920.
+#+name: nixos-section
+#+begin_src nix
+{
+  imports = [
+    <nixpkgs/nixos/modules/hardware/acpilight.nix>
+  ];
 }
 #+end_src
 * Look and Feel

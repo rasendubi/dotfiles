@@ -303,9 +303,6 @@ in
         pkgs.wmname
         pkgs.xclip
         pkgs.escrotum
-    
-        # Control screen brightness
-        pkgs.xorg.xbacklight
       ];
     }
     {
@@ -324,6 +321,18 @@ in
         latitude = "50.4500";
         longitude = "30.5233";
       };
+    }
+    {
+      hardware.acpilight.enable = true;
+      environment.systemPackages = [
+        pkgs.acpilight
+      ];
+      users.extraUsers.rasen.extraGroups = [ "video" ];
+    }
+    {
+      imports = [
+        <nixpkgs/nixos/modules/hardware/acpilight.nix>
+      ];
     }
     {
       environment.systemPackages = [
