@@ -1134,6 +1134,9 @@ Start emacs as a daemon:
       ]
     );
   };
+  environment.systemPackages = [
+    pkgs.ripgrep
+  ];
 }
 #+end_src
 ** rxvt-unicode

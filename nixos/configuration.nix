@@ -566,6 +566,9 @@ in
           ]
         );
       };
+      environment.systemPackages = [
+        pkgs.ripgrep
+      ];
     }
     {
       environment.systemPackages = [

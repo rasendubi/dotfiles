@@ -537,7 +537,8 @@ I use smex for improved =counsel-M-x= (show most frequently used commands first)
     :bind (:map evil-normal-state-map
            ("SPC x" . counsel-M-x)
            ("SPC f" . counsel-find-file)
-           ("g /"   . counsel-git-grep)
+           ("g r"   . counsel-git-grep)
+           ("g /"   . counsel-rg)
            :map evil-visual-state-map
            ("SPC x" . counsel-M-x)
            :map evil-motion-state-map
