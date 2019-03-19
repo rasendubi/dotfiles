@@ -2,12 +2,6 @@
 let
   meta = import ./meta.nix;
   machine-config = lib.getAttr meta.name {
-    Larry = [
-      
-    ];
-    ashmalko = [
-      
-    ];
     omicron = [
       {
         imports = [
@@ -120,6 +114,11 @@ in
         # Bluetooth support, so it must be selected here.
         package = pkgs.pulseaudioFull;
       };
+    }
+    {
+      environment.systemPackages = [
+        pkgs.ntfs3g
+      ];
     }
     {
       networking = {
@@ -244,32 +243,6 @@ in
     }
     {
       services.postgresql.enable = true;
-      services.couchdb = {
-        enable = true;
-    
-        package = pkgs.couchdb2;
-    
-        extraConfig = ''
-          [httpd]
-          enable_cors = true
-    
-          [cors]
-          origins = *
-          credentials = true
-    
-          [couch_peruser]
-          enable = true
-          delete_dbs = true
-    
-          [chttpd]
-          authentication_handlers = {couch_httpd_auth, proxy_authentication_handler}, {couch_httpd_auth, cookie_authentication_handler}, {couch_httpd_auth, default_authentication_handler}
-    
-          [couch_httpd_auth]
-          proxy_use_secret = true
-          # no worries—this is a non-secure development secret
-          secret = b4034a82d6a8e1fe27fa6ae0ac18fc09
-        '';
-      };
     }
     {
       virtualisation.docker.enable = true;
@@ -318,12 +291,6 @@ in
         default = "awesome";
         awesome = {
           enable = true;
-          package = (import (pkgs.fetchFromGitHub {
-            owner = "dtzWill";
-            repo = "nixpkgs";
-            rev = "update/awesome-4.3";
-            sha256 = "1mga1fz6r5jmilyiclzdg7wwzxf0fpzcqj2h0hvfr129x8sblzdx";
-          }) {}).awesome;
           luaModules = [ pkgs.luaPackages.luafilesystem pkgs.luaPackages.cjson ];
         };
       };
@@ -432,16 +399,8 @@ in
     }
     {
       environment.systemPackages = [
-        pkgs.pass
-        pkgs.pass-otp
+        (pkgs.pass.withExtensions (exts: [ exts.pass-otp ]))
       ];
-    }
-    {
-      environment.pathsToLink = [ "/lib/password-store/extensions" ];
-      environment.variables = {
-        PASSWORD_STORE_EXTENSIONS_DIR = "/nix/var/nix/profiles/system/sw/lib/password-store/extensions";
-        PASSWORD_STORE_ENABLE_EXTENSIONS = "true";
-      };
     }
     {
       programs.browserpass.enable = true;
@@ -494,11 +453,7 @@ in
       ];
     }
     {
-      security.wrappers = {
-        slock = {
-          source = "${pkgs.slock}/bin/slock";
-        };
-      };
+      programs.slock.enable = true;
     }
     {
       environment.systemPackages = [
@@ -515,8 +470,6 @@ in
     
         pkgs.mplayer
         pkgs.smplayer
-    
-        pkgs.alarm-clock-applet
     
         # Used by naga setup
         pkgs.xdotool
@@ -536,10 +489,77 @@ in
         enable = true;
         defaultEditor = true;
         package = (pkgs.emacsPackagesNgGen pkgs.emacs).emacsWithPackages (epkgs:
+          (with epkgs.melpaStablePackages; [
+            use-package
+            diminish
+            el-patch
+    
+            evil
+            evil-numbers
+            evil-swap-keys
+    
+            smex
+            counsel
+            whitespace-cleanup-mode
+            which-key
+            projectile
+            noccur
+    
+            diff-hl
+            yasnippet
+            company
+            flycheck
+            color-identifiers-mode
+            f
+    
+            org-pomodoro
+            nix-mode
+            haskell-mode
+            rust-mode
+            racer
+            pip-requirements
+            js2-mode
+            rjsx-mode
+            typescript-mode
+            tide
+            php-mode
+            web-mode
+            groovy-mode
+            go-mode
+            lua-mode
+            ledger-mode
+            markdown-mode
+            edit-indirect
+            json-mode
+            yaml-mode
+            jinja2-mode
+            gitconfig-mode
+            terraform-mode
+            graphviz-dot-mode
+            notmuch
+            airline-themes
+            visual-fill-column
+            beacon
+          ]) ++
+          (with epkgs.melpaPackages; [
+            # Not present in melpa-stable
+            flycheck-jest
+            purescript-mode
+            psc-ide
+            restclient
+            mbsync
+            nix-sandbox
+    
+            # Don't work in melpa-stable
+            counsel-projectile
+            ivy
+    
+            # Don't work / too old in melpa-stable
+            magit
+            evil-magit
+          ]) ++
           [
             epkgs.orgPackages.org-plus-contrib
-    
-            epkgs.melpaStablePackages.use-package
     
             pkgs.ycmd
           ]

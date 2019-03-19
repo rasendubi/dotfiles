@@ -36,3 +36,4 @@
 /.zsh/cache
 /.config/fish/functions/fisher.fish
 /.config/fish/completions/fisher.fish
+/.emacs.d/smex-items

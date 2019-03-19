@@ -4,7 +4,7 @@
 ** Bootstrap
 Emacs does not source this file automatically, so I need to instruct it to. Check [[https://orgmode.org/worg/org-contrib/babel/intro.html#emacs-initialization][org-babel documentation]] for more info. The following snippet is an adaptation of that idea and goes to my =.emacs.d/init.el=.
 
-#+begin_src emacs-lisp :tangle .emacs.d/init.el
+#+begin_src emacs-lisp :tangle .emacs.d/init.el :noweb no
 ;;; init.el --- The start of my configuration
 ;;; Commentary:
 ;;; Code:
@@ -21,35 +21,196 @@ Emacs does not source this file automatically, so I need to instruct it to. Chec
 (require 'org-install)
 (require 'ob-tangle)
 
+(require 'el-patch)
+
+;; org-babel fixes to tangle ALL matching sections
+(defun rasen/map-regex (regex fn)
+  "Map the REGEX over the BUFFER executing FN.
+
+FN is called with the match-data of the regex.
+
+Returns the results of the FN as a list."
+  (save-excursion
+    (goto-char (point-min))
+    (let (res)
+      (save-match-data
+        (while (re-search-forward regex nil t)
+          (let ((f (match-data)))
+            (setq res
+                  (append res
+                          (list
+                           (save-match-data
+                             (funcall fn f))))))))
+      res)))
+
+(el-patch-feature ob-core)
+(el-patch-defun org-babel-expand-noweb-references (&optional info parent-buffer)
+  "Expand Noweb references in the body of the current source code block.
+
+For example the following reference would be replaced with the
+body of the source-code block named `example-block'.
+
+<<example-block>>
+
+Note that any text preceding the <<foo>> construct on a line will
+be interposed between the lines of the replacement text.  So for
+example if <<foo>> is placed behind a comment, then the entire
+replacement text will also be commented.
+
+This function must be called from inside of the buffer containing
+the source-code block which holds BODY.
+
+In addition the following syntax can be used to insert the
+results of evaluating the source-code block named `example-block'.
+
+<<example-block()>>
+
+Any optional arguments can be passed to example-block by placing
+the arguments inside the parenthesis following the convention
+defined by `org-babel-lob'.  For example
+
+<<example-block(a=9)>>
+
+would set the value of argument \"a\" equal to \"9\".  Note that
+these arguments are not evaluated in the current source-code
+block but are passed literally to the \"example-block\"."
+  (let* ((parent-buffer (or parent-buffer (current-buffer)))
+         (info (or info (org-babel-get-src-block-info 'light)))
+         (lang (nth 0 info))
+         (body (nth 1 info))
+         (ob-nww-start org-babel-noweb-wrap-start)
+         (ob-nww-end org-babel-noweb-wrap-end)
+         (new-body "")
+         (nb-add (lambda (text) (setq new-body (concat new-body text))))
+         index source-name evaluate prefix)
+    (with-temp-buffer
+      (setq-local org-babel-noweb-wrap-start ob-nww-start)
+      (setq-local org-babel-noweb-wrap-end ob-nww-end)
+      (insert body) (goto-char (point-min))
+      (setq index (point))
+      (while (and (re-search-forward (org-babel-noweb-wrap) nil t))
+        (save-match-data (setf source-name (match-string 1)))
+        (save-match-data (setq evaluate (string-match "(.*)" source-name)))
+        (save-match-data
+          (setq prefix
+                (buffer-substring (match-beginning 0)
+                                  (save-excursion
+                                    (beginning-of-line 1) (point)))))
+        ;; add interval to new-body (removing noweb reference)
+        (goto-char (match-beginning 0))
+        (funcall nb-add (buffer-substring index (point)))
+        (goto-char (match-end 0))
+        (setq index (point))
+        (funcall
+         nb-add
+         (with-current-buffer parent-buffer
+           (save-restriction
+             (widen)
+             (mapconcat ;; Interpose PREFIX between every line.
+              #'identity
+              (split-string
+               (if evaluate
+                   (let ((raw (org-babel-ref-resolve source-name)))
+                     (if (stringp raw) raw (format "%S" raw)))
+                 (or
+                  ;; Retrieve from the Library of Babel.
+                  (nth 2 (assoc-string source-name org-babel-library-of-babel))
+                  ;; Return the contents of headlines literally.
+                  (save-excursion
+                    (when (org-babel-ref-goto-headline-id source-name)
+                      (org-babel-ref-headline-body)))
+                  ;; Find the expansion of reference in this buffer.
+                  (save-excursion
+                    (goto-char (point-min))
+                    (let* ((name-regexp
+                            (org-babel-named-src-block-regexp-for-name
+                             source-name))
+                           (comment
+                            (string= "noweb"
+                                     (cdr (assq :comments (nth 2 info)))))
+                           (c-wrap
+                            (lambda (s)
+                              ;; Comment, according to LANG mode,
+                              ;; string S.  Return new string.
+                              (with-temp-buffer
+                                (funcall (intern (concat lang "-mode")))
+                                (comment-region (point)
+                                                (progn (insert s) (point)))
+                                (org-trim (buffer-string)))))
+                           (expand-body
+                            (lambda (i)
+                              ;; Expand body of code blocked
+                              ;; represented by block info I.
+                              (let ((b (if (org-babel-noweb-p (nth 2 i) :eval)
+                                           (org-babel-expand-noweb-references i)
+                                         (nth 1 i))))
+                                (if (not comment) b
+                                  (let ((cs (org-babel-tangle-comment-links i)))
+                                    (concat (funcall c-wrap (car cs)) "\n"
+                                            b "\n"
+                                            (funcall c-wrap (cadr cs)))))))))
+                      (if (re-search-forward name-regexp nil t)
+                          (el-patch-swap
+                            (funcall expand-body
+                                     (org-babel-get-src-block-info 'light))
+                            ;; Found a source block named SOURCE-NAME.
+                            ;; Assume it is unique; do not look after
+                            ;; `:noweb-ref' header argument.
+                            (mapconcat
+                             #'identity
+                             (rasen/map-regex name-regexp
+                                              (lambda (md)
+                                                (funcall expand-body
+                                                         (org-babel-get-src-block-info 'light))))
+                             "\n"))
+                        ;; Though luck.  We go into the long process
+                        ;; of checking each source block and expand
+                        ;; those with a matching Noweb reference.
+                        (let ((expansion nil))
+                          (org-babel-map-src-blocks nil
+                            (let* ((info (org-babel-get-src-block-info 'light))
+                                   (parameters (nth 2 info)))
+                              (when (equal source-name
+                                           (cdr (assq :noweb-ref parameters)))
+                                (push (funcall expand-body info) expansion)
+                                (push (or (cdr (assq :noweb-sep parameters))
+                                          "\n")
+                                      expansion))))
+                          (when expansion
+                            (mapconcat #'identity
+                                       (nreverse (cdr expansion))
+                                       ""))))))
+                  ;; Possibly raise an error if named block doesn't exist.
+                  (if (or org-babel-noweb-error-all-langs
+                          (member lang org-babel-noweb-error-langs))
+                      (error "%s could not be resolved (see \
+`org-babel-noweb-error-langs')"
+                             (org-babel-noweb-wrap source-name))
+                    "")))
+               "[\n\r]")
+              (concat "\n" prefix))))))
+      (funcall nb-add (buffer-substring index (point-max))))
+    new-body))
+
 (org-babel-load-file (expand-file-name "emacs.org" rasen/dotfiles-directory))
 ;;; init.el ends here
 #+end_src
 
 You might notice that I don't change load-path---that's because my setup relies on =org-plus-contrib= to be installed by NixOS.
 ** package
-I use =package= for installing emacs packages (besides a couple of packages installed with Nix). This is standard and comes built-in with emacs.
-
+All emacs packages are installed with Nix. Disable usage of emacs internal archives.
 #+begin_src emacs-lisp
 (require 'package)
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
-(add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/") t)
-(add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
-; (package-initialize)
+(setq package-archives nil)
+(setq package-enable-at-startup nil)
+(package-initialize)
 #+end_src
 ** use-package
 [[https://github.com/jwiegley/use-package][use-package]] is a cool emacs library that helps managing emacs configuration making it simpler and more structured. It is the core of my configuration infrastructure and is required
-
-*** Auto-install
-I used to have the following code to auto-install =use-package= on start, but now I install the package with Nix, so it is not needed.
-
-#+begin_src emacs-lisp :tangle no
-(when (not (package-installed-p 'use-package))
-  (package-refresh-contents)
-  (package-install 'use-package))
-#+end_src
 *** Initialize
-#+begin_src emacs-lisp
-(setq use-package-always-ensure t)
+#+begin_src emacs-lisp :tangle no
+; Do not ensure packages---they are installed with Nix
+(setq use-package-always-ensure nil)
 ; (setq use-package-verbose t)
 (eval-when-compile
   (require 'use-package))
@@ -76,7 +237,7 @@ Quickly open configuration file.
 
 A couple of functions to make configuration a little bit easier.
 #+name: evil-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (defun nmap (key action)
     (define-key evil-normal-state-map (kbd key) action))
   (defun vmap (key action)
@@ -90,7 +251,7 @@ A couple of functions to make configuration a little bit easier.
 Use =SPC= as one of leaders.
 
 #+name: evil-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (nmap "SPC" nil)
   (vmap "SPC" nil)
   (mmap "SPC" nil)
@@ -98,14 +259,14 @@ Use =SPC= as one of leaders.
 
 Hard way: prohibit usage of keybinding I have more efficient binding for.
 #+name: evil-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (defmacro rasen/hard-way (key)
     `(lambda () (interactive) (error "Don't use this key! Use %s instead" ,key)))
 #+end_src
 
 Prohibit usage of arrows.
 #+name: evil-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (nmap "<left>"  (rasen/hard-way "h"))
   (nmap "<up>"    (rasen/hard-way "j"))
   (nmap "<down>"  (rasen/hard-way "k"))
@@ -126,13 +287,13 @@ Swap =.= and =;=.
 #+end_src
 
 #+name: evil-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
 (nmap "SPC ;" 'eval-expression)
 #+end_src
 
 Close other window.
 #+name: evil-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (defun rasen/quit-other ()
     (interactive)
     (other-window 1)
@@ -143,7 +304,7 @@ Close other window.
 
 Move to beginning/end of line with =H= and =L= respectively.
 #+name: evil-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (defun rasen/smart-move-beginning-of-line (arg)
     "Move point back to indentation of beginning of line.
 
@@ -177,14 +338,14 @@ point reaches the beginning or end of the buffer, stop there."
 
 Save buffer with =SPC SPC=.
 #+name: evil-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (nmap "SPC SPC" 'save-buffer)
 #+end_src
 
 ** Swap k and j
 With workman layout, =j= is located on qwerty =y= and =k=---on qwerty =n=; thus =j= is higher than =k=, and it is not convenient to press lower key for going up. Just swap them.
 #+name: evil-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
 (nmap "k"       'evil-next-visual-line)
 (nmap "j"       'evil-previous-visual-line)
 (nmap "gk"      'evil-next-line)
@@ -214,9 +375,16 @@ I use Vim's =C-a= and =C-x= (increment/decrement number at point) a lot.
 
 Now, remap =C-x= to =RET=. (Because =C-x= is used for decrementing numbers.)
 #+name: evil-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
 (nmap "RET" (lookup-key (current-global-map) (kbd "C-x")))
 (vmap "RET" (lookup-key (current-global-map) (kbd "C-x")))
+#+end_src
+** swap-keys
+#+begin_src emacs-lisp
+(use-package evil-swap-keys
+  :config
+  (global-evil-swap-keys-mode)
+  (add-hook 'prog-mode-hook #'evil-swap-keys-swap-number-row))
 #+end_src
 ** Evilify compile mode
 #+begin_src emacs-lisp
@@ -232,7 +400,7 @@ Now, remap =C-x= to =RET=. (Because =C-x= is used for decrementing numbers.)
 
 And evil commands to go to navigate errors.
 #+name: evil-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (nmap "SPC ,"   'previous-error)
   (nmap "SPC ."   'next-error)
   (nmap "M-,"     'previous-error)
@@ -266,6 +434,17 @@ Don't clutter the current directory with backups. Save them in a separate direct
 #+begin_src emacs-lisp
 (setq backup-directory-alist '(("." . "~/.emacs.d/backups")))
 #+end_src
+
+Don't clutter the current directory with auto-save files.
+#+begin_src emacs-lisp
+(setq auto-save-file-name-transforms '((".*" "~/.emacs.d/backups/" t)))
+#+end_src
+
+Do not create lockfiles either. (I am the only user in the system and only use emacs through daemon, so that should be ok.)
+#+begin_src emacs-lisp
+(setq create-lockfiles nil)
+#+end_src
+
 ** emacs-server
 #+begin_src emacs-lisp
 (load "server")
@@ -426,6 +605,30 @@ Install [[https://nicolas.petton.fr/blog/mutli-occur-on-projects.html][noccur]] 
 #+begin_src emacs-lisp
 (use-package noccur)
 #+end_src
+*** fix "was neither a function nor a string"
+https://github.com/bbatsov/projectile/pull/1269
+
+#+begin_src emacs-lisp
+  (el-patch-feature projectile)
+  (el-patch-defun projectile-default-generic-command (project-type command-type)
+    "Generic retrieval of COMMAND-TYPEs default cmd-value for PROJECT-TYPE.
+
+  If found, checks if value is symbol or string.  In case of symbol
+  resolves to function `funcall's.  Return value of function MUST
+  be string to be executed as command."
+    (let ((command (plist-get (alist-get project-type projectile-project-types) command-type)))
+      (cond
+       ((stringp command) command)
+       ((functionp command)
+        (if (fboundp command)
+            (funcall (symbol-function command))))
+       ((and (not command) (eq command-type 'compilation-dir))
+        ;; `compilation-dir' is special in that it is used as a fallback for the root
+        nil)
+       (el-patch-remove
+         (t
+          (user-error "The value for: %s in project-type: %s was neither a function nor a string." command-type project-type))))))
+#+end_src
 ** magit
 #+begin_src emacs-lisp
 (use-package magit
@@ -442,12 +645,12 @@ Install [[https://nicolas.petton.fr/blog/mutli-occur-on-projects.html][noccur]] 
 
 Do not put files into trash can. Delete them for real.
 #+name: magit-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (setq-default magit-delete-by-moving-to-trash nil)
 #+end_src
 
 #+name: magit-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (setq-default magit-completing-read-function 'ivy-completing-read)
 #+end_src
 
@@ -467,7 +670,7 @@ Evilify magit-mode.
 
 Evilify magit-blame.
 #+name: evil-magit-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (dolist (state '(normal motion))
     (evil-define-key state magit-blame-mode-map (kbd "k")  'evil-next-visual-line)
     (evil-define-key state magit-blame-mode-map (kbd "j")  'evil-previous-visual-line)
@@ -493,7 +696,7 @@ Evilify magit-blame.
 **** git push HEAD ...
 Add a magit command to push =HEAD= into a specified ref.
 #+name: magit-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (defun rasen/magit-push-head (target args)
     "Push HEAD to a branch read in the minibuffer."
     (interactive
@@ -502,18 +705,21 @@ Add a magit command to push =HEAD= into a specified ref.
            (magit-push-arguments)))
     (magit-git-push "HEAD" target args))
 
-  (magit-define-popup-action 'magit-push-popup
-    ?h "HEAD" 'rasen/magit-push-head)
+  (if (fboundp 'transient-insert-suffix)
+      (transient-insert-suffix 'magit-push 'magit-push-other
+        '(1 "h" "HEAD" rasen/magit-push-head))
+    (magit-define-popup-action 'magit-push-popup
+                               ?h "HEAD" 'rasen/magit-push-head))
 #+end_src
 
 **** git fetch origin/master && git checkout origin/master
 (evil-magit)
 #+name: evil-magit-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (defun rasen/magit-fco-master ()
     "Fetch origin/master and checkout it."
     (interactive)
-    (magit-fetch "origin" "master")
+    (magit-git-fetch "origin" "master")
     (magit-checkout "origin/master"))
 
   (evil-magit-define-key evil-magit-state 'magit-mode-map
@@ -580,11 +786,12 @@ Company mode provides autocomplete features.
 #+begin_src emacs-lisp
   (use-package flycheck
     :config
-    (setq flycheck-command-wrapper-function
-          (lambda (cmd) (apply 'nix-shell-command (nix-current-sandbox) cmd))
+    ;; not sure I actually use nix-sandbox
+    ; (setq flycheck-command-wrapper-function
+    ;       (lambda (cmd) (apply 'nix-shell-command (nix-current-sandbox) cmd))
 
-          flycheck-executable-find
-          (lambda (cmd) (nix-executable-find (nix-current-sandbox) cmd)))
+    ;       flycheck-executable-find
+    ;       (lambda (cmd) (nix-executable-find (nix-current-sandbox) cmd)))
 
     (global-flycheck-mode))
 #+end_src
@@ -656,7 +863,9 @@ Shamelessly stealed from https://github.com/purcell/emacs.d.
          ("SPC l" . org-clock-in-last)
          ("SPC j" . org-clock-goto)
          ("SPC c" . org-capture)
-         ("SPC a" . org-agenda))
+         ("SPC a" . org-agenda)
+         :map org-mode-map
+         ("C-c ," . org-time-stamp-inactive))
   :ensure org-plus-contrib
   :init
   <<org-init>>
@@ -667,13 +876,35 @@ Shamelessly stealed from https://github.com/purcell/emacs.d.
 
 Do not indent inside tasks
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (setq org-adapt-indentation nil)
+#+end_src
+
+Do not indent tags.
+#+name: org-config
+#+begin_src emacs-lisp
+(setq org-tags-column 0)
+#+end_src
+
+Set tags faces, so they are more distinguishable.
+#+name: org-config
+#+begin_src emacs-lisp
+(set-face-attribute 'org-tag nil :inverse-video t)
+(set-face-attribute 'org-archived nil :inverse-video nil)
+(set-face-attribute 'org-ellipsis nil :inverse-video nil)
+(setq org-tag-faces
+      '(("ARCHIVE" . (:inverse-video nil))))
+#+end_src
+
+Open pdfs in external viewer:
+#+name: org-config
+#+begin_src emacs-lisp
+(add-to-list 'org-file-apps '("\\.pdf\\'" . "zathura %s"))
 #+end_src
 
 Use =whitespace-mode= in Org (but don't show too long lines).
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (add-hook 'org-mode-hook (lambda ()
                              (setq-local whitespace-style '(face
                                                             tab-mark
@@ -684,7 +915,7 @@ Use =whitespace-mode= in Org (but don't show too long lines).
 
 My directory for org files.
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (setq rasen/org-directory "~/org")
 #+end_src
 
@@ -699,7 +930,7 @@ My helper to find all org files in a directory.
 
 Package for =f-files= and =f-ext?= functions.
 #+name: org-init
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
 (use-package f
   :commands (f-files f-ext?))
 #+end_src
@@ -720,15 +951,43 @@ I [[https://stackoverflow.com/a/35463983][googled it up]] and =copy-list= seems 
 #+end_src
 
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (require 'org-drill)
   (setq org-drill-scope (rasen/org-files-in-dir "~/org/drill"))
   (add-to-list 'org-modules 'org-drill)
 #+end_src
+
+
+https://bitbucket.org/eeeickythump/org-drill/issues/62/org-drill-doesnt-work-with-org-mode-92
+#+name: org-config
+#+begin_src emacs-lisp
+(el-patch-feature org-drill)
+(el-patch-defun org-drill-hide-subheadings-if (test)
+  "TEST is a function taking no arguments. TEST will be called for each
+of the immediate subheadings of the current drill item, with the point
+on the relevant subheading. TEST should return nil if the subheading is
+to be revealed, non-nil if it is to be hidden.
+Returns a list containing the position of each immediate subheading of
+the current topic."
+  (let ((drill-entry-level (org-current-level))
+        (drill-sections nil))
+    (org-show-subtree)
+    (save-excursion
+      (org-map-entries
+       (lambda ()
+         (when (and (not (org-invisible-p))
+                    (> (org-current-level) drill-entry-level))
+           (when (or (/= (org-current-level) (1+ drill-entry-level))
+                        (funcall test))
+             (hide-subtree))
+           (push (point) drill-sections)))
+       (el-patch-swap "" t) 'tree))
+    (reverse drill-sections)))
+#+end_src
 ** Todo
 Use the following states: =TODO= =NEXT= =DONE= =CANCELED= =WAIT=.
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (setq-default org-todo-keywords
                 '((sequence "TODO(t)" "NEXT(n!)" "|" "DONE(d!)")
                   (sequence "|" "CANCELED(c@)")
@@ -744,37 +1003,37 @@ Use the following states: =TODO= =NEXT= =DONE= =CANCELED= =WAIT=.
 
 Switch task state with =SPC t=.
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (evil-define-key 'normal org-mode-map (kbd "SPC t") 'org-todo)
 #+end_src
 
 When repeated task is finished, go back to =TODO= state.
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (setq-default org-todo-repeat-to-state "TODO")
 #+end_src
 
 Log state changes to "LOGBOOK" drawer.
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (setq-default org-log-into-drawer 't)
 #+end_src
 
 Save =CLOSED= timestamp when task is done.
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (setq org-log-done t)
 #+end_src
 ** Clocking
 Remove clocks with 0 duration.
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (setq-default org-clock-out-remove-zero-time-clocks t)
 #+end_src
 
 Save more last clocks.
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (setq-default org-clock-history-length 10)
 #+end_src
 ** Capture
@@ -791,27 +1050,31 @@ I use an extension that adds page url to the title (used for page tracking). Str
 
 My capture templates.
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (setq org-capture-templates
         `(("u"
            "Task: Read this URL"
            entry
            (file+headline "refile.org" "Articles To Read")
-           ,(concat "* TODO %(rasen/strip-url-from-title \"%:description\")\n:PROPERTIES:\n:CREATED: %U\n:END:\n%:link\n")
+           ,(concat "* TODO %(rasen/strip-url-from-title \"%:description\")\n:PROPERTIES:\n:CREATED:  %U\n:END:\n%:link\n")
            :immediate-finish t)
 
           ("w"
            "Capture web snippet"
            entry
-           (file+headline "my-facts.org" "Inbox")
+           (file+headline "refile.org" "Inbox")
            ,(concat "* Fact: '%(rasen/strip-url-from-title \"%:description\")'       :"
                     (format "%s" org-drill-question-tag)
-                    ":\n:PROPERTIES:\n:CREATED: %U\n:SOURCE_URL: %:link\n:END:\n%i\n%?\n")
+                    ":\n:PROPERTIES:\n:CREATED:  %U\n:SOURCE_URL: %:link\n:END:\n%i\n%?\n")
            :immediate-finish t)
 
           ("j" "Journal entry" plain
            (file+datetree+prompt "~/org/journal.org")
-           "%?\n")
+           ,(concat
+             ; %U does not here work as timestamp is hijacked by
+             ; file+datetime+prompt
+             "%(format-time-string (org-time-stamp-format t t))"
+             "\n%?\n"))
 
           ("f"
            "Capture normal snippet"
@@ -819,17 +1082,17 @@ My capture templates.
            (file+headline "my-facts.org" "Inbox")
            ,(concat "* Fact: '%f'       :"
                     (format "%s" org-drill-question-tag)
-                    ":\n:PROPERTIES:\n:CREATED: %U\n:SOURCE_URL: [[%l][%f]]\n:END:\n%i\n%?\n")
+                    ":\n:PROPERTIES:\n:CREATED:  %U\n:SOURCE_URL: [[%l][%f]]\n:END:\n%i\n%?\n")
            :immediate-finish t)
 
           ("t" "todo" entry (file "~/org/refile.org")
-           "* TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n" :clock-in t :clock-resume t)
+           "* TODO %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t)
 
           ("m" "meeting" entry (file "~/org/refile.org")
-           "* %?   :Meeting:\n:PROPERTIES:\n:CREATED: %U\n:END:\n" :clock-in t :clock-resume t)
+           "* %?   :Meeting:\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t)
 
           ("n" "note" entry (file "~/org/refile.org")
-           "* %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n" :clock-in t :clock-resume t)))
+           "* %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t)))
 #+end_src
 
 Enable org-protocol.
@@ -840,18 +1103,18 @@ Enable org-protocol.
 
 Instanly go into insert mode on capture.
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (add-hook 'org-capture-mode-hook 'evil-insert-state)
 #+end_src
 
 =%l= in org-capture fails with multiline context, so use only the first line as a context.
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (setq org-context-in-file-links 1)
 #+end_src
 ** Refile
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (defun rasen/org-refile-files ()
     (rasen/org-files-in-dir rasen/org-directory))
 
@@ -866,13 +1129,13 @@ Instanly go into insert mode on capture.
 #+end_src
 ** Archive
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (setq-default org-archive-default-command 'org-archive-to-archive-sibling)
 #+end_src
 ** Agenda
 Set my org files location.
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (setq org-directory "~/org"
         org-default-notes-file "~/org/refile.org"
         org-agenda-files (rasen/org-files-in-dir "~/org"))
@@ -880,7 +1143,7 @@ Set my org files location.
 
 Configure my agenda view.
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (setq org-agenda-span 6
         org-agenda-start-day "-1d")
 
@@ -893,7 +1156,7 @@ Configure my agenda view.
 
 Configure stuck projects.
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (setq org-tags-exclude-from-inheritance '("PROJECT"))
   (setq org-stuck-projects
         '("+PROJECT/-DONE-CANCELED-WAIT" ("NEXT" "WAIT") nil ""))
@@ -902,7 +1165,7 @@ Configure stuck projects.
 Code-hightlight (fontify) org-babel (=#+begin_src=) blocks.
 
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (setq org-src-fontify-natively t)
 #+end_src
 ** Export
@@ -910,14 +1173,14 @@ Fix exporting for confluence.
 
 =ox-confluence= has an issue with verbatim---it doesn't redefine verbatim translation, so =org-ascii-verbatim= is used. The following makes =org-ascii-verbatim= produce proper confluence fixed-width block.
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (add-to-list 'org-modules 'ox-confluence)
   (setq org-ascii-verbatim-format "\{\{%s\}\}")
 #+end_src
 ** Crypt
 Allow encrypted entries in org files.
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (require 'org-crypt)
   (org-crypt-use-before-save-magic)
   (setq org-tags-exclude-from-inheritance '("crypt"))
@@ -930,7 +1193,7 @@ Make default lowercase. I don't like shouting =#+BEGIN_SRC= and prefer calm =#+b
 
 This also sets =begin_example= to =E= (instead of default =e=).
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (setq org-structure-template-alist
         '(("s" "#+begin_src ?\n\n#+end_src" "<src lang=\"?\">\n\n</src>")
           ("E" "#+begin_example\n?\n#+end_example" "<example>\n?\n</example>")
@@ -952,14 +1215,14 @@ These can be invoked with =< x TAB= where =x= is the letter from the above list.
 *** name attribute
 I use =#+name:= attribute often.
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (add-to-list 'org-structure-template-alist
                '("n" "#+name: ?" ""))
 #+end_src
 *** emacs-lisp block
 Insert Emacs Lisp code block. Used a lot in this file.
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (add-to-list 'org-structure-template-alist
                '("e" "#+begin_src emacs-lisp\n?\n#+end_src" "<src lang=\"emacs-lisp\">\n?\n</src>"))
 #+end_src
@@ -973,7 +1236,7 @@ Insert Emacs Lisp code block. Used a lot in this file.
 #+end_src
 ** Habits
 #+name: org-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (require 'org-habit)
   (setq org-habit-show-habits-only-for-today t)
   (setq org-habit-preceding-days 25)
@@ -992,7 +1255,7 @@ Insert Emacs Lisp code block. Used a lot in this file.
 
 Eval last sexp Vim-style.
 #+name: elisp-mode-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   (evil-define-operator rasen/evil-eval (beg end type)
     "Evaluate region."
     (if (eq type 'block)
@@ -1175,14 +1438,6 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
               (lambda ()
                 (flycheck-select-checker 'javascript-eslint)))
 
-    (defun flycheck-eslint-config-exists-p ()
-      "Whether there is a valid eslint config for the current buffer."
-      (let* ((executable (flycheck-find-checker-executable 'javascript-eslint))
-             (command (funcall flycheck-command-wrapper-function
-                               (cons executable '("--print-config" "."))))
-             (exitcode (and executable command (apply 'call-process (car command) nil nil nil (cdr command)))))
-        (eq exitcode 0)))
-
     (setq-default flycheck-disabled-checkers
                   (append flycheck-disabled-checkers
                           '(javascript-jshint)))
@@ -1194,14 +1449,33 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 
     (setq-default js2-strict-trailing-comma-warning nil))
 
-(use-package rjsx-mode
-  :mode "\\.js$"
-  :config
-  (setq-default js-indent-level 2))
+  (el-patch-feature flycheck)
+  (el-patch-defun flycheck-eslint-config-exists-p ()
+    "Whether there is a valid eslint config for the current buffer."
+    (let* ((executable (flycheck-find-checker-executable 'javascript-eslint))
+           (el-patch-add
+             (command (funcall flycheck-command-wrapper-function
+                               (cons executable '("--print-config" ".")))))
+           (exitcode (and executable
+                          (el-patch-swap
+                            (call-process executable nil nil nil "--print-config" ".")
+                            (el-patch-literal command (apply 'call-process (car command) nil nil nil (cdr command)))))))
+           (eq exitcode 0)))
+
+  (use-package rjsx-mode
+    :mode "\\.js$"
+    :config
+    (setq-default js-indent-level 2))
 #+end_src
 ** Typescript
 #+begin_src emacs-lisp
-(use-package typescript
+(use-package typescript-mode
+  :init
+  (add-hook 'web-mode-hook
+            (lambda ()
+              (when (or (string-equal "tsx" (file-name-extension buffer-file-name))
+                        (string-equal "ts" (file-name-extension buffer-file-name)))
+                (typescript-mode))))
   :config
   (setq-default typescript-indent-level 2))
 #+end_src
@@ -1211,14 +1485,8 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
     :after (typescript-mode company flycheck web-mode)
     :commands (tide-setup tide-hl-identifier-mode tide-format-before-save)
     :init
-    (add-hook 'typescript-mode-hook 'tide-setup)
-    (add-hook 'typescript-mode-hook 'tide-hl-identifier-mode)
-    (add-hook 'typescript-mode-hook 'company-mode)
     ; (add-hook 'before-save 'tide-format-before-save)
-    ; :hook ((typescript-mode . tide-setup)
-    ;        (typescript-mode . tide-hl-identifier-mode)
-    ;        (before-save . tide-format-before-save))
-    (defun setup-tide-mode ()
+    (defun rasen/setup-tide-mode ()
       (interactive)
       (tide-setup)
       (flycheck-mode +1)
@@ -1227,12 +1495,7 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
       (tide-hl-identifier-mode +1)
       (company-mode +1))
 
-    (add-hook 'web-mode-hook
-              (lambda ()
-                (when (or (string-equal "tsx" (file-name-extension buffer-file-name))
-                          (string-equal "ts" (file-name-extension buffer-file-name)))
-                  (typescript-mode))))
-    )
+    (add-hook 'typescript-mode-hook #'rasen/setup-tide-mode))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1277,6 +1540,11 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 #+begin_src emacs-lisp
 (use-package groovy-mode
   :mode "\\.\\(groovy\\|gradle\\)$")
+#+end_src
+** Go
+#+begin_src emacs-lisp
+(use-package go-mode
+  :mode "\\.go$")
 #+end_src
 ** Lua
 #+begin_src emacs-lisp
@@ -1337,6 +1605,13 @@ Package edit-indirect needed to edit code blocks.
 #+begin_src emacs-lisp
 (use-package terraform-mode
   :mode "\\.tf$")
+#+end_src
+** graphviz
+#+begin_src emacs-lisp
+  (use-package graphviz-dot-mode
+    :mode "\\.dot$"
+    :config
+    (setq graphviz-dot-view-command "dotty %s"))
 #+end_src
 * Mail setup
 ** gnus
@@ -1420,6 +1695,7 @@ Package edit-indirect needed to edit code blocks.
             (:name "unread-triage" :query "tag:unread and tag:nixpkgs-participating" :key "t")
             (:name "unread-doctoright" :query "tag:unread and tag:doctoright" :key "d")
             (:name "unread-other" :query "tag:unread and not tag:nixos and not tag:inbox and not tag:doctoright" :key "o")
+            (:name "later" :query "tag:later" :key "l")
             (:name "flagged" :query "tag:flagged" :key "f")
             (:name "personal" :query "tag:personal" :key "P")
             (:name "doctoright" :query "tag:doctoright" :key "D")
@@ -1435,6 +1711,12 @@ Package edit-indirect needed to edit code blocks.
             ; notmuch-hello-insert-footer
            ))
     (setq-default notmuch-show-indent-content nil)
+
+    (defun rasen/mbsync ()
+      (interactive)
+      (async-shell-command "mbsync sync-ps sync-gmail; /home/rasen/dotfiles/notmuch.sh" "*mbsync*"))
+
+    (define-key 'notmuch-hello-mode-map "f" 'rasen/mbsync)
 
     (define-key 'notmuch-hello-mode-map "g" 'notmuch-refresh-all-buffers)
     (define-key 'notmuch-search-mode-map "g" 'notmuch-refresh-all-buffers)

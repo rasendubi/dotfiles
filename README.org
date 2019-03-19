@@ -18,19 +18,13 @@ Pieces not (yet) covered in this document are:
 * NixOS
 I'm a [[http://nixos.org/][NixOS]] user. What's cool about it is that I can describe all my system configuration in one file (=/etc/nixos/configuration.nix=), so I can just copy it to other machine, call =nixos-rebuild= and have system with the same software, system settings, etc.
 
-It looks like this:
+An outline looks like this.
 
 #+begin_src nix :tangle nixos/configuration.nix :noweb no-export :padline no
 { config, pkgs, lib, ... }:
 let
   meta = import ./meta.nix;
   machine-config = lib.getAttr meta.name {
-    Larry = [
-      <<machine-larry>>
-    ];
-    ashmalko = [
-      <<machine-ashmalko>>
-    ];
     omicron = [
       <<machine-omicron>>
     ];
@@ -55,9 +49,9 @@ This =<<nixos-section>>= is replaced by other parts of this doc.
 
 ** Default locations
 
-    This moves nixos configuration from the default location to the =dotfiles/nixos/configuration.nix=.
+Move nixos configuration from the default location to the =dotfiles/nixos/configuration.nix=.
 
-    This also disables channel mechanism and makes nixos use Nixpkgs in the =dotfiles/channels= directory. I usually follow nixpkgs-unstable, but that gives me more control.
+Also disable channel mechanism and makes nixos use Nixpkgs in the =dotfiles/channels= directory. I usually follow nixpkgs-unstable, but that gives me more control.
 
 #+name: nixos-section
 #+begin_src nix
@@ -72,7 +66,7 @@ This =<<nixos-section>>= is replaced by other parts of this doc.
 }
 #+end_src
 
-If you want to override default configuration location, use =-I= flag:
+If you want to override default configuration location for the very first =nixos-rebuild=, use =-I= flag:
 #+begin_src sh
 sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix
 #+end_src
@@ -254,6 +248,17 @@ I have a bluetooth headset, so this enables bluetooth audio in NixOS.
     };
   }
 #+end_src
+** NTFS
+Install ntfs-3g to mount ntfs volumes in read-write mode.
+
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [
+    pkgs.ntfs3g
+  ];
+}
+#+end_src
 * Services
 ** NetworkManager
 #+name: nixos-section
@@ -326,7 +331,7 @@ All my computers are members of the VPN:
 #+end_src
 
 ** Avahi
-Avahi is needed to allow resolution of =.local= names. For example, you can access this computer by =larry.local= if we meet at the same local network. (Probably not, as it only works in the OpenVPN network.)
+Avahi is needed to allow resolution of =.local= names. For example, you can access this computer by =omicron.local= if we meet at the same local network. (Probably not, as it only works in the OpenVPN network.)
 #+name: nixos-section
 #+begin_src nix
 {
@@ -421,7 +426,7 @@ I use Syncthing to sync my org-mode files to my phone.
 }
 #+end_src
 ** Firewall
-Enable firewall. This disables all ports and pings.
+Enable firewall. This blocks all ports (for ingress traffic) and pings.
 
 #+name: nixos-section
 #+begin_src nix
@@ -440,32 +445,6 @@ Enable firewall. This disables all ports and pings.
 #+begin_src nix
 {
   services.postgresql.enable = true;
-  services.couchdb = {
-    enable = true;
-
-    package = pkgs.couchdb2;
-
-    extraConfig = ''
-      [httpd]
-      enable_cors = true
-
-      [cors]
-      origins = *
-      credentials = true
-
-      [couch_peruser]
-      enable = true
-      delete_dbs = true
-
-      [chttpd]
-      authentication_handlers = {couch_httpd_auth, proxy_authentication_handler}, {couch_httpd_auth, cookie_authentication_handler}, {couch_httpd_auth, default_authentication_handler}
-
-      [couch_httpd_auth]
-      proxy_use_secret = true
-      # no worries—this is a non-secure development secret
-      secret = b4034a82d6a8e1fe27fa6ae0ac18fc09
-    '';
-  };
 }
 #+end_src
 
@@ -771,7 +750,7 @@ This makes apps look like in KDE:
 }
 #+end_src
 
-The next is a back-port of =oxygen-gtk= theme, which was removed with remove of KDE4 from nixpkgs.
+The following block is a back-port of =oxygen-gtk= theme, which was removed with remove of KDE4 from nixpkgs.
 #+name: nixos-section
 #+begin_src nix
 (let
@@ -904,21 +883,8 @@ Install [[https://www.passwordstore.org/][password-store]] along with [[https://
 #+begin_src nix
 {
   environment.systemPackages = [
-    pkgs.pass
-    pkgs.pass-otp
+    (pkgs.pass.withExtensions (exts: [ exts.pass-otp ]))
   ];
-}
-#+end_src
-
-The following section is required for pass to find the OTP extension.
-#+name: nixos-section
-#+begin_src nix
-{
-  environment.pathsToLink = [ "/lib/password-store/extensions" ];
-  environment.variables = {
-    PASSWORD_STORE_EXTENSIONS_DIR = "/nix/var/nix/profiles/system/sw/lib/password-store/extensions";
-    PASSWORD_STORE_ENABLE_EXTENSIONS = "true";
-  };
 }
 #+end_src
 
@@ -1032,11 +998,7 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 #+name: nixos-section
 #+begin_src nix
 {
-  security.wrappers = {
-    slock = {
-      source = "${pkgs.slock}/bin/slock";
-    };
-  };
+  programs.slock.enable = true;
 }
 #+end_src
 *** xss-lock
@@ -1065,8 +1027,6 @@ Don't require additional setup.
 
     pkgs.mplayer
     pkgs.smplayer
-
-    pkgs.alarm-clock-applet
 
     # Used by naga setup
     pkgs.xdotool
@@ -1097,10 +1057,77 @@ Start emacs as a daemon:
     enable = true;
     defaultEditor = true;
     package = (pkgs.emacsPackagesNgGen pkgs.emacs).emacsWithPackages (epkgs:
+      (with epkgs.melpaStablePackages; [
+        use-package
+        diminish
+        el-patch
+
+        evil
+        evil-numbers
+        evil-swap-keys
+
+        smex
+        counsel
+        whitespace-cleanup-mode
+        which-key
+        projectile
+        noccur
+
+        diff-hl
+        yasnippet
+        company
+        flycheck
+        color-identifiers-mode
+        f
+
+        org-pomodoro
+        nix-mode
+        haskell-mode
+        rust-mode
+        racer
+        pip-requirements
+        js2-mode
+        rjsx-mode
+        typescript-mode
+        tide
+        php-mode
+        web-mode
+        groovy-mode
+        go-mode
+        lua-mode
+        ledger-mode
+        markdown-mode
+        edit-indirect
+        json-mode
+        yaml-mode
+        jinja2-mode
+        gitconfig-mode
+        terraform-mode
+        graphviz-dot-mode
+        notmuch
+        airline-themes
+        visual-fill-column
+        beacon
+      ]) ++
+      (with epkgs.melpaPackages; [
+        # Not present in melpa-stable
+        flycheck-jest
+        purescript-mode
+        psc-ide
+        restclient
+        mbsync
+        nix-sandbox
+
+        # Don't work in melpa-stable
+        counsel-projectile
+        ivy
+
+        # Don't work / too old in melpa-stable
+        magit
+        evil-magit
+      ]) ++
       [
         epkgs.orgPackages.org-plus-contrib
-
-        epkgs.melpaStablePackages.use-package
 
         pkgs.ycmd
       ]
@@ -1462,6 +1489,14 @@ set -g prefix C-a
 unbind-key C-b
 bind-key C-a send-prefix
 #+end_src
+
+Move windows (tabs) around. Stealed from [[https://til.hashrocket.com/posts/6vz1uo5bxv-move-window-tab-in-tmux][here]].
+
+#+begin_src conf-space :tangle .tmux.conf
+bind-key S-left swap-window -t -1
+bind-key S-right swap-window -t +1
+#+end_src
+
 
 /TODO describe other settings/
 #+begin_src conf-space :tangle .tmux.conf
