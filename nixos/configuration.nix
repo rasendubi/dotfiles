@@ -497,6 +497,7 @@ in
             evil
             evil-numbers
             evil-swap-keys
+            evil-collection
     
             smex
             counsel

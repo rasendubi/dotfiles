@@ -230,6 +230,9 @@ Quickly open configuration file.
 ** General
 #+begin_src emacs-lisp
 (use-package evil
+  :init
+  (setq evil-want-integration nil)
+  (setq evil-want-keybinding nil)
   :config
   <<evil-config>>
   (evil-mode 1))
@@ -386,16 +389,59 @@ Now, remap =C-x= to =RET=. (Because =C-x= is used for decrementing numbers.)
   (global-evil-swap-keys-mode)
   (add-hook 'prog-mode-hook #'evil-swap-keys-swap-number-row))
 #+end_src
+** evil-collection
+evil-collection is a collection of evil bindings for different modes.
+#+begin_src emacs-lisp
+  (require 'warnings)
+  (add-to-list 'warning-suppress-types '(evil-collection))
+
+  (use-package evil-collection
+    :after (evil evil-magit)
+    :config
+    (defun rasen/rotate-keys (_mode mode-keymaps &rest _rest)
+      (evil-collection-translate-key 'normal mode-keymaps
+       "k" "j"
+       "j" "k"
+       "gk" "gj"
+       "gj" "gk"
+       (kbd "M-j") (kbd "M-k")
+       (kbd "M-k") (kbd "M-j")
+       (kbd "C-j") nil ; used for window-management
+       (kbd "C-k") nil ; used for window-management
+       "." ";"
+       ";" "."))
+    (add-hook 'evil-collection-setup-hook #'rasen/rotate-keys)
+
+    (setq evil-collection-mode-alist
+      '(compile
+        flycheck
+        help
+        js2-mode
+        magit
+        ;; notmuch bindings aren't that cool and are less efficient than native
+        ;; keymap
+        ; notmuch
+        python
+        racer
+        restclient
+        tide
+        typescript-mode
+        which-key))
+
+    (evil-collection-init)
+  )
+#+end_src
 ** Evilify compile mode
 #+begin_src emacs-lisp
 (use-package compile
   :config
   (setq compilation-scroll-output t)
-  (evil-add-hjkl-bindings compilation-mode-map 'motion
-    (kbd "SPC x") (lookup-key evil-motion-state-map (kbd "SPC x"))
-    (kbd "g")     nil
-    (kbd "g g")   'evil-goto-first-line
-    (kbd "g r")   'recompile))
+;   (evil-add-hjkl-bindings compilation-mode-map 'motion
+;     (kbd "SPC x") (lookup-key evil-motion-state-map (kbd "SPC x"))
+;     (kbd "g")     nil
+;     (kbd "g g")   'evil-goto-first-line
+;     (kbd "g r")   'recompile))
+)
 #+end_src
 
 And evil commands to go to navigate errors.
@@ -555,6 +601,7 @@ It's enable by default. Just diminish it.
 ** nixos-sandbox
 #+begin_src emacs-lisp
   (use-package nix-sandbox
+    :disabled
     :commands (nix-shell-command
                nix-shell
                nix-compile
@@ -1271,6 +1318,68 @@ Pretty self-explaining.
 (use-package nix-mode
   :mode "\\.nix$")
 #+end_src
+** Haskell
+(Old un-reviewed stuff.)
+#+begin_src emacs-lisp
+(use-package haskell-mode
+  :mode "\\.hs$"
+  :init
+  (setq company-ghc-show-info t)
+  (setq flycheck-ghc-stack-use-nix t)
+  :config
+  (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
+  (add-hook 'haskell-mode-hook 'haskell-decl-scan-mode)
+
+  (setq haskell-compile-cabal-build-command "cd %s && stack build")
+  (setq haskell-compile-cabal-build-command-alt "cd %s && cabal build --ghc-options=-ferror-spans")
+
+  ;; Use Nix for stack ghci
+  (add-to-list 'haskell-process-args-stack-ghci "--nix")
+  (add-to-list 'haskell-process-args-stack-ghci "--test")
+
+  ;; Use Nix for default build/test command
+  (projectile-register-project-type 'haskell-stack
+                                    '("stack.yaml")
+                                    :compile "stack build --nix"
+                                    :test "stack build --nix --test")
+
+  (define-key haskell-mode-map [f8] 'haskell-navigate-imports)
+  (define-key haskell-mode-map (kbd "C-c C-b") 'haskell-compile)
+  (define-key haskell-mode-map (kbd "C-c v c") 'haskell-cabal-visit-file)
+
+  ; haskell-interactive-mode
+  (define-key haskell-mode-map (kbd "C-x C-d") nil)
+  (define-key haskell-mode-map (kbd "C-c C-z") 'haskell-interactive-switch)
+  (define-key haskell-mode-map (kbd "C-c C-l") 'haskell-process-load-file)
+  (define-key haskell-mode-map (kbd "C-c C-t") 'haskell-process-do-type)
+  (define-key haskell-mode-map (kbd "C-c C-i") 'haskell-process-do-info)
+  (define-key haskell-mode-map (kbd "C-c M-.") nil)
+  (define-key haskell-mode-map (kbd "C-c C-d") nil)
+
+  ;; Disable popups (i.e., report errors in the interactive shell).
+  (setq haskell-interactive-popup-errors nil)
+
+  (setq haskell-process-suggest-remove-import-lines t
+        haskell-process-auto-import-loaded-modules t)
+
+  (with-eval-after-load 'align
+    (add-to-list 'align-rules-list
+                 '(haskell-types
+                   (regexp . "\\(\\s-+\\)\\(::\\|∷\\)\\s-+")
+                   (modes . '(haskell-mode literate-haskell-mode))))
+    (add-to-list 'align-rules-list
+                 '(haskell-assignment
+                   (regexp . "\\(\\s-+\\)=\\s-+")
+                   (modes . '(haskell-mode literate-haskell-mode))))
+    (add-to-list 'align-rules-list
+                 '(haskell-arrows
+                   (regexp . "\\(\\s-+\\)\\(->\\|→\\)\\s-+")
+                   (modes . '(haskell-mode literate-haskell-mode))))
+    (add-to-list 'align-rules-list
+                 '(haskell-left-arrows
+                   (regexp . "\\(\\s-+\\)\\(<-\\|←\\)\\s-+")
+                   (modes . '(haskell-mode literate-haskell-mode))))))
+#+end_src
 ** Rust
 #+begin_src emacs-lisp
 (use-package eldoc
@@ -1482,8 +1591,8 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 
 #+begin_src emacs-lisp
   (use-package tide
-    :after (typescript-mode company flycheck web-mode)
-    :commands (tide-setup tide-hl-identifier-mode tide-format-before-save)
+    :commands (tide-setup tide-hl-identifier-mode tide-format-before-save rasen/setup-tide-mode)
+    :hook (typescript-mode . rasen/setup-tide-mode)
     :init
     ; (add-hook 'before-save 'tide-format-before-save)
     (defun rasen/setup-tide-mode ()
@@ -1493,9 +1602,7 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
       (setq flycheck-check-syntax-automatically '(save mode-enabled))
       (eldoc-mode +1)
       (tide-hl-identifier-mode +1)
-      (company-mode +1))
-
-    (add-hook 'typescript-mode-hook #'rasen/setup-tide-mode))
+      (company-mode +1)))
 #+end_src
 
 #+begin_src emacs-lisp

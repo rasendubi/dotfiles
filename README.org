@@ -1065,6 +1065,7 @@ Start emacs as a daemon:
         evil
         evil-numbers
         evil-swap-keys
+        evil-collection
 
         smex
         counsel
