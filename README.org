@@ -864,6 +864,7 @@ Here go applications (almost) every normal user needs.
 {
   environment.systemPackages = [
     pkgs.gnupg
+    pkgs.pinentry
   ];
   programs.gnupg.agent = {
     enable = true;
