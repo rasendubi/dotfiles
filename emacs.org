@@ -623,11 +623,6 @@ It's enable by default. Just diminish it.
          ("<f4>"    . projectile-compile-project)
          ("<f5>"    . projectile-run-project))
   :commands (projectile-project-name)
-  :init
-  ;; Save default just in case
-  (nmap "g F" 'find-file-at-point)
-  ;; g F was bound to `evil-find-file-at-point-with-line'
-  ;; I've never used it though
   :diminish projectile-mode
   :config
   ;; Use the prefix arg if you want to change the compilation command
@@ -640,7 +635,6 @@ It's enable by default. Just diminish it.
 #+end_src
 
 #+begin_src emacs-lisp
-
 (use-package counsel-projectile
   :after projectile
   :config
@@ -657,24 +651,25 @@ https://github.com/bbatsov/projectile/pull/1269
 
 #+begin_src emacs-lisp
   (el-patch-feature projectile)
-  (el-patch-defun projectile-default-generic-command (project-type command-type)
-    "Generic retrieval of COMMAND-TYPEs default cmd-value for PROJECT-TYPE.
+  (with-eval-after-load 'projectile
+    (el-patch-defun projectile-default-generic-command (project-type command-type)
+      "Generic retrieval of COMMAND-TYPEs default cmd-value for PROJECT-TYPE.
 
   If found, checks if value is symbol or string.  In case of symbol
   resolves to function `funcall's.  Return value of function MUST
   be string to be executed as command."
-    (let ((command (plist-get (alist-get project-type projectile-project-types) command-type)))
-      (cond
-       ((stringp command) command)
-       ((functionp command)
-        (if (fboundp command)
-            (funcall (symbol-function command))))
-       ((and (not command) (eq command-type 'compilation-dir))
-        ;; `compilation-dir' is special in that it is used as a fallback for the root
-        nil)
-       (el-patch-remove
-         (t
-          (user-error "The value for: %s in project-type: %s was neither a function nor a string." command-type project-type))))))
+      (let ((command (plist-get (alist-get project-type projectile-project-types) command-type)))
+        (cond
+         ((stringp command) command)
+         ((functionp command)
+          (if (fboundp command)
+              (funcall (symbol-function command))))
+         ((and (not command) (eq command-type 'compilation-dir))
+          ;; `compilation-dir' is special in that it is used as a fallback for the root
+          nil)
+         (el-patch-remove
+           (t
+            (user-error "The value for: %s in project-type: %s was neither a function nor a string." command-type project-type)))))))
 #+end_src
 ** magit
 #+begin_src emacs-lisp
