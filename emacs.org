@@ -428,8 +428,7 @@ evil-collection is a collection of evil bindings for different modes.
         typescript-mode
         which-key))
 
-    (evil-collection-init)
-  )
+    (evil-collection-init))
 #+end_src
 ** Evilify compile mode
 #+begin_src emacs-lisp
@@ -1850,6 +1849,11 @@ Package edit-indirect needed to edit code blocks.
                     ("f" ("+flagged") "Flag")
                     ("s" ("+spam" "-inbox") "Mark as spam")
                     ("d" ("+deleted" "-inbox") "Delete")))
+
+    ;; evil-collection-notmuch bindings aren't that cool and are less efficient
+    ;; than native
+    (dolist (mode '(notmuch-hello-mode notmuch-search-mode notmuch-show-mode))
+      (evil-set-initial-state mode 'emacs))
 
     (require 'org-notmuch))
 #+end_src
