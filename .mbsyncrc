@@ -3,6 +3,7 @@ Path ~/Mail/
 Inbox ~/Mail/INBOX
 SubFolders Verbatim
 
+
 IMAPAccount gmail
 Host imap.gmail.com
 User rasen.dubi@gmail.com
@@ -36,6 +37,7 @@ Channel sync-gmail-all
 Channel sync-gmail-spam
 Channel sync-gmail-sent
 
+
 IMAPAccount ps
 Host imap.gmail.com
 User ashmalko@doctoright.org
@@ -68,3 +70,37 @@ Group sync-ps
 Channel sync-ps-all
 Channel sync-ps-spam
 Channel sync-ps-sent
+
+
+IMAPAccount egoless
+Host imap.gmail.com
+User me@egoless.tech
+PassCmd "pass imap.gmail.com/me@egoless.tech"
+SSLType IMAPS
+CertificateFile /etc/ssl/certs/ca-certificates.crt
+
+IMAPStore egoless-remote
+Account egoless
+
+Channel sync-egoless-all
+Master :egoless-remote:"[Gmail]/All Mail"
+Slave :local:egoless/all
+Create Both
+SyncState *
+
+Channel sync-egoless-spam
+Master :egoless-remote:"[Gmail]/Spam"
+Slave :local:egoless/spam
+Create Both
+SyncState *
+
+Channel sync-egoless-sent
+Master :egoless-remote:"[Gmail]/Sent Mail"
+Slave :local:egoless/sent
+Create Both
+SyncState *
+
+Group sync-egoless
+Channel sync-egoless-all
+Channel sync-egoless-spam
+Channel sync-egoless-sent

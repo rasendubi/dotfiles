@@ -226,6 +226,23 @@ Quickly open configuration file.
      (interactive)
      (find-file (expand-file-name "emacs.org" rasen/dotfiles-directory))))
 #+end_src
+** String interpolation
+I use string interpolation in the main =README.org=.
+
+This macro copied from [[https://gist.github.com/cbowdon/012d623920bd28453bf8][here]].
+#+begin_src emacs-lisp
+(defmacro rasen/interpolate-string (text)
+  "Expand text like \"Hello <<name>>\" to (format \"Hello %s\" name)."
+  (let ((pattern "<<\\(.*?\\)>>"))
+    ;; The regexp matches anything between delimiters, non-greedily
+    (with-temp-buffer
+      (save-excursion (insert text))
+      (let ((matches '()))
+        (while (re-search-forward pattern nil t)
+          (push (match-string 1) matches)
+          (replace-match "%s" t t))
+`(format ,(buffer-string) ,@(reverse (mapcar 'read matches)))))))
+#+end_src
 * Evil
 ** General
 #+begin_src emacs-lisp
@@ -894,6 +911,7 @@ Shamelessly stealed from https://github.com/purcell/emacs.d.
   (setenv "PATH" (concat str ":" (getenv "PATH"))))
 #+end_src
 * Org-mode
+** General
 #+begin_src emacs-lisp
 (use-package org
   :mode ("\\.org$" . org-mode)
@@ -1209,6 +1227,15 @@ Code-hightlight (fontify) org-babel (=#+begin_src=) blocks.
 #+name: org-config
 #+begin_src emacs-lisp
   (setq org-src-fontify-natively t)
+#+end_src
+
+Do not confirm evaluation for emacs-lisp.
+#+name: org-config
+#+begin_src emacs-lisp
+  (defun rasen/org-confirm-babel-evaluate (lang body)
+    (not (member lang '("emacs-lisp"))))
+
+  (setq org-confirm-babel-evaluate 'rasen/org-confirm-babel-evaluate)
 #+end_src
 ** Export
 Fix exporting for confluence.

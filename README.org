@@ -467,44 +467,54 @@ I use mbsync to sync my accounts and make them available offline.
 #+end_src
 
 Config file is =.mbsyncrc=.
-#+begin_src conf :tangle .mbsyncrc
+#+begin_src conf :tangle .mbsyncrc :noweb yes
 MaildirStore local
 Path ~/Mail/
 Inbox ~/Mail/INBOX
 SubFolders Verbatim
 
-IMAPAccount gmail
+<<mbsync-gmail(name="gmail", email="rasen.dubi@gmail.com", path="Personal")>>
+<<mbsync-gmail(name="ps", email="ashmalko@doctoright.org", path="protocolstandard")>>
+<<mbsync-gmail(name="egoless", email="me@egoless.tech", path="egoless")>>
+#+end_src
+
+I have multiple Gmail accounts, so here is a general template.
+#+name: mbsync-gmail
+#+begin_src emacs-lisp :var name="" :var email="" :var path="" :noweb no
+(rasen/interpolate-string "
+IMAPAccount <<name>>
 Host imap.gmail.com
-User rasen.dubi@gmail.com
-PassCmd "pass imap.gmail.com/rasen.dubi@gmail.com"
+User <<email>>
+PassCmd \"pass imap.gmail.com/<<email>>\"
 SSLType IMAPS
 CertificateFile /etc/ssl/certs/ca-certificates.crt
 
-IMAPStore gmail-remote
-Account gmail
+IMAPStore <<name>>-remote
+Account <<name>>
 
-Channel sync-gmail-all
-Master :gmail-remote:"[Gmail]/All Mail"
-Slave :local:Personal/all
+Channel sync-<<name>>-all
+Master :<<name>>-remote:\"[Gmail]/All Mail\"
+Slave :local:<<path>>/all
 Create Both
 SyncState *
 
-Channel sync-gmail-spam
-Master :gmail-remote:"[Gmail]/Spam"
-Slave :local:Personal/spam
+Channel sync-<<name>>-spam
+Master :<<name>>-remote:\"[Gmail]/Spam\"
+Slave :local:<<path>>/spam
 Create Both
 SyncState *
 
-Channel sync-gmail-sent
-Master :gmail-remote:"[Gmail]/Sent Mail"
-Slave :local:Personal/sent
+Channel sync-<<name>>-sent
+Master :<<name>>-remote:\"[Gmail]/Sent Mail\"
+Slave :local:<<path>>/sent
 Create Both
 SyncState *
 
-Group sync-gmail
-Channel sync-gmail-all
-Channel sync-gmail-spam
-Channel sync-gmail-sent
+Group sync-<<name>>
+Channel sync-<<name>>-all
+Channel sync-<<name>>-spam
+Channel sync-<<name>>-sent
+")
 #+end_src
 ** Dovecot
 Dovecot serves fetched mail to gnus.
@@ -535,7 +545,7 @@ Msmtp is used to send mail.
 #+end_src
 
 Config file is =.msmtprc=.
-#+begin_src conf :tangle .msmtprc
+#+begin_src conf :tangle .msmtprc :noweb yes
 defaults
 auth on
 tls on
@@ -543,13 +553,23 @@ tls_starttls off
 tls_trust_file /etc/ssl/certs/ca-certificates.crt
 logfile ~/.msmtp.log
 
-# Gmail
-account gmail
+<<msmtp-gmail(name="gmail", email="rasen.dubi@gmail.com")>>
+<<msmtp-gmail(name="ps", email="ashmalko@doctoright.org")>>
+<<msmtp-gmail(name="egoless", email="me@egoless.tech")>>
+#+end_src
+
+Again, general template for gmail accounts.
+#+name: msmtp-gmail
+#+begin_src emacs-lisp :var name="" :var email="" :noweb no
+(rasen/interpolate-string "
+# <<name>>
+account <<name>>
 host smtp.gmail.com
 port 465
-from rasen.dubi@gmail.com
-user rasen.dubi@gmail.com
-passwordeval "pass imap.gmail.com/rasen.dubi@gmail.com"
+from <<email>>
+user <<email>>
+passwordeval \"pass imap.gmail.com/<<email>>\"
+")
 #+end_src
 ** notmuch
 Notmuch is used for tagging.
@@ -567,7 +587,7 @@ Config file is =.notmuch-config=.
 [user]
 name=Alexey Shmalko
 primary_email=rasen.dubi@gmail.com
-other_email=ashmalko@cybervisiontech.com,ashmalko@kaaiot.io,ashmalko@doctoright.org
+other_email=ashmalko@cybervisiontech.com,ashmalko@kaaiot.io,ashmalko@doctoright.org,me@egoless.tech
 
 [database]
 path=/home/rasen/Mail
@@ -581,51 +601,6 @@ exclude_tags=deleted;spam;muted;
 
 [crypto]
 gpg_path=gpg2
-#+end_src
-** ashmalko@doctoright.org email
-The same setup for my work email.
-#+begin_src conf :tangle .mbsyncrc
-IMAPAccount ps
-Host imap.gmail.com
-User ashmalko@doctoright.org
-PassCmd "pass imap.gmail.com/ashmalko@doctoright.org"
-SSLType IMAPS
-CertificateFile /etc/ssl/certs/ca-certificates.crt
-
-IMAPStore ps-remote
-Account ps
-
-Channel sync-ps-all
-Master :ps-remote:"[Gmail]/All Mail"
-Slave :local:protocolstandard/all
-Create Both
-SyncState *
-
-Channel sync-ps-spam
-Master :ps-remote:"[Gmail]/Spam"
-Slave :local:protocolstandard/spam
-Create Both
-SyncState *
-
-Channel sync-ps-sent
-Master :ps-remote:"[Gmail]/Sent Mail"
-Slave :local:protocolstandard/sent
-Create Both
-SyncState *
-
-Group sync-ps
-Channel sync-ps-all
-Channel sync-ps-spam
-Channel sync-ps-sent
-#+end_src
-
-#+begin_src conf :tangle .msmtprc
-account ps
-host smtp.gmail.com
-port 465
-from ashmalko@doctoright.org
-user ashmalko@doctoright.org
-passwordeval "pass imap.google.com/ashmalko@doctoright.org"
 #+end_src
 * Environment
 ** General
