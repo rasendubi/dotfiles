@@ -835,7 +835,12 @@ Company mode provides autocomplete features.
   :defer 2
   :bind (:map evil-insert-state-map
          ("C-n" . company-complete-common-or-cycle)
-         ("C-p" . company-select-previous))
+         ("C-p" . company-select-previous)
+        (:map company-active-map
+         ("C-n" . company-complete-common-or-cycle)
+         ("C-p" . company-select-previous-or-abort)
+         ("C-e" . company-complete)
+         ("TAB" . company-complete-common-or-cycle)))
   :diminish company-mode
   :config
   (setq-default company-dabbrev-downcase nil)
