@@ -1261,45 +1261,6 @@ Allow encrypted entries in org files.
   (setq org-crypt-key "rasen.dubi@gmail.com")
   (add-hook 'org-babel-pre-tangle-hook 'org-decrypt-entries t)
 #+end_src
-** snippets
-*** lowercase
-Make default lowercase. I don't like shouting =#+BEGIN_SRC= and prefer calm =#+begin_src=.
-
-This also sets =begin_example= to =E= (instead of default =e=).
-#+name: org-config
-#+begin_src emacs-lisp
-  (setq org-structure-template-alist
-        '(("s" "#+begin_src ?\n\n#+end_src" "<src lang=\"?\">\n\n</src>")
-          ("E" "#+begin_example\n?\n#+end_example" "<example>\n?\n</example>")
-          ("q" "#+begin_quote\n?\n#+end_quote" "<quote>\n?\n</quote>")
-          ("v" "#+begin_verse\n?\n#+end_verse" "<verse>\n?\n</verse>")
-          ("V" "#+begin_verbatim\n?\n#+end_verbatim" "<verbatim>\n?\n</verbatim>")
-          ("c" "#+begin_center\n?\n#+end_center" "<center>\n?\n</center>")
-          ("l" "#+begin_latex\n?\n#+end_latex" "<literal style=\"latex\">\n?\n</literal>")
-          ("L" "#+latex: " "<literal style=\"latex\">?</literal>")
-          ("h" "#+begin_html\n?\n#+end_html" "<literal style=\"html\">\n?\n</literal>")
-          ("H" "#+html: " "<literal style=\"html\">?</literal>")
-          ("a" "#+begin_ascii\n?\n#+end_ascii" "")
-          ("A" "#+ascii: " "")
-          ("i" "#+index: ?" "#+index: ?")
-          ("I" "#+include: %file ?" "<include file=%file markup=\"?\">")))
-#+end_src
-
-These can be invoked with =< x TAB= where =x= is the letter from the above list. (e.g., =< s TAB= expands to src block.)
-*** name attribute
-I use =#+name:= attribute often.
-#+name: org-config
-#+begin_src emacs-lisp
-  (add-to-list 'org-structure-template-alist
-               '("n" "#+name: ?" ""))
-#+end_src
-*** emacs-lisp block
-Insert Emacs Lisp code block. Used a lot in this file.
-#+name: org-config
-#+begin_src emacs-lisp
-  (add-to-list 'org-structure-template-alist
-               '("e" "#+begin_src emacs-lisp\n?\n#+end_src" "<src lang=\"emacs-lisp\">\n?\n</src>"))
-#+end_src
 ** Pomodoro
 #+begin_src emacs-lisp
 (use-package org-pomodoro
