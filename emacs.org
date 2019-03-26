@@ -1157,7 +1157,7 @@ My capture templates.
            "* %?   :Meeting:\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t)
 
           ("n" "note" entry (file "~/org/refile.org")
-           "* %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t)))
+           "* %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n")))
 #+end_src
 
 Enable org-protocol.
