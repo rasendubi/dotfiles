@@ -1824,6 +1824,7 @@ Package edit-indirect needed to edit code blocks.
           '(
             (:name "unread" :query "tag:unread and not tag:nixos" :key "u")
             (:name "unread-inbox" :query "tag:inbox and tag:unread" :key "i")
+            (:name "unread-egoless" :query "tag:egoless and tag:unread" :key "e")
             (:name "unread-nixos" :query "tag:unread and tag:nixos and not tag:nixpkgs" :key "n")
             (:name "unread-nixpkgs" :query "tag:unread and tag:nixpkgs" :key "p")
             (:name "unread-triage" :query "tag:unread and tag:nixpkgs-participating" :key "t")
@@ -1848,7 +1849,7 @@ Package edit-indirect needed to edit code blocks.
 
     (defun rasen/mbsync ()
       (interactive)
-      (async-shell-command "mbsync sync-ps sync-gmail; /home/rasen/dotfiles/notmuch.sh" "*mbsync*"))
+      (async-shell-command "mbsync sync-egoless sync-ps sync-gmail; /home/rasen/dotfiles/notmuch.sh" "*mbsync*"))
 
     (define-key 'notmuch-hello-mode-map "f" 'rasen/mbsync)
 
