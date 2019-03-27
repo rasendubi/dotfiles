@@ -230,7 +230,7 @@ Quickly open configuration file.
 I use string interpolation in the main =README.org=.
 
 This macro copied from [[https://gist.github.com/cbowdon/012d623920bd28453bf8][here]].
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb no
 (defmacro rasen/interpolate-string (text)
   "Expand text like \"Hello <<name>>\" to (format \"Hello %s\" name)."
   (let ((pattern "<<\\(.*?\\)>>"))
@@ -1215,7 +1215,8 @@ Configure my agenda view.
   (setq org-agenda-custom-commands
         '(("N" tags "+TODO=\"NEXT\"-PROJECT|+TODO=\"WAIT\"-PROJECT")
           ("n" todo-tree "NEXT")
-          ("p" tags "+PROJECT/-DONE-CANCELED")
+          ("p" tags "+PROJECT/+NEXT") ; active projects
+          ("P" tags "+PROJECT/-DONE-CANCELED") ; all projects
           ))
 #+end_src
 
@@ -1223,8 +1224,76 @@ Configure stuck projects.
 #+name: org-config
 #+begin_src emacs-lisp
   (setq org-tags-exclude-from-inheritance '("PROJECT"))
+  (setq org-use-tag-inheritance nil)
   (setq org-stuck-projects
-        '("+PROJECT/-DONE-CANCELED-WAIT" ("NEXT" "WAIT") nil ""))
+        '("+PROJECT/-TODO-DONE-CANCELED-WAIT" ("NEXT" "WAIT") nil ""))
+#+end_src
+
+*** Allow NEXT projects to stuck
+=org-agenda-list-stuck-projects= marks project as unstuck if its header matches any of specified keywords. This makes all =NEXT= projects automatically unstuck.
+
+Fix this by skipping the first line in =org-agenda-skip-function=.
+#+begin_src emacs-lisp
+  (el-patch-feature org-agenda)
+  (el-patch-defun org-agenda-list-stuck-projects (&rest ignore)
+    "Create agenda view for projects that are stuck.
+  Stuck projects are project that have no next actions.  For the definitions
+  of what a project is and how to check if it stuck, customize the variable
+  `org-stuck-projects'."
+    (interactive)
+    (let* ((org-agenda-overriding-header
+            (or org-agenda-overriding-header "List of stuck projects: "))
+           (matcher (nth 0 org-stuck-projects))
+           (todo (nth 1 org-stuck-projects))
+           (tags (nth 2 org-stuck-projects))
+           (gen-re (org-string-nw-p (nth 3 org-stuck-projects)))
+           (todo-wds
+            (if (not (member "*" todo)) todo
+              (org-agenda-prepare-buffers (org-agenda-files nil 'ifmode))
+              (org-delete-all org-done-keywords-for-agenda
+                              (copy-sequence org-todo-keywords-for-agenda))))
+           (todo-re (and todo
+                         (format "^\\*+[ \t]+\\(%s\\)\\>"
+                                 (mapconcat #'identity todo-wds "\\|"))))
+           (tags-re (cond ((null tags) nil)
+                          ((member "*" tags) org-tag-line-re)
+                          (tags
+                           (let ((other-tags (format "\\(?:%s:\\)*" org-tag-re)))
+                             (concat org-outline-regexp-bol
+                                     ".*?[ \t]:"
+                                     other-tags
+                                     (regexp-opt tags t)
+                                     ":" other-tags "[ \t]*$")))
+                          (t nil)))
+           (re-list (delq nil (list todo-re tags-re gen-re)))
+           (skip-re
+            (if (null re-list)
+                (error "Missing information to identify unstuck projects")
+              (mapconcat #'identity re-list "\\|")))
+           (org-agenda-skip-function
+            ;; Skip entry if `org-agenda-skip-regexp' matches anywhere
+            ;; in the subtree.
+            `(lambda ()
+               (and (save-excursion
+                      (let ((case-fold-search nil)
+                            (el-patch-add (subtree-end (save-excursion (org-end-of-subtree t)))))
+                        (el-patch-add (forward-line))
+                        (re-search-forward
+                         ,skip-re
+                         (el-patch-swap
+                           (save-excursion (org-end-of-subtree t))
+                           subtree-end)
+                         t)))
+                    (progn (outline-next-heading) (point))))))
+      (org-tags-view nil matcher)
+      (setq org-agenda-buffer-name (buffer-name))
+      (with-current-buffer org-agenda-buffer-name
+        (setq org-agenda-redo-command
+              `(org-agenda-list-stuck-projects ,current-prefix-arg))
+        (let ((inhibit-read-only t))
+          (add-text-properties
+           (point-min) (point-max)
+           `(org-redo-cmd ,org-agenda-redo-command))))))
 #+end_src
 ** Babel
 Code-hightlight (fontify) org-babel (=#+begin_src=) blocks.
