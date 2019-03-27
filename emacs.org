@@ -1810,7 +1810,7 @@ Package edit-indirect needed to edit code blocks.
 
     (defun rasen/mbsync ()
       (interactive)
-      (async-shell-command "mbsync sync-egoless sync-ps sync-gmail; /home/rasen/dotfiles/notmuch.sh" "*mbsync*"))
+      (async-shell-command "mbsync sync-gmail & mbsync sync-egoless & mbsync sync-ps & wait; /home/rasen/dotfiles/notmuch.sh" "*mbsync*"))
 
     (define-key 'notmuch-hello-mode-map "f" 'rasen/mbsync)
 
