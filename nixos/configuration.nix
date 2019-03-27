@@ -551,6 +551,7 @@ in
             airline-themes
             visual-fill-column
             beacon
+            google-translate
           ]) ++
           (with epkgs.melpaPackages; [
             # Not present in melpa-stable

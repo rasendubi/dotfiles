@@ -226,6 +226,15 @@ Quickly open configuration file.
      (interactive)
      (find-file (expand-file-name "emacs.org" rasen/dotfiles-directory))))
 #+end_src
+
+Quickly open global system configuration file.
+#+begin_src emacs-lisp
+  (global-set-key
+   (kbd "<C-f12>")
+   (lambda ()
+     (interactive)
+     (find-file (expand-file-name "README.org" rasen/dotfiles-directory))))
+#+end_src
 ** String interpolation
 I use string interpolation in the main =README.org=.
 
@@ -914,6 +923,33 @@ Shamelessly stealed from https://github.com/purcell/emacs.d.
 (defun add-to-path (str)
   "Add an STR to the PATH environment variable."
   (setenv "PATH" (concat str ":" (getenv "PATH"))))
+#+end_src
+** Google translate
+#+begin_src emacs-lisp
+  (use-package google-translate
+    :bind (:map evil-normal-state-map
+           ("g t" . rasen/google-translate-at-point)
+           ("g T" . google-translate-smooth-translate))
+    :config
+    (defun rasen/google-translate-at-point (arg)
+      "Translate word at point. If prefix is provided, do reverse translation"
+      (interactive "P")
+      (if arg
+          (google-translate-at-point-reverse)
+        (google-translate-at-point)))
+
+    (require 'google-translate-default-ui)
+    (require 'google-translate-smooth-ui)
+    (setq google-translate-show-phonetic t)
+
+    (setq google-translate-default-source-language "en"
+          google-translate-default-target-language "ru")
+
+    (setq google-translate-translation-directions-alist '(("en" . "ru") ("ru" . "en")))
+    ; auto-toggle input method
+    (setq google-translate-input-method-auto-toggling t
+          google-translate-preferable-input-methods-alist '((nil . ("en"))
+                                                            (russian-computer . ("ru")))))
 #+end_src
 * Org-mode
 ** General
