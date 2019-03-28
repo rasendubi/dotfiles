@@ -1228,6 +1228,205 @@ Instanly go into insert mode on capture.
           (org-agenda-files :maxlevel . 2)
           (rasen/org-refile-files :maxlevel . 1)))
 #+end_src
+
+*** Refile last but *before* archive
+I like my archive sibling be the last child. The default org-refile ignores that at refiles all entries *after* archive.
+
+So here is a little patch to refile before archive sibling if it is present.
+#+name: org-config
+#+begin_src emacs-lisp
+  (defun rasen/org-goto-last-child ()
+    "Goto the last child, even if it is invisible.
+  Return t when a child was found.  Otherwise don't move point and return nil."
+    (when (org-goto-first-child)
+      (while (org-goto-sibling))
+      t))
+
+  (defun rasen/org-goto-last-archive ()
+    (and (rasen/org-goto-last-child)
+         (string= org-archive-sibling-heading (org-get-heading t t t t))
+         (member org-archive-tag (org-get-tags))
+         (point)))
+
+  (el-patch-feature org)
+  (el-patch-defun org-refile (&optional arg default-buffer rfloc msg)
+    "Move the entry or entries at point to another heading.
+
+  The list of target headings is compiled using the information in
+  `org-refile-targets', which see.
+
+  At the target location, the entry is filed as a subitem of the
+  target heading.  Depending on `org-reverse-note-order', the new
+  subitem will either be the first or the last subitem.
+
+  If there is an active region, all entries in that region will be
+  refiled.  However, the region must fulfill the requirement that
+  the first heading sets the top-level of the moved text.
+
+  With a `\\[universal-argument]' ARG, the command will only visit the target \
+  location
+  and not actually move anything.
+
+  With a prefix `\\[universal-argument] \\[universal-argument]', go to the \
+  location where the last
+  refiling operation has put the subtree.
+
+  With a numeric prefix argument of `2', refile to the running clock.
+
+  With a numeric prefix argument of `3', emulate `org-refile-keep'
+  being set to t and copy to the target location, don't move it.
+  Beware that keeping refiled entries may result in duplicated ID
+  properties.
+
+  RFLOC can be a refile location obtained in a different way.
+
+  MSG is a string to replace \"Refile\" in the default prompt with
+  another verb.  E.g. `org-copy' sets this parameter to \"Copy\".
+
+  See also `org-refile-use-outline-path'.
+
+  If you are using target caching (see `org-refile-use-cache'), you
+  have to clear the target cache in order to find new targets.
+  This can be done with a `0' prefix (`C-0 C-c C-w') or a triple
+  prefix argument (`C-u C-u C-u C-c C-w')."
+    (interactive "P")
+    (if (member arg '(0 (64)))
+        (org-refile-cache-clear)
+      (let* ((actionmsg (cond (msg msg)
+                              ((equal arg 3) "Refile (and keep)")
+                              (t "Refile")))
+             (regionp (org-region-active-p))
+             (region-start (and regionp (region-beginning)))
+             (region-end (and regionp (region-end)))
+             (org-refile-keep (if (equal arg 3) t org-refile-keep))
+             pos it nbuf file level reversed)
+        (setq last-command nil)
+        (when regionp
+          (goto-char region-start)
+          (or (bolp) (goto-char (point-at-bol)))
+          (setq region-start (point))
+          (unless (or (org-kill-is-subtree-p
+                       (buffer-substring region-start region-end))
+                      (prog1 org-refile-active-region-within-subtree
+                        (let ((s (point-at-eol)))
+                          (org-toggle-heading)
+                          (setq region-end (+ (- (point-at-eol) s) region-end)))))
+            (user-error "The region is not a (sequence of) subtree(s)")))
+        (if (equal arg '(16))
+            (org-refile-goto-last-stored)
+          (when (or
+                 (and (equal arg 2)
+                      org-clock-hd-marker (marker-buffer org-clock-hd-marker)
+                      (prog1
+                          (setq it (list (or org-clock-heading "running clock")
+                                         (buffer-file-name
+                                          (marker-buffer org-clock-hd-marker))
+                                         ""
+                                         (marker-position org-clock-hd-marker)))
+                        (setq arg nil)))
+                 (setq it
+                       (or rfloc
+                           (let (heading-text)
+                             (save-excursion
+                               (unless (and arg (listp arg))
+                                 (org-back-to-heading t)
+                                 (setq heading-text
+                                       (replace-regexp-in-string
+                                        org-bracket-link-regexp
+                                        "\\3"
+                                        (or (nth 4 (org-heading-components))
+                                            ""))))
+                               (org-refile-get-location
+                                (cond ((and arg (listp arg)) "Goto")
+                                      (regionp (concat actionmsg " region to"))
+                                      (t (concat actionmsg " subtree \""
+                                                 heading-text "\" to")))
+                                default-buffer
+                                (and (not (equal '(4) arg))
+                                     org-refile-allow-creating-parent-nodes)))))))
+            (setq file (nth 1 it)
+                  pos (nth 3 it))
+            (when (and (not arg)
+                       pos
+                       (equal (buffer-file-name) file)
+                       (if regionp
+                           (and (>= pos region-start)
+                                (<= pos region-end))
+                         (and (>= pos (point))
+                              (< pos (save-excursion
+                                       (org-end-of-subtree t t))))))
+              (error "Cannot refile to position inside the tree or region"))
+            (setq nbuf (or (find-buffer-visiting file)
+                           (find-file-noselect file)))
+            (if (and arg (not (equal arg 3)))
+                (progn
+                  (pop-to-buffer-same-window nbuf)
+                  (goto-char (cond (pos)
+                                   ((org-notes-order-reversed-p) (point-min))
+                                   (t (point-max))))
+                  (org-show-context 'org-goto))
+              (if regionp
+                  (progn
+                    (org-kill-new (buffer-substring region-start region-end))
+                    (org-save-markers-in-region region-start region-end))
+                (org-copy-subtree 1 nil t))
+              (with-current-buffer (setq nbuf (or (find-buffer-visiting file)
+                                                  (find-file-noselect file)))
+                (setq reversed (org-notes-order-reversed-p))
+                (org-with-wide-buffer
+                 (if pos
+                     (progn
+                       (goto-char pos)
+                       (setq level (org-get-valid-level (funcall outline-level) 1))
+                       (goto-char
+                        (if reversed
+                            (or (outline-next-heading) (point-max))
+                          (or (el-patch-add (save-excursion (rasen/org-goto-last-archive)))
+                              (save-excursion (org-get-next-sibling))
+                              (org-end-of-subtree t t)
+                              (point-max)))))
+                   (setq level 1)
+                   (if (not reversed)
+                       (goto-char (point-max))
+                     (goto-char (point-min))
+                     (or (outline-next-heading) (goto-char (point-max)))))
+                 (unless (bolp) (newline))
+                 (org-paste-subtree level nil nil t)
+                 (when org-log-refile
+                   (org-add-log-setup 'refile nil nil org-log-refile)
+                   (unless (eq org-log-refile 'note)
+                     (save-excursion (org-add-log-note))))
+                 (and org-auto-align-tags
+                      (let ((org-loop-over-headlines-in-active-region nil))
+                        (org-align-tags)))
+                 (let ((bookmark-name (plist-get org-bookmark-names-plist
+                                                 :last-refile)))
+                   (when bookmark-name
+                     (with-demoted-errors
+                         (bookmark-set bookmark-name))))
+                 ;; If we are refiling for capture, make sure that the
+                 ;; last-capture pointers point here
+                 (when (bound-and-true-p org-capture-is-refiling)
+                   (let ((bookmark-name (plist-get org-bookmark-names-plist
+                                                   :last-capture-marker)))
+                     (when bookmark-name
+                       (with-demoted-errors
+                           (bookmark-set bookmark-name))))
+                   (move-marker org-capture-last-stored-marker (point)))
+                 (when (fboundp 'deactivate-mark) (deactivate-mark))
+                 (run-hooks 'org-after-refile-insert-hook)))
+              (unless org-refile-keep
+                (if regionp
+                    (delete-region (point) (+ (point) (- region-end region-start)))
+                  (org-preserve-local-variables
+                   (delete-region
+                    (and (org-back-to-heading t) (point))
+                    (min (1+ (buffer-size)) (org-end-of-subtree t t) (point))))))
+              (when (featurep 'org-inlinetask)
+                (org-inlinetask-remove-END-maybe))
+              (setq org-markers-to-move nil)
+              (message (concat actionmsg " to \"%s\" in file %s: done") (car it) file)))))))
+#+end_src
 ** Archive
 #+name: org-config
 #+begin_src emacs-lisp
