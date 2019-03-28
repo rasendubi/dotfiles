@@ -981,6 +981,12 @@ Do not indent inside tasks
   (setq org-adapt-indentation nil)
 #+end_src
 
+Do not indent org-babel blocks.
+#+name: org-config
+#+begin_src emacs-lisp
+(setq org-edit-src-content-indentation 0)
+#+end_src
+
 Do not indent tags.
 #+name: org-config
 #+begin_src emacs-lisp
