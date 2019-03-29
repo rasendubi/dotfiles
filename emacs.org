@@ -1131,6 +1131,24 @@ Save =CLOSED= timestamp when task is done.
 #+begin_src emacs-lisp
   (setq org-log-done t)
 #+end_src
+
+Schedule task for today and mark it NEXT.
+I use this a lot during daily planning.
+#+name: org-config
+#+begin_src emacs-lisp
+(defun rasen/org-do-today (arg)
+  "Schedule task for today and mark it NEXT.
+
+If prefix is supplied, select different scheduled time."
+  (interactive "P")
+  (org-schedule nil (unless arg "."))
+  (org-todo "NEXT"))
+
+(evil-define-key 'normal org-mode-map (kbd "SPC n") #'rasen/org-do-today)
+
+(evil-define-key 'normal org-mode-map (kbd "SPC s") 'org-schedule)
+(evil-define-key 'normal org-mode-map (kbd "C-c C-s") (rasen/hard-way "SPC s"))
+#+end_src
 ** Clocking
 Remove clocks with 0 duration.
 #+name: org-config
@@ -1237,6 +1255,12 @@ Instanly go into insert mode on capture.
         (rasen/org-refile-files :maxlevel . 1)))
 #+end_src
 
+Better bindings.
+#+name: org-config
+#+begin_src emacs-lisp
+(evil-define-key 'normal org-mode-map (kbd "SPC w") 'org-refile)
+(evil-define-key 'normal org-mode-map (kbd "C-c C-w") (rasen/hard-way "SPC w"))
+#+end_src
 *** Refile last but *before* archive
 I like my archive sibling be the last child. The default org-refile ignores that at refiles all entries *after* archive.
 
