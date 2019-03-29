@@ -1222,17 +1222,19 @@ Instanly go into insert mode on capture.
 ** Refile
 #+name: org-config
 #+begin_src emacs-lisp
-  (defun rasen/org-refile-files ()
-    (rasen/org-files-in-dir rasen/org-directory))
+(defun rasen/org-refile-files ()
+  (rasen/org-files-in-dir rasen/org-directory))
 
-  ;; non-nil values work bad with ivy
-  (setq-default org-refile-use-outline-path 'file)
-  (setq-default org-outline-path-complete-in-steps nil)
+;; non-nil values work bad with ivy
+(setq-default org-refile-use-outline-path 'file)
+(setq-default org-outline-path-complete-in-steps nil)
 
-  (setq org-refile-targets
-        '(;(nil :maxlevel . 3)
-          (org-agenda-files :maxlevel . 2)
-          (rasen/org-refile-files :maxlevel . 1)))
+(setq org-refile-targets
+      '(;(nil :maxlevel . 3)
+        (org-agenda-files :tag . "honeypot")
+        (org-agenda-files :tag . "PROJECT")
+        (org-agenda-files :maxlevel . 2)
+        (rasen/org-refile-files :maxlevel . 1)))
 #+end_src
 
 *** Refile last but *before* archive
