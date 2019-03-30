@@ -523,6 +523,8 @@ in
             color-identifiers-mode
             f
     
+            avy
+            wgrep
             org-pomodoro
             nix-mode
             haskell-mode

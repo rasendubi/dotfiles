@@ -1,3 +1,5 @@
+Xft.dpi: 276
+Xcursor.size: 64
 urxvt.loginShell:         true
 urxvt.saveLines:         65535
 urxvt.urgentOnBell:       true
@@ -29,6 +31,3 @@ URxvt*color12:    #5f5fee
 URxvt*color13:    #bb88dd
 URxvt*color14:    #4eb4fa
 URxvt*color15:    #d0d0d0
-
-Xft.dpi: 276
-Xcursor.size: 64

@@ -544,6 +544,28 @@ The normal =C-j= is not placed conveniently on Workman layout, so move its funct
   (define-key ivy-minibuffer-map (kbd "C-M-e") 'ivy-immediate-done)
 #+end_src
 
+Remap k-j in =ivy-occur=, make it default to emacs state.
+#+begin_src emacs-lisp
+(dolist (map (list ivy-occur-mode-map ivy-occur-grep-mode-map))
+  (evil-define-key 'normal map
+    (kbd "k") 'ivy-occur-next-line
+    (kbd "j") 'ivy-occur-previous-line
+    (kbd "C-n") 'ivy-occur-next-line
+    (kbd "C-p") 'ivy-occur-previous-line
+    (kbd "RET") 'ivy-occur-press-and-switch
+    (kbd "C-e") 'ivy-occur-press-and-switch
+    (kbd "g r") 'ivy-occur-revert-buffer
+    (kbd "d") 'ivy-occur-delete-candidate
+    (kbd "r") 'read-only-mode
+    (kbd "a") 'ivy-occur-read-action
+    (kbd "c") 'ivy-occur-toggle-calling
+    (kbd "f") 'ivy-occur-press
+    (kbd "o") 'ivy-occur-dispatch
+    (kbd "q") 'quit-window))
+(evil-define-key 'normal ivy-occur-grep-mode-map
+  (kbd "w") 'ivy-wgrep-change-to-wgrep-mode)
+#+end_src
+
 #+begin_src emacs-lisp
   (ivy-mode 1))
 #+end_src
@@ -572,6 +594,22 @@ I use smex for improved =counsel-M-x= (show most frequently used commands first)
            ("C-r" . counsel-expression-history))
     :config
     (counsel-mode 1))
+#+end_src
+** avy
+Jump anywhere with a few keystrokes in tree-like way.
+#+begin_src emacs-lisp
+(use-package avy
+  :bind
+  (:map evil-motion-state-map
+   ("K" . avy-goto-char))
+  :custom
+  ;; easy workman keys (excluding pinky)
+  (avy-keys '(?s ?h ?t ?n ?e ?o ?d ?r ?u ?p)))
+#+end_src
+** wgrep
+Edit grep buffers and apply changes to the files.
+#+begin_src emacs-lisp
+(use-package 'wgrep)
 #+end_src
 ** whitespace
 A good mode to highlight whitespace issues (leading/trainiling spaces/newlines) and too long lines.
@@ -867,6 +905,11 @@ Company mode provides autocomplete features.
     ;       (lambda (cmd) (nix-executable-find (nix-current-sandbox) cmd)))
 
     (global-flycheck-mode))
+#+end_src
+** electric-pair
+Auto-close pairs.
+#+begin_src emacs-lisp
+(electric-pair-mode)
 #+end_src
 ** Hippie expand
 #+begin_src emacs-lisp
@@ -1463,6 +1506,13 @@ So here is a little patch to refile before archive sibling if it is present.
 #+name: org-config
 #+begin_src emacs-lisp
   (setq-default org-archive-default-command 'org-archive-to-archive-sibling)
+#+end_src
+
+Bindings.
+#+name: org-config
+#+begin_src emacs-lisp
+(evil-define-key 'normal org-mode-map (kbd "SPC r") 'org-archive-subtree-default)
+(evil-define-key 'normal org-mode-map (kbd "C-c C-x C-a") (rasen/hard-way "SPC r"))
 #+end_src
 ** Agenda
 Set my org files location.
