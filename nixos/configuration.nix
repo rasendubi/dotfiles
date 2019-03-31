@@ -571,6 +571,9 @@ in
             # Don't work / too old in melpa-stable
             magit
             evil-magit
+    
+            # too old
+            evil-org
           ]) ++
           [
             epkgs.orgPackages.org-plus-contrib

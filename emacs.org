@@ -267,14 +267,16 @@ This macro copied from [[https://gist.github.com/cbowdon/012d623920bd28453bf8][h
 A couple of functions to make configuration a little bit easier.
 #+name: evil-config
 #+begin_src emacs-lisp
-  (defun nmap (key action)
-    (define-key evil-normal-state-map (kbd key) action))
-  (defun vmap (key action)
-    (define-key evil-visual-state-map (kbd key) action))
-  (defun imap (key action)
-    (define-key evil-insert-state-map (kbd key) action))
-  (defun mmap (key action)
-    (define-key evil-motion-state-map (kbd key) action))
+(defun nmap (key action)
+  (define-key evil-normal-state-map (kbd key) action))
+(defun vmap (key action)
+  (define-key evil-visual-state-map (kbd key) action))
+(defun imap (key action)
+  (define-key evil-insert-state-map (kbd key) action))
+(defun mmap (key action)
+  (define-key evil-motion-state-map (kbd key) action))
+(defun omap (key action)
+  (define-key evil-operator-state-map (kbd key) action))
 #+end_src
 
 Use =SPC= as one of leaders.
@@ -296,46 +298,43 @@ Hard way: prohibit usage of keybinding I have more efficient binding for.
 Prohibit usage of arrows.
 #+name: evil-config
 #+begin_src emacs-lisp
-  (nmap "<left>"  (rasen/hard-way "h"))
-  (nmap "<up>"    (rasen/hard-way "j"))
-  (nmap "<down>"  (rasen/hard-way "k"))
-  (nmap "<right>" (rasen/hard-way "l"))
-  (mmap "<left>"  (rasen/hard-way "h"))
-  (mmap "<up>"    (rasen/hard-way "j"))
-  (mmap "<down>"  (rasen/hard-way "k"))
-  (mmap "<right>" (rasen/hard-way "l"))
+(mmap "<left>"  (rasen/hard-way "h"))
+(mmap "<up>"    (rasen/hard-way "j"))
+(mmap "<down>"  (rasen/hard-way "k"))
+(mmap "<right>" (rasen/hard-way "l"))
 #+end_src
 
 Swap =.= and =;=.
 #+name: evil-config
 #+begin_src emacs-lisp
-  (nmap "."       'evil-repeat-find-char)
-  (nmap ";"       'evil-repeat)
-  (nmap "C-;"     'evil-repeat-pop)
-  (nmap "g."      'goto-last-change)
+(nmap ";"       'evil-repeat)
+(nmap "C-;"     'evil-repeat-pop)
+(mmap "."       'evil-repeat-find-char)
+(nmap "."       nil)
+(mmap "g."      'goto-last-change)
 #+end_src
 
 #+name: evil-config
 #+begin_src emacs-lisp
-(nmap "SPC ;" 'eval-expression)
+(mmap "SPC ;" 'eval-expression)
 #+end_src
 
 Close other window.
 #+name: evil-config
 #+begin_src emacs-lisp
-  (defun rasen/quit-other ()
-    (interactive)
-    (other-window 1)
-    (quit-window))
+(defun rasen/quit-other ()
+  (interactive)
+  (other-window 1)
+  (quit-window))
 
-  (nmap "SPC q"   'rasen/quit-other)
+(mmap "SPC q"   'rasen/quit-other)
 #+end_src
 
 Move to beginning/end of line with =H= and =L= respectively.
 #+name: evil-config
 #+begin_src emacs-lisp
-  (defun rasen/smart-move-beginning-of-line (arg)
-    "Move point back to indentation of beginning of line.
+(defun rasen/smart-move-beginning-of-line (arg)
+  "Move point back to indentation of beginning of line.
 
 Move point to the first non-whitespace character on this line.
 If point is already there, move to the beginning of the line.
@@ -344,48 +343,42 @@ the beginning of the line.
 
 If ARG is not nil or 1, move forward ARG - 1 lines first.  If
 point reaches the beginning or end of the buffer, stop there."
-    (interactive "^p")
-    (setq arg (or arg 1))
+  (interactive "^p")
+  (setq arg (or arg 1))
 
-    ;; Move lines first
-    (when (/= arg 1)
-      (let ((line-move-visual nil))
-        (forward-line (1- arg))))
+  ;; Move lines first
+  (when (/= arg 1)
+    (let ((line-move-visual nil))
+      (forward-line (1- arg))))
 
-    (let ((orig-point (point)))
-      (back-to-indentation)
-      (when (= orig-point (point))
-        (move-beginning-of-line 1))))
+  (let ((orig-point (point)))
+    (back-to-indentation)
+    (when (= orig-point (point))
+      (move-beginning-of-line 1))))
 
-  (nmap "H" 'rasen/smart-move-beginning-of-line)
-  (vmap "H" 'rasen/smart-move-beginning-of-line)
-  (mmap "H" 'rasen/smart-move-beginning-of-line)
-  (nmap "L" 'evil-end-of-line)
-  (vmap "L" 'evil-end-of-line)
-  (mmap "L" 'evil-end-of-line)
+(mmap "H" 'rasen/smart-move-beginning-of-line)
+(mmap "L" 'evil-end-of-line)
 #+end_src
 
 Save buffer with =SPC SPC=.
 #+name: evil-config
 #+begin_src emacs-lisp
-  (nmap "SPC SPC" 'save-buffer)
+(nmap "SPC SPC" 'save-buffer)
 #+end_src
-
 ** Swap k and j
 With workman layout, =j= is located on qwerty =y= and =k=---on qwerty =n=; thus =j= is higher than =k=, and it is not convenient to press lower key for going up. Just swap them.
 #+name: evil-config
 #+begin_src emacs-lisp
-(nmap "k"       'evil-next-visual-line)
-(nmap "j"       'evil-previous-visual-line)
-(nmap "gk"      'evil-next-line)
-(nmap "gj"      'evil-previous-line)
-(mmap "k"       'evil-next-line)
-(mmap "j"       'evil-previous-line)
+(mmap "k"       'evil-next-visual-line)
+(mmap "j"       'evil-previous-visual-line)
+(mmap "gk"      'evil-next-line)
+(mmap "gj"      'evil-previous-line)
 
-(nmap "C-h"     'windmove-left)
-(nmap "C-k"     'windmove-down)
-(nmap "C-j"     'windmove-up)
-(nmap "C-l"     'windmove-right)
+(omap "k"       'evil-next-line)
+(omap "j"       'evil-previous-line)
+(omap "gk"      'evil-next-visual-line)
+(omap "gj"      'evil-previous-visual-line)
+
 (mmap "C-h"     'windmove-left)
 (mmap "C-k"     'windmove-down)
 (mmap "C-j"     'windmove-up)
@@ -405,8 +398,7 @@ I use Vim's =C-a= and =C-x= (increment/decrement number at point) a lot.
 Now, remap =C-x= to =RET=. (Because =C-x= is used for decrementing numbers.)
 #+name: evil-config
 #+begin_src emacs-lisp
-(nmap "RET" (lookup-key (current-global-map) (kbd "C-x")))
-(vmap "RET" (lookup-key (current-global-map) (kbd "C-x")))
+(mmap "RET" (lookup-key (current-global-map) (kbd "C-x")))
 #+end_src
 ** swap-keys
 #+begin_src emacs-lisp
@@ -418,64 +410,59 @@ Now, remap =C-x= to =RET=. (Because =C-x= is used for decrementing numbers.)
 ** evil-collection
 evil-collection is a collection of evil bindings for different modes.
 #+begin_src emacs-lisp
-  (require 'warnings)
-  (add-to-list 'warning-suppress-types '(evil-collection))
+(require 'warnings)
+(add-to-list 'warning-suppress-types '(evil-collection))
 
-  (use-package evil-collection
-    :after (evil evil-magit)
-    :config
-    (defun rasen/rotate-keys (_mode mode-keymaps &rest _rest)
-      (evil-collection-translate-key 'normal mode-keymaps
-       "k" "j"
-       "j" "k"
-       "gk" "gj"
-       "gj" "gk"
-       (kbd "M-j") (kbd "M-k")
-       (kbd "M-k") (kbd "M-j")
-       (kbd "C-j") nil ; used for window-management
-       (kbd "C-k") nil ; used for window-management
-       "." ";"
-       ";" "."))
-    (add-hook 'evil-collection-setup-hook #'rasen/rotate-keys)
+(use-package evil-collection
+  :after (evil evil-magit)
+  :config
+  (defun rasen/rotate-keys (_mode mode-keymaps &rest _rest)
+    (evil-collection-translate-key 'normal mode-keymaps
+     "k" "j"
+     "j" "k"
+     "gk" "gj"
+     "gj" "gk"
+     (kbd "M-j") (kbd "M-k")
+     (kbd "M-k") (kbd "M-j")
+     (kbd "C-j") nil ; used for window-management
+     (kbd "C-k") nil ; used for window-management
+     "." ";"
+     ";" "."))
+  (add-hook 'evil-collection-setup-hook #'rasen/rotate-keys)
 
-    (setq evil-collection-mode-list
-      '(compile
-        flycheck
-        help
-        js2-mode
-        magit
-        ;; notmuch bindings aren't that cool and are less efficient than native
-        ;; keymap
-        ; notmuch
-        python
-        racer
-        restclient
-        tide
-        typescript-mode
-        which-key))
+  (setq evil-collection-mode-list
+    '(compile
+      flycheck
+      help
+      js2-mode
+      magit
+      ;; notmuch bindings aren't that cool and are less efficient than native
+      ;; keymap
+      ; notmuch
+      python
+      racer
+      restclient
+      tide
+      typescript-mode
+      which-key))
 
-    (evil-collection-init))
+  (evil-collection-init))
+#+end_src
 #+end_src
 ** Evilify compile mode
 #+begin_src emacs-lisp
 (use-package compile
   :config
-  (setq compilation-scroll-output t)
-;   (evil-add-hjkl-bindings compilation-mode-map 'motion
-;     (kbd "SPC x") (lookup-key evil-motion-state-map (kbd "SPC x"))
-;     (kbd "g")     nil
-;     (kbd "g g")   'evil-goto-first-line
-;     (kbd "g r")   'recompile))
-)
+  (setq compilation-scroll-output t))
 #+end_src
 
 And evil commands to go to navigate errors.
 #+name: evil-config
 #+begin_src emacs-lisp
-  (nmap "SPC ,"   'previous-error)
-  (nmap "SPC ."   'next-error)
-  (nmap "M-,"     'previous-error)
-  (nmap "M-."     'next-error)
+(mmap "SPC ,"   'previous-error)
+(mmap "SPC ."   'next-error)
+(mmap "M-,"     'previous-error)
+(mmap "M-."     'next-error)
 #+end_src
 * General
 ** Common options
@@ -526,7 +513,7 @@ Do not create lockfiles either. (I am the only user in the system and only use e
 #+begin_src emacs-lisp
 (use-package ivy
   :demand
-  :bind (:map evil-normal-state-map
+  :bind (:map evil-motion-state-map
          ("SPC b" . ivy-switch-buffer))
   :diminish ivy-mode
   :config
@@ -581,15 +568,11 @@ I use smex for improved =counsel-M-x= (show most frequently used commands first)
   (use-package counsel
     :demand
     :diminish counsel-mode
-    :bind (:map evil-normal-state-map
+    :bind (:map evil-motion-state-map
            ("SPC x" . counsel-M-x)
            ("SPC f" . counsel-find-file)
            ("g r"   . counsel-git-grep)
            ("g /"   . counsel-rg)
-           :map evil-visual-state-map
-           ("SPC x" . counsel-M-x)
-           :map evil-motion-state-map
-           ("SPC x" . counsel-M-x)
            :map read-expression-map
            ("C-r" . counsel-expression-history))
     :config
@@ -676,7 +659,7 @@ It's enable by default. Just diminish it.
 ** projectile
 #+begin_src emacs-lisp
 (use-package projectile
-  :bind (:map evil-normal-state-map
+  :bind (:map evil-motion-state-map
          ("SPC p p" . projectile-switch-project)
          ("SPC p &" . projectile-run-async-shell-command-in-root)
          ("SPC p !" . projectile-run-shell-command-in-root)
@@ -738,7 +721,7 @@ https://github.com/bbatsov/projectile/pull/1269
 ** magit
 #+begin_src emacs-lisp
 (use-package magit
-  :bind (:map evil-normal-state-map
+  :bind (:map evil-motion-state-map
          ("g m" . magit-status))
   :diminish auto-revert-mode
   ; :defer 6
@@ -759,43 +742,40 @@ Do not put files into trash can. Delete them for real.
 #+begin_src emacs-lisp
   (setq-default magit-completing-read-function 'ivy-completing-read)
 #+end_src
-
 *** Evil
 Evilify magit-mode.
 #+begin_src emacs-lisp
-  (use-package evil-magit
-    :config
-    <<evil-magit-config>>
-    )
+(use-package evil-magit
+  :config
+  <<evil-magit-config>>
+  )
 #+end_src
 
 #+begin_src emacs-lisp
-    (setq evil-magit-use-y-for-yank t)
-
+(setq evil-magit-use-y-for-yank t)
 #+end_src
 
 Evilify magit-blame.
 #+name: evil-magit-config
 #+begin_src emacs-lisp
-  (dolist (state '(normal motion))
-    (evil-define-key state magit-blame-mode-map (kbd "k")  'evil-next-visual-line)
-    (evil-define-key state magit-blame-mode-map (kbd "j")  'evil-previous-visual-line)
-    (evil-define-key state magit-blame-mode-map (kbd "gk") 'evil-next-line)
-    (evil-define-key state magit-blame-mode-map (kbd "gj") 'evil-previous-line)
-    (evil-define-key state magit-blame-mode-map (kbd "C-k") 'magit-blame-next-chunk)
-    (evil-define-key state magit-blame-mode-map (kbd "C-j") 'magit-blame-previous-chunk)
-    (evil-define-key state magit-blame-mode-map (kbd "C-K") 'magit-blame-next-chunk-same-commit)
-    (evil-define-key state magit-blame-mode-map (kbd "C-J") 'magit-blame-previous-chunk-same-commit))
+(evil-define-key 'normal magit-blame-read-only-mode-map
+  (kbd "k")  'evil-next-visual-line
+  (kbd "j")  'evil-previous-visual-line
+  (kbd "C-k") 'magit-blame-next-chunk
+  (kbd "C-j") 'magit-blame-previous-chunk
+  (kbd "gk") 'magit-blame-next-chunk-same-commit
+  (kbd "gj") 'magit-blame-previous-chunk-same-commit)
 
-  (dolist (state (list evil-magit-state 'visual))
-    (evil-define-key state magit-mode-map (kbd "j")   'evil-previous-visual-line)
-    (evil-define-key state magit-mode-map (kbd "k")   'evil-next-visual-line)
-    (evil-define-key state magit-mode-map (kbd "C-j") 'magit-section-backward)
-    (evil-define-key state magit-mode-map (kbd "C-k") 'magit-section-forward)
-    (evil-define-key state magit-mode-map (kbd "gj")  'magit-section-backward-sibling)
-    (evil-define-key state magit-mode-map (kbd "gk")  'magit-section-forward-sibling))
+(evil-define-key 'motion magit-blame-mode-map
+  (kbd "SPC") (lookup-key evil-motion-state-map (kbd "SPC")))
 
-  (evil-define-key 'normal magit-blame-mode-map (kbd "SPC") (lookup-key evil-normal-state-map (kbd "SPC")))
+(evil-define-key `(,evil-magit-state visual) magit-mode-map
+  (kbd "j")   'evil-previous-visual-line
+  (kbd "k")   'evil-next-visual-line
+  (kbd "C-j") 'magit-section-backward
+  (kbd "C-k") 'magit-section-forward
+  (kbd "gj")  'magit-section-backward-sibling
+  (kbd "gk")  'magit-section-forward-sibling)
 #+end_src
 
 *** Custom commands
@@ -895,16 +875,21 @@ Company mode provides autocomplete features.
 #+end_src
 ** flycheck
 #+begin_src emacs-lisp
-  (use-package flycheck
-    :config
-    ;; not sure I actually use nix-sandbox
-    ; (setq flycheck-command-wrapper-function
-    ;       (lambda (cmd) (apply 'nix-shell-command (nix-current-sandbox) cmd))
+(use-package flycheck
+  :config
+  ;; not sure I actually use nix-sandbox
+  ; (setq flycheck-command-wrapper-function
+  ;       (lambda (cmd) (apply 'nix-shell-command (nix-current-sandbox) cmd))
 
-    ;       flycheck-executable-find
-    ;       (lambda (cmd) (nix-executable-find (nix-current-sandbox) cmd)))
+  ;       flycheck-executable-find
+  ;       (lambda (cmd) (nix-executable-find (nix-current-sandbox) cmd)))
 
-    (global-flycheck-mode))
+  ;; Do not check for elisp header/footer
+  (setq-default flycheck-disabled-checkers
+                (append flycheck-disabled-checkers
+                        '(emacs-lisp-checkdoc)))
+
+  (global-flycheck-mode))
 #+end_src
 ** electric-pair
 Auto-close pairs.
@@ -970,7 +955,7 @@ Shamelessly stealed from https://github.com/purcell/emacs.d.
 ** Google translate
 #+begin_src emacs-lisp
   (use-package google-translate
-    :bind (:map evil-normal-state-map
+    :bind (:map evil-motion-state-map
            ("g t" . rasen/google-translate-at-point)
            ("g T" . google-translate-smooth-translate))
     :config
@@ -999,10 +984,8 @@ Shamelessly stealed from https://github.com/purcell/emacs.d.
 #+begin_src emacs-lisp
 (use-package org
   :mode ("\\.org$" . org-mode)
-  :bind (("C-c a" . org-agenda)
-         ("C-c l" . org-store-link)
-         ("C-c b" . org-iswitchb)
-         :map evil-normal-state-map
+  :bind (("C-c l" . org-store-link)
+         :map evil-motion-state-map
          ("SPC o" . org-clock-out)
          ("SPC l" . org-clock-in-last)
          ("SPC j" . org-clock-goto)
@@ -1021,7 +1004,7 @@ Shamelessly stealed from https://github.com/purcell/emacs.d.
 Do not indent inside tasks
 #+name: org-config
 #+begin_src emacs-lisp
-  (setq org-adapt-indentation nil)
+(setq org-adapt-indentation nil)
 #+end_src
 
 Do not indent org-babel blocks.
@@ -1547,7 +1530,6 @@ Configure stuck projects.
   (setq org-stuck-projects
         '("+PROJECT/-TODO-DONE-CANCELED-WAIT" ("NEXT" "WAIT") nil ""))
 #+end_src
-
 *** Allow NEXT projects to stuck
 =org-agenda-list-stuck-projects= marks project as unstuck if its header matches any of specified keywords. This makes all =NEXT= projects automatically unstuck.
 
@@ -1666,6 +1648,53 @@ Allow encrypted entries in org files.
   (setq org-habit-following-days 3)
   ; (add-to-list 'org-modules 'org-habit)
 #+end_src
+** Evilify
+#+begin_src emacs-lisp
+(use-package evil-org
+  :after org
+  :custom
+  ; swap j/k
+  (evil-org-movement-bindings '((up . "j")
+                                (down . "k")
+                                (left . "h")
+                                (right . "l")))
+  :config
+  (add-hook 'org-mode-hook 'evil-org-mode)
+  (add-hook 'evil-org-mode-hook
+            (lambda ()
+              (evil-org-set-key-theme)))
+  (require 'evil-org-agenda)
+  (evil-org-agenda-set-keys)
+
+  (evil-define-key 'normal org-mode-map
+    "go" 'org-open-at-point)
+
+  (evil-define-key 'motion org-agenda-mode-map
+    "k" 'org-agenda-next-line
+    "j" 'org-agenda-previous-line
+    "gk" 'org-agenda-next-item
+    "gj" 'org-agenda-previous-item
+    (kbd "C-k") 'org-agenda-next-item
+    (kbd "C-j") 'org-agenda-previous-item
+
+    "K" 'org-agenda-priority-down
+    "J" 'org-agenda-priority-up
+
+    (kbd "M-k") 'org-agenda-drag-line-forward
+    (kbd "M-j") 'org-agenda-drag-line-backward)
+
+  (evil-define-key 'motion org-agenda-mode-map
+    ; unset prefix
+    (kbd "SPC") nil
+    (kbd "SPC s") 'org-agenda-schedule
+    (kbd "C-c C-s") (rasen/hard-way "SPC s")
+    (kbd "SPC d") 'org-agenda-deadline
+    (kbd "C-c C-d") (rasen/hard-way "SPC d")
+    (kbd "SPC w") 'org-agenda-refile
+    (kbd "C-c C-w") (rasen/hard-way "SPC w")
+
+    "go" 'org-agenda-open-link))
+#+end_src
 * Languages
 ** Emacs lisp
 #+begin_src emacs-lisp
@@ -1679,14 +1708,14 @@ Allow encrypted entries in org files.
 Eval last sexp Vim-style.
 #+name: elisp-mode-config
 #+begin_src emacs-lisp
-  (evil-define-operator rasen/evil-eval (beg end type)
-    "Evaluate region."
-    (if (eq type 'block)
-        (evil-apply-on-block 'eval-region beg end nil)
-      (eval-region beg end)))
+(evil-define-operator rasen/evil-eval (beg end type)
+  "Evaluate region."
+  (if (eq type 'block)
+      (evil-apply-on-block 'eval-region beg end nil)
+    (eval-region beg end)))
 
-  (evil-define-key 'normal emacs-lisp-mode-map (kbd "SPC e") 'eval-last-sexp)
-  (evil-define-key 'visual emacs-lisp-mode-map (kbd "SPC e") 'rasen/evil-eval)
+(evil-define-key 'motion emacs-lisp-mode-map (kbd "SPC e") 'eval-last-sexp)
+(evil-define-key 'visual emacs-lisp-mode-map (kbd "SPC e") 'rasen/evil-eval)
 #+end_src
 ** Nix
 Pretty self-explaining.
