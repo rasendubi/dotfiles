@@ -1103,6 +1103,7 @@ Start emacs as a daemon:
         gitconfig-mode
         terraform-mode
         graphviz-dot-mode
+        fish-mode
         notmuch
         airline-themes
         visual-fill-column
@@ -1237,6 +1238,21 @@ URxvt*color15:    #d0d0d0
   programs.fish.enable = true;
   users.defaultUserShell = pkgs.fish;
 }
+#+end_src
+*** Vi key bindings
+Tangle to =.config/fish/functions/fish_user_key_bindings.fish=.
+
+#+begin_src fish :tangle .config/fish/functions/fish_user_key_bindings.fish
+function fish_user_key_bindings
+    fish_vi_key_bindings
+
+    bind -s j up-or-search
+    bind -s k down-or-search
+    bind -s -M visual j up-line
+    bind -s -M visual k down-line
+
+    bind -s '.' repeat-jump
+end
 #+end_src
 *** Show QR codes
 The next section goes to =.config/fish/functions/showqr.fish=. That's a function I use for displaying arbitrary text (mainly passwords stored with =pass=) as a QR code without any temporary files. (=tr= is used to drop trailing newline.)

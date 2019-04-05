@@ -549,6 +549,7 @@ in
             gitconfig-mode
             terraform-mode
             graphviz-dot-mode
+            fish-mode
             notmuch
             airline-themes
             visual-fill-column
