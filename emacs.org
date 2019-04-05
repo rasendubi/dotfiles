@@ -2244,6 +2244,13 @@ Package edit-indirect needed to edit code blocks.
 (use-package edit-indirect
   :after markdown-mode)
 #+end_src
+*** WriteGood
+See http://bnbeckwith.com/code/writegood-mode.html
+
+#+begin_src emacs-lisp
+(use-package writegood-mode
+  :hook (markdown-mode . writegood-mode))
+#+end_src
 ** JSON
 #+begin_src emacs-lisp
 (use-package json-mode
@@ -2511,12 +2518,14 @@ Center all text in the buffer in some modes.
 #+begin_src emacs-lisp
 (use-package visual-fill-column
   :commands (visual-fill-column-mode)
+  :hook
+  (markdown-mode . rasen/activate-visual-fill-column)
+  (org-mode . rasen/activate-visual-fill-column)
   :init
-  (add-hook 'org-mode-hook
-            (lambda ()
-              (setq-local fill-column 81)
-              (visual-line-mode t)
-              (visual-fill-column-mode t)))
+  (defun rasen/activate-visual-fill-column ()
+    (setq-local fill-column 81)
+    (visual-line-mode t)
+    (visual-fill-column-mode t))
   :config
   (setq-default visual-fill-column-center-text t
                 visual-fill-column-fringes-outside-margins nil))

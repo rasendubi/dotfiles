@@ -555,6 +555,7 @@ in
             visual-fill-column
             beacon
             google-translate
+            writegood-mode
           ]) ++
           (with epkgs.melpaPackages; [
             # Not present in melpa-stable

@@ -1109,6 +1109,7 @@ Start emacs as a daemon:
         visual-fill-column
         beacon
         google-translate
+        writegood-mode
       ]) ++
       (with epkgs.melpaPackages; [
         # Not present in melpa-stable
@@ -1140,6 +1141,7 @@ Start emacs as a daemon:
   };
   environment.systemPackages = [
     pkgs.ripgrep
+    (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science ru uk]))
   ];
 }
 #+end_src
