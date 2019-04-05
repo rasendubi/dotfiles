@@ -37,3 +37,5 @@
 /.config/fish/functions/fisher.fish
 /.config/fish/completions/fisher.fish
 /.emacs.d/smex-items
+/.config/fish/fish_variables
+/.config/fish/fishd.omicron

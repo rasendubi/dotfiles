@@ -216,24 +216,30 @@ All emacs packages are installed with Nix. Disable usage of emacs internal archi
   (require 'use-package))
 (require 'bind-key)
 #+end_src
-** Other
-Quickly open configuration file.
-
+** General package
+I start using [[https://github.com/noctuid/general.el][general]] to define my keybindings.
 #+begin_src emacs-lisp
-  (global-set-key
-   (kbd "<f12>")
-   (lambda ()
-     (interactive)
-     (find-file (expand-file-name "emacs.org" rasen/dotfiles-directory))))
+(use-package general)
 #+end_src
+** Other
+I constantly improve my configuration to make me more efficient.
+The first step is actually optimizing the process of optimizing.
+The following provides key binding to quickly open my emacs or system configuration files.
 
-Quickly open global system configuration file.
+(They are global and come first, so they are still defined if I mess up with the later configuration and the rest of config file is not loaded.)
+
 #+begin_src emacs-lisp
-  (global-set-key
-   (kbd "<C-f12>")
-   (lambda ()
-     (interactive)
-     (find-file (expand-file-name "README.org" rasen/dotfiles-directory))))
+(defun rasen/find-emacs-config ()
+  (interactive)
+  (find-file (expand-file-name "emacs.org" rasen/dotfiles-directory)))
+
+(defun rasen/find-system-config ()
+  (interactive)
+  (find-file (expand-file-name "README.org" rasen/dotfiles-directory)))
+
+(general-def
+ "<f12>" #'rasen/find-emacs-config
+ "<C-f12>" #'rasen/find-system-config)
 #+end_src
 ** String interpolation
 I use string interpolation in the main =README.org=.
@@ -660,9 +666,7 @@ It's enable by default. Just diminish it.
 #+begin_src emacs-lisp
 (use-package projectile
   :bind (:map evil-motion-state-map
-         ("SPC p p" . projectile-switch-project)
-         ("SPC p &" . projectile-run-async-shell-command-in-root)
-         ("SPC p !" . projectile-run-shell-command-in-root)
+         ("SPC p" . projectile-command-map)
          ;; That works much better than the default
          ("g f"     . projectile-find-file-dwim)
          ("U"       . projectile-find-file)
@@ -777,7 +781,20 @@ Evilify magit-blame.
   (kbd "gj")  'magit-section-backward-sibling
   (kbd "gk")  'magit-section-forward-sibling)
 #+end_src
+*** Evilify git-commit
+#+name: evil-magit-config
+#+begin_src emacs-lisp
+(general-def
+  :keymaps 'with-editor-mode-map
+  :states 'normal
+  "'" #'with-editor-finish)
+(general-def
+  :keymaps 'with-editor-mode-map
+  "C-c C-c" (rasen/hard-way "'"))
 
+(add-to-list 'evil-insert-state-modes 'with-editor-mode)
+(setq evil-normal-state-modes (delete 'git-commit-mode evil-normal-state-modes))
+#+end_src
 *** Custom commands
 **** git push HEAD ...
 Add a magit command to push =HEAD= into a specified ref.
@@ -954,30 +971,31 @@ Shamelessly stealed from https://github.com/purcell/emacs.d.
 #+end_src
 ** Google translate
 #+begin_src emacs-lisp
-  (use-package google-translate
-    :bind (:map evil-motion-state-map
-           ("g t" . rasen/google-translate-at-point)
-           ("g T" . google-translate-smooth-translate))
-    :config
-    (defun rasen/google-translate-at-point (arg)
-      "Translate word at point. If prefix is provided, do reverse translation"
-      (interactive "P")
-      (if arg
-          (google-translate-at-point-reverse)
-        (google-translate-at-point)))
+(use-package google-translate
+  :general ('normal 'markdown-mode-map
+            "g t" #'rasen/google-translate-at-point
+            "g T" #'google-translate-smooth-translate)
+  :commands (google-translate-smooth-translate)
+  :config
+  (defun rasen/google-translate-at-point (arg)
+    "Translate word at point. If prefix is provided, do reverse translation"
+    (interactive "P")
+    (if arg
+        (google-translate-at-point-reverse)
+      (google-translate-at-point)))
 
-    (require 'google-translate-default-ui)
-    (require 'google-translate-smooth-ui)
-    (setq google-translate-show-phonetic t)
+  (require 'google-translate-default-ui)
+  (require 'google-translate-smooth-ui)
+  (setq google-translate-show-phonetic t)
 
-    (setq google-translate-default-source-language "en"
-          google-translate-default-target-language "ru")
+  (setq google-translate-default-source-language "en"
+        google-translate-default-target-language "ru")
 
-    (setq google-translate-translation-directions-alist '(("en" . "ru") ("ru" . "en")))
-    ; auto-toggle input method
-    (setq google-translate-input-method-auto-toggling t
-          google-translate-preferable-input-methods-alist '((nil . ("en"))
-                                                            (russian-computer . ("ru")))))
+  (setq google-translate-translation-directions-alist '(("en" . "ru") ("ru" . "en")))
+  ; auto-toggle input method
+  (setq google-translate-input-method-auto-toggling t
+        google-translate-preferable-input-methods-alist '((nil . ("en"))
+                                                          (russian-computer . ("ru")))))
 #+end_src
 * Org-mode
 ** General
@@ -1170,10 +1188,14 @@ If prefix is supplied, select different scheduled time."
   (org-schedule nil (unless arg "."))
   (org-todo "NEXT"))
 
-(evil-define-key 'normal org-mode-map (kbd "SPC n") #'rasen/org-do-today)
+(general-def 'normal org-mode-map
+  "SPC n" #'rasen/org-do-today
 
-(evil-define-key 'normal org-mode-map (kbd "SPC s") 'org-schedule)
-(evil-define-key 'normal org-mode-map (kbd "C-c C-s") (rasen/hard-way "SPC s"))
+  "SPC s" #'org-schedule
+  "C-c C-s" (rasen/hard-way "SPC s")
+
+  "SPC d" #'org-deadline
+  "C-c C-d" (rasen/hard-way "SPC d"))
 #+end_src
 ** Clocking
 Remove clocks with 0 duration.
@@ -1252,16 +1274,31 @@ Enable org-protocol.
 (require 'org-protocol)
 #+end_src
 
-Instanly go into insert mode on capture.
-#+name: org-config
-#+begin_src emacs-lisp
-  (add-hook 'org-capture-mode-hook 'evil-insert-state)
-#+end_src
-
 =%l= in org-capture fails with multiline context, so use only the first line as a context.
 #+name: org-config
 #+begin_src emacs-lisp
   (setq org-context-in-file-links 1)
+#+end_src
+
+*** org-capture keybindings
+Instanly go into insert mode on capture.
+#+name: org-config
+#+begin_src emacs-lisp
+(add-hook 'org-capture-mode-hook 'evil-insert-state)
+#+end_src
+
+#+name: org-config
+#+begin_src emacs-lisp
+(general-def
+  :keymaps 'org-capture-mode-map
+  :states 'normal
+  "'" #'org-capture-finalize
+  "SPC w" #'org-capture-refile)
+
+(general-def
+  :keymaps 'org-capture-mode-map
+  "C-c C-c" (rasen/hard-way "'")
+  "C-c C-w" (rasen/hard-way "SPC w"))
 #+end_src
 ** Refile
 #+name: org-config
@@ -1652,6 +1689,7 @@ Allow encrypted entries in org files.
 #+begin_src emacs-lisp
 (use-package evil-org
   :after org
+  :diminish
   :custom
   ; swap j/k
   (evil-org-movement-bindings '((up . "j")
@@ -1666,8 +1704,14 @@ Allow encrypted entries in org files.
   (require 'evil-org-agenda)
   (evil-org-agenda-set-keys)
 
-  (evil-define-key 'normal org-mode-map
+  (general-def 'normal org-mode-map
+    "'" 'org-edit-special
+    "C-c '" (rasen/hard-way "'")
     "go" 'org-open-at-point)
+
+  (evil-define-minor-mode-key 'normal 'org-src-mode
+    (kbd "'") 'org-edit-src-exit
+    (kbd "C-c '") (rasen/hard-way "'"))
 
   (evil-define-key 'motion org-agenda-mode-map
     "k" 'org-agenda-next-line
@@ -1716,6 +1760,111 @@ Eval last sexp Vim-style.
 
 (evil-define-key 'motion emacs-lisp-mode-map (kbd "SPC e") 'eval-last-sexp)
 (evil-define-key 'visual emacs-lisp-mode-map (kbd "SPC e") 'rasen/evil-eval)
+#+end_src
+*** Fix indentation for keywords
+Alternate indent function definition.
+#+begin_src emacs-lisp
+;; Fix the indentation of keyword lists in Emacs Lisp. See [1] and [2].
+;;
+;; Before:
+;;  (:foo bar
+;;        :baz quux)
+;;
+;; After:
+;;  (:foo bar
+;;   :bar quux)
+;;
+;; [1]: https://github.com/Fuco1/.emacs.d/blob/af82072196564fa57726bdbabf97f1d35c43b7f7/site-lisp/redef.el#L12-L94
+;; [2]: http://emacs.stackexchange.com/q/10230/12534
+(el-patch-defun (el-patch-swap lisp-indent-function rasen/emacs-lisp-indent-function) (indent-point state)
+  "This function is the normal value of the variable `lisp-indent-function'.
+The function `calculate-lisp-indent' calls this to determine
+if the arguments of a Lisp function call should be indented specially.
+
+INDENT-POINT is the position at which the line being indented begins.
+Point is located at the point to indent under (for default indentation);
+STATE is the `parse-partial-sexp' state for that position.
+
+If the current line is in a call to a Lisp function that has a non-nil
+property `lisp-indent-function' (or the deprecated `lisp-indent-hook'),
+it specifies how to indent.  The property value can be:
+
+,* `defun', meaning indent `defun'-style
+  (this is also the case if there is no property and the function
+  has a name that begins with \"def\", and three or more arguments);
+
+,* an integer N, meaning indent the first N arguments specially
+  (like ordinary function arguments), and then indent any further
+  arguments like a body;
+
+,* a function to call that returns the indentation (or nil).
+  `lisp-indent-function' calls this function with the same two arguments
+  that it itself received.
+
+This function returns either the indentation to use, or nil if the
+Lisp function does not specify a special indentation."
+  (el-patch-let (($cond (and (elt state 2)
+                             (el-patch-wrap 1 1
+                               (or (not (looking-at "\\sw\\|\\s_"))
+                                   (looking-at ":")))))
+                 ($then (progn
+                          (if (not (> (save-excursion (forward-line 1) (point))
+                                      calculate-lisp-indent-last-sexp))
+                              (progn (goto-char calculate-lisp-indent-last-sexp)
+                                     (beginning-of-line)
+                                     (parse-partial-sexp (point)
+                                                         calculate-lisp-indent-last-sexp 0 t)))
+                          ;; Indent under the list or under the first sexp on the same
+                          ;; line as calculate-lisp-indent-last-sexp.  Note that first
+                          ;; thing on that line has to be complete sexp since we are
+                          ;; inside the innermost containing sexp.
+                          (backward-prefix-chars)
+                          (current-column)))
+                 ($else (let ((function (buffer-substring (point)
+                                                          (progn (forward-sexp 1) (point))))
+                              method)
+                          (setq method (or (function-get (intern-soft function)
+                                                         'lisp-indent-function)
+                                           (get (intern-soft function) 'lisp-indent-hook)))
+                          (cond ((or (eq method 'defun)
+                                     (and (null method)
+                                          (> (length function) 3)
+                                          (string-match "\\`def" function)))
+                                 (lisp-indent-defform state indent-point))
+                                 ((integerp method)
+                                 (lisp-indent-specform method state
+                                                       indent-point normal-indent))
+                                (method
+                                 (funcall method indent-point state))))))
+    (let ((normal-indent (current-column))
+          (el-patch-add
+            (orig-point (point))))
+      (goto-char (1+ (elt state 1)))
+      (parse-partial-sexp (point) calculate-lisp-indent-last-sexp 0 t)
+      (el-patch-swap
+        (if $cond
+            ;; car of form doesn't seem to be a symbol
+            $then
+          $else)
+        (cond
+         ;; car of form doesn't seem to be a symbol, or is a keyword
+         ($cond $then)
+         ((and (save-excursion
+                 (goto-char indent-point)
+                 (skip-syntax-forward " ")
+                 (not (looking-at ":")))
+               (save-excursion
+                 (goto-char orig-point)
+                 (looking-at ":")))
+          (save-excursion
+            (goto-char (+ 2 (elt state 1)))
+            (current-column)))
+         (t $else))))))
+#+end_src
+Apply it for emacs-lisp-mode.
+#+begin_src emacs-lisp
+(add-hook 'emacs-lisp-mode-hook
+          (lambda () (setq-local lisp-indent-function #'rasen/emacs-lisp-indent-function)))
 #+end_src
 ** Nix
 Pretty self-explaining.
@@ -2079,7 +2228,14 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
   :mode ("\\.\\(markdown\\|mdown\\|md\\)$" . markdown-mode)
   :init
   (add-hook 'markdown-mode-hook 'visual-line-mode)
+  (add-hook 'markdown-mode-hook 'flyspell-mode)
   :config
+  (general-def 'normal markdown-mode-map
+    "'" #'markdown-edit-code-block
+    "C-c '" (rasen/hard-way "'"))
+  (general-def 'normal edit-indirect-mode-map
+    "'" #'edit-indirect-commit
+    "C-c '" (rasen/hard-way "'"))
   (setq markdown-fontify-code-blocks-natively t))
 #+end_src
 

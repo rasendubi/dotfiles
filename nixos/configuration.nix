@@ -557,6 +557,7 @@ in
           ]) ++
           (with epkgs.melpaPackages; [
             # Not present in melpa-stable
+            general
             flycheck-jest
             purescript-mode
             psc-ide
