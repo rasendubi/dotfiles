@@ -588,7 +588,13 @@ in
       };
       environment.systemPackages = [
         pkgs.ripgrep
+        (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science ru uk]))
+    
+        pkgs.rustc
+        pkgs.cargo
+        pkgs.rustracer
       ];
+      environment.variables.RUST_SRC_PATH = "${pkgs.rustPlatform.rustcSrc}";
     }
     {
       environment.systemPackages = [

@@ -1948,6 +1948,7 @@ Pretty self-explaining.
   :commands racer-mode
   :diminish racer-mode
   :config
+  (setq racer-rust-src-path nil) ; Nix manages that
   (add-hook 'rust-mode-hook #'racer-mode)
   (add-hook 'racer-mode-hook #'eldoc-mode))
 #+end_src
