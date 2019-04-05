@@ -566,6 +566,7 @@ in
             restclient
             mbsync
             nix-sandbox
+            prettier-js
     
             # Don't work in melpa-stable
             counsel-projectile

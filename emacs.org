@@ -2144,19 +2144,34 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 #+end_src
 
 #+begin_src emacs-lisp
-  (use-package tide
-    :commands (tide-setup tide-hl-identifier-mode tide-format-before-save rasen/setup-tide-mode)
-    :hook (typescript-mode . rasen/setup-tide-mode)
-    :init
-    ; (add-hook 'before-save 'tide-format-before-save)
-    (defun rasen/setup-tide-mode ()
-      (interactive)
-      (tide-setup)
-      (flycheck-mode +1)
-      (setq flycheck-check-syntax-automatically '(save mode-enabled))
-      (eldoc-mode +1)
-      (tide-hl-identifier-mode +1)
-      (company-mode +1)))
+(use-package tide
+  :commands (tide-setup
+             tide-hl-identifier-mode
+             tide-format-before-save
+             rasen/setup-tide-mode)
+  :hook
+  (typescript-mode . rasen/setup-tide-mode)
+  :init
+  (defun rasen/setup-tide-mode ()
+    (interactive)
+    (tide-setup)
+    (flycheck-mode +1)
+    (setq flycheck-check-syntax-automatically '(save mode-enabled))
+    (eldoc-mode +1)
+    (tide-hl-identifier-mode +1)
+    (company-mode +1)))
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package prettier-js
+  :commands (prettier-js prettier-js-mode)
+  :hook
+  (typescript-mode . prettier-js-mode)
+  :init
+  (defun rasen/setup-prettier ()
+    (add-to-list 'exec-path (string-trim (shell-command-to-string "npm bin")))
+    (setq-local prettier-js-command (executable-find "prettier")))
+  (add-hook 'web-mode-hook #'rasen/setup-prettier))
 #+end_src
 
 #+begin_src emacs-lisp
