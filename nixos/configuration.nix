@@ -514,7 +514,6 @@ in
             whitespace-cleanup-mode
             which-key
             projectile
-            noccur
     
             diff-hl
             yasnippet

@@ -523,44 +523,53 @@ Do not create lockfiles either. (I am the only user in the system and only use e
          ("SPC b" . ivy-switch-buffer))
   :diminish ivy-mode
   :config
+  <<ivy-config>>
+  )
 #+end_src
 
 Do not start input with =^= and ignore the case.
+#+name: ivy-config
 #+begin_src emacs-lisp
   (setq-default ivy-initial-inputs-alist nil)
   (setq-default ivy-re-builders-alist '((t . ivy--regex-ignore-order)))
 #+end_src
 
 The normal =C-j= is not placed conveniently on Workman layout, so move its function to =C-e= (which is qwerty =k=).
+#+name: ivy-config
 #+begin_src emacs-lisp
-  (define-key ivy-minibuffer-map (kbd "C-e") 'ivy-alt-done)
-  (define-key ivy-minibuffer-map (kbd "C-M-e") 'ivy-immediate-done)
+(general-def 'ivy-minibuffer-map
+  "C-e"   #'ivy-alt-done
+  "C-M-e" #'ivy-immediate-done)
 #+end_src
 
 Remap k-j in =ivy-occur=, make it default to emacs state.
+#+name: ivy-config
 #+begin_src emacs-lisp
-(dolist (map (list ivy-occur-mode-map ivy-occur-grep-mode-map))
-  (evil-define-key 'normal map
-    (kbd "k") 'ivy-occur-next-line
-    (kbd "j") 'ivy-occur-previous-line
-    (kbd "C-n") 'ivy-occur-next-line
-    (kbd "C-p") 'ivy-occur-previous-line
-    (kbd "RET") 'ivy-occur-press-and-switch
-    (kbd "C-e") 'ivy-occur-press-and-switch
-    (kbd "g r") 'ivy-occur-revert-buffer
-    (kbd "d") 'ivy-occur-delete-candidate
-    (kbd "r") 'read-only-mode
-    (kbd "a") 'ivy-occur-read-action
-    (kbd "c") 'ivy-occur-toggle-calling
-    (kbd "f") 'ivy-occur-press
-    (kbd "o") 'ivy-occur-dispatch
-    (kbd "q") 'quit-window))
-(evil-define-key 'normal ivy-occur-grep-mode-map
-  (kbd "w") 'ivy-wgrep-change-to-wgrep-mode)
+(general-def
+  :keymaps '(ivy-occur-mode-map ivy-occur-grep-mode-map)
+  :states 'normal
+  "k" 'ivy-occur-next-line
+  "j" 'ivy-occur-previous-line
+  "C-n" 'ivy-occur-next-line
+  "C-p" 'ivy-occur-previous-line
+  "RET" 'ivy-occur-press-and-switch
+  "C-e" 'ivy-occur-press-and-switch
+  "g r" 'ivy-occur-revert-buffer
+  "d" 'ivy-occur-delete-candidate
+  "r" 'read-only-mode
+  "a"'ivy-occur-read-action
+  "c" 'ivy-occur-toggle-calling
+  "f" 'ivy-occur-press
+  "o" 'ivy-occur-dispatch
+  "q" 'quit-window)
+
+(general-def 'normal 'ivy-occur-grep-mode-map
+  "w" #'ivy-wgrep-change-to-wgrep-mode)
 #+end_src
 
+#+name: ivy-config
 #+begin_src emacs-lisp
-  (ivy-mode 1))
+(ivy-mode 1)
 #+end_src
 ** smex
 I use smex for improved =counsel-M-x= (show most frequently used commands first).
@@ -690,12 +699,6 @@ It's enable by default. Just diminish it.
   :after projectile
   :config
   (counsel-projectile-mode))
-#+end_src
-
-Install [[https://nicolas.petton.fr/blog/mutli-occur-on-projects.html][noccur]] to multi-occur project-wide.
-
-#+begin_src emacs-lisp
-(use-package noccur)
 #+end_src
 *** fix "was neither a function nor a string"
 https://github.com/bbatsov/projectile/pull/1269
@@ -1004,9 +1007,6 @@ Shamelessly stealed from https://github.com/purcell/emacs.d.
   :mode ("\\.org$" . org-mode)
   :bind (("C-c l" . org-store-link)
          :map evil-motion-state-map
-         ("SPC o" . org-clock-out)
-         ("SPC l" . org-clock-in-last)
-         ("SPC j" . org-clock-goto)
          ("SPC c" . org-capture)
          ("SPC a" . org-agenda)
          :map org-mode-map
@@ -1209,6 +1209,21 @@ Save more last clocks.
 #+begin_src emacs-lisp
   (setq-default org-clock-history-length 10)
 #+end_src
+
+Clocking bindings.
+#+name: org-config
+#+begin_src emacs-lisp
+(general-def 'motion
+  "SPC o" #'org-clock-out
+  "SPC l" #'org-clock-in-last
+  "SPC j" #'org-clock-goto)
+
+(general-def
+  :keymaps 'org-mode-map
+  :states 'normal
+  "SPC i" #'org-clock-in
+  "C-c C-x C-i" (rasen/hard-way "SPC i"))
+#+end_src
 ** Capture
 I use an extension that adds page url to the title (used for page tracking). Strip it down here
 #+name: org-config
@@ -1244,10 +1259,11 @@ My capture templates.
           ("j" "Journal entry" plain
            (file+datetree+prompt "~/org/journal.org")
            ,(concat
+             "TIL:\n- %?\n\n"
              ; %U does not here work as timestamp is hijacked by
              ; file+datetime+prompt
              "%(format-time-string (org-time-stamp-format t t))"
-             "\n%?\n"))
+             "\n"))
 
           ("f"
            "Capture normal snippet"

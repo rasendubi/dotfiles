@@ -1068,7 +1068,6 @@ Start emacs as a daemon:
         whitespace-cleanup-mode
         which-key
         projectile
-        noccur
 
         diff-hl
         yasnippet
