@@ -555,6 +555,7 @@ in
             beacon
             google-translate
             writegood-mode
+            edit-server
           ]) ++
           (with epkgs.melpaPackages; [
             # Not present in melpa-stable
@@ -566,6 +567,7 @@ in
             mbsync
             nix-sandbox
             prettier-js
+            flycheck-rust
     
             # Don't work in melpa-stable
             counsel-projectile

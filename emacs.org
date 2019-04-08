@@ -369,7 +369,15 @@ point reaches the beginning or end of the buffer, stop there."
 Save buffer with =SPC SPC=.
 #+name: evil-config
 #+begin_src emacs-lisp
-(nmap "SPC SPC" 'save-buffer)
+(defun rasen/save-buffer (arg)
+  "Save current buffer.  With PREFIX, save all buffers."
+  (interactive "P")
+  (if arg
+      (save-some-buffers)
+    (save-buffer)))
+
+(general-def 'normal
+  "SPC SPC" #'rasen/save-buffer)
 #+end_src
 ** Swap k and j
 With workman layout, =j= is located on qwerty =y= and =k=---on qwerty =n=; thus =j= is higher than =k=, and it is not convenient to press lower key for going up. Just swap them.
@@ -784,20 +792,6 @@ Evilify magit-blame.
   (kbd "gj")  'magit-section-backward-sibling
   (kbd "gk")  'magit-section-forward-sibling)
 #+end_src
-*** Evilify git-commit
-#+name: evil-magit-config
-#+begin_src emacs-lisp
-(general-def
-  :keymaps 'with-editor-mode-map
-  :states 'normal
-  "'" #'with-editor-finish)
-(general-def
-  :keymaps 'with-editor-mode-map
-  "C-c C-c" (rasen/hard-way "'"))
-
-(add-to-list 'evil-insert-state-modes 'with-editor-mode)
-(setq evil-normal-state-modes (delete 'git-commit-mode evil-normal-state-modes))
-#+end_src
 *** Custom commands
 **** git push HEAD ...
 Add a magit command to push =HEAD= into a specified ref.
@@ -845,16 +839,32 @@ Show commit signatures in log.
 #+begin_src emacs-lisp
   (setq magit-log-arguments '("--graph" "--decorate" "--show-signature" "-n256"))
 #+end_src
+** git-commit
+#+begin_src emacs-lisp
+(use-package git-commit
+  :gfhook 'flyspell-mode
+
+  :general
+  (:keymaps 'with-editor-mode-map
+   :states 'normal
+   "'" #'with-editor-finish)
+  (:keymaps 'with-editor-mode-map
+   "C-c C-c" (rasen/hard-way "'"))
+
+  :config
+  (add-to-list 'evil-insert-state-modes 'with-editor-mode)
+  (setq evil-normal-state-modes (delete 'git-commit-mode evil-normal-state-modes)))
+#+end_src
 ** diff-hl
 [[https://github.com/dgutov/diff-hl][diff-hl]] is an emacs package to highlight uncommitted changes.
 #+begin_src emacs-lisp
 (use-package diff-hl
   :after magit
   :config
-  ; (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
+  (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
   ; (unless (display-graphic-p)
   ;   (diff-hl-margin-mode t))
-  ; (diff-hl-flydiff-mode t)
+  (diff-hl-flydiff-mode t)
   (global-diff-hl-mode t))
 #+end_src
 ** yasnippet
@@ -891,6 +901,7 @@ Company mode provides autocomplete features.
   :diminish company-mode
   :config
   (setq-default company-dabbrev-downcase nil)
+  (setq-default company-search-filtering t)
   (global-company-mode))
 #+end_src
 ** flycheck
@@ -1000,6 +1011,13 @@ Shamelessly stealed from https://github.com/purcell/emacs.d.
         google-translate-preferable-input-methods-alist '((nil . ("en"))
                                                           (russian-computer . ("ru")))))
 #+end_src
+** edit-server
+I use [[https://www.emacswiki.org/emacs/Edit_with_Emacs][Edit with Emacs]] firefox extension.
+#+begin_src emacs-lisp
+(use-package edit-server
+  :config
+  (edit-server-start))
+#+end_src
 * Org-mode
 ** General
 #+begin_src emacs-lisp
@@ -1103,9 +1121,12 @@ I [[https://stackoverflow.com/a/35463983][googled it up]] and =copy-list= seems 
 
 #+name: org-config
 #+begin_src emacs-lisp
-  (require 'org-drill)
-  (setq org-drill-scope (rasen/org-files-in-dir "~/org/drill"))
-  (add-to-list 'org-modules 'org-drill)
+(require 'org-drill)
+(setq org-drill-scope (rasen/org-files-in-dir "~/org/drill"))
+(add-to-list 'org-modules 'org-drill)
+
+(setq org-drill-leech-failure-threshold 10
+      org-drill-leech-method 'warn)
 #+end_src
 
 
@@ -1139,17 +1160,20 @@ the current topic."
 Use the following states: =TODO= =NEXT= =DONE= =CANCELED= =WAIT=.
 #+name: org-config
 #+begin_src emacs-lisp
-  (setq-default org-todo-keywords
-                '((sequence "TODO(t)" "NEXT(n!)" "|" "DONE(d!)")
-                  (sequence "|" "CANCELED(c@)")
-                  (sequence "WAIT(w@)" "|")))
-  (setq-default org-todo-keyword-faces
-                '(("TODO"     . (:foreground "dodger blue" :weight bold))
-                  ("NEXT"     . (:box t :foreground "red" :weight bold))
-                  ("WAIT"     . (:box t :foreground "magenta" :weight bold))
-                  ("DONE"     . (:foreground "grey" :weight bold))
-                  ("CANCELED" . (:foreground "gray" :weight bold))))
-  (setq-default org-use-fast-todo-selection t)
+(setq-default org-todo-keywords
+              '((sequence "TODO(t)" "NEXT(n!)" "|" "DONE(d!)")
+                (sequence "BUILD(b!)" "|")
+                (sequence "|" "CANCELED(c@)")
+                (sequence "WAIT(w@)" "|")))
+(setq-default org-todo-keyword-faces
+              '(("TODO"     . (:foreground "dodger blue" :weight bold))
+                ("NEXT"     . (:box t :foreground "red" :weight bold))
+                ("BUILD"    . (:box t :foreground "red" :weight bold))
+                ; ("BUILD"    . (:foreground "#a6e22e" :weight bold))
+                ("WAIT"     . (:box t :foreground "magenta" :weight bold))
+                ("DONE"     . (:foreground "grey" :weight bold))
+                ("CANCELED" . (:foreground "gray" :weight bold))))
+(setq-default org-use-fast-todo-selection t)
 #+end_src
 
 Switch task state with =SPC t=.
@@ -1174,6 +1198,14 @@ Save =CLOSED= timestamp when task is done.
 #+name: org-config
 #+begin_src emacs-lisp
   (setq org-log-done t)
+#+end_src
+
+Import =org-expiry= for =org-expiry-insert-created=---this inserts =CREATED= property.
+#+name: org-config
+#+begin_src emacs-lisp
+(require 'org-expiry)
+(setq org-expiry-inactive-timestamps t)
+(org-expiry-insinuate)
 #+end_src
 
 Schedule task for today and mark it NEXT.
@@ -1723,7 +1755,8 @@ Allow encrypted entries in org files.
   (general-def 'normal org-mode-map
     "'" 'org-edit-special
     "C-c '" (rasen/hard-way "'")
-    "go" 'org-open-at-point)
+    "go" 'org-open-at-point
+    "C-c C-o" (rasen/hard-way "go"))
 
   (evil-define-minor-mode-key 'normal 'org-src-mode
     (kbd "'") 'org-edit-src-exit
@@ -1967,6 +2000,11 @@ Pretty self-explaining.
   (setq racer-rust-src-path nil) ; Nix manages that
   (add-hook 'rust-mode-hook #'racer-mode)
   (add-hook 'racer-mode-hook #'eldoc-mode))
+
+(use-package flycheck-rust
+  :after rust-mode
+  :config
+  (add-hook 'flycheck-mode-hook #'flycheck-rust-setup))
 #+end_src
 ** C/C++
 *** Doxygen

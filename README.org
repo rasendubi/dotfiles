@@ -1109,6 +1109,7 @@ Start emacs as a daemon:
         beacon
         google-translate
         writegood-mode
+        edit-server
       ]) ++
       (with epkgs.melpaPackages; [
         # Not present in melpa-stable
@@ -1120,6 +1121,7 @@ Start emacs as a daemon:
         mbsync
         nix-sandbox
         prettier-js
+        flycheck-rust
 
         # Don't work in melpa-stable
         counsel-projectile
