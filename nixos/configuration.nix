@@ -508,6 +508,7 @@ in
             evil-numbers
             evil-swap-keys
             evil-collection
+            evil-surround
     
             smex
             counsel
@@ -568,6 +569,7 @@ in
             nix-sandbox
             prettier-js
             flycheck-rust
+            flycheck-inline
     
             # Don't work in melpa-stable
             counsel-projectile

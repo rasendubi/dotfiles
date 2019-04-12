@@ -1062,6 +1062,7 @@ Start emacs as a daemon:
         evil-numbers
         evil-swap-keys
         evil-collection
+        evil-surround
 
         smex
         counsel
@@ -1122,6 +1123,7 @@ Start emacs as a daemon:
         nix-sandbox
         prettier-js
         flycheck-rust
+        flycheck-inline
 
         # Don't work in melpa-stable
         counsel-projectile

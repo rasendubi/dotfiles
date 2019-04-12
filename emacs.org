@@ -445,7 +445,8 @@ evil-collection is a collection of evil bindings for different modes.
   (add-hook 'evil-collection-setup-hook #'rasen/rotate-keys)
 
   (setq evil-collection-mode-list
-    '(compile
+    '(dired
+      compile
       flycheck
       help
       js2-mode
@@ -461,6 +462,12 @@ evil-collection is a collection of evil bindings for different modes.
       which-key))
 
   (evil-collection-init))
+#+end_src
+** evil-surrond
+#+begin_src emacs-lisp
+(use-package evil-surround
+  :config
+  (global-evil-surround-mode t))
 #+end_src
 #+end_src
 ** Evilify compile mode
@@ -890,14 +897,17 @@ Company mode provides autocomplete features.
 #+begin_src emacs-lisp
 (use-package company
   :defer 2
-  :bind (:map evil-insert-state-map
-         ("C-n" . company-complete-common-or-cycle)
-         ("C-p" . company-select-previous)
-        (:map company-active-map
-         ("C-n" . company-complete-common-or-cycle)
-         ("C-p" . company-select-previous-or-abort)
-         ("C-e" . company-complete)
-         ("TAB" . company-complete-common-or-cycle)))
+  :general
+  (:keymaps 'company-mode-map
+   :states 'insert
+   "C-n" #'company-complete-common-or-cycle
+   "C-p" #'company-select-previous)
+  ('company-active-map
+   "C-n" #'company-complete-common-or-cycle
+   "C-p" #'company-select-previous-or-abort
+   "C-e" #'company-complete
+   "TAB" #'company-complete-common-or-cycle)
+
   :diminish company-mode
   :config
   (setq-default company-dabbrev-downcase nil)
@@ -921,6 +931,14 @@ Company mode provides autocomplete features.
                         '(emacs-lisp-checkdoc)))
 
   (global-flycheck-mode))
+#+end_src
+** flycheck-inline
+Display flycheck error inline.
+#+begin_src emacs-lisp
+(use-package flycheck-inline
+  :after flycheck
+  :config
+  (global-flycheck-inline-mode))
 #+end_src
 ** electric-pair
 Auto-close pairs.
@@ -986,7 +1004,7 @@ Shamelessly stealed from https://github.com/purcell/emacs.d.
 ** Google translate
 #+begin_src emacs-lisp
 (use-package google-translate
-  :general ('normal 'markdown-mode-map
+  :general ('normal '(markdown-mode-map org-mode-map)
             "g t" #'rasen/google-translate-at-point
             "g T" #'google-translate-smooth-translate)
   :commands (google-translate-smooth-translate)
@@ -1029,6 +1047,7 @@ I use [[https://www.emacswiki.org/emacs/Edit_with_Emacs][Edit with Emacs]] firef
          ("SPC a" . org-agenda)
          :map org-mode-map
          ("C-c ," . org-time-stamp-inactive))
+  :gfhook 'flyspell-mode
   :ensure org-plus-contrib
   :init
   <<org-init>>
@@ -1063,6 +1082,12 @@ Set tags faces, so they are more distinguishable.
 (set-face-attribute 'org-ellipsis nil :inverse-video nil)
 (setq org-tag-faces
       '(("ARCHIVE" . (:inverse-video nil))))
+#+end_src
+
+Dim drawer faces (they are not that important).
+#+name: org-config
+#+begin_src emacs-lisp
+(set-face-attribute 'org-special-keyword nil :inherit 'shadow :weight 'bold :height 0.9)
 #+end_src
 
 Open pdfs in external viewer:
@@ -2300,12 +2325,20 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
   (add-hook 'markdown-mode-hook 'visual-line-mode)
   (add-hook 'markdown-mode-hook 'flyspell-mode)
   :config
+  (defun rasen/insert-timestamp ()
+    "Insert current timestamp in ISO 8601 format"
+    (interactive)
+    (insert (format-time-string "%FT%R%z")))
+
   (general-def 'normal markdown-mode-map
     "'" #'markdown-edit-code-block
     "C-c '" (rasen/hard-way "'"))
   (general-def 'normal edit-indirect-mode-map
     "'" #'edit-indirect-commit
     "C-c '" (rasen/hard-way "'"))
+  (general-def 'insert markdown-mode-map
+    "C-c ," #'rasen/insert-timestamp)
+
   (setq markdown-fontify-code-blocks-natively t))
 #+end_src
 
