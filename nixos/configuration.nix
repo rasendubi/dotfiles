@@ -570,6 +570,7 @@ in
             prettier-js
             flycheck-rust
             flycheck-inline
+            monokai-theme
     
             # Don't work in melpa-stable
             counsel-projectile

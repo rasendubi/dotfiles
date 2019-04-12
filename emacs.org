@@ -209,9 +209,9 @@ All emacs packages are installed with Nix. Disable usage of emacs internal archi
 [[https://github.com/jwiegley/use-package][use-package]] is a cool emacs library that helps managing emacs configuration making it simpler and more structured. It is the core of my configuration infrastructure and is required
 *** Initialize
 #+begin_src emacs-lisp :tangle no
-; Do not ensure packages---they are installed with Nix
+;; Do not ensure packages---they are installed with Nix
 (setq use-package-always-ensure nil)
-; (setq use-package-verbose t)
+;; (setq use-package-verbose t)
 (eval-when-compile
   (require 'use-package))
 (require 'bind-key)
@@ -453,7 +453,7 @@ evil-collection is a collection of evil bindings for different modes.
       magit
       ;; notmuch bindings aren't that cool and are less efficient than native
       ;; keymap
-      ; notmuch
+      ;; notmuch
       python
       racer
       restclient
@@ -746,7 +746,6 @@ https://github.com/bbatsov/projectile/pull/1269
   :bind (:map evil-motion-state-map
          ("g m" . magit-status))
   :diminish auto-revert-mode
-  ; :defer 6
   :init
   (global-set-key (kbd "C-c m") (rasen/hard-way "g m"))
   :config
@@ -869,8 +868,6 @@ Show commit signatures in log.
   :after magit
   :config
   (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
-  ; (unless (display-graphic-p)
-  ;   (diff-hl-margin-mode t))
   (diff-hl-flydiff-mode t)
   (global-diff-hl-mode t))
 #+end_src
@@ -919,11 +916,11 @@ Company mode provides autocomplete features.
 (use-package flycheck
   :config
   ;; not sure I actually use nix-sandbox
-  ; (setq flycheck-command-wrapper-function
-  ;       (lambda (cmd) (apply 'nix-shell-command (nix-current-sandbox) cmd))
+  ;; (setq flycheck-command-wrapper-function
+  ;;       (lambda (cmd) (apply 'nix-shell-command (nix-current-sandbox) cmd))
 
-  ;       flycheck-executable-find
-  ;       (lambda (cmd) (nix-executable-find (nix-current-sandbox) cmd)))
+  ;;       flycheck-executable-find
+  ;;       (lambda (cmd) (nix-executable-find (nix-current-sandbox) cmd)))
 
   ;; Do not check for elisp header/footer
   (setq-default flycheck-disabled-checkers
@@ -1024,7 +1021,7 @@ Shamelessly stealed from https://github.com/purcell/emacs.d.
         google-translate-default-target-language "ru")
 
   (setq google-translate-translation-directions-alist '(("en" . "ru") ("ru" . "en")))
-  ; auto-toggle input method
+  ;; auto-toggle input method
   (setq google-translate-input-method-auto-toggling t
         google-translate-preferable-input-methods-alist '((nil . ("en"))
                                                           (russian-computer . ("ru")))))
@@ -1082,12 +1079,6 @@ Set tags faces, so they are more distinguishable.
 (set-face-attribute 'org-ellipsis nil :inverse-video nil)
 (setq org-tag-faces
       '(("ARCHIVE" . (:inverse-video nil))))
-#+end_src
-
-Dim drawer faces (they are not that important).
-#+name: org-config
-#+begin_src emacs-lisp
-(set-face-attribute 'org-special-keyword nil :inherit 'shadow :weight 'bold :height 0.9)
 #+end_src
 
 Open pdfs in external viewer:
@@ -1194,7 +1185,6 @@ Use the following states: =TODO= =NEXT= =DONE= =CANCELED= =WAIT=.
               '(("TODO"     . (:foreground "dodger blue" :weight bold))
                 ("NEXT"     . (:box t :foreground "red" :weight bold))
                 ("BUILD"    . (:box t :foreground "red" :weight bold))
-                ; ("BUILD"    . (:foreground "#a6e22e" :weight bold))
                 ("WAIT"     . (:box t :foreground "magenta" :weight bold))
                 ("DONE"     . (:foreground "grey" :weight bold))
                 ("CANCELED" . (:foreground "gray" :weight bold))))
@@ -1317,8 +1307,8 @@ My capture templates.
            (file+datetree+prompt "~/org/journal.org")
            ,(concat
              "TIL:\n- %?\n\n"
-             ; %U does not here work as timestamp is hijacked by
-             ; file+datetime+prompt
+             ;; %U does not here work as timestamp is hijacked by
+             ;; file+datetime+prompt
              "%(format-time-string (org-time-stamp-format t t))"
              "\n"))
 
@@ -1756,7 +1746,6 @@ Allow encrypted entries in org files.
   (setq org-habit-show-habits-only-for-today t)
   (setq org-habit-preceding-days 25)
   (setq org-habit-following-days 3)
-  ; (add-to-list 'org-modules 'org-habit)
 #+end_src
 ** Evilify
 #+begin_src emacs-lisp
@@ -1764,7 +1753,7 @@ Allow encrypted entries in org files.
   :after org
   :diminish
   :custom
-  ; swap j/k
+  ;; swap j/k
   (evil-org-movement-bindings '((up . "j")
                                 (down . "k")
                                 (left . "h")
@@ -1802,7 +1791,7 @@ Allow encrypted entries in org files.
     (kbd "M-j") 'org-agenda-drag-line-backward)
 
   (evil-define-key 'motion org-agenda-mode-map
-    ; unset prefix
+    ;; unset prefix
     (kbd "SPC") nil
     (kbd "SPC s") 'org-agenda-schedule
     (kbd "C-c C-s") (rasen/hard-way "SPC s")
@@ -1975,7 +1964,7 @@ Pretty self-explaining.
   (define-key haskell-mode-map (kbd "C-c C-b") 'haskell-compile)
   (define-key haskell-mode-map (kbd "C-c v c") 'haskell-cabal-visit-file)
 
-  ; haskell-interactive-mode
+  ;; haskell-interactive-mode
   (define-key haskell-mode-map (kbd "C-x C-d") nil)
   (define-key haskell-mode-map (kbd "C-c C-z") 'haskell-interactive-switch)
   (define-key haskell-mode-map (kbd "C-c C-l") 'haskell-process-load-file)
@@ -2433,9 +2422,9 @@ See http://bnbeckwith.com/code/writegood-mode.html
 
   (add-hook 'message-setup-hook 'mml-secure-message-sign-pgpmime)
   (setq mm-verify-option 'always)
-  ; (add-to-list 'mm-automatic-display "application/pgp")
-  ; (add-to-list 'mm-automatic-display "application/pgp-signature")
-  ; (add-to-list 'mm-inlined-types "application/pgp")
+  ;; (add-to-list 'mm-automatic-display "application/pgp")
+  ;; (add-to-list 'mm-automatic-display "application/pgp-signature")
+  ;; (add-to-list 'mm-inlined-types "application/pgp")
   (setq gnus-buttonized-mime-types '("multipart/encrypted" "multipart/signed"))
 
   (setq gnus-check-new-newsgroups nil ;; NOTE: don't check for new groups
@@ -2445,9 +2434,9 @@ See http://bnbeckwith.com/code/writegood-mode.html
         gnus-save-killed-list nil)
 
   ;; TODO uncomment
-  ; (require 'gnus-article-treat-patch)
-  ; (setq ft/gnus-article-patch-conditions
-  ;       '( "^@@ -[0-9]+,[0-9]+ \\+[0-9]+,[0-9]+ @@" ))
+  ;; (require 'gnus-article-treat-patch)
+  ;; (setq ft/gnus-article-patch-conditions
+  ;;       '( "^@@ -[0-9]+,[0-9]+ \\+[0-9]+,[0-9]+ @@" ))
 )
 #+end_src
 ** mbsync
@@ -2482,12 +2471,12 @@ See http://bnbeckwith.com/code/writegood-mode.html
             (:name "drafts" :query "tag:draft" :key "r")
             (:name "all mail" :query "*" :key "a")))
     (setq notmuch-hello-sections
-          '(; notmuch-hello-insert-header
+          '(;; notmuch-hello-insert-header
             notmuch-hello-insert-saved-searches
-            ; notmuch-hello-insert-search
+            ;; notmuch-hello-insert-search
             notmuch-hello-insert-alltags
             notmuch-hello-insert-recent-searches
-            ; notmuch-hello-insert-footer
+            ;; notmuch-hello-insert-footer
            ))
     (setq-default notmuch-show-indent-content nil)
 
@@ -2503,7 +2492,7 @@ See http://bnbeckwith.com/code/writegood-mode.html
 
     (define-key 'notmuch-search-mode-map "k" 'notmuch-search-archive-thread)
     (define-key 'notmuch-show-mode-map "k" 'notmuch-show-archive-thread-then-next)
-    ; remap old function
+    ;; remap old function
     (define-key 'notmuch-search-mode-map "K" 'notmuch-tag-jump)
     (define-key 'notmuch-show-mode-map "K" 'notmuch-tag-jump)
 
@@ -2512,7 +2501,7 @@ See http://bnbeckwith.com/code/writegood-mode.html
         (interactive)
         (notmuch-show-tag '("+unread"))))
 
-    ; notmuch-tag-formats
+    ;; notmuch-tag-formats
 
     (setq-default notmuch-tagging-keys
                   '(("a" notmuch-archive-tags "Archive")
@@ -2555,17 +2544,38 @@ Do not show startup screen.
 (setq inhibit-startup-screen t)
 #+end_src
 ** Color scheme
-I use airline with molokai color scheme.
+I use monokai and airline with molokai color scheme.
 
 #+begin_src emacs-lisp
 (use-package airline-themes
   :config
-  (require 'cl)
-  (setq-default powerline-display-mbsync-info t)
-  (load-theme 'airline-molokai t)
+  (load-theme 'airline-molokai t))
 
-  (add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
-  (load-theme 'molokai t))
+(use-package monokai-theme
+  :config
+  (load-theme 'monokai t)
+
+  (custom-theme-set-faces
+   'monokai
+
+   ;; If org-block-end-line happens to be the last line in the collapsed
+   ;; tree, the whole line after ellipsis is highlighted in the
+   ;; background color, which is not nice.
+   `(org-block-begin-line ((t :foreground ,monokai-comments :background nil)))
+   `(org-block-end-line ((t :foreground ,monokai-comments :background nil)))
+
+   ;; I just don't like boxes around checkboxes
+   `(org-checkbox ((t :background ,monokai-background
+                      :foreground ,monokai-foreground
+                      :box nil)))
+
+   `(org-tag ((t :weight bold :inverse-video t)))
+   `(org-archived ((t :foreground ,monokai-comments
+                      :weight normal
+                      :inverse-video nil)))
+   `(org-ellipsis ((t :foreground ,monokai-comments
+                      :background ,monokai-background
+                      :inverse-video nil)))))
 #+end_src
 ** Font
 #+begin_src emacs-lisp
