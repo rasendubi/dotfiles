@@ -2544,13 +2544,8 @@ Do not show startup screen.
 (setq inhibit-startup-screen t)
 #+end_src
 ** Color scheme
-I use monokai and airline with molokai color scheme.
-
+I use monokai color scheme.
 #+begin_src emacs-lisp
-(use-package airline-themes
-  :config
-  (load-theme 'airline-molokai t))
-
 (use-package monokai-theme
   :config
   (load-theme 'monokai t)
@@ -2575,11 +2570,16 @@ I use monokai and airline with molokai color scheme.
                       :inverse-video nil)))
    `(org-ellipsis ((t :foreground ,monokai-comments
                       :background ,monokai-background
-                      :inverse-video nil)))
-
-   ;; the minibuffer-prompt background is probably overwritten by
-   ;; airline theme (so the text is hard to read)
-   `(minibuffer-prompt ((t :foreground ,monokai-blue :background nil)))))
+                      :inverse-video nil)))))
+#+end_src
+** Modeline
+I use spaceline.
+#+begin_src emacs-lisp
+(use-package spaceline
+  :config
+  (require 'spaceline-config)
+  (setq spaceline-highlight-face-func #'spaceline-highlight-face-evil-state)
+  (spaceline-spacemacs-theme))
 #+end_src
 ** Font
 #+begin_src emacs-lisp

@@ -1105,7 +1105,6 @@ Start emacs as a daemon:
         graphviz-dot-mode
         fish-mode
         notmuch
-        airline-themes
         visual-fill-column
         beacon
         google-translate
@@ -1125,6 +1124,7 @@ Start emacs as a daemon:
         flycheck-rust
         flycheck-inline
         monokai-theme
+        spaceline
 
         # Don't work in melpa-stable
         counsel-projectile

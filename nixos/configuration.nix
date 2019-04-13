@@ -551,7 +551,6 @@ in
             graphviz-dot-mode
             fish-mode
             notmuch
-            airline-themes
             visual-fill-column
             beacon
             google-translate
@@ -571,6 +570,7 @@ in
             flycheck-rust
             flycheck-inline
             monokai-theme
+            spaceline
     
             # Don't work in melpa-stable
             counsel-projectile
