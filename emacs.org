@@ -2570,7 +2570,16 @@ I use monokai color scheme.
                       :inverse-video nil)))
    `(org-ellipsis ((t :foreground ,monokai-comments
                       :background ,monokai-background
-                      :inverse-video nil)))))
+                      :inverse-video nil)))
+
+   ;; spaceline theming
+   `(spaceline-evil-normal ((t :foreground "#3E3D31" :background ,monokai-green :inherit 'mode-line)))
+   `(spaceline-evil-insert ((t :foreground "#3E3D31" :background ,monokai-blue :inherit 'mode-line)))
+   `(spaceline-evil-emacs ((t :foreground "#3E3D31" :background ,monokai-violet :inherit 'mode-line)))
+   `(spaceline-evil-replace ((t :foreground "#3E3D31" :background ,monokai-red :inherit 'mode-line)))
+   `(spaceline-evil-visual ((t :foreground "#3E3D31" :background ,monokai-yellow :inherit 'mode-line)))
+   `(spaceline-evil-motion ((t :foreground "#3E3D31" :background ,monokai-orange :inherit 'mode-line)))
+   ))
 #+end_src
 ** Modeline
 I use spaceline.
