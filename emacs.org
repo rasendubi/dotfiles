@@ -2575,7 +2575,11 @@ I use monokai and airline with molokai color scheme.
                       :inverse-video nil)))
    `(org-ellipsis ((t :foreground ,monokai-comments
                       :background ,monokai-background
-                      :inverse-video nil)))))
+                      :inverse-video nil)))
+
+   ;; the minibuffer-prompt background is probably overwritten by
+   ;; airline theme (so the text is hard to read)
+   `(minibuffer-prompt ((t :foreground ,monokai-blue :background nil)))))
 #+end_src
 ** Font
 #+begin_src emacs-lisp
