@@ -459,7 +459,8 @@ evil-collection is a collection of evil bindings for different modes.
       restclient
       tide
       typescript-mode
-      which-key))
+      which-key
+      xref))
 
   (evil-collection-init))
 #+end_src
@@ -570,6 +571,7 @@ Remap k-j in =ivy-occur=, make it default to emacs state.
   "RET" 'ivy-occur-press-and-switch
   "C-e" 'ivy-occur-press-and-switch
   "g r" 'ivy-occur-revert-buffer
+  "g g" #'evil-goto-first-line
   "d" 'ivy-occur-delete-candidate
   "r" 'read-only-mode
   "a"'ivy-occur-read-action
@@ -2553,9 +2555,9 @@ I use monokai color scheme.
   (custom-theme-set-faces
    'monokai
 
-   ;; If org-block-end-line happens to be the last line in the collapsed
-   ;; tree, the whole line after ellipsis is highlighted in the
-   ;; background color, which is not nice.
+   ;; If org-block-end-line happens to be the last line in the
+   ;; collapsed tree, the whole line after ellipsis is highlighted in
+   ;; the background color, which is not nice.
    `(org-block-begin-line ((t :foreground ,monokai-comments :background nil)))
    `(org-block-end-line ((t :foreground ,monokai-comments :background nil)))
 
@@ -2563,6 +2565,10 @@ I use monokai color scheme.
    `(org-checkbox ((t :background ,monokai-background
                       :foreground ,monokai-foreground
                       :box nil)))
+
+   ;; Light colors on yellow background look terrible. Use something
+   ;; legit instead.
+   `(org-clock-overlay ((t :background ,monokai-highlight-alt)))
 
    `(org-tag ((t :weight bold :inverse-video t)))
    `(org-archived ((t :foreground ,monokai-comments
