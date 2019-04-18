@@ -1031,6 +1031,12 @@ Shamelessly stealed from https://github.com/purcell/emacs.d.
         google-translate-preferable-input-methods-alist '((nil . ("en"))
                                                           (russian-computer . ("ru")))))
 #+end_src
+** SQL
+#+begin_src emacs-lisp
+(use-package sql
+  :config
+  (add-hook 'sql-mode-hook (lambda () (toggle-truncate-lines t))))
+#+end_src
 ** edit-server
 I use [[https://www.emacswiki.org/emacs/Edit_with_Emacs][Edit with Emacs]] firefox extension.
 #+begin_src emacs-lisp
