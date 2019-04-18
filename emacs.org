@@ -397,6 +397,9 @@ With workman layout, =j= is located on qwerty =y= and =k=---on qwerty =n=; thus 
 (mmap "C-k"     'windmove-down)
 (mmap "C-j"     'windmove-up)
 (mmap "C-l"     'windmove-right)
+
+(general-swap-key nil 'motion
+  "C-w j" "C-w k")
 #+end_src
 ** evil-numbers
 I use Vim's =C-a= and =C-x= (increment/decrement number at point) a lot.
