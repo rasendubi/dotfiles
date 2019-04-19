@@ -572,6 +572,10 @@ in
             monokai-theme
             spaceline
     
+            lsp-mode
+            lsp-ui
+            company-lsp
+    
             # Don't work in melpa-stable
             counsel-projectile
             ivy

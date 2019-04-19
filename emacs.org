@@ -1044,6 +1044,21 @@ I use [[https://www.emacswiki.org/emacs/Edit_with_Emacs][Edit with Emacs]] firef
   :config
   (edit-server-start))
 #+end_src
+** LSP
+#+begin_src emacs-lisp
+(use-package lsp-mode
+  :commands lsp
+  :init
+  (add-hook 'rust-mode-hook #'lsp)
+  :config
+  (setq lsp-prefer-flymake nil))
+
+(use-package lsp-ui
+  :commands lsp-ui-mode)
+
+(use-package company-lsp
+  :commands company-lsp)
+#+end_src
 * Org-mode
 ** General
 #+begin_src emacs-lisp
@@ -2321,6 +2336,7 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 #+begin_src emacs-lisp
 (use-package markdown-mode
   :mode ("\\.\\(markdown\\|mdown\\|md\\)$" . markdown-mode)
+  :commands gfm-view-mode
   :init
   (add-hook 'markdown-mode-hook 'visual-line-mode)
   (add-hook 'markdown-mode-hook 'flyspell-mode)
@@ -2594,7 +2610,8 @@ I use monokai color scheme.
    `(spaceline-evil-replace ((t :foreground "#3E3D31" :background ,monokai-red :inherit 'mode-line)))
    `(spaceline-evil-visual ((t :foreground "#3E3D31" :background ,monokai-yellow :inherit 'mode-line)))
    `(spaceline-evil-motion ((t :foreground "#3E3D31" :background ,monokai-orange :inherit 'mode-line)))
-   ))
+
+   `(lsp-ui-sideline-global ((t :background ,monokai-highlight-alt)))))
 #+end_src
 ** Modeline
 I use spaceline.

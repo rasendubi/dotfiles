@@ -1126,6 +1126,10 @@ Start emacs as a daemon:
         monokai-theme
         spaceline
 
+        lsp-mode
+        lsp-ui
+        company-lsp
+
         # Don't work in melpa-stable
         counsel-projectile
         ivy
