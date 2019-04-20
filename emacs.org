@@ -2604,12 +2604,12 @@ I use monokai color scheme.
                       :inverse-video nil)))
 
    ;; spaceline theming
-   `(spaceline-evil-normal ((t :foreground "#3E3D31" :background ,monokai-green :inherit 'mode-line)))
-   `(spaceline-evil-insert ((t :foreground "#3E3D31" :background ,monokai-blue :inherit 'mode-line)))
-   `(spaceline-evil-emacs ((t :foreground "#3E3D31" :background ,monokai-violet :inherit 'mode-line)))
-   `(spaceline-evil-replace ((t :foreground "#3E3D31" :background ,monokai-red :inherit 'mode-line)))
-   `(spaceline-evil-visual ((t :foreground "#3E3D31" :background ,monokai-yellow :inherit 'mode-line)))
-   `(spaceline-evil-motion ((t :foreground "#3E3D31" :background ,monokai-orange :inherit 'mode-line)))
+   `(spaceline-evil-normal  ((t :foreground "#3E3D31" :weight bold :background ,monokai-green :inherit 'mode-line)))
+   `(spaceline-evil-insert  ((t :foreground "#3E3D31" :weight bold :background ,monokai-blue :inherit 'mode-line)))
+   `(spaceline-evil-emacs   ((t :foreground "#3E3D31" :weight bold :background ,monokai-violet :inherit 'mode-line)))
+   `(spaceline-evil-replace ((t :foreground "#3E3D31" :weight bold :background ,monokai-red :inherit 'mode-line)))
+   `(spaceline-evil-visual  ((t :foreground "#3E3D31" :weight bold :background ,monokai-yellow :inherit 'mode-line)))
+   `(spaceline-evil-motion  ((t :foreground "#3E3D31" :weight bold :background ,monokai-orange :inherit 'mode-line)))
 
    `(lsp-ui-sideline-global ((t :background ,monokai-highlight-alt)))))
 #+end_src
@@ -2618,9 +2618,92 @@ I use spaceline.
 #+begin_src emacs-lisp
 (use-package spaceline
   :config
+  (setq evil-normal-state-tag "N"
+        evil-insert-state-tag "I"
+        evil-visual-state-tag "V"
+        evil-operator-state-tag "O"
+        evil-replace-state-tag "R"
+        evil-motion-state-tag "M"
+        evil-emacs-state-tag "E")
+
   (require 'spaceline-config)
   (setq spaceline-highlight-face-func #'spaceline-highlight-face-evil-state)
-  (spaceline-spacemacs-theme))
+
+  ;; modifications:
+  ;; - always show org-clock (I often use org-clock for clocking tasks
+  ;;   that I do *outside* of emacs.)
+  ;; - always show process (background tasks usually run in an
+  ;;   inactive window)
+  ;; - show projectile-root
+  ;; - hide file info (modified status, file size) when inactive
+  ;; - hide right side when inactive (it has little useful info and is
+  ;;   less important than left side)
+  ;;
+  ;; note: patching has an additional benefit that `el-patch-validate'
+  ;; can verify the original function did not change.
+  (el-patch-feature spaceline-config)
+  (el-patch-defun (el-patch-swap spaceline--theme rasen/--spaceline-theme) (left second-left &rest additional-segments)
+    "Convenience function for the spacemacs and emacs themes."
+    (spaceline-compile
+      `(,left
+        (anzu :priority 95)
+        auto-compile
+        (el-patch-add ((buffer-modified buffer-size)
+                       :priority 98
+                       :when active))
+        (el-patch-add projectile-root :when active)
+        ,second-left
+        (major-mode :priority 79)
+        (process (el-patch-remove :when active))
+        ((flycheck-error flycheck-warning flycheck-info)
+         :when active
+         :priority 89)
+        (minor-modes :when active
+                     :priority 9)
+        (mu4e-alert-segment :when active)
+        (erc-track :when active)
+        (version-control :when active
+                         :priority 78)
+        (org-pomodoro :when active)
+        (org-clock (el-patch-remove :when active))
+        nyan-cat)
+      `(which-function
+        (python-pyvenv :fallback python-pyenv)
+        (purpose :priority 94)
+        (battery :when active)
+        (selection-info :priority 95)
+        input-method
+        ((buffer-encoding-abbrev
+          point-position
+          line-column)
+         :separator " | "
+         :priority 96
+         (el-patch-add :when active))
+        (global :when active)
+        ,@additional-segments
+        (buffer-position :priority 99 (el-patch-add :when active))
+        (hud :priority 99 (el-patch-add :when active))))
+
+  (setq-default mode-line-format '("%e" (:eval (spaceline-ml-main)))))
+
+  (el-patch-defun (el-patch-swap spaceline-spacemacs-theme rasen/spaceline-theme) (&rest additional-segments)
+    "Install the modeline used by Spacemacs.
+
+ADDITIONAL-SEGMENTS are inserted on the right, between `global' and
+`buffer-position'."
+    (apply '(el-patch-swap spaceline--theme rasen/--spaceline-theme)
+           '((persp-name
+              workspace-number
+              window-number)
+             :fallback evil-state
+             :face highlight-face
+             :priority 100
+             (el-patch-add :when active))
+           '(((el-patch-remove buffer-modified buffer-size) buffer-id remote-host)
+             :priority 98)
+           additional-segments))
+
+  (rasen/spaceline-theme))
 #+end_src
 ** Font
 #+begin_src emacs-lisp
