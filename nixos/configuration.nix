@@ -499,7 +499,7 @@ in
         enable = true;
         defaultEditor = true;
         package = (pkgs.emacsPackagesNgGen pkgs.emacs).emacsWithPackages (epkgs:
-          (with epkgs.melpaStablePackages; [
+          (with epkgs.melpaPackages; [
             use-package
             diminish
             el-patch
@@ -509,18 +509,22 @@ in
             evil-swap-keys
             evil-collection
             evil-surround
+            evil-magit
+            evil-org
     
             smex
+            ivy
             counsel
+            counsel-projectile
             whitespace-cleanup-mode
             which-key
             projectile
-    
             diff-hl
             yasnippet
             company
             flycheck
             color-identifiers-mode
+            magit
             f
     
             avy
@@ -550,15 +554,12 @@ in
             terraform-mode
             graphviz-dot-mode
             fish-mode
-            notmuch
             visual-fill-column
             beacon
             google-translate
             writegood-mode
             edit-server
-          ]) ++
-          (with epkgs.melpaPackages; [
-            # Not present in melpa-stable
+    
             general
             flycheck-jest
             purescript-mode
@@ -576,16 +577,8 @@ in
             lsp-ui
             company-lsp
     
-            # Don't work in melpa-stable
-            counsel-projectile
-            ivy
-    
-            # Don't work / too old in melpa-stable
-            magit
-            evil-magit
-    
-            # too old
-            evil-org
+            # provided by pkgs.notmuch:
+            # notmuch
           ]) ++
           [
             epkgs.orgPackages.org-plus-contrib
