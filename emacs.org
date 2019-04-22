@@ -2630,6 +2630,10 @@ I use monokai color scheme.
      `(company-tooltip-selection ((t :foreground ,monokai-background
                                      :background ,monokai-emphasis
                                      :weight bold)))
+     `(company-tooltip-common-selection ((t :foreground ,monokai-background
+                                            :background ,monokai-emphasis
+                                            :weight bold
+                                            :underline t)))
      `(company-tooltip-annotation-selection ((t :foreground ,monokai-green-d
                                                 :background ,monokai-emphasis
                                                 :weight bold
