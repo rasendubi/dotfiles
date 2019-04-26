@@ -2477,68 +2477,69 @@ See http://bnbeckwith.com/code/writegood-mode.html
 #+end_src
 ** notmuch
 #+begin_src emacs-lisp
-  (use-package notmuch
-    :config
-    (setq notmuch-archive-tags '("-unread"))
-    (setq notmuch-saved-searches
-          '(
-            (:name "unread" :query "tag:unread and not tag:nixos" :key "u")
-            (:name "unread-inbox" :query "tag:inbox and tag:unread" :key "i")
-            (:name "unread-egoless" :query "tag:egoless and tag:unread" :key "e")
-            (:name "unread-nixos" :query "tag:unread and tag:nixos and not tag:nixpkgs" :key "n")
-            (:name "unread-nixpkgs" :query "tag:unread and tag:nixpkgs" :key "p")
-            (:name "unread-triage" :query "tag:unread and tag:nixpkgs-participating" :key "t")
-            (:name "unread-doctoright" :query "tag:unread and tag:doctoright" :key "d")
-            (:name "unread-other" :query "tag:unread and not tag:nixos and not tag:inbox and not tag:doctoright" :key "o")
-            (:name "later" :query "tag:later" :key "l")
-            (:name "flagged" :query "tag:flagged" :key "f")
-            (:name "personal" :query "tag:personal" :key "P")
-            (:name "doctoright" :query "tag:doctoright" :key "D")
-            (:name "sent" :query "tag:sent" :key "s")
-            (:name "drafts" :query "tag:draft" :key "r")
-            (:name "all mail" :query "*" :key "a")))
-    (setq notmuch-hello-sections
-          '(;; notmuch-hello-insert-header
-            notmuch-hello-insert-saved-searches
-            ;; notmuch-hello-insert-search
-            notmuch-hello-insert-alltags
-            notmuch-hello-insert-recent-searches
-            ;; notmuch-hello-insert-footer
-           ))
-    (setq-default notmuch-show-indent-content nil)
+(use-package notmuch
+  :config
+  (setq notmuch-archive-tags '("-unread"))
+  (setq notmuch-saved-searches
+        '(
+          (:name "unread" :query "tag:unread and not tag:nixos and not tag:rust" :key "u")
+          (:name "unread-inbox" :query "tag:inbox and tag:unread" :key "i")
+          (:name "unread-egoless" :query "tag:egoless and tag:unread" :key "e")
+          (:name "unread-rust" :query "tag:unread and tag:rust" :key "r")
+          (:name "unread-nixos" :query "tag:unread and tag:nixos and not tag:nixpkgs" :key "n")
+          (:name "unread-nixpkgs" :query "tag:unread and tag:nixpkgs" :key "p")
+          (:name "unread-participating" :query "tag:unread and tag:participating" :key "t")
+          (:name "unread-doctoright" :query "tag:unread and tag:doctoright" :key "d")
+          (:name "unread-other" :query "tag:unread and not tag:nixos and not tag:inbox and not tag:doctoright and not tag:rust" :key "o")
+          (:name "later" :query "tag:later" :key "l")
+          (:name "flagged" :query "tag:flagged" :key "f")
+          (:name "personal" :query "tag:personal" :key "P")
+          (:name "doctoright" :query "tag:doctoright" :key "D")
+          (:name "sent" :query "tag:sent" :key "s")
+          (:name "drafts" :query "tag:draft" :key "f")
+          (:name "all mail" :query "*" :key "a")))
+  (setq notmuch-hello-sections
+        '(;; notmuch-hello-insert-header
+          notmuch-hello-insert-saved-searches
+          ;; notmuch-hello-insert-search
+          notmuch-hello-insert-alltags
+          notmuch-hello-insert-recent-searches
+          ;; notmuch-hello-insert-footer
+         ))
+  (setq-default notmuch-show-indent-content nil)
 
-    (defun rasen/mbsync ()
+  (defun rasen/mbsync ()
+    (interactive)
+    (async-shell-command "mbsync sync-gmail & mbsync sync-egoless & mbsync sync-ps & wait; /home/rasen/dotfiles/notmuch.sh" "*mbsync*"))
+
+  (define-key 'notmuch-hello-mode-map "f" 'rasen/mbsync)
+
+  (define-key 'notmuch-hello-mode-map "g" 'notmuch-refresh-all-buffers)
+  (define-key 'notmuch-search-mode-map "g" 'notmuch-refresh-all-buffers)
+  (define-key 'notmuch-show-mode-map "g" 'notmuch-refresh-all-buffers)
+
+  (define-key 'notmuch-search-mode-map "k" 'notmuch-search-archive-thread)
+  (define-key 'notmuch-show-mode-map "k" 'notmuch-show-archive-thread-then-next)
+  ;; remap old function
+  (define-key 'notmuch-search-mode-map "K" 'notmuch-tag-jump)
+  (define-key 'notmuch-show-mode-map "K" 'notmuch-tag-jump)
+
+  (define-key 'notmuch-show-mode-map (kbd "M-u")
+    (lambda ()
       (interactive)
-      (async-shell-command "mbsync sync-gmail & mbsync sync-egoless & mbsync sync-ps & wait; /home/rasen/dotfiles/notmuch.sh" "*mbsync*"))
+      (notmuch-show-tag '("+unread"))))
 
-    (define-key 'notmuch-hello-mode-map "f" 'rasen/mbsync)
+  ;; notmuch-tag-formats
 
-    (define-key 'notmuch-hello-mode-map "g" 'notmuch-refresh-all-buffers)
-    (define-key 'notmuch-search-mode-map "g" 'notmuch-refresh-all-buffers)
-    (define-key 'notmuch-show-mode-map "g" 'notmuch-refresh-all-buffers)
+  (setq-default notmuch-tagging-keys
+                '(("a" notmuch-archive-tags "Archive")
+                  ("u" notmuch-show-mark-read-tags "Mark read")
+                  ("m" ("+muted") "Mute")
+                  ("f" ("+flagged") "Flag")
+                  ("s" ("+spam" "-inbox") "Mark as spam")
+                  ("d" ("+deleted" "-inbox") "Delete")))
 
-    (define-key 'notmuch-search-mode-map "k" 'notmuch-search-archive-thread)
-    (define-key 'notmuch-show-mode-map "k" 'notmuch-show-archive-thread-then-next)
-    ;; remap old function
-    (define-key 'notmuch-search-mode-map "K" 'notmuch-tag-jump)
-    (define-key 'notmuch-show-mode-map "K" 'notmuch-tag-jump)
-
-    (define-key 'notmuch-show-mode-map (kbd "M-u")
-      (lambda ()
-        (interactive)
-        (notmuch-show-tag '("+unread"))))
-
-    ;; notmuch-tag-formats
-
-    (setq-default notmuch-tagging-keys
-                  '(("a" notmuch-archive-tags "Archive")
-                    ("u" notmuch-show-mark-read-tags "Mark read")
-                    ("m" ("+muted") "Mute")
-                    ("f" ("+flagged") "Flag")
-                    ("s" ("+spam" "-inbox") "Mark as spam")
-                    ("d" ("+deleted" "-inbox") "Delete")))
-
-    (require 'org-notmuch))
+  (require 'org-notmuch))
 #+end_src
 * Workman
 ** quail
