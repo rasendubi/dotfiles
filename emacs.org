@@ -2030,7 +2030,9 @@ Pretty self-explaining.
   :diminish eldoc-mode)
 
 (use-package rust-mode
-  :mode ("\\.rs$" . rust-mode))
+  :mode ("\\.rs$" . rust-mode)
+  :config
+  (add-hook 'rust-mode-hook (lambda () (setq-local fill-column 100))))
 
 (use-package racer
   :after rust-mode
@@ -2492,7 +2494,7 @@ See http://bnbeckwith.com/code/writegood-mode.html
           (:name "unread-doctoright" :query "tag:unread and tag:doctoright" :key "d")
           (:name "unread-other" :query "tag:unread and not tag:nixos and not tag:inbox and not tag:doctoright and not tag:rust" :key "o")
           (:name "later" :query "tag:later" :key "l")
-          (:name "flagged" :query "tag:flagged" :key "f")
+          (:name "flagged" :query "tag:flagged" :key "F")
           (:name "personal" :query "tag:personal" :key "P")
           (:name "doctoright" :query "tag:doctoright" :key "D")
           (:name "sent" :query "tag:sent" :key "s")

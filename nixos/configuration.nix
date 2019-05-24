@@ -207,6 +207,13 @@ in
       programs.mosh.enable = true;
     }
     {
+      services.gitolite = {
+        enable = true;
+        user = "git";
+        adminPubkey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDHH15uiQw3jBbrdlcRb8wOr8KVltuwbHP/JOFAzXFO1l/4QxnKs6Nno939ugULM7Lu0Vx5g6FreuCOa2NMWk5rcjIwOzjrZnHZ7aoAVnE7H9scuz8NGnrWdc1Oq0hmcDxdZrdKdB6CPG/diGWNZy77nLvz5JcX1kPLZENPeApCERwR5SvLecA4Es5JORHz9ssEcf8I7VFpAebfQYDu+VZZvEu03P2+5SXv8+5zjiuxM7qxzqRmv0U8eftii9xgVNC7FaoRBhhM7yKkpbnqX7IeSU3WeVcw4+d1d8b9wD/sFOyGc1xAcvafLaGdgeCQGU729DupRRJokpw6bBRQGH29 rasen@omicron";
+      };
+    }
+    {
       services.dnsmasq = {
         enable = true;
     
@@ -486,6 +493,7 @@ in
     
         pkgs.hledger
         pkgs.drive
+        pkgs.borgbackup
       ];
     }
     {
