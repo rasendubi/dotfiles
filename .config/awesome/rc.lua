@@ -497,51 +497,54 @@ client.connect_signal("focus", function(c) c.border_color = beautiful.border_foc
 client.connect_signal("unfocus", function(c) c.border_color = beautiful.border_normal end)
 -- }}}
 
+-- cjson is currently broken.
+-- See https://github.com/NixOS/nixpkgs/pull/62714#issuecomment-507064486
+--
 -- Track my focus {{{
-local cjson = require("cjson")
-
-local log_file = assert(io.open("log.txt", "ab"))
-awesome.connect_signal("exit", function () log_file:close() end)
-
-function log_entry(activity, c)
-    if not logging then
-        return
-    end
-
-    log_file:write(cjson.encode{
-        time = os.date("%FT%T%z"),
-        activity = activity,
-        class = c.class,
-        instance = c.instance,
-        role = c.role,
-        title = c.name,
-    })
-    log_file:write("\n")
-    log_file:flush()
-end
-
-client.connect_signal(
-    "focus",
-    function (c, startup)
-        log_entry('focus', c)
-    end)
-client.connect_signal(
-    "unfocus",
-    function (c, startup)
-        log_entry('unfocus', c)
-    end)
-
-client.connect_signal(
-    "property::name",
-    function (c, startup)
-        -- c.name == window title
-        -- c.class == application ?
-        -- c.instance == run command? (but it's "Mail" for thunderbird
-        -- c.role == (nil, browser, ConversationsWindow, etc.)
-        if client.focus == c then
-            log_entry('title', c)
-        end
-    end)
+-- local cjson = require("cjson")
+--
+-- local log_file = assert(io.open("log.txt", "ab"))
+-- awesome.connect_signal("exit", function () log_file:close() end)
+--
+-- function log_entry(activity, c)
+--     if not logging then
+--         return
+--     end
+--
+--     log_file:write(cjson.encode{
+--         time = os.date("%FT%T%z"),
+--         activity = activity,
+--         class = c.class,
+--         instance = c.instance,
+--         role = c.role,
+--         title = c.name,
+--     })
+--     log_file:write("\n")
+--     log_file:flush()
+-- end
+--
+-- client.connect_signal(
+--     "focus",
+--     function (c, startup)
+--         log_entry('focus', c)
+--     end)
+-- client.connect_signal(
+--     "unfocus",
+--     function (c, startup)
+--         log_entry('unfocus', c)
+--     end)
+--
+-- client.connect_signal(
+--     "property::name",
+--     function (c, startup)
+--         -- c.name == window title
+--         -- c.class == application ?
+--         -- c.instance == run command? (but it's "Mail" for thunderbird
+--         -- c.role == (nil, browser, ConversationsWindow, etc.)
+--         if client.focus == c then
+--             log_entry('title', c)
+--         end
+--     end)
 -- }}
 
 function razer(n, t)
