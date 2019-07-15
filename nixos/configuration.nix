@@ -320,7 +320,7 @@ in
       i18n.consoleUseXkbConfig = true;
     }
     {
-      services.xserver.xkbOptions = "grp:caps_toggle,grp:menu_toggle,grp_led:caps";
+      services.xserver.xkbOptions = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
     }
     {
       services.redshift = {
@@ -535,9 +535,11 @@ in
             magit
             f
     
+            imenu-list
             avy
             wgrep
             org-pomodoro
+            org-cliplink
             nix-mode
             haskell-mode
             rust-mode

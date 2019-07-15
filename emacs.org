@@ -420,6 +420,7 @@ Now, remap =C-x= to =RET=. (Because =C-x= is used for decrementing numbers.)
 ** swap-keys
 #+begin_src emacs-lisp
 (use-package evil-swap-keys
+  :disabled t
   :config
   (global-evil-swap-keys-mode)
   (add-hook 'prog-mode-hook #'evil-swap-keys-swap-number-row))
@@ -623,6 +624,31 @@ Jump anywhere with a few keystrokes in tree-like way.
   :custom
   ;; easy workman keys (excluding pinky)
   (avy-keys '(?s ?h ?t ?n ?e ?o ?d ?r ?u ?p)))
+#+end_src
+** imenu / imenu-list
+Use imenu to just to symbols in the current buffer.
+#+begin_src emacs-lisp
+(use-package imenu-list
+  :general
+  (:keymaps 'imenu-list-major-mode-map
+   :states 'normal
+   "RET" #'imenu-list-goto-entry
+   "TAB" #'imenu-list-display-entry
+   "<backtab>" #'hs-toggle-hiding
+   "g r" #'imenu-list-refresh
+   "q" #'imenu-list-quit-window))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun rasen/imenu-or-list (arg)
+  "Invoke `counsel-imenu'. If prefix is provided, toggle imenu-list"
+  (interactive "P")
+  (if arg
+      (imenu-list-smart-toggle)
+    (counsel-imenu)))
+
+(general-def 'normal
+  "SPC g" #'rasen/imenu-or-list)
 #+end_src
 ** wgrep
 Edit grep buffers and apply changes to the files.
@@ -1828,6 +1854,11 @@ Allow encrypted entries in org files.
 
     "go" 'org-agenda-open-link))
 #+end_src
+Use emacs-state in org-lint buffers.
+#+name: org-config
+#+begin_src emacs-lisp
+(evil-set-initial-state 'org-lint--report-mode 'emacs)
+#+end_src
 * Languages
 ** Emacs lisp
 #+begin_src emacs-lisp
@@ -2249,6 +2280,9 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
   :hook
   (typescript-mode . rasen/setup-tide-mode)
   :init
+  ;; K is used for avy
+  (general-def 'normal 'tide-mode-map
+    "K" nil)
   (defun rasen/setup-tide-mode ()
     (interactive)
     (tide-setup)

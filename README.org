@@ -696,11 +696,13 @@ I use English and Ukrainian layouts. I also use Russian symbols, but they are on
 }
 #+end_src
 
+Map left Caps Lock to Ctrl, and left Ctrl to switch between layout. (Shift-Ctrl triggers Caps Lock function.)
+
 I toggle between them with either Caps Lock, or Menu key---I have two different keyboards, and one doesn't have Menu when Caps Lock is too far on the second. I never use Caps Lock--the feature, so it's nice to have Caps LED indicate alternate layouts.
 #+name: nixos-section
 #+begin_src nix
 {
-  services.xserver.xkbOptions = "grp:caps_toggle,grp:menu_toggle,grp_led:caps";
+  services.xserver.xkbOptions = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
 }
 #+end_src
 *** Layout indicator
@@ -1093,9 +1095,11 @@ Start emacs as a daemon:
         magit
         f
 
+        imenu-list
         avy
         wgrep
         org-pomodoro
+        org-cliplink
         nix-mode
         haskell-mode
         rust-mode
