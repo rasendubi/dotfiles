@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: Re-export component from directory
+# key: re
+# --
+export { ${2:default} } from './${1:`(file-name-base (directory-file-name (file-name-directory (buffer-file-name))))`}';

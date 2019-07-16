@@ -1,0 +1,24 @@
+# -*- mode: snippet -*-
+# name: jsx-comment
+# binding: C-M-;
+# type: command
+# --
+(cond ((and yas-selected-text (string-match
+                               (concat "\\`\\([ \t\n\r]*\\){/\\* *"
+                                       "\\(.*?\\)"
+                                       " *\\*/}\\([ \t\n\r]*\\)\\'")
+                               yas-selected-text))
+       (let* ((trim-prefix (match-string 1 yas-selected-text))
+              (trim-postfix (match-string 3 yas-selected-text))
+              (trim-string (match-string 2 yas-selected-text)))
+         (insert (concat trim-prefix trim-string trim-postfix))))
+      (yas-selected-text
+       (let ((trim-prefix (progn (string-match "\\`\\([ \t\n\r]*\\)" yas-selected-text)
+                                 (match-string 0 yas-selected-text)))
+             (trim-postfix (progn (string-match "\\([ \t\n\r]*\\)\\'" yas-selected-text)
+                                  (match-string 0 yas-selected-text)))
+             (trim-string (string-trim yas-selected-text)))
+         (insert (concat trim-prefix "{/* " trim-string " */}" trim-postfix))))
+      (t (progn
+           (insert "{/* ")
+           (save-excursion (insert " */}")))))

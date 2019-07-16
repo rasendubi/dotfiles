@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: block
+# key: b
+# --
+::: {${1:.note .note--notice}}
+$0
+:::
