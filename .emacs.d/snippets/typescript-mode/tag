@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: tag
+# key: t
+# binding: C-,
+# expand-env: ((rasen/evil-state "insert"))
+# --
+<$1>`(when yas-selected-text "\n")``yas-selected-text`$2`(when yas-selected-text "\n")`</${1:$(car (split-string yas-text))}>

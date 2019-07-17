@@ -904,21 +904,57 @@ Show commit signatures in log.
 #+end_src
 ** yasnippet
 #+begin_src emacs-lisp
-  (use-package yasnippet
-    :defer 5
-    :diminish yas-minor-mode
-    :config
-    (yas-global-mode 1)
+(use-package yasnippet
+  :defer 5
+  :diminish yas-minor-mode
+  :config
+  (yas-global-mode 1)
 
-    (setq rasen/snippets-directory
-          (file-name-as-directory
-           (expand-file-name ".emacs.d/snippets" rasen/dotfiles-directory)))
+  (setq rasen/snippets-directory
+        (file-name-as-directory
+         (expand-file-name ".emacs.d/snippets" rasen/dotfiles-directory)))
 
-    (make-directory rasen/snippets-directory t)
-    (yas-load-directory rasen/snippets-directory)
+  (make-directory rasen/snippets-directory t)
+  (yas-load-directory rasen/snippets-directory)
 
-    (add-hook 'term-mode-hook (lambda ()
-                                (setq-local yas-dont-activate-functions t))))
+  ;; yasnippet's wrapping doesn't work well with evil. When you
+  ;; trigger a snippet from a visual state, it switches into normal
+  ;; state, but cursor moves in such a way, so that you leave the
+  ;; snippet, so you're not able to supply other fields ($1, $2,
+  ;; etc.).
+  ;;
+  ;; This function installed as `yas-before-expand-snippet-hook'
+  ;; switches into insert state before expanding the snippet, so you
+  ;; can supply all the fields.
+  ;;
+  ;; Note that it is not always desirable because some snippets don't
+  ;; have extra fields, so switching to insert state has not sense.
+  ;; In order for the switch to kick in, set `rasen/evil-state'
+  ;; expand-env to "insert" like this:
+  ;;
+  ;; # expand-env: ((rasen/evil-state "insert"))
+  (defun rasen/yas-before-expand-snippet ()
+    (let ((state (car (alist-get 'rasen/evil-state (yas--template-expand-env snippet)))))
+      (when (and (equal state "insert") (evil-visual-state-p))
+        (let ((beg evil-visual-beginning)
+              (end evil-visual-end))
+          (evil-insert-state nil)
+          ;; restore mark and point
+          (if (eq (char-after beg) ?\s)
+              ;; skip whitespaces, if present
+              (progn
+                (goto-char beg)
+                (forward-whitespace 1)
+                (set-mark (point)))
+            (set-mark beg))
+          (goto-char end)
+          (when (bolp)
+            (backward-char))))))
+
+  (add-hook 'yas-before-expand-snippet-hook #'rasen/yas-before-expand-snippet)
+
+  (add-hook 'term-mode-hook (lambda ()
+                              (setq-local yas-dont-activate-functions t))))
 #+end_src
 ** company
 Company mode provides autocomplete features.
