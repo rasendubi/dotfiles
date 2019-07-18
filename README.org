@@ -465,6 +465,36 @@ Enable firewall. This blocks all ports (for ingress traffic) and pings.
   virtualisation.docker.enable = true;
 }
 #+end_src
+** Backup
+I use borg for backups.
+
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [ pkgs.borgbackup ];
+}
+#+end_src
+
+Also, add a backup disk to fstab (it's a removable hard-drive).
+#+name: nixos-section
+#+begin_src nix
+{
+  fileSystems."/run/media/ext-data" = {
+    device = "/dev/disk/by-uuid/63972645-dbc8-4543-b854-91038b2da6cb";
+    fsType = "ext4";
+    options = [ "noauto" ];
+  };
+  system.activationScripts = {
+    ensure-ext-data = {
+      text = ''
+        mkdir -p /run/media/ext-data
+      '';
+      deps = [];
+    };
+  };
+}
+#+end_src
+
 * Mail setup
 ** Mbsync
 I use mbsync to sync my accounts and make them available offline.
@@ -1042,7 +1072,6 @@ Don't require additional setup.
 
     pkgs.hledger
     pkgs.drive
-    pkgs.borgbackup
   ];
 }
 #+end_src
