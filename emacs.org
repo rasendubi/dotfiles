@@ -656,7 +656,7 @@ Edit grep buffers and apply changes to the files.
 (use-package wgrep)
 #+end_src
 ** whitespace
-A good mode to highlight whitespace issues (leading/trainiling spaces/newlines) and too long lines.
+A good mode to highlight whitespace issues (leading/trailing spaces/newlines) and too long lines.
 #+begin_src emacs-lisp
 (use-package whitespace
   :diminish (global-whitespace-mode
@@ -934,22 +934,23 @@ Show commit signatures in log.
   ;;
   ;; # expand-env: ((rasen/evil-state "insert"))
   (defun rasen/yas-before-expand-snippet ()
-    (let ((state (car (alist-get 'rasen/evil-state (yas--template-expand-env snippet)))))
-      (when (and (equal state "insert") (evil-visual-state-p))
-        (let ((beg evil-visual-beginning)
-              (end evil-visual-end))
-          (evil-insert-state nil)
-          ;; restore mark and point
-          (if (eq (char-after beg) ?\s)
-              ;; skip whitespaces, if present
-              (progn
-                (goto-char beg)
-                (forward-whitespace 1)
-                (set-mark (point)))
-            (set-mark beg))
-          (goto-char end)
-          (when (bolp)
-            (backward-char))))))
+    (when (not (string-or-null-p snippet))
+      (let ((state (car (alist-get 'rasen/evil-state (yas--template-expand-env snippet)))))
+        (when (and (equal state "insert") (evil-visual-state-p))
+          (let ((beg evil-visual-beginning)
+                (end evil-visual-end))
+            (evil-insert-state nil)
+            ;; restore mark and point
+            (if (eq (char-after beg) ?\s)
+                ;; skip whitespaces, if present
+                (progn
+                  (goto-char beg)
+                  (forward-whitespace 1)
+                  (set-mark (point)))
+              (set-mark beg))
+            (goto-char end)
+            (when (bolp)
+              (backward-char)))))))
 
   (add-hook 'yas-before-expand-snippet-hook #'rasen/yas-before-expand-snippet)
 
