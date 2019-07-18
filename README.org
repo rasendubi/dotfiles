@@ -1138,6 +1138,7 @@ Start emacs as a daemon:
         rjsx-mode
         typescript-mode
         tide
+        vue-mode
         php-mode
         web-mode
         groovy-mode

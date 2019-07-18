@@ -2361,6 +2361,11 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 (use-package flycheck-jest
   :after flycheck)
 #+end_src
+** Vue
+#+begin_src emacs-lisp
+(use-package vue-mode
+  :mode "\\.vue$")
+#+end_src
 ** Purescript
 #+begin_src emacs-lisp
 (use-package purescript-mode
