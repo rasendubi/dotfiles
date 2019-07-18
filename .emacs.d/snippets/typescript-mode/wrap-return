@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: wrap-return
+# binding: C-c w r
+# --
+{
+  return `yas-selected-text`$0;
+}
