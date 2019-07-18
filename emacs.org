@@ -1375,49 +1375,64 @@ I use an extension that adds page url to the title (used for page tracking). Str
 My capture templates.
 #+name: org-config
 #+begin_src emacs-lisp
-  (setq org-capture-templates
-        `(("u"
-           "Task: Read this URL"
-           entry
-           (file+headline "refile.org" "Articles To Read")
-           ,(concat "* TODO %(rasen/strip-url-from-title \"%:description\")\n:PROPERTIES:\n:CREATED:  %U\n:END:\n%:link\n")
-           :immediate-finish t)
+(setq org-capture-templates
+      `(("u"
+         "Task: Read this URL"
+         entry
+         (file+headline "refile.org" "Articles To Read")
+         ,(concat "* TODO %(rasen/strip-url-from-title \"%:description\")\n:PROPERTIES:\n:CREATED:  %U\n:END:\n%:link\n")
+         :immediate-finish t)
 
-          ("w"
-           "Capture web snippet"
-           entry
-           (file+headline "refile.org" "Inbox")
-           ,(concat "* Fact: '%(rasen/strip-url-from-title \"%:description\")'       :"
-                    (format "%s" org-drill-question-tag)
-                    ":\n:PROPERTIES:\n:CREATED:  %U\n:SOURCE_URL: %:link\n:END:\n%i\n%?\n")
-           :immediate-finish t)
+        ("d"
+         "Capture web drill snippet (old)"
+         entry
+         (file+headline "refile.org" "Inbox")
+         ,(concat "* Fact: '%(rasen/strip-url-from-title \"%:description\")'       :"
+                  (format "%s" org-drill-question-tag)
+                  ":\n:PROPERTIES:\n:CREATED:  %U\n:SOURCE_URL: %:link\n:END:\n#+begin_quote\n%i\n#+end_quote\n%?\n")
+         :immediate-finish t)
 
-          ("j" "Journal entry" plain
-           (file+datetree+prompt "~/org/journal.org")
-           ,(concat
-             "TIL:\n- %?\n\n"
-             ;; %U does not here work as timestamp is hijacked by
-             ;; file+datetime+prompt
-             "%(format-time-string (org-time-stamp-format t t))"
-             "\n"))
+        ("w"
+         "Capture web snippet"
+         entry
+         (file+headline "refile.org" "Inbox")
+         ,(concat "* %(rasen/strip-url-from-title \"%:description\")\n"
+                  ":PROPERTIES:\n"
+                  ":CREATED:  %U\n"
+                  ":SOURCE_URL: %:link\n"
+                  ":END:\n"
+                  "#+begin_quote\n"
+                  "%i\n"
+                  "#+end_quote\n"
+                  "%?\n")
+         :immediate-finish t)
 
-          ("f"
-           "Capture normal snippet"
-           entry
-           (file+headline "my-facts.org" "Inbox")
-           ,(concat "* Fact: '%f'       :"
-                    (format "%s" org-drill-question-tag)
-                    ":\n:PROPERTIES:\n:CREATED:  %U\n:SOURCE_URL: [[%l][%f]]\n:END:\n%i\n%?\n")
-           :immediate-finish t)
+        ("j" "Journal entry" plain
+         (file+datetree+prompt "~/org/journal.org")
+         ,(concat
+           "TIL:\n- %?\n\n"
+           ;; %U does not here work as timestamp is hijacked by
+           ;; file+datetime+prompt
+           "%(format-time-string (org-time-stamp-format t t))"
+           "\n"))
 
-          ("t" "todo" entry (file "~/org/refile.org")
-           "* TODO %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t)
+        ("f"
+         "Capture normal snippet"
+         entry
+         (file+headline "my-facts.org" "Inbox")
+         ,(concat "* Fact: '%f'       :"
+                  (format "%s" org-drill-question-tag)
+                  ":\n:PROPERTIES:\n:CREATED:  %U\n:SOURCE_URL: [[%l][%f]]\n:END:\n%i\n%?\n")
+         :immediate-finish t)
 
-          ("m" "meeting" entry (file "~/org/refile.org")
-           "* %?   :Meeting:\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t)
+        ("t" "todo" entry (file "~/org/refile.org")
+         "* TODO %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t)
 
-          ("n" "note" entry (file "~/org/refile.org")
-           "* %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n")))
+        ("m" "meeting" entry (file "~/org/refile.org")
+         "* %?   :Meeting:\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t)
+
+        ("n" "note" entry (file "~/org/refile.org")
+         "* %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n")))
 #+end_src
 
 Enable org-protocol.
