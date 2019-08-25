@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: drawer
+# key: :
+# binding: C-c w d
+# expand-env: ((rasen/evil-state "insert"))
+# --
+:${1:DRAWER}:
+`yas-selected-text`$0
+:END:

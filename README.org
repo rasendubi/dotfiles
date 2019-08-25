@@ -126,7 +126,7 @@ This is my small Dell XPS 13.
 }
 #+end_src
 
-Same LVM on LUKS setup as =ashmalko= uses.
+LVM on LUKS setup for disk encryption.
 #+name: machine-omicron
 #+begin_src nix
 {
@@ -212,25 +212,6 @@ To make package results testing better, I build them in isolated environment (fo
 #+end_src
 
 Note that this is ="relaxed"= instead of =true=, because I have some packages that require a network to build and thus are =__noChroot=.
-
-*** heroku
-#+name: nixpkgs-local-packages
-#+begin_src nix
-heroku = (import ./heroku { inherit pkgs; }).heroku-cli;
-#+end_src
-
-To generate all Nix files use the following steps.
-
-This goes to =nixpkgs-local/heroku/node-packages.json= file:
-#+begin_src json :mkdirp yes :tangle nixpkgs-local/heroku/node-packages.json
-["heroku-cli"]
-#+end_src
-
-To generate the rest of Nix files, execute the following command from =nixpkgs-local/heroku= directory (note that you need a fresh nixpkgs-unstable):
-#+begin_src sh :dir nixpkgs-local/heroku :results output
-nix-shell -p nodePackages.node2nix --run 'node2nix -8 -i node-packages.json 2>&1'
-#+end_src
-
 ** Bluetooth
 I have a bluetooth headset, so this enables bluetooth audio in NixOS.
 
@@ -312,20 +293,23 @@ All my computers are members of the VPN:
 #+begin_src nix
 {
   services.openvpn.servers = {
-    kaa.config = ''
-      client
-      dev tap
-      port 22
-      proto tcp
-      tls-client
-      persist-key
-      persist-tun
-      ns-cert-type server
-      remote vpn.kaa.org.ua
-      ca /root/.vpn/ca.crt
-      key /root/.vpn/alexey.shmalko.key
-      cert /root/.vpn/alexey.shmalko.crt
-    '';
+    kaa = {
+      config = ''
+        client
+        dev tap
+        port 22
+        proto tcp
+        tls-client
+        persist-key
+        persist-tun
+        ns-cert-type server
+        remote vpn.kaa.org.ua
+        ca /root/.vpn/ca.crt
+        key /root/.vpn/alexey.shmalko.key
+        cert /root/.vpn/alexey.shmalko.crt
+      '';
+      autoStart = false;
+    };
   };
 }
 #+end_src
@@ -474,27 +458,6 @@ I use borg for backups.
   environment.systemPackages = [ pkgs.borgbackup ];
 }
 #+end_src
-
-Also, add a backup disk to fstab (it's a removable hard-drive).
-#+name: nixos-section
-#+begin_src nix
-{
-  fileSystems."/run/media/ext-data" = {
-    device = "/dev/disk/by-uuid/63972645-dbc8-4543-b854-91038b2da6cb";
-    fsType = "ext4";
-    options = [ "noauto" ];
-  };
-  system.activationScripts = {
-    ensure-ext-data = {
-      text = ''
-        mkdir -p /run/media/ext-data
-      '';
-      deps = [];
-    };
-  };
-}
-#+end_src
-
 * Mail setup
 ** Mbsync
 I use mbsync to sync my accounts and make them available offline.
@@ -858,13 +821,6 @@ Xcursor.size: 64
     ];
     consoleFont = "ter-132n";
   };
-}
-#+end_src
-
-#+name: machine-omicron
-#+begin_src nix
-{
-  boot.loader.grub.gfxmodeEfi = "1024x768";
 }
 #+end_src
 
@@ -1309,25 +1265,6 @@ function fish_user_key_bindings
     bind -s '.' repeat-jump
 end
 #+end_src
-*** Show QR codes
-The next section goes to =.config/fish/functions/showqr.fish=. That's a function I use for displaying arbitrary text (mainly passwords stored with =pass=) as a QR code without any temporary files. (=tr= is used to drop trailing newline.)
-
-#+begin_src fish :tangle .config/fish/functions/showqr.fish
-function showqr
-  tr -d '\n' | qrencode -t png -o - | feh -
-end
-#+end_src
-
-It uses =qrencode= and =feh= packages:
-#+name: nixos-section
-#+begin_src nix
-{
-  environment.systemPackages = [
-    pkgs.qrencode
-    pkgs.feh
-  ];
-}
-#+end_src
 ** Zsh
 Zsh is my secondary shell. I use it when I need sh compatibility. (fish is not sh compliant.)
 #+name: nixos-section
@@ -1604,31 +1541,6 @@ bind r source-file ~/.tmux.conf \; display-message "Config reloaded..."
 
 set-window-option -g automatic-rename
 #+end_src
-** Embedded
-The following packages provide a termiinal emulator, Open On-Chip Debugger, telnet, and logic analyzer.
-#+name: nixos-section
-#+begin_src nix
-{
-  environment.systemPackages = [
-    pkgs.minicom
-    pkgs.openocd
-    pkgs.telnet
-    pkgs.saleae-logic
-  ];
-}
-#+end_src
-
-To allow user use openocd without sudo, we should add him to =plugdev= group and install openocd udev rules:
-
-#+name: nixos-section
-#+begin_src nix
-{
-  users.extraGroups.plugdev = { };
-  users.extraUsers.rasen.extraGroups = [ "plugdev" "dialout" ];
-
-  services.udev.packages = [ pkgs.openocd pkgs.android-udev-rules ];
-}
-#+end_src
 ** Other terminal goodies
 #+name: nixos-section
 #+begin_src nix
@@ -1672,47 +1584,6 @@ This install a number of default man pages for the linux/posix system.
     pkgs.stdmanpages
   ];
 }
-#+end_src
-* Games
-** Steam
-We need the following package:
-# #+name: nixos-section
-#+begin_src nix
-{
-  environment.systemPackages = [
-    pkgs.steam
-  ];
-}
-#+end_src
-
-It's also required to enable 32-bit support for opengl and pulseaudio:
-# #+name: nixos-section
-#+begin_src nix
-{
-  hardware.opengl.driSupport32Bit = true;
-  hardware.pulseaudio.support32Bit = true;
-}
-#+end_src
-** Nethack
-I play nethack rarely, but still nice to have my setting in sync.
-#+name: nixos-section
-#+begin_src nix
-{
-  environment.systemPackages = [
-    pkgs.nethack
-  ];
-}
-#+end_src
-
-The following sets my default name, selects a dog, and disables auto-pickup; the last line makes interface a bit friendlier.
-
-#+begin_src fundamental :tangle .nethackrc :padline no
-OPTIONS=name:rasen
-OPTIONS=role:monk, gender:male
-OPTIONS=statushilites
-OPTIONS=pettype:dog, dogname:Fido
-OPTIONS=!autopickup
-OPTIONS=lit_corridor, DECgraphics, showscore, showexp, time, color, hilite_pet
 #+end_src
 * Meta
 ** Setup
@@ -1766,5 +1637,4 @@ if [ ! -e "$DEST/.config/fish/functions/fisher.fish" ]; then
     esac
 fi
 #+end_src
-
 * Private                                                             :crypt-:

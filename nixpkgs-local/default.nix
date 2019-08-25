@@ -8,7 +8,7 @@ let
   };
 
   self = rec {
-    heroku = (import ./heroku { inherit pkgs; }).heroku-cli;
+    
   };
 
 in self

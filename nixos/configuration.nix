@@ -60,9 +60,6 @@ let
         };
       }
       {
-        boot.loader.grub.gfxmodeEfi = "1024x768";
-      }
-      {
         services.xserver.dpi = 276;
       }
     ];
@@ -152,20 +149,23 @@ in
     }
     {
       services.openvpn.servers = {
-        kaa.config = ''
-          client
-          dev tap
-          port 22
-          proto tcp
-          tls-client
-          persist-key
-          persist-tun
-          ns-cert-type server
-          remote vpn.kaa.org.ua
-          ca /root/.vpn/ca.crt
-          key /root/.vpn/alexey.shmalko.key
-          cert /root/.vpn/alexey.shmalko.crt
-        '';
+        kaa = {
+          config = ''
+            client
+            dev tap
+            port 22
+            proto tcp
+            tls-client
+            persist-key
+            persist-tun
+            ns-cert-type server
+            remote vpn.kaa.org.ua
+            ca /root/.vpn/ca.crt
+            key /root/.vpn/alexey.shmalko.key
+            cert /root/.vpn/alexey.shmalko.crt
+          '';
+          autoStart = false;
+        };
       };
     }
     {
@@ -253,6 +253,9 @@ in
     }
     {
       virtualisation.docker.enable = true;
+    }
+    {
+      environment.systemPackages = [ pkgs.borgbackup ];
     }
     {
       environment.systemPackages = [
@@ -493,7 +496,6 @@ in
     
         pkgs.hledger
         pkgs.drive
-        pkgs.borgbackup
       ];
     }
     {
@@ -625,12 +627,6 @@ in
       users.defaultUserShell = pkgs.fish;
     }
     {
-      environment.systemPackages = [
-        pkgs.qrencode
-        pkgs.feh
-      ];
-    }
-    {
       programs.zsh.enable = true;
     }
     {
@@ -643,20 +639,6 @@ in
       environment.systemPackages = [
         pkgs.tmux
       ];
-    }
-    {
-      environment.systemPackages = [
-        pkgs.minicom
-        pkgs.openocd
-        pkgs.telnet
-        pkgs.saleae-logic
-      ];
-    }
-    {
-      users.extraGroups.plugdev = { };
-      users.extraUsers.rasen.extraGroups = [ "plugdev" "dialout" ];
-    
-      services.udev.packages = [ pkgs.openocd pkgs.android-udev-rules ];
     }
     {
       environment.systemPackages = [
@@ -684,11 +666,6 @@ in
         pkgs.shellcheck
     
         pkgs.irssi
-      ];
-    }
-    {
-      environment.systemPackages = [
-        pkgs.nethack
       ];
     }
   ] ++ machine-config;
