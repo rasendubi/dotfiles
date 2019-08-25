@@ -522,6 +522,10 @@ in
             evil-magit
             evil-org
     
+            lispyville
+            aggressive-indent
+            paren-face
+    
             smex
             ivy
             counsel
@@ -542,6 +546,7 @@ in
             wgrep
             org-pomodoro
             org-cliplink
+            org-download
             nix-mode
             haskell-mode
             rust-mode
@@ -551,6 +556,7 @@ in
             rjsx-mode
             typescript-mode
             tide
+            vue-mode
             php-mode
             web-mode
             groovy-mode
@@ -564,6 +570,8 @@ in
             jinja2-mode
             gitconfig-mode
             terraform-mode
+            clojure-mode
+            cider
             graphviz-dot-mode
             fish-mode
             visual-fill-column
@@ -603,9 +611,11 @@ in
         pkgs.ripgrep
         (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science ru uk]))
     
-        pkgs.rustc
-        pkgs.cargo
-        pkgs.rustracer
+        pkgs.rustup
+        # pkgs.rustracer
+    
+        pkgs.clojure
+        pkgs.leiningen
       ];
       environment.variables.RUST_SRC_PATH = "${pkgs.rustPlatform.rustcSrc}";
     }
@@ -667,6 +677,8 @@ in
     
         pkgs.irssi
       ];
+      environment.variables.NPM_CONFIG_PREFIX = "$HOME/.npm-global";
+      environment.variables.PATH = "$HOME/.npm-global/bin:$PATH";
     }
   ] ++ machine-config;
 }

@@ -1065,6 +1065,10 @@ Start emacs as a daemon:
         evil-magit
         evil-org
 
+        lispyville
+        aggressive-indent
+        paren-face
+
         smex
         ivy
         counsel
@@ -1085,6 +1089,7 @@ Start emacs as a daemon:
         wgrep
         org-pomodoro
         org-cliplink
+        org-download
         nix-mode
         haskell-mode
         rust-mode
@@ -1108,6 +1113,8 @@ Start emacs as a daemon:
         jinja2-mode
         gitconfig-mode
         terraform-mode
+        clojure-mode
+        cider
         graphviz-dot-mode
         fish-mode
         visual-fill-column
@@ -1147,9 +1154,11 @@ Start emacs as a daemon:
     pkgs.ripgrep
     (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science ru uk]))
 
-    pkgs.rustc
-    pkgs.cargo
-    pkgs.rustracer
+    pkgs.rustup
+    # pkgs.rustracer
+
+    pkgs.clojure
+    pkgs.leiningen
   ];
   environment.variables.RUST_SRC_PATH = "${pkgs.rustPlatform.rustcSrc}";
 }
@@ -1571,6 +1580,8 @@ set-window-option -g automatic-rename
 
     pkgs.irssi
   ];
+  environment.variables.NPM_CONFIG_PREFIX = "$HOME/.npm-global";
+  environment.variables.PATH = "$HOME/.npm-global/bin:$PATH";
 }
 #+end_src
 ** Man pages

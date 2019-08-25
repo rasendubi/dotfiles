@@ -490,6 +490,27 @@ And evil commands to go to navigate errors.
 (mmap "M-,"     'previous-error)
 (mmap "M-."     'next-error)
 #+end_src
+** lispyville
+#+begin_src emacs-lisp
+(use-package lispyville
+  :hook
+  (clojure-mode . lispyville-mode)
+  :config
+  (lispyville-set-key-theme
+   '(operators
+     c-w
+     slurp/barf-cp
+     commentary)))
+#+end_src
+** aggressive indent
+#+begin_src emacs-lisp
+(use-package aggressive-indent
+  :commands (aggressive-indent-mode aggressive-indent-global-mode)
+  :hook
+  (clojure-mode . aggressive-indent-mode)
+  (clojurescript-mode . aggressive-indent-mode)
+  (emacs-lisp-mode . aggressive-indent-mode))
+#+end_src
 * General
 ** Common options
 Use single-key =y/n= instead of a more verbose =yes/no=.
@@ -1122,6 +1143,13 @@ I use [[https://www.emacswiki.org/emacs/Edit_with_Emacs][Edit with Emacs]] firef
 (use-package company-lsp
   :commands company-lsp)
 #+end_src
+** paren-face
+Dim parens.
+#+begin_src emacs-lisp
+(use-package paren-face
+  :config
+  (global-paren-face-mode))
+#+end_src
 * Org-mode
 ** General
 #+begin_src emacs-lisp
@@ -1138,6 +1166,8 @@ I use [[https://www.emacswiki.org/emacs/Edit_with_Emacs][Edit with Emacs]] firef
   :init
   <<org-init>>
   :config
+  (general-def 'insert 'org-mode-map
+    "C-c ," #'org-time-stamp-inactive)
   <<org-config>>
   )
 #+end_src
@@ -1466,6 +1496,20 @@ Instanly go into insert mode on capture.
   :keymaps 'org-capture-mode-map
   "C-c C-c" (rasen/hard-way "'")
   "C-c C-w" (rasen/hard-way "SPC w"))
+#+end_src
+** Capturing images
+#+begin_src emacs-lisp
+(use-package org-download
+  :config
+  (setq org-download-method 'directory))
+#+end_src
+** cliplink
+#+begin_src emacs-lisp
+(use-package org-cliplink
+  :config
+  ;; I don't like titles clipping at 80. I'd rather get the full title
+  ;; and edit it manually.
+  (setq org-cliplink-max-length 200))
 #+end_src
 ** Refile
 #+name: org-config
@@ -2332,9 +2376,6 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
   :hook
   (typescript-mode . rasen/setup-tide-mode)
   :init
-  ;; K is used for avy
-  (general-def 'normal 'tide-mode-map
-    "K" nil)
   (defun rasen/setup-tide-mode ()
     (interactive)
     (tide-setup)
@@ -2342,7 +2383,11 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
     (setq flycheck-check-syntax-automatically '(save mode-enabled))
     (eldoc-mode +1)
     (tide-hl-identifier-mode +1)
-    (company-mode +1)))
+    (company-mode +1))
+  :config
+  ;; K is used for avy
+  (general-def 'normal 'tide-mode-map
+    "K" nil))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2379,6 +2424,14 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
   :commands (psc-ide-mode)
   :init
   (add-hook 'purescript-mode-hook 'psc-ide-mode))
+#+end_src
+** Clojure(Script)
+#+begin_src emacs-lisp
+(use-package clojure-mode)
+
+(use-package cider
+  :config
+  (evil-set-initial-state 'cider-stacktrace-mode 'emacs))
 #+end_src
 ** PHP
 #+begin_src emacs-lisp
@@ -2896,7 +2949,8 @@ Center all text in the buffer in some modes.
   (org-mode . rasen/activate-visual-fill-column)
   :init
   (defun rasen/activate-visual-fill-column ()
-    (setq-local fill-column 81)
+    (interactive)
+    (setq-local fill-column 111)
     (visual-line-mode t)
     (visual-fill-column-mode t))
   :config
