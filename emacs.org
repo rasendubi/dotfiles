@@ -474,6 +474,11 @@ evil-collection is a collection of evil bindings for different modes.
   :config
   (global-evil-surround-mode t))
 #+end_src
+** calc
+#+name: evil-config
+#+begin_src emacs-lisp
+(mmap "g =" 'quick-calc)
+(mmap "g +" 'calc)
 #+end_src
 ** Evilify compile mode
 #+begin_src emacs-lisp

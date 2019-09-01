@@ -236,6 +236,7 @@ in
         enable = true;
         user = "rasen";
         dataDir = "/home/rasen/.config/syncthing";
+        configDir = "/home/rasen/.config/syncthing";
         openDefaultPorts = true;
       };
     }
@@ -328,9 +329,8 @@ in
     {
       services.redshift = {
         enable = true;
-        latitude = "50.4500";
-        longitude = "30.5233";
       };
+      location.provider = "geoclue2";
     }
     {
       hardware.acpilight.enable = true;
@@ -395,16 +395,18 @@ in
         enableSSHSupport = true;
       };
     
-      systemd.user.sockets.gpg-agent-ssh = {
-        wantedBy = [ "sockets.target" ];
-        listenStreams = [ "%t/gnupg/S.gpg-agent.ssh" ];
-        socketConfig = {
-          FileDescriptorName = "ssh";
-          Service = "gpg-agent.service";
-          SocketMode = "0600";
-          DirectoryMode = "0700";
-        };
-      };
+      ## is it no longer needed?
+      #
+      # systemd.user.sockets.gpg-agent-ssh = {
+      #   wantedBy = [ "sockets.target" ];
+      #   listenStreams = [ "%t/gnupg/S.gpg-agent.ssh" ];
+      #   socketConfig = {
+      #     FileDescriptorName = "ssh";
+      #     Service = "gpg-agent.service";
+      #     SocketMode = "0600";
+      #     DirectoryMode = "0700";
+      #   };
+      # };
     
       services.pcscd.enable = true;
     }
