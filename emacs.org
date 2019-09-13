@@ -776,26 +776,26 @@ It's enable by default. Just diminish it.
 https://github.com/bbatsov/projectile/pull/1269
 
 #+begin_src emacs-lisp
-  (el-patch-feature projectile)
-  (with-eval-after-load 'projectile
-    (el-patch-defun projectile-default-generic-command (project-type command-type)
-      "Generic retrieval of COMMAND-TYPEs default cmd-value for PROJECT-TYPE.
+(el-patch-feature projectile)
+(with-eval-after-load 'projectile
+  (el-patch-defun projectile-default-generic-command (project-type command-type)
+    "Generic retrieval of COMMAND-TYPEs default cmd-value for PROJECT-TYPE.
 
-  If found, checks if value is symbol or string.  In case of symbol
-  resolves to function `funcall's.  Return value of function MUST
-  be string to be executed as command."
-      (let ((command (plist-get (alist-get project-type projectile-project-types) command-type)))
-        (cond
-         ((stringp command) command)
-         ((functionp command)
-          (if (fboundp command)
-              (funcall (symbol-function command))))
-         ((and (not command) (eq command-type 'compilation-dir))
-          ;; `compilation-dir' is special in that it is used as a fallback for the root
-          nil)
-         (el-patch-remove
-           (t
-            (user-error "The value for: %s in project-type: %s was neither a function nor a string." command-type project-type)))))))
+If found, checks if value is symbol or string.  In case of symbol
+resolves to function `funcall's.  Return value of function MUST
+be string to be executed as command."
+    (let ((command (plist-get (alist-get project-type projectile-project-types) command-type)))
+      (cond
+       ((stringp command) command)
+       ((functionp command)
+        (if (fboundp command)
+            (funcall (symbol-function command))))
+       ((and (not command) (eq command-type 'compilation-dir))
+        ;; `compilation-dir' is special in that it is used as a fallback for the root
+        nil)
+       (el-patch-remove
+         (t
+          (user-error "The value for: %s in project-type: %s was neither a function nor a string." command-type project-type)))))))
 #+end_src
 ** magit
 #+begin_src emacs-lisp
@@ -1293,7 +1293,7 @@ the current topic."
                         (funcall test))
              (hide-subtree))
            (push (point) drill-sections)))
-       (el-patch-swap "" t) 'tree))
+       (el-patch-swap nil t) 'tree))
     (reverse drill-sections)))
 #+end_src
 ** Todo
@@ -1616,7 +1616,7 @@ prefix argument (`C-u C-u C-u C-c C-w')."
       (setq last-command nil)
       (when regionp
         (goto-char region-start)
-        (or (bolp) (goto-char (point-at-bol)))
+        (beginning-of-line)
         (setq region-start (point))
         (unless (or (org-kill-is-subtree-p
                      (buffer-substring region-start region-end))
@@ -1705,10 +1705,18 @@ prefix argument (`C-u C-u C-u C-c C-w')."
                    (or (outline-next-heading) (goto-char (point-max)))))
                (unless (bolp) (newline))
                (org-paste-subtree level nil nil t)
-               (when org-log-refile
-                 (org-add-log-setup 'refile nil nil org-log-refile)
-                 (unless (eq org-log-refile 'note)
-                   (save-excursion (org-add-log-note))))
+               (cond
+                ((not org-log-refile))
+                (regionp
+                 (org-map-region
+                  (lambda nil
+                    (org-add-log-setup 'refile nil nil 'time))
+                  (point)
+                  (+
+                   (point)
+                   (- region-end region-start))))
+                (t
+                 (org-add-log-setup 'refile nil nil org-log-refile)))
                (and org-auto-align-tags
                     (let ((org-loop-over-headlines-in-active-region nil))
                       (org-align-tags)))
@@ -1738,7 +1746,9 @@ prefix argument (`C-u C-u C-u C-c C-w')."
             (when (featurep 'org-inlinetask)
               (org-inlinetask-remove-END-maybe))
             (setq org-markers-to-move nil)
-            (message (concat actionmsg " to \"%s\" in file %s: done") (car it) file)))))))
+            (message "%s to \"%s\" in file %s: done" actionmsg
+                     (car it)
+                     file)))))))
 #+end_src
 ** Archive
 #+name: org-config
@@ -2309,55 +2319,55 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 #+end_src
 ** JavaScript
 #+begin_src emacs-lisp
-  (use-package js2-mode
-    :mode "\\.js$"
-    :init
-    (add-hook 'js2-mode-hook 'color-identifiers-mode)
-    :config
+(use-package js2-mode
+  :mode "\\.js$"
+  :init
+  (add-hook 'js2-mode-hook 'color-identifiers-mode)
+  :config
 
-    (defun rasen/use-eslint-from-node-modules ()
-      (let* ((root (locate-dominating-file
-                    (or (buffer-file-name) default-directory)
-                    "node_modules"))
-             (eslint (and root
-                          (expand-file-name "node_modules/eslint/bin/eslint.js"
-                                            root))))
-        (when (and eslint (file-executable-p eslint))
-          (setq-local flycheck-javascript-eslint-executable eslint))))
-    (add-hook 'flycheck-mode-hook #'rasen/use-eslint-from-node-modules)
+  (defun rasen/use-eslint-from-node-modules ()
+    (let* ((root (locate-dominating-file
+                  (or (buffer-file-name) default-directory)
+                  "node_modules"))
+           (eslint (and root
+                        (expand-file-name "node_modules/eslint/bin/eslint.js"
+                                          root))))
+      (when (and eslint (file-executable-p eslint))
+        (setq-local flycheck-javascript-eslint-executable eslint))))
+  (add-hook 'flycheck-mode-hook #'rasen/use-eslint-from-node-modules)
 
-    (add-hook 'js2-mode-hook
-              (lambda ()
-                (flycheck-select-checker 'javascript-eslint)))
+  (add-hook 'js2-mode-hook
+            (lambda ()
+              (flycheck-select-checker 'javascript-eslint)))
 
-    (setq-default flycheck-disabled-checkers
-                  (append flycheck-disabled-checkers
-                          '(javascript-jshint)))
-    (setq-default flycheck-enabled-checkers
-                  (append flycheck-enabled-checkers
-                          '(javascript-eslint)))
+  (setq-default flycheck-disabled-checkers
+                (append flycheck-disabled-checkers
+                        '(javascript-jshint)))
+  (setq-default flycheck-enabled-checkers
+                (append flycheck-enabled-checkers
+                        '(javascript-eslint)))
 
-    (flycheck-add-mode 'javascript-eslint 'js2-mode)
+  (flycheck-add-mode 'javascript-eslint 'js2-mode)
 
-    (setq-default js2-strict-trailing-comma-warning nil))
+  (setq-default js2-strict-trailing-comma-warning nil))
 
-  (el-patch-feature flycheck)
-  (el-patch-defun flycheck-eslint-config-exists-p ()
-    "Whether there is a valid eslint config for the current buffer."
-    (let* ((executable (flycheck-find-checker-executable 'javascript-eslint))
-           (el-patch-add
-             (command (funcall flycheck-command-wrapper-function
-                               (cons executable '("--print-config" ".")))))
-           (exitcode (and executable
-                          (el-patch-swap
-                            (call-process executable nil nil nil "--print-config" ".")
-                            (el-patch-literal command (apply 'call-process (car command) nil nil nil (cdr command)))))))
-           (eq exitcode 0)))
+(el-patch-feature flycheck)
+(el-patch-defun flycheck-eslint-config-exists-p ()
+  "Whether there is a valid eslint config for the current buffer."
+  (let* ((executable (flycheck-find-checker-executable 'javascript-eslint))
+         (el-patch-add
+           (command (funcall flycheck-command-wrapper-function
+                             (cons executable '("--print-config" (or buffer-file-name "index.js"))))))
+         (exitcode (and executable
+                        (el-patch-swap
+                          (call-process executable nil nil nil "--print-config" (or buffer-file-name "index.js"))
+                          (el-patch-literal command (apply 'call-process (car command) nil nil nil (cdr command)))))))
+    (eq exitcode 0)))
 
-  (use-package rjsx-mode
-    :mode "\\.js$"
-    :config
-    (setq-default js-indent-level 2))
+(use-package rjsx-mode
+  :mode "\\.js$"
+  :config
+  (setq-default js-indent-level 2))
 #+end_src
 ** Typescript
 #+begin_src emacs-lisp
