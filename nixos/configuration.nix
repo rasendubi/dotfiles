@@ -72,7 +72,7 @@ in
       nixpkgs.config.allowUnfree = true;
 
       # The NixOS release to be compatible with for stateful data such as databases.
-      system.stateVersion = "15.09";
+      system.stateVersion = "19.09";
     }
 
     {
@@ -613,13 +613,13 @@ in
         pkgs.ripgrep
         (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science ru uk]))
     
-        pkgs.rustup
+        # pkgs.rustup
         # pkgs.rustracer
     
-        pkgs.clojure
-        pkgs.leiningen
+        # pkgs.clojure
+        # pkgs.leiningen
       ];
-      environment.variables.RUST_SRC_PATH = "${pkgs.rustPlatform.rustcSrc}";
+      # environment.variables.RUST_SRC_PATH = "${pkgs.rustPlatform.rustcSrc}";
     }
     {
       environment.systemPackages = [
