@@ -148,59 +148,9 @@ in
       };
     }
     {
-      services.openvpn.servers = {
-        kaa = {
-          config = ''
-            client
-            dev tap
-            port 22
-            proto tcp
-            tls-client
-            persist-key
-            persist-tun
-            ns-cert-type server
-            remote vpn.kaa.org.ua
-            ca /root/.vpn/ca.crt
-            key /root/.vpn/alexey.shmalko.key
-            cert /root/.vpn/alexey.shmalko.crt
-          '';
-          autoStart = false;
-        };
-      };
-    }
-    {
-      services.avahi = {
-        enable = true;
-        browseDomains = [ ];
-        interfaces = [ "tap0" ];
-        nssmdns = true;
-        publish = {
-          enable = true;
-          addresses = true;
-        };
-      };
-    }
-    {
       services.openssh = {
         enable = true;
         passwordAuthentication = false;
-      };
-    }
-    {
-      services.openssh = {
-        # Doing this won't open firewall for everybody.
-        ports = [];
-        listenAddresses = [
-          { addr = "0.0.0.0"; port = 22; }
-        ];
-      };
-    
-      # Open firewall for tap0 only
-      networking.firewall = {
-        extraCommands = ''
-          ip46tables -D INPUT -i tap0 -p tcp -m tcp --dport 22 -j ACCEPT 2> /dev/null || true
-          ip46tables -A INPUT -i tap0 -p tcp -m tcp --dport 22 -j ACCEPT
-        '';
       };
     }
     {
@@ -248,9 +198,6 @@ in
         connectionTrackingModules = [];
         autoLoadConntrackHelpers = false;
       };
-    }
-    {
-      services.postgresql.enable = true;
     }
     {
       virtualisation.docker.enable = true;
@@ -338,36 +285,6 @@ in
         pkgs.acpilight
       ];
       users.extraUsers.rasen.extraGroups = [ "video" ];
-    }
-    {
-      imports = [
-        <nixpkgs/nixos/modules/hardware/acpilight.nix>
-      ];
-    }
-    {
-      environment.systemPackages = [
-        pkgs.oxygen-icons5
-      ];
-    }
-    (let
-      oldpkgs = import (pkgs.fetchFromGitHub {
-        owner = "NixOS";
-        repo = "nixpkgs-channels";
-        rev = "1aa77d0519ae23a0dbef6cab6f15393cfadcc454";
-        sha256 = "1gcd8938n3z0a095b0203fhxp6lddaw1ic1rl33q441m1w0i19jv";
-      }) { config = config.nixpkgs.config; };
-    in {
-      environment.systemPackages = [ oldpkgs.oxygen-gtk2 oldpkgs.oxygen-gtk3 ];
-    
-      environment.shellInit = ''
-        export GTK_PATH=$GTK_PATH:${oldpkgs.oxygen_gtk}/lib/gtk-2.0
-        export GTK2_RC_FILES=$GTK2_RC_FILES:${oldpkgs.oxygen_gtk}/share/themes/oxygen-gtk/gtk-2.0/gtkrc
-      '';
-    })
-    {
-      environment.systemPackages = [
-        pkgs.gnome3.adwaita-icon-theme
-      ];
     }
     {
       fonts = {
@@ -484,10 +401,7 @@ in
     }
     {
       environment.systemPackages = [
-        pkgs.libreoffice
-        pkgs.qbittorrent
         pkgs.google-play-music-desktop-player
-        pkgs.deadbeef
         pkgs.tdesktop # Telegram
     
         pkgs.mplayer
@@ -495,9 +409,6 @@ in
     
         # Used by naga setup
         pkgs.xdotool
-    
-        pkgs.hledger
-        pkgs.drive
       ];
     }
     {
@@ -639,9 +550,6 @@ in
       users.defaultUserShell = pkgs.fish;
     }
     {
-      programs.zsh.enable = true;
-    }
-    {
       environment.systemPackages = [
         pkgs.gitFull
         pkgs.gitg
@@ -668,16 +576,12 @@ in
     
         pkgs.patchelf
     
-        pkgs.nox
-    
         pkgs.python
         pkgs.python3
     
         pkgs.awscli
-        pkgs.nodejs-10_x
+        pkgs.nodejs-12_x # LTS
         pkgs.shellcheck
-    
-        pkgs.irssi
       ];
       environment.variables.NPM_CONFIG_PREFIX = "$HOME/.npm-global";
       environment.variables.PATH = "$HOME/.npm-global/bin:$PATH";

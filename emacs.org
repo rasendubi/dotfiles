@@ -652,7 +652,7 @@ Jump anywhere with a few keystrokes in tree-like way.
   (avy-keys '(?s ?h ?t ?n ?e ?o ?d ?r ?u ?p)))
 #+end_src
 ** imenu / imenu-list
-Use imenu to just to symbols in the current buffer.
+Use imenu to jump to symbols in the current buffer.
 #+begin_src emacs-lisp
 (use-package imenu-list
   :general
@@ -718,7 +718,7 @@ Fix whitespaces on file save.
   (global-whitespace-cleanup-mode 1))
 #+end_src
 ** undo-tree
-It's enable by default. Just diminish it.
+It's enabled by default. Just diminish it.
 #+begin_src emacs-lisp
 (use-package undo-tree
   :diminish (undo-tree-mode global-undo-tree-mode))
