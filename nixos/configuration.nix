@@ -470,11 +470,11 @@ in
             typescript-mode
             tide
             vue-mode
-            php-mode
             web-mode
             groovy-mode
-            go-mode
+    
             lua-mode
+    
             ledger-mode
             markdown-mode
             edit-indirect
@@ -483,8 +483,6 @@ in
             jinja2-mode
             gitconfig-mode
             terraform-mode
-            clojure-mode
-            cider
             graphviz-dot-mode
             fish-mode
             visual-fill-column
@@ -495,8 +493,6 @@ in
     
             general
             flycheck-jest
-            purescript-mode
-            psc-ide
             restclient
             mbsync
             nix-sandbox

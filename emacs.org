@@ -2426,33 +2426,6 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 (use-package vue-mode
   :mode "\\.vue$")
 #+end_src
-** Purescript
-#+begin_src emacs-lisp
-(use-package purescript-mode
-  :mode "\\.purs$"
-  :config
-  (add-hook 'purescript-mode-hook 'turn-on-purescript-indentation))
-#+end_src
-
-#+begin_src emacs-lisp
-(use-package psc-ide
-  :commands (psc-ide-mode)
-  :init
-  (add-hook 'purescript-mode-hook 'psc-ide-mode))
-#+end_src
-** Clojure(Script)
-#+begin_src emacs-lisp
-(use-package clojure-mode)
-
-(use-package cider
-  :config
-  (evil-set-initial-state 'cider-stacktrace-mode 'emacs))
-#+end_src
-** PHP
-#+begin_src emacs-lisp
-(use-package php-mode
-  :mode "\\.php$")
-#+end_src
 ** Web-mode
 #+begin_src emacs-lisp
   (use-package web-mode
@@ -2472,11 +2445,6 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 #+begin_src emacs-lisp
 (use-package groovy-mode
   :mode "\\.\\(groovy\\|gradle\\)$")
-#+end_src
-** Go
-#+begin_src emacs-lisp
-(use-package go-mode
-  :mode "\\.go$")
 #+end_src
 ** Lua
 #+begin_src emacs-lisp
