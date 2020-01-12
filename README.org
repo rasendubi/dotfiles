@@ -559,12 +559,11 @@ Setup timezone:
   time.timeZone = "Europe/Kiev";
 }
 #+end_src
-** Login manager
-I use SLiM. It stands for Simple Login Manager. It's fast and has little dependencies. The projects is dead since 2014, but still works fine, so I keep using it.
+** Login manager / display manager
 #+name: nixos-section
 #+begin_src nix
 {
-  services.xserver.displayManager.slim.enable = true;
+  services.xserver.displayManager.lightdm.enable = true;
 }
 #+end_src
 ** Window manager
@@ -573,14 +572,13 @@ I use [[http://awesome.naquadah.org/][awesome wm]]:
 #+name: nixos-section
 #+begin_src nix
 {
-  services.xserver.displayManager.slim.enable = true;
   services.xserver.windowManager = {
-    default = "awesome";
     awesome = {
       enable = true;
       luaModules = [ pkgs.luaPackages.luafilesystem pkgs.luaPackages.cjson ];
     };
   };
+  services.xserver.displayManager.defaultSession = "none+awesome";
 }
 #+end_src
 
@@ -613,7 +611,7 @@ I use English and Ukrainian layouts. I also use Russian symbols, but they are on
   services.xserver.xkbVariant = "workman,";
 
   # Use same config for linux console
-  i18n.consoleUseXkbConfig = true;
+  console.useXkbConfig = true;
 }
 #+end_src
 
@@ -663,13 +661,11 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
 #+begin_src nix
 {
   fonts = {
-    enableCoreFonts = true;
     enableFontDir = true;
     enableGhostscriptFonts = false;
 
     fonts = with pkgs; [
       inconsolata
-      corefonts
       dejavu_fonts
       source-code-pro
       ubuntu_font_family
@@ -689,12 +685,10 @@ Xcursor.size: 64
 #+name: machine-omicron
 #+begin_src nix
 {
-  i18n = {
-    consolePackages = [
-      pkgs.terminus_font
-    ];
-    consoleFont = "ter-132n";
-  };
+  console.packages = [
+    pkgs.terminus_font
+  ];
+  console.font = "ter-132n";
 }
 #+end_src
 
@@ -957,6 +951,7 @@ Start emacs as a daemon:
         imenu-list
         avy
         wgrep
+        org-drill
         org-pomodoro
         org-cliplink
         org-download

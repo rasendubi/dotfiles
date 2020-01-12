@@ -133,7 +133,7 @@ block but are passed literally to the \"example-block\"."
                               ;; Comment, according to LANG mode,
                               ;; string S.  Return new string.
                               (with-temp-buffer
-                                (funcall (intern (concat lang "-mode")))
+                                (funcall (org-src-get-lang-mode lang))
                                 (comment-region (point)
                                                 (progn (insert s) (point)))
                                 (org-trim (buffer-string)))))
@@ -149,7 +149,8 @@ block but are passed literally to the \"example-block\"."
                                     (concat (funcall c-wrap (car cs)) "\n"
                                             b "\n"
                                             (funcall c-wrap (cadr cs)))))))))
-                      (if (re-search-forward name-regexp nil t)
+                      (if (and (re-search-forward name-regexp nil t)
+                               (not (org-in-commented-heading-p)))
                           (el-patch-swap
                             (funcall expand-body
                                      (org-babel-get-src-block-info 'light))
@@ -168,14 +169,15 @@ block but are passed literally to the \"example-block\"."
                         ;; those with a matching Noweb reference.
                         (let ((expansion nil))
                           (org-babel-map-src-blocks nil
-                            (let* ((info (org-babel-get-src-block-info 'light))
-                                   (parameters (nth 2 info)))
-                              (when (equal source-name
-                                           (cdr (assq :noweb-ref parameters)))
-                                (push (funcall expand-body info) expansion)
-                                (push (or (cdr (assq :noweb-sep parameters))
-                                          "\n")
-                                      expansion))))
+                            (unless (org-in-commented-heading-p)
+                              (let* ((info (org-babel-get-src-block-info 'light))
+                                     (parameters (nth 2 info)))
+                                (when (equal source-name
+                                             (cdr (assq :noweb-ref parameters)))
+                                  (push (funcall expand-body info) expansion)
+                                  (push (or (cdr (assq :noweb-sep parameters))
+                                            "\n")
+                                        expansion)))))
                           (when expansion
                             (mapconcat #'identity
                                        (nreverse (cdr expansion))
@@ -554,7 +556,6 @@ Do not create lockfiles either. (I am the only user in the system and only use e
 #+begin_src emacs-lisp
 (setq create-lockfiles nil)
 #+end_src
-
 ** emacs-server
 #+begin_src emacs-lisp
 (load "server")
@@ -638,6 +639,8 @@ I use smex for improved =counsel-M-x= (show most frequently used commands first)
            :map read-expression-map
            ("C-r" . counsel-expression-history))
     :config
+    ;; reset ivy initial inputs for counsel
+    (setq-default ivy-initial-inputs-alist nil)
     (counsel-mode 1))
 #+end_src
 ** avy
@@ -786,16 +789,14 @@ resolves to function `funcall's.  Return value of function MUST
 be string to be executed as command."
     (let ((command (plist-get (alist-get project-type projectile-project-types) command-type)))
       (cond
+       ((not command) nil)
        ((stringp command) command)
        ((functionp command)
         (if (fboundp command)
             (funcall (symbol-function command))))
-       ((and (not command) (eq command-type 'compilation-dir))
-        ;; `compilation-dir' is special in that it is used as a fallback for the root
-        nil)
        (el-patch-remove
          (t
-          (user-error "The value for: %s in project-type: %s was neither a function nor a string." command-type project-type)))))))
+          (error "The value for: %s in project-type: %s was neither a function nor a string" command-type project-type)))))))
 #+end_src
 ** magit
 #+begin_src emacs-lisp
@@ -1244,57 +1245,15 @@ Package for =f-files= and =f-ext?= functions.
   :commands (f-files f-ext?))
 #+end_src
 ** Drill
-For some reason, org-drill fails to load with the following error:
-#+begin_quote
-Debugger entered--Lisp error: (void-function copy-list)
-  copy-list((1 (quote org-drill-visible-cloze-face) nil))
-  org-drill--compute-cloze-keywords()
-  (defvar org-drill-cloze-keywords (org-drill--compute-cloze-keywords) nil)
-  require(org-drill)
-#+end_quote
-
-I [[https://stackoverflow.com/a/35463983][googled it up]] and =copy-list= seems to be defined in =cl=, so load it first:
 #+name: org-config
 #+begin_src emacs-lisp
-  (require 'cl)
-#+end_src
+(use-package org-drill
+  :config
+  (setq org-drill-scope (rasen/org-files-in-dir "~/org/drill"))
+  (add-to-list 'org-modules 'org-drill)
 
-#+name: org-config
-#+begin_src emacs-lisp
-(require 'org-drill)
-(setq org-drill-scope (rasen/org-files-in-dir "~/org/drill"))
-(add-to-list 'org-modules 'org-drill)
-
-(setq org-drill-leech-failure-threshold 10
-      org-drill-leech-method 'warn)
-#+end_src
-
-
-https://bitbucket.org/eeeickythump/org-drill/issues/62/org-drill-doesnt-work-with-org-mode-92
-#+name: org-config
-#+begin_src emacs-lisp
-(el-patch-feature org-drill)
-(el-patch-defun org-drill-hide-subheadings-if (test)
-  "TEST is a function taking no arguments. TEST will be called for each
-of the immediate subheadings of the current drill item, with the point
-on the relevant subheading. TEST should return nil if the subheading is
-to be revealed, non-nil if it is to be hidden.
-Returns a list containing the position of each immediate subheading of
-the current topic."
-  (let ((drill-entry-level (org-current-level))
-        (drill-sections nil))
-    (org-show-subtree)
-    (save-excursion
-      (org-map-entries
-       (lambda ()
-         (when (and (not (org-invisible-p))
-                    (> (org-current-level) drill-entry-level))
-           (when (or (/= (org-current-level) (1+ drill-entry-level))
-                        (funcall test))
-             (hide-subtree))
-           (push (point) drill-sections)))
-       (el-patch-swap nil t) 'tree))
-    (reverse drill-sections)))
+  (setq org-drill-leech-failure-threshold 10
+        org-drill-leech-method 'warn))
 #+end_src
 ** Todo
 Use the following states: =TODO= =NEXT= =DONE= =CANCELED= =WAIT=.
@@ -1645,8 +1604,8 @@ prefix argument (`C-u C-u C-u C-c C-w')."
                                (org-back-to-heading t)
                                (setq heading-text
                                      (replace-regexp-in-string
-                                      org-bracket-link-regexp
-                                      "\\3"
+                                      org-link-bracket-re
+                                      "\\2"
                                       (or (nth 4 (org-heading-components))
                                           ""))))
                              (org-refile-get-location
@@ -2668,7 +2627,8 @@ See http://bnbeckwith.com/code/writegood-mode.html
                   ("s" ("+spam" "-inbox") "Mark as spam")
                   ("d" ("+deleted" "-inbox") "Delete")))
 
-  (require 'org-notmuch))
+  ; (require 'org-notmuch)
+  )
 #+end_src
 * Workman
 ** quail
@@ -2699,6 +2659,11 @@ Hide menu, toolbar, scrollbar.
 Do not show startup screen.
 #+begin_src emacs-lisp
 (setq inhibit-startup-screen t)
+#+end_src
+
+Do not blink cursor.
+#+begin_src emacs-lisp
+(blink-cursor-mode 0)
 #+end_src
 ** Color scheme
 I use monokai color scheme.

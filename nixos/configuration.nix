@@ -52,12 +52,10 @@ let
         };
       }
       {
-        i18n = {
-          consolePackages = [
-            pkgs.terminus_font
-          ];
-          consoleFont = "ter-132n";
-        };
+        console.packages = [
+          pkgs.terminus_font
+        ];
+        console.font = "ter-132n";
       }
       {
         services.xserver.dpi = 276;
@@ -241,17 +239,16 @@ in
       time.timeZone = "Europe/Kiev";
     }
     {
-      services.xserver.displayManager.slim.enable = true;
+      services.xserver.displayManager.lightdm.enable = true;
     }
     {
-      services.xserver.displayManager.slim.enable = true;
       services.xserver.windowManager = {
-        default = "awesome";
         awesome = {
           enable = true;
           luaModules = [ pkgs.luaPackages.luafilesystem pkgs.luaPackages.cjson ];
         };
       };
+      services.xserver.displayManager.defaultSession = "none+awesome";
     }
     {
       services.xserver.desktopManager.xterm.enable = false;
@@ -268,7 +265,7 @@ in
       services.xserver.xkbVariant = "workman,";
     
       # Use same config for linux console
-      i18n.consoleUseXkbConfig = true;
+      console.useXkbConfig = true;
     }
     {
       services.xserver.xkbOptions = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
@@ -288,13 +285,11 @@ in
     }
     {
       fonts = {
-        enableCoreFonts = true;
         enableFontDir = true;
         enableGhostscriptFonts = false;
     
         fonts = with pkgs; [
           inconsolata
-          corefonts
           dejavu_fonts
           source-code-pro
           ubuntu_font_family
@@ -457,6 +452,7 @@ in
             imenu-list
             avy
             wgrep
+            org-drill
             org-pomodoro
             org-cliplink
             org-download
