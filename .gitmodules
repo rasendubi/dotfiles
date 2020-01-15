@@ -10,3 +10,6 @@
 [submodule "channels/nixpkgs"]
 	path = channels/nixpkgs
 	url = https://github.com/NixOS/nixpkgs-channels
+[submodule "channels/home-manager"]
+	path = channels/home-manager
+	url = https://github.com/rycee/home-manager

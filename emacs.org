@@ -501,7 +501,7 @@ And evil commands to go to navigate errors.
 #+begin_src emacs-lisp
 (use-package lispyville
   :hook
-  (clojure-mode . lispyville-mode)
+  ((clojure-mode emacs-lisp-mode) . lispyville-mode)
   :config
   (lispyville-set-key-theme
    '(operators
@@ -1156,6 +1156,14 @@ Dim parens.
   :config
   (global-paren-face-mode))
 #+end_src
+** dtrt-indent
+Automatically determine indent style.
+#+begin_src emacs-lisp
+(use-package dtrt-indent
+  :diminish
+  :config
+  (dtrt-indent-global-mode))
+#+end_src
 * Org-mode
 ** General
 #+begin_src emacs-lisp
@@ -1369,18 +1377,19 @@ I use an extension that adds page url to the title (used for page tracking). Str
 My capture templates.
 #+name: org-config
 #+begin_src emacs-lisp
+(setq rasen/org-refile-file (concat "refile-" system-name ".org"))
 (setq org-capture-templates
       `(("u"
          "Task: Read this URL"
          entry
-         (file+headline "refile.org" "Articles To Read")
+         (file+headline rasen/org-refile-file "Articles To Read")
          ,(concat "* TODO %(rasen/strip-url-from-title \"%:description\")\n:PROPERTIES:\n:CREATED:  %U\n:END:\n%:link\n")
          :immediate-finish t)
 
         ("d"
          "Capture web drill snippet (old)"
          entry
-         (file+headline "refile.org" "Inbox")
+         (file+headline rasen/org-refile-file "Inbox")
          ,(concat "* Fact: '%(rasen/strip-url-from-title \"%:description\")'       :"
                   (format "%s" org-drill-question-tag)
                   ":\n:PROPERTIES:\n:CREATED:  %U\n:SOURCE_URL: %:link\n:END:\n#+begin_quote\n%i\n#+end_quote\n%?\n")
@@ -1389,7 +1398,7 @@ My capture templates.
         ("w"
          "Capture web snippet"
          entry
-         (file+headline "refile.org" "Inbox")
+         (file+headline rasen/org-refile-file "Inbox")
          ,(concat "* %(rasen/strip-url-from-title \"%:description\")\n"
                   ":PROPERTIES:\n"
                   ":CREATED:  %U\n"
@@ -1419,13 +1428,13 @@ My capture templates.
                   ":\n:PROPERTIES:\n:CREATED:  %U\n:SOURCE_URL: [[%l][%f]]\n:END:\n%i\n%?\n")
          :immediate-finish t)
 
-        ("t" "todo" entry (file "~/org/refile.org")
+        ("t" "todo" entry (file rasen/org-refile-file)
          "* TODO %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t)
 
-        ("m" "meeting" entry (file "~/org/refile.org")
+        ("m" "meeting" entry (file rasen/org-refile-file)
          "* %?   :Meeting:\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t)
 
-        ("n" "note" entry (file "~/org/refile.org")
+        ("n" "note" entry (file rasen/org-refile-file)
          "* %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n")))
 #+end_src
 
@@ -2271,7 +2280,39 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
                             (c-mode . doxygen)
                             (c++-mode . doxygen)))
 #+end_src
+** CMake
+#+begin_src emacs-lisp
+(use-package cmake-mode)
+#+end_src
 ** Python
+#+begin_src emacs-lisp
+(use-package elpy
+  :after (flycheck)
+  :config
+
+  ;; Use python3 (instead of python2)
+  (setq flycheck-python-flake8-executable "python3"
+        flycheck-python-pycompile-executable "python3"
+        flycheck-python-pylint-executable "python3")
+
+  ;; Do not show vertical guides in python code
+  (add-hook 'elpy-mode-hook
+            (lambda ()
+              (highlight-indentation-mode -1)))
+
+  (elpy-enable))
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package blacken
+  :hook (elpy-mode . blacken-mode))
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package py-autopep8
+  :hook (elpy-mode . py-autopep8-enable-on-save))
+#+end_src
+
 #+begin_src emacs-lisp
 (use-package pip-requirements
   :mode "^requirements.txt$")
@@ -2472,6 +2513,13 @@ See http://bnbeckwith.com/code/writegood-mode.html
 #+begin_src emacs-lisp
 (use-package jinja2-mode
   :mode "\\.j2$")
+#+end_src
+** Dockerfile
+#+begin_src emacs-lisp
+(use-package dockerfile-mode
+  :mode "Dockerfile"
+  :config
+  (setq dockerfile-mode-command "env SUDO_ASKPASS=/usr/bin/ssh-askpass sudo -A docker"))
 #+end_src
 ** gitconfig
 #+begin_src emacs-lisp

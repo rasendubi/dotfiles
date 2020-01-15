@@ -1339,7 +1339,7 @@ This install a number of default man pages for the linux/posix system.
 
 There is a =setup.sh= script in this directory. It just links all files to =$HOME=:
 #+begin_src sh :shebang "#!/bin/sh" :tangle setup.sh :padline no
-FILES=".vimrc .vim .nvimrc .nvim .gitconfig .zshrc .zsh .tmux.conf .Xresources .config/awesome .config/nvim .nethackrc .emacs.d .ssh bin .config/zathura .irssi .config/xkb .config/fish .msmtprc .notmuch-config .mbsyncrc"
+FILES=".vimrc .vim .nvimrc .nvim .gitconfig .zshrc .zsh .tmux.conf .Xresources .config/awesome .config/nvim .nethackrc .emacs.d .ssh bin .config/zathura .irssi .config/xkb .config/fish .msmtprc .notmuch-config .mbsyncrc .config/nixpkgs"
 
 DEST=$1
 

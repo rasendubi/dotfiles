@@ -127,7 +127,7 @@ block but are passed literally to the \"example-block\"."
                               ;; Comment, according to LANG mode,
                               ;; string S.  Return new string.
                               (with-temp-buffer
-                                (funcall (intern (concat lang "-mode")))
+                                (funcall (org-src-get-lang-mode lang))
                                 (comment-region (point)
                                                 (progn (insert s) (point)))
                                 (org-trim (buffer-string)))))
@@ -143,7 +143,8 @@ block but are passed literally to the \"example-block\"."
                                     (concat (funcall c-wrap (car cs)) "\n"
                                             b "\n"
                                             (funcall c-wrap (cadr cs)))))))))
-                      (if (re-search-forward name-regexp nil t)
+                      (if (and (re-search-forward name-regexp nil t)
+                               (not (org-in-commented-heading-p)))
                           (el-patch-swap
                             (funcall expand-body
                                      (org-babel-get-src-block-info 'light))
@@ -162,14 +163,15 @@ block but are passed literally to the \"example-block\"."
                         ;; those with a matching Noweb reference.
                         (let ((expansion nil))
                           (org-babel-map-src-blocks nil
-                            (let* ((info (org-babel-get-src-block-info 'light))
-                                   (parameters (nth 2 info)))
-                              (when (equal source-name
-                                           (cdr (assq :noweb-ref parameters)))
-                                (push (funcall expand-body info) expansion)
-                                (push (or (cdr (assq :noweb-sep parameters))
-                                          "\n")
-                                      expansion))))
+                            (unless (org-in-commented-heading-p)
+                              (let* ((info (org-babel-get-src-block-info 'light))
+                                     (parameters (nth 2 info)))
+                                (when (equal source-name
+                                             (cdr (assq :noweb-ref parameters)))
+                                  (push (funcall expand-body info) expansion)
+                                  (push (or (cdr (assq :noweb-sep parameters))
+                                            "\n")
+                                        expansion)))))
                           (when expansion
                             (mapconcat #'identity
                                        (nreverse (cdr expansion))
