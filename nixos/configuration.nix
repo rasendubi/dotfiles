@@ -116,6 +116,13 @@ in
       ];
     }
     {
+      services.openvpn.servers.nano-vpn = {
+        config = ''
+          config /root/openvpn/nano-vpn.ovpn
+        '';
+      };
+    }
+    {
       networking = {
         hostName = meta.name;
     
@@ -130,6 +137,13 @@ in
       environment.systemPackages = [
         pkgs.networkmanagerapplet
       ];
+    }
+    {
+      services.avahi = {
+        enable = true;
+        interfaces = [];
+        openFirewall = false;
+      };
     }
     {
       hardware.pulseaudio = {

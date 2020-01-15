@@ -241,6 +241,17 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
 }
 #+end_src
 * Services
+** VPN
+#+name: nixos-section
+#+begin_src nix
+{
+  services.openvpn.servers.nano-vpn = {
+    config = ''
+      config /root/openvpn/nano-vpn.ovpn
+    '';
+  };
+}
+#+end_src
 ** NetworkManager
 #+name: nixos-section
 #+begin_src nix
@@ -259,6 +270,17 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
   environment.systemPackages = [
     pkgs.networkmanagerapplet
   ];
+}
+#+end_src
+** Avahi
+#+name: nixos-section
+#+begin_src nix
+{
+  services.avahi = {
+    enable = true;
+    interfaces = [];
+    openFirewall = false;
+  };
 }
 #+end_src
 ** PulseAudio
