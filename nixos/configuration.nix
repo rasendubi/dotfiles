@@ -413,105 +413,13 @@ in
       ];
     }
     {
-      services.emacs = {
-        enable = true;
-        defaultEditor = true;
-        package = (pkgs.emacsPackagesNgGen pkgs.emacs).emacsWithPackages (epkgs:
-          (with epkgs.melpaPackages; [
-            use-package
-            diminish
-            el-patch
-    
-            evil
-            evil-numbers
-            evil-swap-keys
-            evil-collection
-            evil-surround
-            evil-magit
-            evil-org
-    
-            lispyville
-            aggressive-indent
-            paren-face
-    
-            smex
-            ivy
-            counsel
-            counsel-projectile
-            whitespace-cleanup-mode
-            which-key
-            projectile
-            diff-hl
-            yasnippet
-            company
-            flycheck
-            color-identifiers-mode
-            magit
-            f
-    
-            imenu-list
-            avy
-            wgrep
-            org-drill
-            org-pomodoro
-            org-cliplink
-            org-download
-            nix-mode
-            haskell-mode
-            rust-mode
-            racer
-            pip-requirements
-            js2-mode
-            rjsx-mode
-            typescript-mode
-            tide
-            vue-mode
-            web-mode
-            groovy-mode
-    
-            lua-mode
-    
-            ledger-mode
-            markdown-mode
-            edit-indirect
-            json-mode
-            yaml-mode
-            jinja2-mode
-            gitconfig-mode
-            terraform-mode
-            graphviz-dot-mode
-            fish-mode
-            visual-fill-column
-            beacon
-            google-translate
-            writegood-mode
-            edit-server
-    
-            general
-            flycheck-jest
-            restclient
-            mbsync
-            nix-sandbox
-            prettier-js
-            flycheck-rust
-            flycheck-inline
-            monokai-theme
-            spaceline
-    
-            lsp-mode
-            lsp-ui
-            company-lsp
-    
-            # provided by pkgs.notmuch:
-            # notmuch
-          ]) ++
-          [
-            epkgs.orgPackages.org-plus-contrib
-    
-            pkgs.ycmd
-          ]
-        );
-      };
+      services.emacs =
+        let emacsConfig = import <dotfiles/.config/nixpkgs/emacs.nix> { inherit pkgs; };
+        in {
+          enable = true;
+          defaultEditor = true;
+          package = emacsConfig.finalEmacs;
+        };
       environment.systemPackages = [
         pkgs.ripgrep
         (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science ru uk]))

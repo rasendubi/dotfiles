@@ -1137,9 +1137,7 @@ I use [[https://www.emacswiki.org/emacs/Edit_with_Emacs][Edit with Emacs]] firef
 ** LSP
 #+begin_src emacs-lisp
 (use-package lsp-mode
-  :commands lsp
-  :init
-  (add-hook 'rust-mode-hook #'lsp)
+  :hook (rust-mode-hook . lsp)
   :config
   (setq lsp-prefer-flymake nil))
 
@@ -2440,6 +2438,14 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
             ("blade"  . "\\.blade\\."))
   )
   )
+#+end_src
+** Clojure(Script)
+#+begin_src emacs-lisp
+(use-package clojure-mode)
+
+(use-package cider
+  :config
+  (evil-set-initial-state 'cider-stacktrace-mode 'emacs))
 #+end_src
 ** Groovy
 #+begin_src emacs-lisp
