@@ -408,6 +408,16 @@ I use borg for backups.
   environment.systemPackages = [ pkgs.borgbackup ];
 }
 #+end_src
+** ADB
+I need to access my Android device.
+#+name: nixos-section
+#+begin_src nix
+{
+  services.udev.packages = [ pkgs.android-udev-rules ];
+  programs.adb.enable = true;
+  users.users.rasen.extraGroups = ["adbusers"];
+}
+#+end_src
 * Mail setup
 ** Mbsync
 I use mbsync to sync my accounts and make them available offline.

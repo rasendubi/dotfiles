@@ -218,6 +218,11 @@ in
       environment.systemPackages = [ pkgs.borgbackup ];
     }
     {
+      services.udev.packages = [ pkgs.android-udev-rules ];
+      programs.adb.enable = true;
+      users.users.rasen.extraGroups = ["adbusers"];
+    }
+    {
       environment.systemPackages = [
         pkgs.isync
       ];
