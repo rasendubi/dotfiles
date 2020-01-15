@@ -2287,16 +2287,16 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 (use-package elpy
   :after (flycheck)
   :config
+  ;; Do not show vertical guides in python code
+  (setq elpy-modules (delq 'elpy-module-highlight-indentation elpy-modules))
+
+  ;; Do not use flymake (flycheck will kick in instead)
+  (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
 
   ;; Use python3 (instead of python2)
   (setq flycheck-python-flake8-executable "python3"
         flycheck-python-pycompile-executable "python3"
         flycheck-python-pylint-executable "python3")
-
-  ;; Do not show vertical guides in python code
-  (add-hook 'elpy-mode-hook
-            (lambda ()
-              (highlight-indentation-mode -1)))
 
   (elpy-enable))
 #+end_src

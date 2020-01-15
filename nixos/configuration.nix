@@ -495,11 +495,11 @@ in
     
         pkgs.patchelf
     
-        pkgs.python
+        pkgs.python2
         pkgs.python3
     
         pkgs.awscli
-        pkgs.nodejs-12_x # LTS
+        pkgs.nodejs-13_x
         pkgs.shellcheck
       ];
       environment.variables.NPM_CONFIG_PREFIX = "$HOME/.npm-global";

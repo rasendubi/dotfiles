@@ -102,11 +102,12 @@ rec {
       pkgs.notmuch
 
       (pkgs.python3.withPackages (pypkgs: [
-        pypkgs.flake8
-        pypkgs.pylint
-        pypkgs.mypy
         pypkgs.autopep8
         pypkgs.black
+        pypkgs.flake8
+        pypkgs.mypy
+        pypkgs.pylint
+        pypkgs.virtualenv
       ]))
     ]
   );
