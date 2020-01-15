@@ -2377,7 +2377,92 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
                         (string-equal "ts" (file-name-extension buffer-file-name)))
                 (typescript-mode))))
   :config
-  (setq-default typescript-indent-level 2))
+  (setq-default typescript-indent-level 2)
+  (general-def 'insert 'typescript-mode-map
+    "M-j" #'c-indent-new-comment-line
+    "C-M-j" #'c-indent-new-comment-line))
+
+(el-patch-feature typescript-mode)
+(el-patch-defconst typescript-jsdoc-empty-tag-regexp
+  (concat typescript-jsdoc-before-tag-regexp
+          "\\(@"
+          (regexp-opt
+           '("abstract"
+             "addon"
+             "async"
+             "author"
+             "class"
+             "classdesc"
+             "const"
+             "constant"
+             "constructor"
+             "constructs"
+             "copyright"
+             "default"
+             "defaultvalue"
+             "deprecated"
+             "desc"
+             "description"
+             "event"
+             "example"
+             "exec"
+             "export"
+             "exports"
+             "file"
+             "fileoverview"
+             "final"
+             "func"
+             "function"
+             "generator"
+             "global"
+             "hidden"
+             "hideconstructor"
+             "ignore"
+             "implicitcast"
+             "inheritdoc"
+             "inner"
+             "instance"
+             "interface"
+             "license"
+             "method"
+             "mixin"
+             "noalias"
+             "noshadow"
+             "notypecheck"
+             "override"
+             "overview"
+             "owner"
+             "package"
+             "preserve"
+             "preservetry"
+             "private"
+             "protected"
+             "public"
+             "readonly"
+             "static"
+             "summary"
+             "supported"
+             "todo"
+             "tutorial"
+             "virtual"
+             (el-patch-add
+               "remarks"
+               "alpha"
+               "beta"
+               "defaultValue"
+               "eventProperty"
+               "example"
+               "experimental"
+               "inheritDoc"
+               "internal"
+               "label"
+               "link"
+               "packageDocumentation"
+               "privateRemarks"
+               "sealed"
+               "typeParam")))
+          "\\)\\s-*")
+  "Matches empty jsdoc tags.")
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2410,9 +2495,11 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
   (typescript-mode . prettier-js-mode)
   :init
   (defun rasen/setup-prettier ()
+    (make-local-variable 'exec-path)
     (add-to-list 'exec-path (string-trim (shell-command-to-string "npm bin")))
     (setq-local prettier-js-command (executable-find "prettier")))
-  (add-hook 'web-mode-hook #'rasen/setup-prettier))
+
+  (add-hook 'typescript-mode-hook #'rasen/setup-prettier))
 #+end_src
 
 #+begin_src emacs-lisp
