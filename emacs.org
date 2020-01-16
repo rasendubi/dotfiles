@@ -1381,7 +1381,7 @@ I use an extension that adds page url to the title (used for page tracking). Str
 My capture templates.
 #+name: org-config
 #+begin_src emacs-lisp
-(setq rasen/org-refile-file (concat "refile-" system-name ".org"))
+(setq rasen/org-refile-file (concat rasen/org-directory "/refile-" system-name ".org"))
 (setq org-capture-templates
       `(("u"
          "Task: Read this URL"
