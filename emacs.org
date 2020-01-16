@@ -409,15 +409,21 @@ I use Vim's =C-a= and =C-x= (increment/decrement number at point) a lot.
 #+begin_src emacs-lisp
 (use-package evil-numbers
   :after evil
-  :bind (:map evil-normal-state-map
-         ("C-a" . evil-numbers/inc-at-pt)
-         ("C-x" . evil-numbers/dec-at-pt)))
+  :config
+  (general-def :states 'normal
+    "C-a" #'evil-numbers/inc-at-pt
+    "C-x" #'evil-numbers/dec-at-pt))
 #+end_src
 
 Now, remap =C-x= to =RET=. (Because =C-x= is used for decrementing numbers.)
 #+name: evil-config
 #+begin_src emacs-lisp
-(mmap "RET" (lookup-key (current-global-map) (kbd "C-x")))
+(general-def
+  :states 'motion
+  "RET" (lookup-key (current-global-map) (kbd "C-x")))
+;; Unmap it from magit
+(general-def 'magit-file-mode-map
+  "C-x" nil)
 #+end_src
 ** swap-keys
 #+begin_src emacs-lisp
