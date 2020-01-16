@@ -272,28 +272,10 @@ This macro copied from [[https://gist.github.com/cbowdon/012d623920bd28453bf8][h
   (evil-mode 1))
 #+end_src
 
-A couple of functions to make configuration a little bit easier.
+Use =SPC= as a leader.
 #+name: evil-config
 #+begin_src emacs-lisp
-(defun nmap (key action)
-  (define-key evil-normal-state-map (kbd key) action))
-(defun vmap (key action)
-  (define-key evil-visual-state-map (kbd key) action))
-(defun imap (key action)
-  (define-key evil-insert-state-map (kbd key) action))
-(defun mmap (key action)
-  (define-key evil-motion-state-map (kbd key) action))
-(defun omap (key action)
-  (define-key evil-operator-state-map (kbd key) action))
-#+end_src
-
-Use =SPC= as one of leaders.
-
-#+name: evil-config
-#+begin_src emacs-lisp
-(nmap "SPC" nil)
-(vmap "SPC" nil)
-(mmap "SPC" nil)
+(general-def :states '(motion normal visual) "SPC" nil)
 #+end_src
 
 Hard way: prohibit usage of keybinding I have more efficient binding for.
