@@ -2864,6 +2864,7 @@ I use monokai color scheme.
      `(org-ellipsis ((t :foreground ,monokai-comments
                         :background ,monokai-background
                         :inverse-video nil)))
+     `(org-drawer ((t :foreground ,monokai-comments)))
 
      ;; Default company theming makes selected annotations appear on
      ;; another background than the rest of tooltip. This changes
