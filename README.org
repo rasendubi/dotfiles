@@ -167,41 +167,23 @@ Clickpad:
   };
 }
 #+end_src
-** Local overlay
+** Local overlays
 As a responsible NixOS user, I refuse to install software blindly with =sudo make install=. That's why I must write my own nix-expressions. I keep them in my local overlay until they're merged upstream.
 
-Store separate overlays in a directory:
+Store overlays in a directory:
 #+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb no-export
 {
-  nix.nixPath = [ "nixpkgs-overlays=/home/rasen/dotfiles/nixpkgs-overlays" ];
+  nixpkgs.overlays = import ../nixpkgs-overlays/overlays.nix;
 }
 #+end_src
 
-The entry point is just a set of all my packages in =nixpkgs-local/default.nix=:
-#+begin_src nix :tangle nixpkgs-local/default.nix :noweb no-export :padline no
-{ pkgs ? import <nixpkgs> { } }:
-
-let
-  callPackage = pkgs.lib.callPackageWith (pkgs // pkgs.xlibs // self);
-
-  pythonPackages = pkgs.pythonPackages // rec {
-    <<nixpkgs-local-python-packages>>
-  };
-
-  self = rec {
-    <<nixpkgs-local-packages>>
-  };
-
-in self
+Store list of overlays in =nixpkgs-overlays/overlays.nix=.
+#+begin_src nix :tangle nixpkgs-overlays/overlays.nix :noweb no-export
+[
+  <<nixpkgs-overlays>>
+]
 #+end_src
-
-You can install all packages to current user with:
-#+begin_src sh
-nix-env -f nixpkgs-local/default.nix -i
-#+end_src
-
-#+RESULTS:
 
 To make package results testing better, I build them in isolated environment (for more info, see [[https://nixos.org/nixos/manual/options.html#opt-nix.useChroot][nixos manual]]):
 #+name: nixos-section
@@ -212,6 +194,99 @@ To make package results testing better, I build them in isolated environment (fo
 #+end_src
 
 Note that this is ="relaxed"= instead of =true=, because I have some packages that require a network to build and thus are =__noChroot=.
+*** Compatibility with nix tools
+See https://nixos.wiki/wiki/Overlays#Using_nixpkgs.overlays_from_configuration.nix_as_.3Cnixpkgs-overlays.3E_in_your_NIX_PATH
+
+Add compat/overlays.nix:
+#+begin_src nix :tangle nixpkgs-overlays/compat/overlays.nix :mkdirp t
+self: super:
+with super.lib;
+let
+  # Using the nixos plumbing that's used to evaluate the config...
+  eval = import <nixpkgs/nixos/lib/eval-config.nix>;
+  # Evaluate the config,
+  paths = (eval {modules = [(import <nixos-config>)];})
+    # then get the `nixpkgs.overlays` option.
+    .config.nixpkgs.overlays
+  ;
+in
+foldl' (flip extends) (_: super) paths self
+#+end_src
+
+Add it to NIX_PATH:
+#+name: nixos-section
+#+begin_src nix
+{
+  nix.nixPath = [ "nixpkgs-overlays=/home/rasen/dotfiles/nixpkgs-overlays/compat" ];
+}
+#+end_src
+*** Online banking
+My bank uses a two-part websigner. The first part is a browser extension (does not require additional setup) and the second part is a native host application companion (it is installed here).
+
+Pack native messaging host:
+#+begin_src nix :tangle nixpkgs-overlays/procreditbank/websigner.nix :mkdirp t
+{ stdenv
+, fetchurl
+, autoPatchelfHook
+, gtk2
+, glib
+, pcsclite
+}:
+stdenv.mkDerivation {
+  pname = "procreditbank-websigner";
+  version = "2020-01-20";
+
+  src = fetchurl {
+    url = "https://ibank.procreditbank.com.ua/websigner-linux.bin";
+    sha256 = "1bm88jg7nhgrmc0q5hv35hgv4nc0d15ihl0acrhf6x5f7wv4pszv";
+  };
+
+  nativeBuildInputs = [ autoPatchelfHook ];
+
+  buildInputs = [ gtk2 glib pcsclite ];
+
+  unpackCmd = ''
+    sh $src --extract
+  '';
+
+  dontConfigure = true;
+
+  dontBuild = true;
+
+  installPhase = ''
+    mkdir -p $out/bin
+    mkdir -p $out/lib/websigner/hosts/firefox
+    mkdir -p $out/lib/websigner/hosts/chromium
+
+    install -m 555 x86_64-linux/npwebsigner.so $out/lib/websigner
+    install -m 777 x86_64-linux/nmwebsigner $out/lib/websigner
+
+    sed "s|PLUGIN_PATH|$out/lib/websigner/nmwebsigner|" com.bifit.websigner-mozilla.json > $out/lib/websigner/hosts/firefox/com.bifit.websigner.json
+    sed "s|PLUGIN_PATH|$out/lib/websigner/nmwebsigner|" com.bifit.websigner-chrome.json > $out/lib/websigner/hosts/chromium/com.bifit.websigner.json
+
+    mkdir -p $out/lib/mozilla/native-messaging-hosts
+    ln -s $out/lib/websigner/hosts/firefox/*.json $out/lib/mozilla/native-messaging-hosts
+  '';
+}
+#+end_src
+
+Initialize overlay and apply native messaging host to firefox:
+#+begin_src nix :tangle nixpkgs-overlays/procreditbank/default.nix :mkdirp t
+self: super:
+{
+  procreditbank-websigner = self.callPackage ./websigner.nix { };
+
+  firefox = super.firefox.override {
+    extraNativeMessagingHosts = [ self.procreditbank-websigner ];
+  };
+}
+#+end_src
+
+Add overlay to list of overlays:
+#+name: nixpkgs-overlays
+#+begin_src nix
+(import ./procreditbank)
+#+end_src
 ** Bluetooth
 I have a bluetooth headset, so this enables bluetooth audio in NixOS.
 
@@ -833,34 +908,8 @@ I use Firefox Quantum as my default browser now.
 {
   environment.systemPackages = [
     pkgs.firefox
-    pkgs.icedtea_web
   ];
 }
-#+end_src
-
-I also need an old Firefox with Java support. I use Firefox Extended Support Release for that (pinned to the latest version with Java support). It clashes with firefox-devedition, so I do some renaming here.
-
-#+name: nixos-section
-#+begin_src nix
-(let
-  oldpkgs = import (pkgs.fetchFromGitHub {
-    owner = "NixOS";
-    repo = "nixpkgs-channels";
-    rev = "14cbeaa892da1d2f058d186b2d64d8b49e53a6fb";
-    sha256 = "0lfhkf9vxx2l478mvbmwm70zj3vfn9365yax7kvm7yp07b5gclbr";
-  }) { config = { firefox.icedtea = true; }; };
-in {
-  nixpkgs.config.firefox = {
-    icedtea = true;
-  };
-
-  environment.systemPackages = [
-    (pkgs.runCommand "firefox-esr" { preferLocalBuild = true; } ''
-      mkdir -p $out/bin
-      ln -s ${oldpkgs.firefox-esr}/bin/firefox $out/bin/firefox-esr
-    '')
-  ];
-})
 #+end_src
 ** Zathura
 [[https://pwmt.org/projects/zathura/][Zathura]] is a cool document viewer with Vim-like bindings.

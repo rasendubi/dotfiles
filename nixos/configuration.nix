@@ -94,10 +94,13 @@ in
       };
     }
     {
-      nix.nixPath = [ "nixpkgs-overlays=/home/rasen/dotfiles/nixpkgs-overlays" ];
+      nixpkgs.overlays = import ../nixpkgs-overlays/overlays.nix;
     }
     {
       nix.useSandbox = "relaxed";
+    }
+    {
+      nix.nixPath = [ "nixpkgs-overlays=/home/rasen/dotfiles/nixpkgs-overlays/compat" ];
     }
     {
       hardware.bluetooth.enable = true;
@@ -378,28 +381,8 @@ in
     {
       environment.systemPackages = [
         pkgs.firefox
-        pkgs.icedtea_web
       ];
     }
-    (let
-      oldpkgs = import (pkgs.fetchFromGitHub {
-        owner = "NixOS";
-        repo = "nixpkgs-channels";
-        rev = "14cbeaa892da1d2f058d186b2d64d8b49e53a6fb";
-        sha256 = "0lfhkf9vxx2l478mvbmwm70zj3vfn9365yax7kvm7yp07b5gclbr";
-      }) { config = { firefox.icedtea = true; }; };
-    in {
-      nixpkgs.config.firefox = {
-        icedtea = true;
-      };
-    
-      environment.systemPackages = [
-        (pkgs.runCommand "firefox-esr" { preferLocalBuild = true; } ''
-          mkdir -p $out/bin
-          ln -s ${oldpkgs.firefox-esr}/bin/firefox $out/bin/firefox-esr
-        '')
-      ];
-    })
     {
       environment.systemPackages = [
         pkgs.zathura

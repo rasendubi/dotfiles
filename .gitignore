@@ -44,3 +44,4 @@
 /.vim/spell/
 /.zsh/cache
 /emacs.el
+/.emacs.d/elpy/
