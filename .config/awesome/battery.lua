@@ -33,7 +33,9 @@ function battery.get_widget(adapter)
                                           ' Bat: '..dir..battery..'%'..dir..' </span>')
         end
 
-        if sta:match("Discharging") then
+        if sta:match("Full") then
+            battery_widget:set_markup("")
+        elseif sta:match("Discharging") then
             if battery < 10 then
                 naughty.notify {
                     title      = "Battery Warning",
@@ -47,8 +49,14 @@ function battery.get_widget(adapter)
             show_info(battery < 15 and 'red' or 'orange', "↓")
         elseif sta:match("Charging") then
             show_info('lightgreen', "↑")
+        elseif sta:match("Not charging") then
+            show_info('orange', "·")
+        elseif sta:match("Unknown") then
+            -- likely a charger malfunction
+            show_info('orange', "!")
         else
-            battery_widget:set_markup("")
+            -- this should not happen
+            show_info('orange', "?")
         end
     end
 
