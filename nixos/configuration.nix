@@ -20,13 +20,12 @@ let
         boot.loader.efi.canTouchEfiVariables = true;
       }
       {
-        boot.initrd.luks.devices = [
-          {
-            name = "root";
+        boot.initrd.luks.devices = {
+          root = {
             device = "/dev/disk/by-uuid/8b591c68-48cb-49f0-b4b5-2cdf14d583dc";
             preLVM = true;
-          }
-        ];
+          };
+        };
         fileSystems."/boot" = {
           device = "/dev/disk/by-uuid/BA72-5382";
           fsType = "vfat";
