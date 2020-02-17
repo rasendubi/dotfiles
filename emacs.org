@@ -1315,7 +1315,7 @@ If prefix is supplied, select different scheduled time."
   (org-todo "NEXT"))
 
 (general-def 'normal org-mode-map
-  "SPC n" #'rasen/org-do-today
+  ;; SPC n" #'rasen/org-do-today
 
   "SPC s" #'org-schedule
   "C-c C-s" (rasen/hard-way "SPC s")
@@ -1864,6 +1864,87 @@ Allow encrypted entries in org files.
 (setq org-habit-preceding-days 25)
 (setq org-habit-following-days 3)
 #+end_src
+** org-roam
+#+begin_src emacs-lisp
+(use-package org-roam
+  :after org
+  :hook
+  ((org-mode . org-roam-mode)
+   (after-init . org-roam--build-cache-async))
+  :general
+  (:states 'normal
+   "SPC n r" #'org-roam
+   "SPC n f" #'org-roam-find-file)
+  (:keymaps 'org-mode-map
+   :states 'insert
+   "C-c i" #'org-roam-insert)
+  :config
+  (setq org-roam-directory (concat rasen/org-directory "/roam"))
+  (setq org-roam-use-timestamp-as-filename nil)
+
+  (el-patch-defun org-roam--parse-content (&optional file-path)
+    "Parse the current buffer, and return a list of items for processing."
+    (org-element-map (org-element-parse-buffer) 'link
+      (lambda (link)
+        (let ((type (org-element-property :type link))
+              (path (org-element-property :path link))
+              (start (org-element-property :begin link)))
+          (when (and (string= type "file")
+                     (string= (file-name-extension path) "org"))
+            (goto-char start)
+            (let* ((element (org-element-at-point))
+                   (content (or (org-element-property :raw-value element)
+                                (buffer-substring
+                                 (or (org-element-property :content-begin element)
+                                     (org-element-property :begin element))
+                                 (or (org-element-property :content-end element)
+                                     (org-element-property :end element))))))
+              (list :from (or file-path
+                              (file-truename (buffer-file-name (current-buffer))))
+                    :to (file-truename (expand-file-name path org-roam-directory))
+                    :content (string-trim content))))))))
+
+  ;; use - as delimeter in file name
+  (el-patch-defun org-roam--title-to-slug (title)
+    "Convert TITLE to a filename-suitable slug."
+    (let* ((s (s-downcase title))
+           (s (replace-regexp-in-string (el-patch-swap "[^a-zA-Z0-9_ ]" "[^a-zA-Z0-9_ -]") "" s))
+           (s (s-split " " s))
+           (s (s-join (el-patch-swap "_" "-") s)))
+      s))
+
+  ;; do not highlight backlinks with org-block (it looks ugly)
+  (el-patch-defun org-roam-update (file-path)
+    "Show the backlinks for given org file for file at `FILE-PATH'."
+    (org-roam--ensure-cache-built)
+    (let ((buffer-title (org-roam--get-title-or-slug file-path)))
+      (with-current-buffer org-roam-buffer
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (when (not (eq major-mode 'org-mode))
+            (org-mode))
+          (make-local-variable 'org-return-follows-link)
+          (setq org-return-follows-link t)
+          (insert
+           (propertize buffer-title 'font-lock-face 'org-document-title))
+          (if-let ((backlinks (gethash file-path org-roam-backward-links-cache)))
+              (progn
+                (insert (format "\n\n* %d Backlinks\n"
+                                (hash-table-count backlinks)))
+                (maphash (lambda (file-from contents)
+                           (insert (format "** [[file:%s][%s]]\n"
+                                           file-from
+                                           (org-roam--get-title-or-slug file-from)))
+                           (dolist (content contents)
+                             (insert (concat (el-patch-add  "- ") (propertize (s-trim (s-replace "\n" " " content))
+                                                                              'font-lock-face (el-patch-swap 'org-block nil))
+                                             "\n\n"))))
+                         backlinks))
+            (insert "\n\n* No backlinks!")))
+        (read-only-mode 1)))
+    (setq org-roam-current-file file-path)))
+
+#+end_src
 ** Evilify
 #+begin_src emacs-lisp
 (use-package evil-org
@@ -1888,6 +1969,9 @@ Allow encrypted entries in org files.
     "C-c '"    (rasen/hard-way "'")
     "go"       #'org-open-at-point
     "C-c C-o"  (rasen/hard-way "go"))
+
+  ;; open file links in the same window
+  (push '(file . find-file) org-link-frame-setup)
 
   (general-def 'normal org-src-mode-map
     "'"      #'org-edit-src-exit
@@ -2548,6 +2632,15 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 #+begin_src emacs-lisp
 (use-package groovy-mode
   :mode "\\.\\(groovy\\|gradle\\)$")
+#+end_src
+** Forth
+#+begin_src emacs-lisp
+(use-package forth-mode
+  :config
+  (defun rasen/disable-electric-pair ()
+    (interactive)
+    (electric-pair-local-mode -1))
+  (add-hook 'forth-mode-hook #'rasen/disable-electric-pair))
 #+end_src
 ** Lua
 #+begin_src emacs-lisp

@@ -36,6 +36,7 @@ rec {
       flycheck-inline
       flycheck-jest
       flycheck-rust
+      forth-mode
       general
       gitconfig-mode
       go-mode
@@ -97,6 +98,7 @@ rec {
     ]) ++
     [
       epkgs.orgPackages.org-plus-contrib
+      epkgs.org-roam
 
       pkgs.ycmd
       pkgs.notmuch
