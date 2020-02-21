@@ -1869,8 +1869,7 @@ Allow encrypted entries in org files.
 (use-package org-roam
   :after org
   :hook
-  ((org-mode . org-roam-mode)
-   (after-init . org-roam--build-cache-async))
+  (after-init . org-roam-mode)
   :general
   (:states 'normal
    "SPC n r" #'org-roam
@@ -1880,38 +1879,17 @@ Allow encrypted entries in org files.
    "C-c i" #'org-roam-insert)
   :config
   (setq org-roam-directory (concat rasen/org-directory "/roam"))
-  (setq org-roam-use-timestamp-as-filename nil)
 
-  (el-patch-defun org-roam--parse-content (&optional file-path)
-    "Parse the current buffer, and return a list of items for processing."
-    (org-element-map (org-element-parse-buffer) 'link
-      (lambda (link)
-        (let ((type (org-element-property :type link))
-              (path (org-element-property :path link))
-              (start (org-element-property :begin link)))
-          (when (and (string= type "file")
-                     (string= (file-name-extension path) "org"))
-            (goto-char start)
-            (let* ((element (org-element-at-point))
-                   (content (or (org-element-property :raw-value element)
-                                (buffer-substring
-                                 (or (org-element-property :content-begin element)
-                                     (org-element-property :begin element))
-                                 (or (org-element-property :content-end element)
-                                     (org-element-property :end element))))))
-              (list :from (or file-path
-                              (file-truename (buffer-file-name (current-buffer))))
-                    :to (file-truename (expand-file-name path org-roam-directory))
-                    :content (string-trim content))))))))
-
-  ;; use - as delimeter in file name
-  (el-patch-defun org-roam--title-to-slug (title)
+  ;; use "-" as delimeter in file name
+  (defun rasen/org-roam--file-name (title)
     "Convert TITLE to a filename-suitable slug."
     (let* ((s (s-downcase title))
-           (s (replace-regexp-in-string (el-patch-swap "[^a-zA-Z0-9_ ]" "[^a-zA-Z0-9_ -]") "" s))
+           (s (replace-regexp-in-string "[^a-zA-Z0-9_ -]" "" s))
            (s (s-split " " s))
-           (s (s-join (el-patch-swap "_" "-") s)))
+           (s (s-join "-" s)))
       s))
+  (setq org-roam-file-name-function #'rasen/org-roam--file-name)
+  (setq org-roam-filename-noconfirm nil)
 
   ;; do not highlight backlinks with org-block (it looks ugly)
   (el-patch-defun org-roam-update (file-path)
@@ -1919,10 +1897,15 @@ Allow encrypted entries in org files.
     (org-roam--ensure-cache-built)
     (let ((buffer-title (org-roam--get-title-or-slug file-path)))
       (with-current-buffer org-roam-buffer
+        ;; Locally overwrite the file opening function to re-use the
+        ;; last window org-roam was called from
+        (setq-local
+         org-link-frame-setup
+         (cons '(file . org-roam--find-file) org-link-frame-setup))
         (let ((inhibit-read-only t))
           (erase-buffer)
-          (when (not (eq major-mode 'org-mode))
-            (org-mode))
+          (when (not (eq major-mode 'org-roam-backlinks-mode))
+            (org-roam-backlinks-mode))
           (make-local-variable 'org-return-follows-link)
           (setq org-return-follows-link t)
           (insert
@@ -1935,15 +1918,18 @@ Allow encrypted entries in org files.
                            (insert (format "** [[file:%s][%s]]\n"
                                            file-from
                                            (org-roam--get-title-or-slug file-from)))
-                           (dolist (content contents)
-                             (insert (concat (el-patch-add  "- ") (propertize (s-trim (s-replace "\n" " " content))
-                                                                              'font-lock-face (el-patch-swap 'org-block nil))
-                                             "\n\n"))))
+                           (dolist (properties contents)
+                             (let ((content (propertize
+                                             (s-trim (s-replace "\n" " "
+                                                                (plist-get properties :content)))
+                                             'font-lock-face (el-patch-swap 'org-block nil)
+                                             'help-echo "mouse-1: visit backlinked note"
+                                             'file-from file-from
+                                             'file-from-point (plist-get properties :point))))
+                               (insert (format (el-patch-swap "%s \n\n" "- %s\n\n") content)))))
                          backlinks))
             (insert "\n\n* No backlinks!")))
-        (read-only-mode 1)))
-    (setq org-roam-current-file file-path)))
-
+        (read-only-mode 1)))))
 #+end_src
 ** Evilify
 #+begin_src emacs-lisp
