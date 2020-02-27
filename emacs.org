@@ -1461,6 +1461,41 @@ Instanly go into insert mode on capture.
   :config
   (setq org-download-method 'directory))
 #+end_src
+** datetree
+#+begin_src emacs-lisp
+;; adapted from org-capture module
+
+(defun rasen/org-datetree-entry (arg)
+  "Add a date-tree entry in the current file. Interactive version."
+  (interactive "P")
+  (let ((d (calendar-gregorian-from-absolute
+            (if arg
+                ;; Current date, possibly corrected for late night
+                ;; workers.
+                (org-today)
+              (progn;; Prompt for date.
+                (let ((prompt-time (org-read-date
+                                    nil t nil "Date for tree entry:")))
+                  (cond ((and (or (not (boundp 'org-time-was-given))
+                                  (not org-time-was-given))
+                              (not (= (time-to-days prompt-time) (org-today))))
+                         ;; Use 00:00 when no time is given for another
+                         ;; date than today?
+                         (apply #'encode-time 0 0
+                                org-extend-today-until
+                                (cl-cdddr (decode-time prompt-time))))
+                        ((string-match "\\([^ ]+\\)--?[^ ]+[ ]+\\(.*\\)"
+                                       org-read-date-final-answer)
+                         ;; Replace any time range by its start.
+                         (apply #'encode-time
+                                (org-read-date-analyze
+                                 (replace-match "\\1 \\2" nil nil
+                                                org-read-date-final-answer)
+                                 prompt-time (decode-time prompt-time))))
+                        (t prompt-time))
+                  (time-to-days prompt-time)))))))
+    (org-datetree-find-date-create d)))
+#+end_src
 ** cliplink
 #+begin_src emacs-lisp
 (use-package org-cliplink
@@ -1868,6 +1903,7 @@ Allow encrypted entries in org files.
 #+begin_src emacs-lisp
 (use-package org-roam
   :after org
+  :diminish
   :hook
   (after-init . org-roam-mode)
   :general
