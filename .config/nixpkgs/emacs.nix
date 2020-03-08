@@ -64,6 +64,7 @@ rec {
       org-download
       org-drill
       org-pomodoro
+      org-super-agenda
       paren-face
       php-mode
       pip-requirements

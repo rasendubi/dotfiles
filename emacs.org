@@ -1766,22 +1766,64 @@ Configure my agenda view.
 #+begin_src emacs-lisp
 (setq org-agenda-span 6
       org-agenda-start-day "-1d")
-
-(setq org-agenda-custom-commands
-      '(("N" tags "+TODO=\"NEXT\"-PROJECT|+TODO=\"WAIT\"-PROJECT")
-        ("n" todo-tree "NEXT")
-        ("p" tags "+PROJECT/+NEXT") ; active projects
-        ("P" tags "+PROJECT/-DONE-CANCELED") ; all projects
-        ))
 #+end_src
 
 Configure stuck projects.
 #+name: org-config
 #+begin_src emacs-lisp
-(setq org-tags-exclude-from-inheritance '("PROJECT"))
-(setq org-use-tag-inheritance nil)
+(add-to-list 'org-tags-exclude-from-inheritance "PROJECT")
 (setq org-stuck-projects
       '("+PROJECT/-TODO-DONE-CANCELED-WAIT" ("NEXT" "WAIT") nil ""))
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package org-super-agenda
+  :config
+  (general-def org-super-agenda-header-map
+    "k" #'org-agenda-next-line
+    "j" #'org-agenda-previous-line)
+  (general-def 'motion org-agenda-mode-map
+    "g l" #'org-agenda-log-mode)
+  (setq org-agenda-block-separator nil
+        org-agenda-compact-blocks t
+        org-agenda-time-grid '((daily today require-timed) nil "......"  "----------------"))
+  (setq org-agenda-custom-commands
+        '(("o" "Overview"
+           ((agenda "" ((org-agenda-span 6)
+                        (org-agenda-start-day "-1d")
+                        (org-super-agenda-groups
+                         '((:habit t
+                            :order 10)
+                           (:name "Work"
+                            :category "work"
+                            :tag "work"
+                            :order 2)
+                           (:name none
+                            :time-grid t
+                            :anything t)
+                           ))))
+            (alltodo "" ((org-agenda-overriding-header "")
+                         (org-super-agenda-groups
+                          '((:discard (:scheduled t))
+                            (:name "Books"
+                             :and (:category "books"
+                                   :todo "NEXT")
+                             :order 11)
+                            (:name "Projects"
+                             :and (:tag "PROJECT"
+                                   :todo "NEXT")
+                             :order 9)
+                            (:name "Next"
+                             :todo "NEXT"
+                             :order 8)
+                            (:todo "WAIT"
+                             :order 12)
+                            (:discard (:anything t))))))))
+          ("N" tags "+TODO=\"NEXT\"-PROJECT|+TODO=\"WAIT\"-PROJECT")
+          ("n" todo-tree "NEXT")
+          ("p" tags "+PROJECT/+NEXT")             ; active projects
+          ("P" tags "+PROJECT/-DONE-CANCELED"))) ; all projects
+  (org-super-agenda-mode))
 #+end_src
 *** Allow NEXT projects to stuck
 =org-agenda-list-stuck-projects= marks project as unstuck if its header matches any of specified keywords. This makes all =NEXT= projects automatically unstuck.
@@ -1880,7 +1922,7 @@ Allow encrypted entries in org files.
 #+begin_src emacs-lisp
 (require 'org-crypt)
 (org-crypt-use-before-save-magic)
-(setq org-tags-exclude-from-inheritance '("crypt"))
+(add-to-list 'org-tags-exclude-from-inheritance "crypt")
 (setq org-crypt-key "rasen.dubi@gmail.com")
 (add-hook 'org-babel-pre-tangle-hook 'org-decrypt-entries t)
 #+end_src
@@ -2987,6 +3029,11 @@ I use monokai color scheme.
                         :background ,monokai-background
                         :inverse-video nil)))
      `(org-drawer ((t :foreground ,monokai-comments)))
+
+     `(org-super-agenda-header ((t :background ,monokai-background
+                                   :foreground ,monokai-orange
+                                   :weight normal
+                                   :inherit org-agenda-structure)))
 
      ;; Default company theming makes selected annotations appear on
      ;; another background than the rest of tooltip. This changes
