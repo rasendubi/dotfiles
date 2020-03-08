@@ -1420,7 +1420,15 @@ My capture templates.
          "* %?   :Meeting:\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t)
 
         ("n" "note" entry (file rasen/org-refile-file)
-         "* %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n")))
+         "* %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n")
+
+        ("l" "link" entry (file rasen/org-refile-file)
+         "* %a \n:PROPERTIES:\n:CREATED:  %U\n:END:\n"
+         :immediate-finish t)))
+
+(defun rasen/org-capture-link ()
+  (interactive)
+  (org-capture nil "l"))
 #+end_src
 
 Enable org-protocol.
@@ -2924,6 +2932,9 @@ See http://bnbeckwith.com/code/writegood-mode.html
     "K" #'notmuch-tag-jump)
 
   (general-def 'notmuch-show-mode-map
+    "C" #'rasen/org-capture-link)
+
+  (general-def 'notmuch-show-mode-map
     "M-u" (lambda ()
             (interactive)
             (notmuch-show-tag '("+unread"))))
@@ -2938,8 +2949,8 @@ See http://bnbeckwith.com/code/writegood-mode.html
                   ("s" ("+spam" "-inbox") "Mark as spam")
                   ("d" ("+deleted" "-inbox") "Delete")))
 
-  ;; (require 'org-notmuch)
-  )
+  ;; support for linking notmuch mails in org-mode
+  (require 'ol-notmuch))
 #+end_src
 * Workman
 ** quail
