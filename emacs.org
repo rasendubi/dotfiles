@@ -508,8 +508,20 @@ And evil commands to go to navigate errors.
   (lispyville-set-key-theme
    '(operators
      c-w
+     ;; < and >
      slurp/barf-cp
-     commentary)))
+     (atom-movement t)
+     commentary
+     ;; wrap with M-(, M-[, or M-{
+     wrap
+     additional
+     ;; M-o open below list, M-O open above list
+     additional-insert))
+
+  ;; override drag directions
+  (lispyville--define-key 'normal
+    (kbd "M-j") #'lispyville-drag-backward
+    (kbd "M-k") #'lispyville-drag-forward))
 #+end_src
 ** aggressive indent
 #+begin_src emacs-lisp
