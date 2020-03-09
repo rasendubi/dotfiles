@@ -1433,6 +1433,9 @@ My capture templates.
         ("t" "todo" entry (file rasen/org-refile-file)
          "* TODO %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t)
 
+        ("T" "today" entry (file rasen/org-refile-file)
+         "* NEXT %?\nSCHEDULED: %t\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t)
+
         ("m" "meeting" entry (file rasen/org-refile-file)
          "* %?   :Meeting:\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t)
 
@@ -1809,6 +1812,7 @@ Configure stuck projects.
     "j" #'org-agenda-previous-line)
   (general-def 'motion org-agenda-mode-map
     "g l" #'org-agenda-log-mode)
+  (setq org-agenda-sticky t)
   (setq org-agenda-block-separator nil
         org-agenda-compact-blocks t
         org-agenda-time-grid '((daily today require-timed) nil "......"  "----------------"))
@@ -1843,7 +1847,15 @@ Configure stuck projects.
                              :order 8)
                             (:todo "WAIT"
                              :order 12)
-                            (:discard (:anything t))))))))
+                            (:discard (:anything t))))))
+
+            (search "+{:CREATED:}" ((org-agenda-files (mapcar (lambda (x) (concat rasen/org-directory "/" x))
+                                                              '("refile-omicron.org" "orgzly.org" "refile-AlexeyShmalko.org")))
+                                    (org-agenda-overriding-header "")
+                                    (org-super-agenda-groups
+                                     '((:name "Inbox"
+                                        :auto-category t
+                                        :anything t)))))))
           ("N" tags "+TODO=\"NEXT\"-PROJECT|+TODO=\"WAIT\"-PROJECT")
           ("n" todo-tree "NEXT")
           ("p" tags "+PROJECT/+NEXT")             ; active projects
@@ -1931,6 +1943,11 @@ Do not confirm evaluation for emacs-lisp.
   (not (member lang '("emacs-lisp"))))
 
 (setq org-confirm-babel-evaluate 'rasen/org-confirm-babel-evaluate)
+#+end_src
+** Latex preview
+#+name: org-config
+#+begin_src emacs-lisp
+(setq org-latex-packages-alist '(("" "mhchem" t)))
 #+end_src
 ** Export
 Fix exporting for confluence.
