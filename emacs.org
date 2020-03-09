@@ -243,6 +243,11 @@ The following provides key binding to quickly open my emacs or system configurat
  "<f12>" #'rasen/find-emacs-config
  "<C-f12>" #'rasen/find-system-config)
 #+end_src
+
+Set PATH env variable from =exec-path=. This is required for =shell-command= to find executables available in =exec-path=. (Most notably, org-mode latex preview fails without this.)
+#+begin_src emacs-lisp
+(setenv "PATH" (string-join exec-path ":"))
+#+end_src
 ** String interpolation
 I use string interpolation in the main =README.org=.
 
