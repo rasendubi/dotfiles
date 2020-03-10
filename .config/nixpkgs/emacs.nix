@@ -94,12 +94,14 @@ rec {
       yaml-mode
       yasnippet
 
+      # needed for org-roam
+      dash f s emacsql emacsql-sqlite
+
       # provided by pkgs.notmuch:
       # notmuch
     ]) ++
     [
       epkgs.orgPackages.org-plus-contrib
-      epkgs.org-roam
 
       pkgs.ycmd
       pkgs.notmuch

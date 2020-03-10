@@ -1988,6 +1988,7 @@ Allow encrypted entries in org files.
 #+begin_src emacs-lisp
 (use-package org-roam
   :after org
+  :load-path "site-lisp/org-roam"
   :diminish
   :hook
   (after-init . org-roam-mode)
@@ -1996,7 +1997,7 @@ Allow encrypted entries in org files.
    "SPC n r" #'org-roam
    "SPC n f" #'org-roam-find-file)
   (:keymaps 'org-mode-map
-   :states 'insert
+   :states '(insert visual)
    "C-c i" #'org-roam-insert)
   :config
   (setq org-roam-directory (concat rasen/org-directory "/roam"))
@@ -2012,45 +2013,42 @@ Allow encrypted entries in org files.
   (setq org-roam-file-name-function #'rasen/org-roam--file-name)
   (setq org-roam-filename-noconfirm nil)
 
-  ;; do not highlight backlinks with org-block (it looks ugly)
-  (el-patch-defun org-roam-update (file-path)
-    "Show the backlinks for given org file for file at `FILE-PATH'."
-    (org-roam--ensure-cache-built)
-    (let ((buffer-title (org-roam--get-title-or-slug file-path)))
-      (with-current-buffer org-roam-buffer
-        ;; Locally overwrite the file opening function to re-use the
-        ;; last window org-roam was called from
-        (setq-local
-         org-link-frame-setup
-         (cons '(file . org-roam--find-file) org-link-frame-setup))
-        (let ((inhibit-read-only t))
-          (erase-buffer)
-          (when (not (eq major-mode 'org-roam-backlinks-mode))
-            (org-roam-backlinks-mode))
-          (make-local-variable 'org-return-follows-link)
-          (setq org-return-follows-link t)
-          (insert
-           (propertize buffer-title 'font-lock-face 'org-document-title))
-          (if-let ((backlinks (gethash file-path org-roam-backward-links-cache)))
-              (progn
-                (insert (format "\n\n* %d Backlinks\n"
-                                (hash-table-count backlinks)))
-                (maphash (lambda (file-from contents)
-                           (insert (format "** [[file:%s][%s]]\n"
-                                           file-from
-                                           (org-roam--get-title-or-slug file-from)))
-                           (dolist (properties contents)
-                             (let ((content (propertize
-                                             (s-trim (s-replace "\n" " "
-                                                                (plist-get properties :content)))
-                                             'font-lock-face (el-patch-swap 'org-block nil)
-                                             'help-echo "mouse-1: visit backlinked note"
-                                             'file-from file-from
-                                             'file-from-point (plist-get properties :point))))
-                               (insert (format (el-patch-swap "%s \n\n" "- %s\n\n") content)))))
-                         backlinks))
-            (insert "\n\n* No backlinks!")))
-        (read-only-mode 1)))))
+  (setq org-roam-capture-templates
+        '(("s" "static (slug)" plain (function org-roam--capture-get-point)
+           "%?"
+           :file-name "${slug}"
+           :head "#+TITLE: ${title}\n"
+           :unnarrowed t)
+          ("d" "dynamic (timestamp)" plain (function org-roam--capture-get-point)
+           "%?"
+           :file-name "%<%Y%m%d%H%M%S>"
+           :head "#+TITLE: ${title}\n"
+           :unnarrowed t)
+          ("m" "mixed (timestamp+slug)" plain (function org-roam--capture-get-point)
+           "%?"
+           :file-name "%<%Y%m%d%H%M%S>-${slug}"
+           :head "#+TITLE: ${title}\n"
+           :unnarrowed t)))
+
+  (el-patch-defun org-roam--title-to-slug (title)
+    "Convert TITLE to a filename-suitable slug."
+    (cl-flet* ((nonspacing-mark-p (char)
+                                  (eq 'Mn (get-char-code-property char 'general-category)))
+               (strip-nonspacing-marks (s)
+                                       (apply #'string (seq-remove #'nonspacing-mark-p
+                                                                   (ucs-normalize-NFD-string s))))
+               (replace (title pair)
+                        (replace-regexp-in-string (car pair) (cdr pair) title)))
+      (let* ((pairs `(el-patch-swap (("[^[:alnum:][:digit:]]" . "_") ;; convert anything not alphanumeric
+                                     ("__*" . "_")  ;; remove sequential underscores
+                                     ("^_" . "")    ;; remove starting underscore
+                                     ("_$" . ""))   ;; remove ending underscore
+                                    (("[^[:alnum:][:digit:]]" . "-") ;; convert anything not alphanumeric
+                                     ("--*" . "-")  ;; remove sequential dashes
+                                     ("^-" . "")    ;; remove starting dash
+                                     ("-$" . "")))) ;; remove ending dash
+             (slug (-reduce-from #'replace (strip-nonspacing-marks title) pairs)))
+        (s-downcase slug)))))
 #+end_src
 ** Evilify
 #+begin_src emacs-lisp
@@ -3075,6 +3073,13 @@ I use monokai color scheme.
                         :background ,monokai-background
                         :inverse-video nil)))
      `(org-drawer ((t :foreground ,monokai-comments)))
+
+     `(org-link ((t :foreground ,monokai-cyan
+                    :underline t)))
+     `(org-roam-link ((t :foreground ,monokai-green-l
+                         :inherit org-link)))
+     `(org-roam-backlink ((t ;; no styling
+                           )))
 
      `(org-super-agenda-header ((t :background ,monokai-background
                                    :foreground ,monokai-orange
