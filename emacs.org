@@ -1811,6 +1811,7 @@ Configure stuck projects.
     "k" #'org-agenda-next-line
     "j" #'org-agenda-previous-line)
   (general-def 'motion org-agenda-mode-map
+    "SPC SPC" #'org-save-all-org-buffers
     "g l" #'org-agenda-log-mode)
   (setq org-agenda-sticky t)
   (setq org-agenda-block-separator nil
