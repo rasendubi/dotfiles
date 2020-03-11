@@ -1809,9 +1809,6 @@ Configure stuck projects.
   (general-def org-super-agenda-header-map
     "k" #'org-agenda-next-line
     "j" #'org-agenda-previous-line)
-  (general-def 'motion org-agenda-mode-map
-    "SPC SPC" #'org-save-all-org-buffers
-    "g l" #'org-agenda-log-mode)
   (setq org-agenda-sticky t)
   (setq org-agenda-block-separator nil
         org-agenda-compact-blocks t
@@ -2102,6 +2099,7 @@ Allow encrypted entries in org files.
   (general-def 'motion org-agenda-mode-map
     ;; unset prefix
     "SPC"      nil
+    "SPC SPC"  #'org-save-all-org-buffers
     "SPC s"    #'org-agenda-schedule
     "C-c C-s"  (rasen/hard-way "SPC s")
     "SPC d"    #'org-agenda-deadline
@@ -2109,7 +2107,8 @@ Allow encrypted entries in org files.
     "SPC w"    #'org-agenda-refile
     "C-c C-w"  (rasen/hard-way "SPC w")
 
-    "go"       #'org-agenda-open-link))
+    "go"       #'org-agenda-open-link
+    "gl"       #'org-agenda-log-mode))
 #+end_src
 Use emacs-state in org-lint buffers.
 #+name: org-config
