@@ -1792,8 +1792,7 @@ Set my org files location.
 Configure my agenda view.
 #+name: org-config
 #+begin_src emacs-lisp
-(setq org-agenda-span 6
-      org-agenda-start-day "-1d")
+(setq org-agenda-span 6)
 #+end_src
 
 Configure stuck projects.
@@ -1820,7 +1819,6 @@ Configure stuck projects.
   (setq org-agenda-custom-commands
         '(("o" "Overview"
            ((agenda "" ((org-agenda-span 6)
-                        (org-agenda-start-day "-1d")
                         (org-super-agenda-groups
                          '((:habit t
                             :order 10)
@@ -1948,7 +1946,11 @@ Do not confirm evaluation for emacs-lisp.
 ** Latex preview
 #+name: org-config
 #+begin_src emacs-lisp
+;; Use mhchem for chemistry formulas
 (setq org-latex-packages-alist '(("" "mhchem" t)))
+
+;; Store all preview in external directory
+(setq org-preview-latex-image-directory (expand-file-name "cache/ltximg/" user-emacs-directory))
 #+end_src
 ** Export
 Fix exporting for confluence.
@@ -1992,26 +1994,19 @@ Allow encrypted entries in org files.
   :diminish
   :hook
   (after-init . org-roam-mode)
+
   :general
   (:states 'normal
    "SPC n r" #'org-roam
-   "SPC n f" #'org-roam-find-file)
+   "SPC n f" #'org-roam-find-file
+   "SPC n b" #'org-roam-switch-to-buffer)
   (:keymaps 'org-mode-map
    :states '(insert visual)
    "C-c i" #'org-roam-insert)
-  :config
-  (setq org-roam-directory (concat rasen/org-directory "/roam"))
 
-  ;; use "-" as delimeter in file name
-  (defun rasen/org-roam--file-name (title)
-    "Convert TITLE to a filename-suitable slug."
-    (let* ((s (s-downcase title))
-           (s (replace-regexp-in-string "[^a-zA-Z0-9_ -]" "" s))
-           (s (s-split " " s))
-           (s (s-join "-" s)))
-      s))
-  (setq org-roam-file-name-function #'rasen/org-roam--file-name)
-  (setq org-roam-filename-noconfirm nil)
+  :config
+  (setq org-roam-directory (concat rasen/org-directory "/roam")
+        org-roam-db-filename (expand-file-name "cache/org-roam.db" user-emacs-directory))
 
   (setq org-roam-capture-templates
         '(("s" "static (slug)" plain (function org-roam--capture-get-point)
@@ -2049,6 +2044,14 @@ Allow encrypted entries in org files.
                                      ("-$" . "")))) ;; remove ending dash
              (slug (-reduce-from #'replace (strip-nonspacing-marks title) pairs)))
         (s-downcase slug)))))
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package company-org-roam
+  :after org org-roam company
+  :load-path "site-lisp/org-roam"
+  :config
+  (company-org-roam-init))
 #+end_src
 ** Evilify
 #+begin_src emacs-lisp
@@ -2919,8 +2922,8 @@ See http://bnbeckwith.com/code/writegood-mode.html
   (setq notmuch-archive-tags '("-unread"))
   (setq notmuch-saved-searches
         '(
-          (:name "unread" :query "tag:unread and not tag:nixos and not tag:rust" :key "u")
-          (:name "unread-inbox" :query "tag:inbox and tag:unread" :key "i")
+          (:name "unread-inbox" :query "tag:inbox and tag:unread" :key "u")
+          ;; (:name "unread" :query "tag:unread and not tag:nixos and not tag:rust" :key "u")
           (:name "unread-egoless" :query "tag:egoless and tag:unread" :key "e")
           (:name "unread-rust" :query "tag:unread and tag:rust" :key "r")
           (:name "unread-nixos" :query "tag:unread and tag:nixos and not tag:nixpkgs" :key "n")
