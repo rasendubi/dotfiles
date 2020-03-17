@@ -86,6 +86,7 @@ rec {
       use-package
       visual-fill-column
       vue-mode
+      w3m
       web-mode
       wgrep
       which-key

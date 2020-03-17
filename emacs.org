@@ -600,6 +600,12 @@ Do not start input with =^= and ignore the case.
 (setq-default ivy-re-builders-alist '((t . ivy--regex-ignore-order)))
 #+end_src
 
+Do not show ~./~ and ~../~ during file name completion.
+#+name: ivy-config
+#+begin_src emacs-lisp
+(setq-default ivy-extra-directories nil)
+#+end_src
+
 The normal =C-j= is not placed conveniently on Workman layout, so move its function to =C-e= (which is qwerty =k=).
 #+name: ivy-config
 #+begin_src emacs-lisp
@@ -1246,7 +1252,9 @@ My helper to find all org files in a directory.
 #+begin_src emacs-lisp
 (defun rasen/org-files-in-dir (dir)
   (f-files dir
-           (lambda (file) (f-ext? file "org"))
+           (lambda (file) (or (f-ext? file "org")
+                              (and (f-ext? file "gpg")
+                                   (f-ext? (f-no-ext file) "org"))))
            nil))
 #+end_src
 
@@ -2114,6 +2122,7 @@ Use emacs-state in org-lint buffers.
 #+name: org-config
 #+begin_src emacs-lisp
 (evil-set-initial-state 'org-lint--report-mode 'emacs)
+(evil-set-initial-state 'epa-key-list-mode 'emacs)
 #+end_src
 ** Auto-complete heading names
 #+begin_src emacs-lisp
@@ -2918,6 +2927,8 @@ See http://bnbeckwith.com/code/writegood-mode.html
 #+begin_src emacs-lisp
 (use-package notmuch
   :config
+  ;; (setq mm-text-html-renderer 'w3m)
+
   (setq notmuch-archive-tags '("-unread"))
   (setq notmuch-saved-searches
         '(
