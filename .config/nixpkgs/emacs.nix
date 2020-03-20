@@ -1,6 +1,10 @@
 { pkgs ? import <nixpkgs> {} }:
 rec {
-  emacs = pkgs.emacs;
+  emacs = pkgs.emacs.override {
+    # Build emacs with proper imagemagick support.
+    # See https://github.com/NixOS/nixpkgs/issues/70631#issuecomment-570085306
+    imagemagick = pkgs.imagemagickBig;
+  };
   emacsPackages = (epkgs:
     (with epkgs.melpaPackages; [
       aggressive-indent
@@ -106,6 +110,8 @@ rec {
 
       pkgs.ycmd
       pkgs.notmuch
+      pkgs.w3m
+      pkgs.imagemagick
 
       (pkgs.python3.withPackages (pypkgs: [
         pypkgs.autopep8

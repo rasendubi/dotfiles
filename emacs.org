@@ -2,7 +2,7 @@
 
 * Configuration infrastructure
 ** Bootstrap
-Emacs does not source this file automatically, so I need to instruct it to. Check [[https://orgmode.org/worg/org-contrib/babel/intro.html#emacs-initialization][org-babel documentation]] for more info. The following snippet is an adaptation of that idea and goes to my =.emacs.d/init.el=.
+Emacs does not source this file automatically, so I need to instruct it to. Check [[https://orgmode.org/worg/org-contrib/babel/intro.html#emacs-initialization][org-babel documentation]] for more info. The following snippet is an adaptation of that idea and goes to my ~.emacs.d/init.el~.
 
 #+begin_src emacs-lisp :tangle .emacs.d/init.el :noweb no
 ;;; init.el --- The start of my configuration
@@ -1222,6 +1222,12 @@ Set tags faces, so they are more distinguishable.
 (set-face-attribute 'org-ellipsis nil :inverse-video nil)
 (setq org-tag-faces
       '(("ARCHIVE" . (:inverse-video nil))))
+#+end_src
+
+Scale inline images by default:
+#+name: org-config
+#+begin_src emacs-lisp
+(setq org-image-actual-width '(1024))
 #+end_src
 
 Open pdfs in external viewer:

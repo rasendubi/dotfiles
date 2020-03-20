@@ -6,7 +6,7 @@ emacs README.org --batch -f org-babel-tangle
 
 #+RESULTS:
 
-I keep this document in sync with generated config files just in case I won't have access to my emacs. However, I recommend against looking at them---they're just a generated mess; you'll have much better time reading this doc instead---trust me.
+I keep this document in sync with generated config files just in case I won't have access to my Emacs. However, I recommend against looking at them---they're just a generated mess; you'll have much better time reading this doc instead---trust me.
 
 Pieces not (yet) covered in this document are:
 - emacs configuration at =.emacs.d/=;
@@ -780,7 +780,7 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
   };
 }
 #+end_src
-** HiDPI
+** Hi-DPI
 These are for omicron-only.
 
 #+begin_src fundamental :tangle .Xresources
