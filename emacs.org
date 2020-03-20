@@ -1496,7 +1496,11 @@ Instanly go into insert mode on capture.
 #+begin_src emacs-lisp
 (use-package org-download
   :config
-  (setq org-download-method 'directory))
+  (setq org-download-method 'directory)
+  ;; "download" screenshots from clipboard
+  (setq org-download-screenshot-method "xclip -selection clipboard -t image/png -o > %s")
+  ;; Use org-roam timestamp style
+  (setq org-download-timestamp "%Y%m%d%H%M%S-"))
 #+end_src
 ** datetree
 #+begin_src emacs-lisp
