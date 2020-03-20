@@ -62,6 +62,7 @@ rec {
       markdown-mode
       mbsync
       monokai-theme
+      modus-operandi-theme
       nix-mode
       nix-sandbox
       org-cliplink

@@ -1214,14 +1214,9 @@ Do not indent tags.
 (setq org-tags-column 0)
 #+end_src
 
-Set tags faces, so they are more distinguishable.
 #+name: org-config
 #+begin_src emacs-lisp
-(set-face-attribute 'org-tag nil :inverse-video t)
-(set-face-attribute 'org-archived nil :inverse-video nil)
-(set-face-attribute 'org-ellipsis nil :inverse-video nil)
-(setq org-tag-faces
-      '(("ARCHIVE" . (:inverse-video nil))))
+(setq org-ellipsis "…")
 #+end_src
 
 Scale inline images by default:
@@ -3039,99 +3034,144 @@ Do not blink cursor.
 #+begin_src emacs-lisp
 (blink-cursor-mode 0)
 #+end_src
-** Color scheme
-I use monokai color scheme.
+** Color theme
+I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme.
 #+begin_src emacs-lisp
-(use-package monokai-theme
+(use-package modus-operandi-theme
   :config
-  (load-theme 'monokai t)
+  (setq modus-operandi-theme-slanted-constructs t)
+  (setq modus-operandi-theme-bold-constructs t)
+  (setq modus-operandi-theme-proportional-fonts t)
+  (load-theme 'modus-operandi t)
 
-  (let* (;; Darker and lighter accented colors
-         (monokai-yellow-d       "#BEB244")
-         (monokai-yellow-l       "#FFF7A8")
-         (monokai-orange-d       "#D47402")
-         (monokai-orange-l       "#FFAC4A")
-         (monokai-red-d          "#F70057")
-         (monokai-red-l          "#FA518D")
-         (monokai-magenta-d      "#FB35EA")
-         (monokai-magenta-l      "#FE8CF4")
-         (monokai-violet-d       "#945AFF")
-         (monokai-violet-l       "#C9ACFF")
-         (monokai-blue-d         "#40CAE4")
-         (monokai-blue-l         "#92E7F7")
-         (monokai-cyan-d         "#74DBCD")
-         (monokai-cyan-l         "#D3FBF6")
-         (monokai-green-d        "#86C30D")
-         (monokai-green-l        "#BBEF53")
-         (monokai-gray-d         "#35331D")
-         (monokai-gray-l         "#7B7962"))
+  (let ((class '((class color) (min-colors 89)))
+        (fg-main "#000000") (bg-main "#ffffff")
+        (fg-alt "#505050") (bg-alt "#f3f1f3")
+        (fg-dim "#282828") (bg-dim "#f8f8f8")
+        ;; specifically for on/off states (e.g. `mode-line')
+        ;;
+        ;; must be combined with themselves
+        (fg-active "#191919") (bg-active "#e0e0e0")
+        (fg-inactive "#424242") (bg-inactive "#efedef")
+        ;; special base values, used only for cases where the above
+        ;; fg-* or bg-* cannot or should not be used (to avoid confusion)
+        ;; must be combined with: {fg,bg}-{main,alt,dim}
+        (fg-special-cold "#093060") (bg-special-cold "#dde3f4")
+        (fg-special-mild "#184034") (bg-special-mild "#c4ede0")
+        (fg-special-warm "#5d3026") (bg-special-warm "#f0e0d4")
+        (fg-special-calm "#61284f") (bg-special-calm "#f8ddea")
+        ;; styles for the main constructs
+        ;;
+        ;; must be combined with: `bg-main', `bg-alt', `bg-dim'
+        (red "#a80000") (green "#005200")
+        (yellow "#8b3800") (blue "#0030a6")
+        (magenta "#721045") (cyan "#005589")
+        ;; styles for common, but still specialised constructs
+        ;;
+        ;; must be combined with: `bg-main', `bg-alt', `bg-dim'
+        (red-alt "#880000") (green-alt "#4a5700")
+        (yellow-alt "#714900") (blue-alt "#223fbf")
+        (magenta-alt "#8f0075") (cyan-alt "#185870")
+        ;; same purpose as above, just slight differences
+        ;;
+        ;; must be combined with: `bg-main', `bg-alt', `bg-dim'
+        (red-alt-other "#9d2020") (green-alt-other "#145a00")
+        (yellow-alt-other "#804000") (blue-alt-other "#0000bb")
+        (magenta-alt-other "#5317ac") (cyan-alt-other "#005a68")
+        ;; styles for elements that should be very subtle
+        ;;
+        ;; must be combined with: `bg-main', `bg-alt', `bg-dim'
+        (red-nuanced "#4d0006") (green-nuanced "#003000")
+        (yellow-nuanced "#3a2a00") (blue-nuanced "#001170")
+        (magenta-nuanced "#381050") (cyan-nuanced "#003434")
+        ;; styles for elements that should draw attention to themselves
+        ;;
+        ;; must be combined with: `bg-main'
+        (red-intense "#b60000") (green-intense "#006800")
+        (yellow-intense "#904200") (blue-intense "#1111ee")
+        (magenta-intense "#7000e0") (cyan-intense "#205b93")
+        ;; styles for background elements that should be visible yet
+        ;; subtle
+        ;;
+        ;; must be combined with: `fg-dim'
+        (red-subtle-bg "#f2b0a2") (green-subtle-bg "#aecf90")
+        (yellow-subtle-bg "#e4c340") (blue-subtle-bg "#b5d0ff")
+        (magenta-subtle-bg "#f0d3ff") (cyan-subtle-bg "#c0efff")
+        ;; styles for background elements that should be visible and
+        ;; distinguishable
+        ;;
+        ;; must be combined with: `fg-main'
+        (red-intense-bg "#ff8892") (green-intense-bg "#5ada88")
+        (yellow-intense-bg "#f5df23") (blue-intense-bg "#6aaeff")
+        (magenta-intense-bg "#d5baff") (cyan-intense-bg "#42cbd4")
+        ;; styles for refined git diffs and other contexts where both the
+        ;; foreground and the background need to have the same/similar hue
+        ;;
+        ;; must be combined with themselves OR the foregrounds can be
+        ;; combined with any of the base backgrounds
+        (red-refine-bg "#ffcccc") (green-refine-bg "#aceaac")
+        (yellow-refine-bg "#fff29a") (blue-refine-bg "#8ac7ff")
+        (magenta-refine-bg "#ffccff") (cyan-refine-bg "#8eecf4")
+        (red-refine-fg "#780000") (green-refine-fg "#004c00")
+        (yellow-refine-fg "#604000") (blue-refine-fg "#002288")
+        (magenta-refine-fg "#770077") (cyan-refine-fg "#004850")
+        ;; styles that are meant exclusively for the mode line
+        ;;
+        ;; must be combined with: `bg-active', `bg-inactive'
+        (red-active "#930000") (green-active "#005300")
+        (yellow-active "#703700") (blue-active "#0033c0")
+        (magenta-active "#6320a0") (cyan-active "#004882")
+
+        ;; styles reserved for specific faces
+        ;;
+        ;; `bg-hl-line' is between `bg-dim' and `bg-alt', so it should
+        ;; work with all accents that cover those two, plus `bg-main'
+        ;;
+        ;; `bg-header' is between `bg-active' and `bg-inactive', so it
+        ;; can be combined with any of the "active" values, plus the
+        ;; "special" and base foreground colours
+        ;;
+        ;; `bg-region' must be combined with `fg-main'
+        ;;
+        ;; the window divider colours apply to faces with just an fg value
+        ;;
+        ;; all other pairs are combinable with themselves
+        (bg-hl-line "#f1f2f6")
+        (bg-region "#bcbcbc")
+        (fg-window-divider-inner "#888888")
+        (fg-window-divider-outer "#585858")
+        (fg-header "#2a2a2a") (bg-header "#e5e5e5")
+        (fg-whitespace "#645060") (bg-whitespace "#fff8fc")
+        (fg-paren-match "#222222") (bg-paren-match "#deb8af"))
 
     (custom-theme-set-faces
-     'monokai
+     'modus-operandi
 
-     ;; If org-block-end-line happens to be the last line in the
-     ;; collapsed tree, the whole line after ellipsis is highlighted in
-     ;; the background color, which is not nice.
-     `(org-block-begin-line ((t :foreground ,monokai-comments :background nil)))
-     `(org-block-end-line ((t :foreground ,monokai-comments :background nil)))
+     `(flyspell-duplicate
+       ((,(append '((supports :underline (:style wave))) class)
+         (:underline (:style wave :color ,yellow)))
+        (,class (:underline ,yellow))))
+     `(flyspell-incorrect
+       ((,(append '((supports :underline (:style wave))) class)
+         (:underline (:style wave :color ,red)))
+        (,class (:underline ,red))))
 
-     ;; I just don't like boxes around checkboxes
-     `(org-checkbox ((t :background ,monokai-background
-                        :foreground ,monokai-foreground
-                        :box nil)))
+     `(org-todo ((,class :foreground ,magenta-alt-other
+                         :weight bold)))
+     `(org-archived ((,class (:foreground ,fg-alt))))
+     `(org-done ((,class :foreground ,fg-alt)))
+     `(org-agenda-done ((,class :foreground ,fg-alt)))
+     `(org-link ((,class :background ,bg-alt :underline nil :inherit link)))
+     `(org-roam-link ((,class :foreground ,green-alt-other
+                              :inherit org-link))))
 
-     ;; Light colors on yellow background look terrible. Use something
-     ;; legit instead.
-     `(org-clock-overlay ((t :background ,monokai-highlight-alt)))
-
-     `(org-tag ((t :weight bold :inverse-video t)))
-     `(org-archived ((t :foreground ,monokai-comments
-                        :weight normal
-                        :inverse-video nil)))
-     `(org-ellipsis ((t :foreground ,monokai-comments
-                        :background ,monokai-background
-                        :inverse-video nil)))
-     `(org-drawer ((t :foreground ,monokai-comments)))
-
-     `(org-link ((t :foreground ,monokai-cyan
-                    :underline t)))
-     `(org-roam-link ((t :foreground ,monokai-green-l
-                         :inherit org-link)))
-     `(org-roam-backlink ((t ;; no styling
-                           )))
-
-     `(org-super-agenda-header ((t :background ,monokai-background
-                                   :foreground ,monokai-orange
-                                   :weight normal
-                                   :inherit org-agenda-structure)))
-
-     ;; Default company theming makes selected annotations appear on
-     ;; another background than the rest of tooltip. This changes
-     ;; tooltip selection background, so both tooltips and annotations
-     ;; are legible.
-     `(company-tooltip-selection ((t :foreground ,monokai-background
-                                     :background ,monokai-emphasis
-                                     :weight bold)))
-     `(company-tooltip-common-selection ((t :foreground ,monokai-background
-                                            :background ,monokai-emphasis
-                                            :weight bold
-                                            :underline t)))
-     `(company-tooltip-annotation-selection ((t :foreground ,monokai-green-d
-                                                :background ,monokai-emphasis
-                                                :weight bold
-                                                :inherit company-tooltip-annotation)))
-
-     ;; spaceline theming
-     `(spaceline-evil-normal  ((t :foreground "#3E3D31" :weight bold :background ,monokai-green :inherit 'mode-line)))
-     `(spaceline-evil-insert  ((t :foreground "#3E3D31" :weight bold :background ,monokai-blue :inherit 'mode-line)))
-     `(spaceline-evil-emacs   ((t :foreground "#3E3D31" :weight bold :background ,monokai-violet :inherit 'mode-line)))
-     `(spaceline-evil-replace ((t :foreground "#3E3D31" :weight bold :background ,monokai-red :inherit 'mode-line)))
-     `(spaceline-evil-visual  ((t :foreground "#3E3D31" :weight bold :background ,monokai-yellow :inherit 'mode-line)))
-     `(spaceline-evil-motion  ((t :foreground "#3E3D31" :weight bold :background ,monokai-orange :inherit 'mode-line)))
-
-     ;; show lsp-ui on different background than normal code, so they
-     ;; are distinguishable.
-     `(lsp-ui-sideline-global ((t :background ,monokai-highlight-alt))))))
+    (setq org-todo-keyword-faces
+          `(("TODO"     . (:foreground ,blue-intense :inherit fixed-pitch))
+            ("NEXT"     . (:foreground ,red-intense  :inherit fixed-pitch))
+            ("BUILD"    . (:foreground ,red-intense  :inherit fixed-pitch))
+            ("WAIT"     . (:foreground ,magenta-alt  :inherit fixed-pitch))
+            ("DONE"     . (:foreground ,fg-alt       :inherit fixed-pitch))
+            ("CANCELED" . (:foreground ,fg-alt       :inherit fixed-pitch))))))
 #+end_src
 ** Modeline
 I use spaceline.
@@ -3232,12 +3272,20 @@ ADDITIONAL-SEGMENTS are inserted on the right, between `global' and
   (and (display-graphic-p) (not (null (x-list-fonts font)))))
 
 (defun rasen/set-my-fonts ()
-  (cond ((rasen/font-exists-p "Terminess Powerline")
+  (cond ((rasen/font-exists-p "Fira Code")
+         (set-face-attribute 'fixed-pitch nil :family "Fira Code" :height 90)
+         (set-face-attribute 'default nil :family "Fira Code" :height 90))
+        ((rasen/font-exists-p "Terminess Powerline")
          (set-face-attribute 'fixed-pitch nil :family "Terminess Powerline" :height 160)
          (set-face-attribute 'default nil :family "Terminess Powerline" :height 160))
         ((rasen/font-exists-p "Terminus")
          (set-face-attribute 'fixed-pitch nil :family "Terminus" :height 160)
-         (set-face-attribute 'default nil :family "Terminus" :height 160))))
+         (set-face-attribute 'default nil :family "Terminus" :height 160)))
+
+  (cond ((rasen/font-exists-p "Vollkorn")
+         (set-face-attribute 'variable-pitch nil :family "Vollkorn"))
+        ((rasen/font-exists-p "DejaVu Sans")
+         (set-face-attribute 'variable-pitch nil :family "DejaVu Sans"))))
 
 (rasen/set-my-fonts)
 #+end_src
@@ -3249,6 +3297,79 @@ Apply my font setting when new frame is created (useful when emacs is started in
   (rasen/set-my-fonts))
 
 (add-hook 'after-make-frame-functions 'rasen/font-hook)
+#+end_src
+
+*** Fira Code Ligatures
+Copied from https://github.com/tonsky/FiraCode/wiki/Emacs-instructions#using-prettify-symbols.
+#+begin_src emacs-lisp
+(defun fira-code-mode--make-alist (list)
+  "Generate prettify-symbols alist from LIST."
+  (let ((idx -1))
+    (mapcar
+     (lambda (s)
+       (setq idx (1+ idx))
+       (let* ((code (+ #Xe100 idx))
+          (width (string-width s))
+          (prefix ())
+          (suffix '(?\s (Br . Br)))
+          (n 1))
+     (while (< n width)
+       (setq prefix (append prefix '(?\s (Br . Bl))))
+       (setq n (1+ n)))
+     (cons s (append prefix suffix (list (decode-char 'ucs code))))))
+     list)))
+
+(defconst fira-code-mode--ligatures
+  '("www" "**" "***" "**/" "*>" "*/" "\\\\" "\\\\\\"
+    "{-" "[]" "::" ":::" ":=" "!!" "!=" "!==" "-}"
+    "--" "---" "-->" "->" "->>" "-<" "-<<" "-~"
+    "#{" "#[" "##" "###" "####" "#(" "#?" "#_" "#_("
+    ".-" ".=" ".." "..<" "..." "?=" "??" ";;" "/*"
+    "/**" "/=" "/==" "/>" "//" "///" "&&" "||" "||="
+    "|=" "|>" "^=" "$>" "++" "+++" "+>" "=:=" "=="
+    "===" "==>" "=>" "=>>" "<=" "=<<" "=/=" ">-" ">="
+    ">=>" ">>" ">>-" ">>=" ">>>" "<*" "<*>" "<|" "<|>"
+    "<$" "<$>" "<!--" "<-" "<--" "<->" "<+" "<+>" "<="
+    "<==" "<=>" "<=<" "<>" "<<" "<<-" "<<=" "<<<" "<~"
+    "<~~" "</" "</>" "~@" "~-" "~=" "~>" "~~" "~~>" "%%"
+    "x" ":" "+" "+" "*"))
+
+(defvar fira-code-mode--old-prettify-alist)
+
+(defun fira-code-mode--enable ()
+  "Enable Fira Code ligatures in current buffer."
+  (setq-local fira-code-mode--old-prettify-alist prettify-symbols-alist)
+  (setq-local prettify-symbols-alist (append (fira-code-mode--make-alist fira-code-mode--ligatures)
+                                             fira-code-mode--old-prettify-alist))
+  (prettify-symbols-mode t))
+
+(defun fira-code-mode--disable ()
+  "Disable Fira Code ligatures in current buffer."
+  (setq-local prettify-symbols-alist fira-code-mode--old-prettify-alist)
+  (prettify-symbols-mode -1))
+
+(define-minor-mode fira-code-mode
+  "Fira Code ligatures minor mode"
+  :lighter " Fira Code"
+  (setq-local prettify-symbols-unprettify-at-point 'right-edge)
+  (if fira-code-mode
+      (fira-code-mode--enable)
+    (fira-code-mode--disable)))
+
+(defun fira-code-mode--setup ()
+  "Setup Fira Code Symbols"
+  (set-fontset-font t '(#Xe100 . #Xe16f) "Fira Code Symbol"))
+
+(add-hook 'prog-mode-hook #'fira-code-mode)
+#+end_src
+** Variable-pitch fonts in org-mode
+Use variable-pitch fonts in org-mode.
+#+name: org-config
+#+begin_src emacs-lisp
+(push "~/.emacs.d/site-lisp" load-path)
+(require 'org-variable-pitch)
+(setq org-variable-pitch-fixed-font "Fira Code")
+(add-hook 'org-mode-hook 'org-variable-pitch-minor-mode)
 #+end_src
 ** Misc
 Hightlight parentheses, show current column.

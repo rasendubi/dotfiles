@@ -315,6 +315,10 @@ in
           source-code-pro
           ubuntu_font_family
           unifont
+          fira-code
+          fira-code-symbols
+          libertine
+          vollkorn
         ];
       };
     }

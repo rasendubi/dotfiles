@@ -776,6 +776,9 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
       source-code-pro
       ubuntu_font_family
       unifont
+      fira-code
+      fira-code-symbols
+      vollkorn
     ];
   };
 }
