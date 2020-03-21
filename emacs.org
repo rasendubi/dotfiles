@@ -1996,6 +1996,13 @@ Allow encrypted entries in org files.
 (setq org-habit-preceding-days 25)
 (setq org-habit-following-days 3)
 #+end_src
+** adaptive-wrap
+Better line wrapping.
+#+begin_src emacs-lisp
+(use-package adaptive-wrap
+  :config
+  (add-hook 'org-mode-hook #'adaptive-wrap-prefix-mode))
+#+end_src
 ** org-roam
 #+begin_src emacs-lisp
 (use-package org-roam
@@ -3374,6 +3381,49 @@ Use variable-pitch fonts in org-mode.
 (require 'org-variable-pitch)
 (setq org-variable-pitch-fixed-font "Fira Code")
 (add-hook 'org-mode-hook 'org-variable-pitch-minor-mode)
+#+end_src
+
+Patch adaptive-wrap, so it work better with org-variable-pitch-mode (i.e., make adaptive prefix fixed-pitch).
+#+begin_src emacs-lisp
+(el-patch-defun adaptive-wrap-prefix-function (beg end)
+    "Indent the region between BEG and END with adaptive filling."
+    ;; Any change at the beginning of a line might change its wrap prefix, which
+    ;; affects the whole line.  So we need to "round-up" `end' to the nearest end
+    ;; of line.  We do the same with `beg' although it's probably not needed.
+    (goto-char end)
+    (unless (bolp) (forward-line 1))
+    (setq end (point))
+    (goto-char beg)
+    (forward-line 0)
+    (setq beg (point))
+    (while (< (point) end)
+      (let ((lbp (point)))
+        (put-text-property
+         (point) (progn (search-forward "\n" end 'move) (point))
+         'wrap-prefix
+         (let ((pfx (adaptive-wrap-fill-context-prefix
+                     lbp (point))))
+           ;; Remove any `wrap-prefix' property that
+           ;; might have been added earlier.
+           ;; Otherwise, we end up with a string
+           ;; containing a `wrap-prefix' string
+           ;; containing a `wrap-prefix' string ...
+           (remove-text-properties
+            0 (length pfx) '(wrap-prefix) pfx)
+           (let ((dp (get-text-property 0 'display pfx)))
+             (when (and dp (eq dp (get-text-property (1- lbp) 'display)))
+               ;; There's a `display' property which covers not just the
+               ;; prefix but also the previous newline.  So it's not just making
+               ;; the prefix more pretty and could interfere or even defeat our
+               ;; efforts (e.g. it comes from `visual-fill-mode').
+               (remove-text-properties
+                0 (length pfx) '(display) pfx)))
+
+           (el-patch-add
+             (add-face-text-property 0 (length pfx) 'fixed-pitch nil pfx))
+
+           pfx))))
+    `(jit-lock-bounds ,beg . ,end))
 #+end_src
 ** Misc
 Hightlight parentheses, show current column.

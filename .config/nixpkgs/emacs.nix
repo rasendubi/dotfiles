@@ -108,6 +108,7 @@ rec {
     ]) ++
     [
       epkgs.orgPackages.org-plus-contrib
+      epkgs.elpaPackages.adaptive-wrap
 
       pkgs.ycmd
       pkgs.notmuch
