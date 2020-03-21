@@ -3283,9 +3283,9 @@ ADDITIONAL-SEGMENTS are inserted on the right, between `global' and
   (and (display-graphic-p) (not (null (x-list-fonts font)))))
 
 (defun rasen/set-my-fonts ()
-  (cond ((rasen/font-exists-p "Fira Code")
-         (set-face-attribute 'fixed-pitch nil :family "Fira Code" :height 90)
-         (set-face-attribute 'default nil :family "Fira Code" :height 90))
+  (cond ((rasen/font-exists-p "Fira Code Retina")
+         (set-face-attribute 'fixed-pitch nil :family "Fira Code Retina" :height 80)
+         (set-face-attribute 'default nil :family "Fira Code Retina" :height 80))
         ((rasen/font-exists-p "Terminess Powerline")
          (set-face-attribute 'fixed-pitch nil :family "Terminess Powerline" :height 160)
          (set-face-attribute 'default nil :family "Terminess Powerline" :height 160))
@@ -3379,7 +3379,7 @@ Use variable-pitch fonts in org-mode.
 #+begin_src emacs-lisp
 (push "~/.emacs.d/site-lisp" load-path)
 (require 'org-variable-pitch)
-(setq org-variable-pitch-fixed-font "Fira Code")
+(setq org-variable-pitch-fixed-font "Fira Code Retina")
 (add-hook 'org-mode-hook 'org-variable-pitch-minor-mode)
 #+end_src
 
