@@ -45,3 +45,4 @@
 /.zsh/cache
 /emacs.el
 /.emacs.d/elpy/
+/.emacs.d/cache/

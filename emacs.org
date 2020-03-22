@@ -1178,6 +1178,7 @@ Automatically determine indent style.
 Company-box frontend works better with variable-pitch fonts.
 #+begin_src emacs-lisp
 (use-package company-box
+  :diminish
   :hook (company-mode . company-box-mode))
 #+end_src
 * Org-mode
@@ -3176,6 +3177,8 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme.
          (:underline (:style wave :color ,red)))
         (,class (:underline ,red))))
 
+     `(italic ((,class :slant italic)))
+
      `(org-todo ((,class :foreground ,magenta-alt-other
                          :weight bold)))
      `(org-archived ((,class (:foreground ,fg-alt))))
@@ -3321,6 +3324,8 @@ Apply my font setting when new frame is created (useful when emacs is started in
 
 *** Fira Code Ligatures
 Copied from https://github.com/tonsky/FiraCode/wiki/Emacs-instructions#using-prettify-symbols.
+(TODO: replace with [[https://melpa.org/#/fira-code-mode][fira-code-mode]] once available in nixpkgs.)
+
 #+begin_src emacs-lisp
 (defun fira-code-mode--make-alist (list)
   "Generate prettify-symbols alist from LIST."
