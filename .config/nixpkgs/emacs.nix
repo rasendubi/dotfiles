@@ -16,6 +16,7 @@ rec {
       cmake-mode
       color-identifiers-mode
       company
+      company-box
       company-lsp
       counsel
       counsel-projectile

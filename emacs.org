@@ -1174,6 +1174,12 @@ Automatically determine indent style.
   :config
   (dtrt-indent-global-mode))
 #+end_src
+
+Company-box frontend works better with variable-pitch fonts.
+#+begin_src emacs-lisp
+(use-package company-box
+  :hook (company-mode . company-box-mode))
+#+end_src
 * Org-mode
 ** General
 #+begin_src emacs-lisp
