@@ -63,7 +63,7 @@
   :risky t)
 
 (defcustom org-variable-pitch-fixed-faces
-  `(org-block
+  '(org-block
     org-block-begin-line
     org-block-end-line
     org-checkbox
@@ -80,8 +80,7 @@
     org-table
     org-tag
     org-todo
-    org-verbatim
-    ,@org-level-faces)
+    org-verbatim)
   "Faces to keep fixed-width when using ‘org-variable-pitch-minor-mode’."
   :group 'org-variable-pitch
   :type '(repeat symbol))
@@ -96,7 +95,7 @@ apply the monospace face to the headline prefix."
   :group 'org-variable-pitch
   :type 'boolean)
 
-(defface org-variable-pitch-face
+(defface org-variable-pitch-fixed-face
   `((t . (:family ,org-variable-pitch-fixed-font)))
   "Face for initial space and list item bullets.
 This face is used to keep them in monospace when using
@@ -108,7 +107,7 @@ This face is used to keep them in monospace when using
 (let ((code '(0 (put-text-property
                  (match-beginning 0)
                  (match-end 0)
-                 'face 'org-variable-pitch-face))))
+                 'face 'org-variable-pitch-fixed-face))))
   (setq
    org-variable-pitch-font-lock-keywords
    `((,(rx bol (1+ blank))
@@ -132,13 +131,13 @@ This face is used to keep them in monospace when using
   "Set up the buffer to be partially in variable pitch.
 Keeps some elements in fixed pitch in order to keep layout."
   nil " OVP" nil
-  (set-face-attribute 'org-variable-pitch-face nil :family org-variable-pitch-fixed-font)
+  (set-face-attribute 'org-variable-pitch-fixed-face nil :family org-variable-pitch-fixed-font)
   (if org-variable-pitch-minor-mode
       (progn
         (variable-pitch-mode 1)
         (dolist (face org-variable-pitch-fixed-faces)
           (if (facep face)
-              (push (face-remap-add-relative face 'org-variable-pitch-face)
+              (push (face-remap-add-relative face 'org-variable-pitch-fixed-face)
                     org-variable-pitch--cookies)
             (message "‘%s’ is not a valid face, thus OVP skipped it"
                      (symbol-name face))))

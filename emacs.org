@@ -3052,7 +3052,10 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme.
   :config
   (setq modus-operandi-theme-slanted-constructs t)
   (setq modus-operandi-theme-bold-constructs t)
-  (setq modus-operandi-theme-proportional-fonts t)
+
+  ;; Use proportional fonts only when I explicitly configure them.
+  (setq modus-operandi-theme-proportional-fonts nil)
+
   (load-theme 'modus-operandi t)
 
   (let ((class '((class color) (min-colors 89)))
@@ -3284,8 +3287,8 @@ ADDITIONAL-SEGMENTS are inserted on the right, between `global' and
 
 (defun rasen/set-my-fonts ()
   (cond ((rasen/font-exists-p "Fira Code Retina")
-         (set-face-attribute 'fixed-pitch nil :family "Fira Code Retina" :height 80)
-         (set-face-attribute 'default nil :family "Fira Code Retina" :height 80))
+         (set-face-attribute 'fixed-pitch nil :family "Fira Code Retina" :height 65)
+         (set-face-attribute 'default nil :family "Fira Code Retina" :height 65))
         ((rasen/font-exists-p "Terminess Powerline")
          (set-face-attribute 'fixed-pitch nil :family "Terminess Powerline" :height 160)
          (set-face-attribute 'default nil :family "Terminess Powerline" :height 160))
@@ -3294,7 +3297,7 @@ ADDITIONAL-SEGMENTS are inserted on the right, between `global' and
          (set-face-attribute 'default nil :family "Terminus" :height 160)))
 
   (cond ((rasen/font-exists-p "Vollkorn")
-         (set-face-attribute 'variable-pitch nil :family "Vollkorn"))
+         (set-face-attribute 'variable-pitch nil :family "Vollkorn" :height 80))
         ((rasen/font-exists-p "DejaVu Sans")
          (set-face-attribute 'variable-pitch nil :family "DejaVu Sans"))))
 
@@ -3380,50 +3383,55 @@ Use variable-pitch fonts in org-mode.
 (push "~/.emacs.d/site-lisp" load-path)
 (require 'org-variable-pitch)
 (setq org-variable-pitch-fixed-font "Fira Code Retina")
+(set-face-attribute 'org-variable-pitch-fixed-face nil :height 65)
+
+;; Because asterisk in Follkorn is way too high, fontify leading asterisks with fixed pitch face instead.
+(setq org-variable-pitch-fontify-headline-prefix t)
+
 (add-hook 'org-mode-hook 'org-variable-pitch-minor-mode)
 #+end_src
 
 Patch adaptive-wrap, so it work better with org-variable-pitch-mode (i.e., make adaptive prefix fixed-pitch).
 #+begin_src emacs-lisp
 (el-patch-defun adaptive-wrap-prefix-function (beg end)
-    "Indent the region between BEG and END with adaptive filling."
-    ;; Any change at the beginning of a line might change its wrap prefix, which
-    ;; affects the whole line.  So we need to "round-up" `end' to the nearest end
-    ;; of line.  We do the same with `beg' although it's probably not needed.
-    (goto-char end)
-    (unless (bolp) (forward-line 1))
-    (setq end (point))
-    (goto-char beg)
-    (forward-line 0)
-    (setq beg (point))
-    (while (< (point) end)
-      (let ((lbp (point)))
-        (put-text-property
-         (point) (progn (search-forward "\n" end 'move) (point))
-         'wrap-prefix
-         (let ((pfx (adaptive-wrap-fill-context-prefix
-                     lbp (point))))
-           ;; Remove any `wrap-prefix' property that
-           ;; might have been added earlier.
-           ;; Otherwise, we end up with a string
-           ;; containing a `wrap-prefix' string
-           ;; containing a `wrap-prefix' string ...
-           (remove-text-properties
-            0 (length pfx) '(wrap-prefix) pfx)
-           (let ((dp (get-text-property 0 'display pfx)))
-             (when (and dp (eq dp (get-text-property (1- lbp) 'display)))
-               ;; There's a `display' property which covers not just the
-               ;; prefix but also the previous newline.  So it's not just making
-               ;; the prefix more pretty and could interfere or even defeat our
-               ;; efforts (e.g. it comes from `visual-fill-mode').
-               (remove-text-properties
-                0 (length pfx) '(display) pfx)))
+  "Indent the region between BEG and END with adaptive filling."
+  ;; Any change at the beginning of a line might change its wrap prefix, which
+  ;; affects the whole line.  So we need to "round-up" `end' to the nearest end
+  ;; of line.  We do the same with `beg' although it's probably not needed.
+  (goto-char end)
+  (unless (bolp) (forward-line 1))
+  (setq end (point))
+  (goto-char beg)
+  (forward-line 0)
+  (setq beg (point))
+  (while (< (point) end)
+    (let ((lbp (point)))
+      (put-text-property
+       (point) (progn (search-forward "\n" end 'move) (point))
+       'wrap-prefix
+       (let ((pfx (adaptive-wrap-fill-context-prefix
+                   lbp (point))))
+         ;; Remove any `wrap-prefix' property that
+         ;; might have been added earlier.
+         ;; Otherwise, we end up with a string
+         ;; containing a `wrap-prefix' string
+         ;; containing a `wrap-prefix' string ...
+         (remove-text-properties
+          0 (length pfx) '(wrap-prefix) pfx)
+         (let ((dp (get-text-property 0 'display pfx)))
+           (when (and dp (eq dp (get-text-property (1- lbp) 'display)))
+             ;; There's a `display' property which covers not just the
+             ;; prefix but also the previous newline.  So it's not just making
+             ;; the prefix more pretty and could interfere or even defeat our
+             ;; efforts (e.g. it comes from `visual-fill-mode').
+             (remove-text-properties
+              0 (length pfx) '(display) pfx)))
 
-           (el-patch-add
-             (add-face-text-property 0 (length pfx) 'fixed-pitch nil pfx))
+         (el-patch-add
+           (add-face-text-property 0 (length pfx) 'org-variable-pitch-fixed-face nil pfx))
 
-           pfx))))
-    `(jit-lock-bounds ,beg . ,end))
+         pfx))))
+  `(jit-lock-bounds ,beg . ,end))
 #+end_src
 ** Misc
 Hightlight parentheses, show current column.

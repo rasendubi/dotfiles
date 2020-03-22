@@ -317,7 +317,6 @@ in
           unifont
           fira-code
           fira-code-symbols
-          libertine
           vollkorn
         ];
       };
