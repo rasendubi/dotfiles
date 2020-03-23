@@ -2547,98 +2547,101 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 (use-package typescript-mode
   :commands (typescript-mode)
   :init
+  (el-patch-feature typescript-mode)
   (add-hook 'web-mode-hook
             (lambda ()
               (when (or (string-equal "tsx" (file-name-extension buffer-file-name))
                         (string-equal "ts" (file-name-extension buffer-file-name)))
                 (typescript-mode))))
+  :general
+  ('insert
+   'typescript-mode-map
+   "M-j"   #'c-indent-new-comment-line
+   "C-M-j" #'c-indent-new-comment-line)
   :config
   (setq-default typescript-indent-level 2)
-  (general-def 'insert 'typescript-mode-map
-    "M-j"   #'c-indent-new-comment-line
-    "C-M-j" #'c-indent-new-comment-line))
 
-(el-patch-feature typescript-mode)
-(el-patch-defconst typescript-jsdoc-empty-tag-regexp
-  (concat typescript-jsdoc-before-tag-regexp
-          "\\(@"
-          (regexp-opt
-           '("abstract"
-             "addon"
-             "async"
-             "author"
-             "class"
-             "classdesc"
-             "const"
-             "constant"
-             "constructor"
-             "constructs"
-             "copyright"
-             "default"
-             "defaultvalue"
-             "deprecated"
-             "desc"
-             "description"
-             "event"
-             "example"
-             "exec"
-             "export"
-             "exports"
-             "file"
-             "fileoverview"
-             "final"
-             "func"
-             "function"
-             "generator"
-             "global"
-             "hidden"
-             "hideconstructor"
-             "ignore"
-             "implicitcast"
-             "inheritdoc"
-             "inner"
-             "instance"
-             "interface"
-             "license"
-             "method"
-             "mixin"
-             "noalias"
-             "noshadow"
-             "notypecheck"
-             "override"
-             "overview"
-             "owner"
-             "package"
-             "preserve"
-             "preservetry"
-             "private"
-             "protected"
-             "public"
-             "readonly"
-             "static"
-             "summary"
-             "supported"
-             "todo"
-             "tutorial"
-             "virtual"
-             (el-patch-add
-               "remarks"
-               "alpha"
-               "beta"
-               "defaultValue"
-               "eventProperty"
+  ;; Add more jsdoc tags
+  (el-patch-defconst typescript-jsdoc-empty-tag-regexp
+    (concat typescript-jsdoc-before-tag-regexp
+            "\\(@"
+            (regexp-opt
+             '("abstract"
+               "addon"
+               "async"
+               "author"
+               "class"
+               "classdesc"
+               "const"
+               "constant"
+               "constructor"
+               "constructs"
+               "copyright"
+               "default"
+               "defaultvalue"
+               "deprecated"
+               "desc"
+               "description"
+               "event"
                "example"
-               "experimental"
-               "inheritDoc"
-               "internal"
-               "label"
-               "link"
-               "packageDocumentation"
-               "privateRemarks"
-               "sealed"
-               "typeParam")))
-          "\\)\\s-*")
-  "Matches empty jsdoc tags.")
+               "exec"
+               "export"
+               "exports"
+               "file"
+               "fileoverview"
+               "final"
+               "func"
+               "function"
+               "generator"
+               "global"
+               "hidden"
+               "hideconstructor"
+               "ignore"
+               "implicitcast"
+               "inheritdoc"
+               "inner"
+               "instance"
+               "interface"
+               "license"
+               "method"
+               "mixin"
+               "noalias"
+               "noshadow"
+               "notypecheck"
+               "override"
+               "overview"
+               "owner"
+               "package"
+               "preserve"
+               "preservetry"
+               "private"
+               "protected"
+               "public"
+               "readonly"
+               "static"
+               "summary"
+               "supported"
+               "todo"
+               "tutorial"
+               "virtual"
+               (el-patch-add
+                 "remarks"
+                 "alpha"
+                 "beta"
+                 "defaultValue"
+                 "eventProperty"
+                 "example"
+                 "experimental"
+                 "inheritDoc"
+                 "internal"
+                 "label"
+                 "link"
+                 "packageDocumentation"
+                 "privateRemarks"
+                 "sealed"
+                 "typeParam")))
+            "\\)\\s-*")
+    "Matches empty jsdoc tags."))
 #+end_src
 
 #+begin_src emacs-lisp
