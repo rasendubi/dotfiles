@@ -1207,6 +1207,9 @@ Automatically determine indent style.
    "SPC i"  #'org-clock-in
 
    "SPC T"  #'rasen/org-do-today
+
+   "SPC w"  #'org-refile
+   "SPC r"  #'org-archive-subtree-default
    )
   ('(insert normal) 'org-mode-map
    "C-c ,"  #'org-time-stamp-inactive)
