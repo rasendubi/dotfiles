@@ -1069,6 +1069,13 @@ Auto-close pairs.
              global-color-identifiers-mode))
 #+end_src
 ** Helpers
+#+begin_src emacs-lisp
+(defun rasen/copy-file-path ()
+  "Copy the current buffer's path to kill ring."
+  (interactive)
+  (kill-new (buffer-file-name)))
+#+end_src
+
 Shamelessly stolen from https://github.com/purcell/emacs.d.
 #+begin_src emacs-lisp
 (defun rename-this-file-and-buffer (new-name)
