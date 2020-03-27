@@ -1469,6 +1469,8 @@ Instanly go into insert mode on capture.
 (use-package org-download
   :config
   (setq org-download-method 'directory)
+  ;; Do not prepend heading name to the file path
+  (setq-default org-download-heading-lvl nil)
   ;; "download" screenshots from clipboard
   (setq org-download-screenshot-method "xclip -selection clipboard -t image/png -o > %s")
   ;; Use org-roam timestamp style
