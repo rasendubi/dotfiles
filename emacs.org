@@ -1084,6 +1084,16 @@ Auto-close pairs.
 #+end_src
 ** Helpers
 #+begin_src emacs-lisp
+(defun rasen/tsid (&optional time)
+  "Return timestamp-id."
+  (format-time-string "%Y%m%d%H%M%S" time "UTC"))
+
+(defun rasen/insert-tsid ()
+  "Insert timestamp-id at point."
+  (insert (rasen/tsid)))
+#+end_src
+
+#+begin_src emacs-lisp
 (defun rasen/copy-file-path ()
   "Copy the current buffer's path to kill ring."
   (interactive)
@@ -1488,14 +1498,24 @@ Instanly go into insert mode on capture.
 ** Capturing images
 #+begin_src emacs-lisp
 (use-package org-download
+  :init
+  (el-patch-feature org-download)
   :config
   (setq org-download-method 'directory)
   ;; Do not prepend heading name to the file path
   (setq-default org-download-heading-lvl nil)
   ;; "download" screenshots from clipboard
   (setq org-download-screenshot-method "xclip -selection clipboard -t image/png -o > %s")
-  ;; Use org-roam timestamp style
-  (setq org-download-timestamp "%Y%m%d%H%M%S-"))
+
+  ;; Use timestamp-ids
+  (el-patch-defun org-download-file-format-default (filename)
+    "It's affected by `org-download-timestamp'."
+    (concat
+     (el-patch-swap
+       (format-time-string org-download-timestamp)
+       (rasen/tsid))
+     (el-patch-add "-")
+     filename)))
 #+end_src
 ** datetree
 #+begin_src emacs-lisp
@@ -2056,12 +2076,12 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
            :unnarrowed t)
           ("d" "dynamic (timestamp)" plain (function org-roam--capture-get-point)
            "%?"
-           :file-name "%<%Y%m%d%H%M%S>"
+           :file-name "%(rasen/tsid)"
            :head "#+TITLE: ${title}\n"
            :unnarrowed t)
           ("m" "mixed (timestamp+slug)" plain (function org-roam--capture-get-point)
            "%?"
-           :file-name "%<%Y%m%d%H%M%S>-${slug}"
+           :file-name "%(rasen/tsid)-${slug}"
            :head "#+TITLE: ${title}\n"
            :unnarrowed t)))
 
