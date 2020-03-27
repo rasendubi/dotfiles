@@ -2689,10 +2689,14 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 (use-package tide
   :commands (tide-setup
              tide-hl-identifier-mode
-             tide-format-before-save
-             rasen/setup-tide-mode)
+             tide-format-before-save)
   :hook
   (typescript-mode . rasen/setup-tide-mode)
+  :general
+  ;; K is used for avy
+  ('normal
+   'tide-normal-map
+   "K" nil)
   :init
   (defun rasen/setup-tide-mode ()
     (interactive)
@@ -2701,11 +2705,7 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
     (setq flycheck-check-syntax-automatically '(save mode-enabled))
     (eldoc-mode +1)
     (tide-hl-identifier-mode +1)
-    (company-mode +1))
-  :config
-  ;; K is used for avy
-  (general-def 'normal 'tide-mode-map
-    "K" nil))
+    (company-mode +1)))
 #+end_src
 
 #+begin_src emacs-lisp
