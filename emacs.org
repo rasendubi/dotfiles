@@ -1794,7 +1794,8 @@ Configure stuck projects.
   (setq rasen/org-agenda-work-files (mapcar (lambda (x) (expand-file-name x rasen/org-directory))
                                             '("ring.org.gpg"
                                               "refile-AlexeyShmalko.org")))
-  (setq rasen/org-agenda-personal-files (seq-filter (lambda (x) (not (member x rasen/org-agenda-work-files)))))
+  (setq rasen/org-agenda-personal-files (seq-filter (lambda (x) (not (member x rasen/org-agenda-work-files)))
+                                                    org-agenda-files))
   (setq org-agenda-custom-commands
         '(("o" "Overview"
            ((agenda "" ((org-agenda-span 6)
@@ -1845,33 +1846,34 @@ Configure stuck projects.
                         ;;     :time-grid t
                         ;;     :anything t)
                         ;;    )))
-                        )
-                    (alltodo "" ((org-agenda-overriding-header "")
-                                 (org-agenda-files rasen/org-agenda-work-files)
-                                 (org-super-agenda-groups
-                                  '((:name "Projects"
-                                     :and (:tag "PROJECT"
-                                           :todo "NEXT")
-                                     :order 9)
-                                    (:name "Next"
-                                     :todo "NEXT"
-                                     :order 8)
-                                    (:todo "WAIT"
-                                     :order 12)
-                                    (:discard (:anything t))))))
+                        ))
+            (alltodo "" ((org-agenda-overriding-header "")
+                         (org-agenda-files rasen/org-agenda-work-files)
+                         (org-super-agenda-groups
+                          '((:discard (:scheduled t))
+                            (:name "Projects"
+                             :and (:tag "PROJECT"
+                                   :todo "NEXT")
+                             :order 9)
+                            (:name "Next"
+                             :todo "NEXT"
+                             :order 8)
+                            (:todo "WAIT"
+                             :order 12)
+                            (:discard (:anything t))))))
 
-                    (search "+{:CREATED:}" ((org-agenda-files (mapcar (lambda (x) (expand-file-name x rasen/org-directory))
-                                                                      '("refile-AlexeyShmalko.org")))
-                                            (org-agenda-overriding-header "")
-                                            (org-super-agenda-groups
-                                             '((:name "Inbox"
-                                                :auto-category t
-                                                :anything t))))))))
+            (search "+{:CREATED:}" ((org-agenda-files (mapcar (lambda (x) (expand-file-name x rasen/org-directory))
+                                                              '("refile-AlexeyShmalko.org")))
+                                    (org-agenda-overriding-header "")
+                                    (org-super-agenda-groups
+                                     '((:name "Inbox"
+                                        :auto-category t
+                                        :anything t)))))))
 
           ("N" tags "+TODO=\"NEXT\"-PROJECT|+TODO=\"WAIT\"-PROJECT")
           ("n" todo-tree "NEXT")
-          ("p" tags "+PROJECT/+NEXT")             ; active projects
-          ("P" tags "+PROJECT/-DONE-CANCELED"))) ; all projects
+          ("p" "active projects" tags "+PROJECT/+NEXT")
+          ("P" "all projects" tags "+PROJECT/-DONE-CANCELED")))
   (org-super-agenda-mode))
 #+end_src
 *** Allow NEXT projects to stuck
