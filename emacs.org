@@ -1782,9 +1782,14 @@ Configure stuck projects.
   (setq org-agenda-block-separator nil
         org-agenda-compact-blocks t
         org-agenda-time-grid '((daily today require-timed) nil "......"  "----------------"))
+  (setq rasen/org-agenda-work-files (mapcar (lambda (x) (expand-file-name x rasen/org-directory))
+                                            '("ring.org.gpg"
+                                              "refile-AlexeyShmalko.org")))
+  (setq rasen/org-agenda-personal-files (seq-filter (lambda (x) (not (member x rasen/org-agenda-work-files)))))
   (setq org-agenda-custom-commands
         '(("o" "Overview"
            ((agenda "" ((org-agenda-span 6)
+                        (org-agenda-files rasen/org-agenda-personal-files)
                         (org-super-agenda-groups
                          '((:habit t
                             :order 10)
@@ -1797,6 +1802,7 @@ Configure stuck projects.
                             :anything t)
                            ))))
             (alltodo "" ((org-agenda-overriding-header "")
+                         (org-agenda-files rasen/org-agenda-personal-files)
                          (org-super-agenda-groups
                           '((:discard (:scheduled t))
                             (:name "Books"
@@ -1816,13 +1822,43 @@ Configure stuck projects.
 
             (search "+{:CREATED:}" ((org-agenda-files (mapcar (lambda (x) (concat rasen/org-directory "/" x))
                                                               '("refile-omicron.org"
-                                                                "orgzly.org"
-                                                                "refile-AlexeyShmalko.org")))
+                                                                "orgzly.org")))
                                     (org-agenda-overriding-header "")
                                     (org-super-agenda-groups
                                      '((:name "Inbox"
                                         :auto-category t
                                         :anything t)))))))
+          ("w" "Work"
+           ((agenda "" ((org-agenda-span 6)
+                        (org-agenda-files rasen/org-agenda-work-files)
+                        ;; (org-super-agenda-groups
+                        ;;  '((:name none
+                        ;;     :time-grid t
+                        ;;     :anything t)
+                        ;;    )))
+                        )
+                    (alltodo "" ((org-agenda-overriding-header "")
+                                 (org-agenda-files rasen/org-agenda-work-files)
+                                 (org-super-agenda-groups
+                                  '((:name "Projects"
+                                     :and (:tag "PROJECT"
+                                           :todo "NEXT")
+                                     :order 9)
+                                    (:name "Next"
+                                     :todo "NEXT"
+                                     :order 8)
+                                    (:todo "WAIT"
+                                     :order 12)
+                                    (:discard (:anything t))))))
+
+                    (search "+{:CREATED:}" ((org-agenda-files (mapcar (lambda (x) (expand-file-name x rasen/org-directory))
+                                                                      '("refile-AlexeyShmalko.org")))
+                                            (org-agenda-overriding-header "")
+                                            (org-super-agenda-groups
+                                             '((:name "Inbox"
+                                                :auto-category t
+                                                :anything t))))))))
+
           ("N" tags "+TODO=\"NEXT\"-PROJECT|+TODO=\"WAIT\"-PROJECT")
           ("n" todo-tree "NEXT")
           ("p" tags "+PROJECT/+NEXT")             ; active projects
@@ -2090,6 +2126,8 @@ Enable auto-completion for notes.
     "C-c C-d"  (rasen/hard-way "SPC d")
     "SPC w"    #'org-agenda-refile
     "C-c C-w"  (rasen/hard-way "SPC w")
+
+    "SPC t"    #'org-agenda-todo
 
     "go"       #'org-agenda-open-link
     "gl"       #'org-agenda-log-mode))
