@@ -493,6 +493,20 @@ And evil commands to go to navigate errors.
   "M-,"    #'previous-error
   "M-."    #'next-error)
 #+end_src
+** Evilify minibuffer
+Not really "evilify."
+#+begin_src emacs-lisp
+(general-def 'minibuffer-local-map
+  ;; Finish input with C-e ("e" in Workman is qwerty's "k")
+  "C-e"  #'exit-minibuffer)
+#+end_src
+** Evilify shell mode
+Default bindings for ~RET~ prevent many of my commands from working. Remap ~RET~ to ~C-RET~.
+#+begin_src emacs-lisp
+(general-def 'shell-mode-map
+  "RET"         nil
+  "<C-return>"  #'comint-send-input)
+#+end_src
 ** lispyville
 #+begin_src emacs-lisp
 (use-package lispyville
