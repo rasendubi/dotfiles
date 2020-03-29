@@ -498,7 +498,8 @@ Not really "evilify."
 #+begin_src emacs-lisp
 (general-def 'minibuffer-local-map
   ;; Finish input with C-e ("e" in Workman is qwerty's "k")
-  "C-e"  #'exit-minibuffer)
+  "C-e"  #'exit-minibuffer
+  "RET"  (rasen/hard-way "C-e"))
 #+end_src
 ** Evilify shell mode
 Default bindings for ~RET~ prevent many of my commands from working. Remap ~RET~ to ~C-RET~.
@@ -1576,6 +1577,126 @@ Instanly go into insert mode on capture.
         (org-agenda-files :tag . "PROJECT")
         (org-agenda-files :maxlevel . 2)
         (rasen/org-refile-files :maxlevel . 1)))
+#+end_src
+*** Refiling with hydras
+Adapted from [[https://mollermara.com/blog/Fast-refiling-in-org-mode-with-hydras/][Fast refiling in org-mode with hydras | Josh Moller-Mara]]. Extended to support refiling by outline path.
+#+begin_src emacs-lisp
+(defun rasen/concat (sequence separator)
+  (mapconcat 'identity sequence separator))
+
+(defun rasen/org-refile-exact (file path &optional arg)
+  "Refile to a specific location.
+
+With a `C-u' ARG argument, jump to that location."
+  (let* ((pos (org-find-olp (cons file path)))
+         (rfloc (list (rasen/concat path "/") file nil pos)))
+
+    (if (and (eq major-mode 'org-agenda-mode)
+             ;; Don't use org-agenda-refile if we're just jumping
+             (not (and arg (listp arg))))
+        (org-agenda-refile nil rfloc)
+      (org-refile arg nil rfloc))))
+
+(defun rasen/refile (file path &optional arg)
+  "Refile to PATH in FILE. Clean up org-capture if it's activated.
+
+With a `C-u` ARG, just jump to the headline."
+  (interactive "P")
+  (let ((is-capturing (and (boundp 'org-capture-mode) org-capture-mode)))
+    (cond
+     ((and arg (listp arg))  ;Are we jumping?
+      (rasen/org-refile-exact file path arg))
+
+     ;; Are we in org-capture-mode?
+     (is-capturing
+      (rasen/org-capture-refile-but-with-args file path arg))
+
+     (t
+      (rasen/org-refile-exact file path arg))))
+
+  (when (or arg is-capturing)
+    (setq hydra-deactivate t)))
+
+(defun rasen/org-capture-refile-but-with-args (file path &optional arg)
+  "Copied from `org-capture-refile' since it doesn't allow passing arguments. This does."
+  (unless (eq (org-capture-get :type 'local) 'entry)
+    (error
+     "Refiling from a capture buffer makes only sense for `entry'-type templates"))
+  (let ((pos (point))
+        (base (buffer-base-buffer (current-buffer)))
+        (org-capture-is-refiling t)
+        (kill-buffer (org-capture-get :kill-buffer 'local)))
+    (org-capture-put :kill-buffer nil)
+    (org-capture-finalize)
+    (save-window-excursion
+      (with-current-buffer (or base (current-buffer))
+        (org-with-wide-buffer
+         (goto-char pos)
+         (rasen/org-capture-exact file path arg))))
+    (when kill-buffer (kill-buffer base))))
+
+(defmacro rasen/make-refile-hydra (hydraname name &rest options)
+  (declare (indent defun))
+  `(defhydra ,hydraname (:exit t)
+     ,name
+
+     ,@(mapcar (lambda (x)
+                 (let ((key  (nth 0 x))
+                       (name (nth 1 x))
+                       (file (nth 2 x))
+                       (path (nthcdr 3 x)))
+                   `(,key (rasen/refile ,file ',path current-prefix-arg) ,name)))
+               options)
+
+     ("q" nil "cancel")))
+#+end_src
+
+Actual configuration.
+#+begin_src emacs-lisp
+(rasen/make-refile-hydra rasen/org-refile-hydra-areas "Areas"
+  ("w" "Work"                   "~/org/ring.org.gpg" "Work")
+  ("h" "Home"                   "~/org/plan.org"     "Areas" "Home")
+  ("p" "People"                 "~/org/plan.org"     "Areas" "People")
+  ("c" "Computers"              "~/org/plan.org"     "Areas" "Computers")
+  ("o" "Open-source"            "~/org/plan.org"     "Areas" "Open-source")
+  ("P" "Planning"               "~/org/plan.org"     "Areas" "Planning")
+  ("s" "Self-development"       "~/org/plan.org"     "Areas" "Self-development")
+  ("f" "Future of Software"     "~/org/plan.org"     "Areas" "Future of Software")
+  ("H" "Health"                 "~/org/plan.org"     "Areas" "Health")
+  ("C" "Cats"                   "~/org/plan.org"     "Areas" "Cats")
+  ("e" "egoless.tech"           "~/org/plan.org"     "Areas" "egoless.tech")
+  ("a" "alexeyshmalko.com"      "~/org/plan.org"     "Areas" "alexeyshmalko.com")
+  ("m" "Misc"                   "~/org/plan.org"     "Areas" "Misc"))
+
+(rasen/make-refile-hydra rasen/org-refile-hydra-resources "Resources"
+  ("w" "Work"                   "~/org/ring.org.gpg" "Resources")
+  ("P" "Productivity"           "~/org/plan.org"     "Resources" "Productivity")
+  ("s" "Software development"   "~/org/plan.org"     "Resources" "Software development, programming, architecture")
+  ("m" "Martial Arts"           "~/org/plan.org"     "Resources" "Martial Arts")
+  ("n" "Natural sciences"       "~/org/plan.org"     "Resources" "Natural sciences")
+  ("d" "Design"                 "~/org/plan.org"     "Resources" "Design")
+  ("p" "Programming languages"  "~/org/plan.org"     "Resources" "Programming languages")
+  ("W" "Writing"                "~/org/plan.org"     "Resources" "Writing")
+  ("c" "Communication"          "~/org/plan.org"     "Resources" "Communication")
+  ("b" "Business"               "~/org/plan.org"     "Resources" "Business")
+  ("g" "Gamedev"                "~/org/plan.org"     "Resources" "Gamedev"))
+
+(defhydra rasen/org-refile-hydra (:foreign-keys run :exit t)
+  "Refile"
+  ("a" rasen/org-refile-hydra-areas/body "Areas")
+  ("r" rasen/org-refile-hydra-resources/body "Resources")
+
+  ("w" (if (eq major-mode 'org-agenda-mode)
+           (org-agenda-refile current-prefix-arg)
+         (org-refile current-prefix-arg))
+   "select")
+
+  ("q" nil "cancel"))
+
+(general-def 'normal 'org-mode-map
+  "SPC w" #'rasen/org-refile-hydra/body)
+(general-def 'motion 'org-agenda-mode-map
+  "SPC w" #'rasen/org-refile-hydra/body)
 #+end_src
 *** Refile last but *before* archive
 I like my archive sibling to be the last child. The default org-refile ignores that at refiles all entries *after* archive.
