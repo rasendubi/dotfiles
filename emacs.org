@@ -779,6 +779,11 @@ It's enabled by default. Just diminish it.
 
   (setq-default projectile-use-git-grep t)
 
+  ;; projectile-find-file is slow on very large projects.  Enable
+  ;; known-files caching for projectile to speed it up.
+  ;; (Note: clear cache with `projectile-invalidate-cache', or C-u U)
+  (setq-default projectile-enable-caching t)
+
   (setq-default projectile-completion-system 'ivy)
   (projectile-mode))
 #+end_src
