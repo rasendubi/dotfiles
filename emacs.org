@@ -1604,7 +1604,7 @@ With a `C-u` ARG, just jump to the headline."
   (interactive "P")
   (let ((is-capturing (and (boundp 'org-capture-mode) org-capture-mode)))
     (cond
-     ((and arg (listp arg))  ;Are we jumping?
+     ((and arg (listp arg))             ;Are we jumping?
       (rasen/org-refile-exact file path arg))
 
      ;; Are we in org-capture-mode?
@@ -1612,10 +1612,10 @@ With a `C-u` ARG, just jump to the headline."
       (rasen/org-capture-refile-but-with-args file path arg))
 
      (t
-      (rasen/org-refile-exact file path arg))))
+      (rasen/org-refile-exact file path arg)))
 
-  (when (or arg is-capturing)
-    (setq hydra-deactivate t)))
+    (when (or arg is-capturing)
+      (setq hydra-deactivate t))))
 
 (defun rasen/org-capture-refile-but-with-args (file path &optional arg)
   "Copied from `org-capture-refile' since it doesn't allow passing arguments. This does."
@@ -1632,7 +1632,7 @@ With a `C-u` ARG, just jump to the headline."
       (with-current-buffer (or base (current-buffer))
         (org-with-wide-buffer
          (goto-char pos)
-         (rasen/org-capture-exact file path arg))))
+         (rasen/org-refile-exact file path arg))))
     (when kill-buffer (kill-buffer base))))
 
 (defmacro rasen/make-refile-hydra (hydraname name &rest options)
@@ -1653,6 +1653,10 @@ With a `C-u` ARG, just jump to the headline."
 
 Actual configuration.
 #+begin_src emacs-lisp
+(rasen/make-refile-hydra rasen/org-refile-hydra-projects "Projects"
+  ("w" "Work"                   "~/org/ring.org.gpg" "Projects")
+  ("p" "Personal"               "~/org/plan.org"     "Projects"))
+
 (rasen/make-refile-hydra rasen/org-refile-hydra-areas "Areas"
   ("w" "Work"                   "~/org/ring.org.gpg" "Work")
   ("h" "Home"                   "~/org/plan.org"     "Areas" "Home")
@@ -1683,6 +1687,7 @@ Actual configuration.
 
 (defhydra rasen/org-refile-hydra (:foreign-keys run :exit t)
   "Refile"
+  ("p" rasen/org-refile-hydra-projects/body "Projects")
   ("a" rasen/org-refile-hydra-areas/body "Areas")
   ("r" rasen/org-refile-hydra-resources/body "Resources")
 
@@ -1696,6 +1701,8 @@ Actual configuration.
 (general-def 'normal 'org-mode-map
   "SPC w" #'rasen/org-refile-hydra/body)
 (general-def 'motion 'org-agenda-mode-map
+  "SPC w" #'rasen/org-refile-hydra/body)
+(general-def 'normal 'org-capture-mode-map
   "SPC w" #'rasen/org-refile-hydra/body)
 #+end_src
 *** Refile last but *before* archive
