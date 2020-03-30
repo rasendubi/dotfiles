@@ -1416,7 +1416,7 @@ My capture templates.
       `(("u"
          "Task: Read this URL"
          entry
-         (file+headline rasen/org-refile-file "Articles To Read")
+         (file rasen/org-refile-file)
          ,(concat "* TODO %(rasen/strip-url-from-title \"%:description\")\n"
                   ":PROPERTIES:\n"
                   ":CREATED:  %U\n"
@@ -1427,7 +1427,7 @@ My capture templates.
         ("w"
          "Capture web snippet"
          entry
-         (file+headline rasen/org-refile-file "Inbox")
+         (file rasen/org-refile-file)
          ,(concat "* %(rasen/strip-url-from-title \"%:description\")\n"
                   ":PROPERTIES:\n"
                   ":CREATED:  %U\n"
