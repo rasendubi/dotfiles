@@ -3337,6 +3337,11 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme.
     (custom-theme-set-faces
      'modus-operandi
 
+     ;; do not bold matches (this makes text jiggle with variable-pitch fonts
+     `(isearch ((,class (:inherit modus-theme-intense-green))))
+     `(query-replace ((,class :inherit modus-theme-intense-yellow)))
+     `(show-paren-match ((,class (:background ,bg-paren-match :foreground ,fg-paren-match))))
+
      `(flyspell-duplicate
        ((,(append '((supports :underline (:style wave))) class)
          (:underline (:style wave :color ,yellow)))
@@ -3355,7 +3360,9 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme.
      `(org-agenda-done ((,class :foreground ,fg-alt)))
      `(org-link ((,class :background ,bg-alt :underline nil :inherit link)))
      `(org-roam-link ((,class :foreground ,green-alt-other
-                              :inherit org-link))))
+                              :inherit org-link)))
+     ;; remove special styling from backlinks
+     `(org-roam-backlink ((,class))))
 
     (setq org-todo-keyword-faces
           `(("TODO"     . (:foreground ,blue-intense :inherit fixed-pitch))
@@ -3474,7 +3481,9 @@ ADDITIONAL-SEGMENTS are inserted on the right, between `global' and
          (set-face-attribute 'fixed-pitch nil :family "Terminus" :height 160)
          (set-face-attribute 'default nil :family "Terminus" :height 160)))
 
-  (cond ((rasen/font-exists-p "Vollkorn")
+  (cond ((rasen/font-exists-p "Linux Libertine O")
+         (set-face-attribute 'variable-pitch nil :family "Linux Libertine O" :height 90))
+        ((rasen/font-exists-p "Vollkorn")
          (set-face-attribute 'variable-pitch nil :family "Vollkorn" :height 80))
         ((rasen/font-exists-p "DejaVu Sans")
          (set-face-attribute 'variable-pitch nil :family "DejaVu Sans"))))
@@ -3564,6 +3573,9 @@ Use variable-pitch fonts in org-mode.
 (require 'org-variable-pitch)
 (setq org-variable-pitch-fixed-font "Fira Code Retina")
 (set-face-attribute 'org-variable-pitch-fixed-face nil :height 65)
+(set-face-attribute 'org-variable-pitch-fixed-face nil :weight 'regular)
+(diminish 'org-variable-pitch-minor-mode)
+(diminish 'buffer-face-mode)
 
 ;; Because asterisk in Follkorn is way too high, fontify leading asterisks with fixed pitch face instead.
 (setq org-variable-pitch-fontify-headline-prefix t)
