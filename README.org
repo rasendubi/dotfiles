@@ -776,9 +776,12 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
       source-code-pro
       ubuntu_font_family
       unifont
+
+      # Used by Emacs
       fira-code
       fira-code-symbols
-      vollkorn
+      # vollkorn
+      libertine
     ];
   };
 }
@@ -813,13 +816,10 @@ Here go applications (almost) every normal user needs.
 #+name: nixos-section
 #+begin_src nix
 {
-  environment.systemPackages = [
-    pkgs.gnupg
-    pkgs.pinentry
-  ];
   programs.gnupg.agent = {
     enable = true;
     enableSSHSupport = true;
+    pinentryFlavor = "qt";
   };
 
   ## is it no longer needed?

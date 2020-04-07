@@ -317,18 +317,16 @@ in
           unifont
           fira-code
           fira-code-symbols
-          vollkorn
+          # vollkorn
+          libertine
         ];
       };
     }
     {
-      environment.systemPackages = [
-        pkgs.gnupg
-        pkgs.pinentry
-      ];
       programs.gnupg.agent = {
         enable = true;
         enableSSHSupport = true;
+        pinentryFlavor = "qt";
       };
     
       ## is it no longer needed?
