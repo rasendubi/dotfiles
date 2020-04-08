@@ -1364,6 +1364,11 @@ Save =CLOSED= timestamp when task is done.
 (setq org-log-done t)
 #+end_src
 
+Fontify the whole line for done tasks.
+#+begin_src emacs-lisp
+(setq org-fontify-done-headline t)
+#+end_src
+
 Import =org-expiry= for =org-expiry-insert-created=---this inserts =CREATED= property.
 #+name: org-config
 #+begin_src emacs-lisp
@@ -3357,6 +3362,7 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme.
                          :weight bold)))
      `(org-archived ((,class (:foreground ,fg-alt))))
      `(org-done ((,class :foreground ,fg-alt)))
+     `(org-headline-done ((,class :foreground ,fg-alt)))
      `(org-agenda-done ((,class :foreground ,fg-alt)))
      `(org-link ((,class :background ,bg-alt :underline nil :inherit link)))
      `(org-roam-link ((,class :foreground ,green-alt-other
