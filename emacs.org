@@ -3679,6 +3679,12 @@ Add a little bit of highlighting for the cursor, when buffer scrolls, so I don't
 (use-package beacon
   :diminish beacon-mode
   :config
+
+  ;; do not blink where beacon-mode plays badly
+  (defun rasen/dont-blink-predicate ()
+    (member major-mode '(notmuch-search-mode)))
+  (add-hook 'beacon-dont-blink-predicates #'rasen/dont-blink-predicate)
+
   (beacon-mode 1))
 #+end_src
 * Quantified self
