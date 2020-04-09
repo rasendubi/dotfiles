@@ -5,6 +5,7 @@ let
     omicron = [
       {
         imports = [
+          <nixos-hardware/dell/xps/13-9360>
           <nixpkgs/nixos/modules/installer/scan/not-detected.nix>
         ];
       
@@ -315,6 +316,8 @@ in
           source-code-pro
           ubuntu_font_family
           unifont
+    
+          # Used by Emacs
           fira-code
           fira-code-symbols
           # vollkorn

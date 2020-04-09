@@ -110,6 +110,7 @@ This is my small Dell XPS 13.
 #+begin_src nix
 {
   imports = [
+    <nixos-hardware/dell/xps/13-9360>
     <nixpkgs/nixos/modules/installer/scan/not-detected.nix>
   ];
 
