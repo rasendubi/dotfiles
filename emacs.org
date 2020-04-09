@@ -3048,6 +3048,11 @@ See http://bnbeckwith.com/code/writegood-mode.html
   :config
   (setq graphviz-dot-view-command "dotty %s"))
 #+end_src
+** protobuf
+#+begin_src emacs-lisp
+(use-package protbuf-mode
+  :mode "\\.proto$")
+#+end_src
 * Mail setup
 ** gnus
 #+begin_src emacs-lisp

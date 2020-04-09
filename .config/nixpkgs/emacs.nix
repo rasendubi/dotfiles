@@ -62,8 +62,8 @@ rec {
       magit
       markdown-mode
       mbsync
-      monokai-theme
       modus-operandi-theme
+      monokai-theme
       nix-mode
       nix-sandbox
       org-cliplink
@@ -76,6 +76,7 @@ rec {
       plantuml-mode
       prettier-js
       projectile
+      protobuf-mode
       psc-ide
       purescript-mode
       py-autopep8
