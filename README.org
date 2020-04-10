@@ -220,6 +220,32 @@ Add it to NIX_PATH:
   nix.nixPath = [ "nixpkgs-overlays=/home/rasen/dotfiles/nixpkgs-overlays/compat" ];
 }
 #+end_src
+*** Custom Input font
+I like the following settings more than defaults. I also need a custom four-style family because Emacs confuses regular/medium weight otherwise. Use link specified in ~requireFile~ to download the font.
+#+DOWNLOADED: screenshot @ 2020-04-09 22:27:21
+#+ATTR_ORG: :width 360
+[[file:./images/20200409192721-screenshot.png]]
+
+#+begin_src nix :tangle nixpkgs-overlays/input-mono/default.nix :mkdirp t
+self: super:
+{
+  # note it's a new attribute and does not override old one
+  input-mono = (self.input-fonts.overrideAttrs (old: {
+    src = self.requireFile {
+      name = "Input-Font.zip";
+      url = "https://input.fontbureau.com/download/index.html?customize&fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&email=";
+      sha256 = "0nn41w2b6jvsbr3r4lfy4p8w2ssjmgdjzd1pbj7p0vmawjpvx2w8";
+    };
+    outputHash = "1w2i660dg04nyc6fc6r6sd3pw53h8dh8yx4iy6ccpii9gwjl9val";
+  }));
+}
+#+end_src
+
+Add overlay to list of overlays:
+#+name: nixpkgs-overlays
+#+begin_src nix
+(import ./input-mono)
+#+end_src
 *** Online banking
 My bank uses a two-part websigner. The first part is a browser extension (does not require additional setup) and the second part is a native host application companion (it is installed here).
 
@@ -779,9 +805,7 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
       unifont
 
       # Used by Emacs
-      fira-code
-      fira-code-symbols
-      # vollkorn
+      input-mono
       libertine
     ];
   };

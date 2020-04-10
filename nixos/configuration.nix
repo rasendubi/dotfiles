@@ -318,9 +318,7 @@ in
           unifont
     
           # Used by Emacs
-          fira-code
-          fira-code-symbols
-          # vollkorn
+          input-mono
           libertine
         ];
       };

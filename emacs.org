@@ -3482,22 +3482,30 @@ ADDITIONAL-SEGMENTS are inserted on the right, between `global' and
   (and (display-graphic-p) (not (null (x-list-fonts font)))))
 
 (defun rasen/set-my-fonts ()
-  (cond ((rasen/font-exists-p "Fira Code Retina")
-         (set-face-attribute 'fixed-pitch nil :family "Fira Code Retina" :height 65)
-         (set-face-attribute 'default nil :family "Fira Code Retina" :height 65))
-        ((rasen/font-exists-p "Terminess Powerline")
-         (set-face-attribute 'fixed-pitch nil :family "Terminess Powerline" :height 160)
-         (set-face-attribute 'default nil :family "Terminess Powerline" :height 160))
-        ((rasen/font-exists-p "Terminus")
-         (set-face-attribute 'fixed-pitch nil :family "Terminus" :height 160)
-         (set-face-attribute 'default nil :family "Terminus" :height 160)))
+  (cond
+   ((rasen/font-exists-p "Input") ; check for custom four-family font first
+    (set-face-attribute 'fixed-pitch nil :family "Input" :height 65)
+    (set-face-attribute 'default nil :family "Input" :height 65))
+   ((rasen/font-exists-p "Input Mono")
+    (set-face-attribute 'fixed-pitch nil :family "Input Mono" :height 65)
+    (set-face-attribute 'default nil :family "Input Mono" :height 65))
+   ((rasen/font-exists-p "Fira Code Retina")
+    (set-face-attribute 'fixed-pitch nil :family "Fira Code Retina" :height 65)
+    (set-face-attribute 'default nil :family "Fira Code Retina" :height 65))
+   ((rasen/font-exists-p "Terminess Powerline")
+    (set-face-attribute 'fixed-pitch nil :family "Terminess Powerline" :height 160)
+    (set-face-attribute 'default nil :family "Terminess Powerline" :height 160))
+   ((rasen/font-exists-p "Terminus")
+    (set-face-attribute 'fixed-pitch nil :family "Terminus" :height 160)
+    (set-face-attribute 'default nil :family "Terminus" :height 160)))
 
-  (cond ((rasen/font-exists-p "Linux Libertine O")
-         (set-face-attribute 'variable-pitch nil :family "Linux Libertine O" :height 90))
-        ((rasen/font-exists-p "Vollkorn")
-         (set-face-attribute 'variable-pitch nil :family "Vollkorn" :height 80))
-        ((rasen/font-exists-p "DejaVu Sans")
-         (set-face-attribute 'variable-pitch nil :family "DejaVu Sans"))))
+  (cond
+   ((rasen/font-exists-p "Linux Libertine O")
+    (set-face-attribute 'variable-pitch nil :family "Linux Libertine O" :height 90))
+   ((rasen/font-exists-p "Vollkorn")
+    (set-face-attribute 'variable-pitch nil :family "Vollkorn" :height 80))
+   ((rasen/font-exists-p "DejaVu Sans")
+    (set-face-attribute 'variable-pitch nil :family "DejaVu Sans"))))
 
 (rasen/set-my-fonts)
 #+end_src
@@ -3511,71 +3519,6 @@ Apply my font settings when new frame is created (useful when emacs is started i
 (add-hook 'after-make-frame-functions 'rasen/font-hook)
 #+end_src
 
-*** Fira Code Ligatures
-Copied from https://github.com/tonsky/FiraCode/wiki/Emacs-instructions#using-prettify-symbols.
-(TODO: replace with [[https://melpa.org/#/fira-code-mode][fira-code-mode]] once available in nixpkgs.)
-
-#+begin_src emacs-lisp
-(defun fira-code-mode--make-alist (list)
-  "Generate prettify-symbols alist from LIST."
-  (let ((idx -1))
-    (mapcar
-     (lambda (s)
-       (setq idx (1+ idx))
-       (let* ((code (+ #Xe100 idx))
-          (width (string-width s))
-          (prefix ())
-          (suffix '(?\s (Br . Br)))
-          (n 1))
-     (while (< n width)
-       (setq prefix (append prefix '(?\s (Br . Bl))))
-       (setq n (1+ n)))
-     (cons s (append prefix suffix (list (decode-char 'ucs code))))))
-     list)))
-
-(defconst fira-code-mode--ligatures
-  '("www" "**" "***" "**/" "*>" "*/" "\\\\" "\\\\\\"
-    "{-" "[]" "::" ":::" ":=" "!!" "!=" "!==" "-}"
-    "--" "---" "-->" "->" "->>" "-<" "-<<" "-~"
-    "#{" "#[" "##" "###" "####" "#(" "#?" "#_" "#_("
-    ".-" ".=" ".." "..<" "..." "?=" "??" ";;" "/*"
-    "/**" "/=" "/==" "/>" "//" "///" "&&" "||" "||="
-    "|=" "|>" "^=" "$>" "++" "+++" "+>" "=:=" "=="
-    "===" "==>" "=>" "=>>" "<=" "=<<" "=/=" ">-" ">="
-    ">=>" ">>" ">>-" ">>=" ">>>" "<*" "<*>" "<|" "<|>"
-    "<$" "<$>" "<!--" "<-" "<--" "<->" "<+" "<+>" "<="
-    "<==" "<=>" "<=<" "<>" "<<" "<<-" "<<=" "<<<" "<~"
-    "<~~" "</" "</>" "~@" "~-" "~=" "~>" "~~" "~~>" "%%"
-    "x" ":" "+" "+" "*"))
-
-(defvar fira-code-mode--old-prettify-alist)
-
-(defun fira-code-mode--enable ()
-  "Enable Fira Code ligatures in current buffer."
-  (setq-local fira-code-mode--old-prettify-alist prettify-symbols-alist)
-  (setq-local prettify-symbols-alist (append (fira-code-mode--make-alist fira-code-mode--ligatures)
-                                             fira-code-mode--old-prettify-alist))
-  (prettify-symbols-mode t))
-
-(defun fira-code-mode--disable ()
-  "Disable Fira Code ligatures in current buffer."
-  (setq-local prettify-symbols-alist fira-code-mode--old-prettify-alist)
-  (prettify-symbols-mode -1))
-
-(define-minor-mode fira-code-mode
-  "Fira Code ligatures minor mode"
-  :lighter " Fira Code"
-  (setq-local prettify-symbols-unprettify-at-point 'right-edge)
-  (if fira-code-mode
-      (fira-code-mode--enable)
-    (fira-code-mode--disable)))
-
-(defun fira-code-mode--setup ()
-  "Setup Fira Code Symbols"
-  (set-fontset-font t '(#Xe100 . #Xe16f) "Fira Code Symbol"))
-
-(add-hook 'prog-mode-hook #'fira-code-mode)
-#+end_src
 ** Variable-pitch fonts in org-mode
 Use variable-pitch fonts in org-mode.
 #+name: org-config
