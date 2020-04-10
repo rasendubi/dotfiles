@@ -19,3 +19,6 @@
 [submodule "channels/nixos-hardware"]
 	path = channels/nixos-hardware
 	url = https://github.com/NixOS/nixos-hardware.git
+[submodule ".emacs.d/site-lisp/company-org-roam"]
+	path = .emacs.d/site-lisp/company-org-roam
+	url = https://github.com/jethrokuan/company-org-roam

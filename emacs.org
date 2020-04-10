@@ -1301,6 +1301,11 @@ Do not indent tags.
 (setq org-ellipsis "…")
 #+end_src
 
+#+name: org-config
+#+begin_src emacs-lisp
+(setq org-hide-emphasis-markers t)
+#+end_src
+
 Open pdfs in external viewer:
 #+name: org-config
 #+begin_src emacs-lisp
@@ -2224,8 +2229,12 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
    "C-c TAB" #'org-roam-insert)
 
   :config
+  (require 'org-roam-protocol)
+
   (setq org-roam-directory (concat rasen/org-directory "/roam")
         org-roam-db-filename (expand-file-name "cache/org-roam.db" user-emacs-directory))
+
+  (setq org-roam-completion-system 'ivy)
 
   (setq org-roam-capture-templates
         '(("s" "static (slug)" plain (function org-roam--capture-get-point)
@@ -2257,8 +2266,8 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
                (strip-nonspacing-marks (s)
                                        (apply #'string (seq-remove #'nonspacing-mark-p
                                                                    (ucs-normalize-NFD-string s))))
-               (replace (title pair)
-                        (replace-regexp-in-string (car pair) (cdr pair) title)))
+               (cl-replace (title pair)
+                           (replace-regexp-in-string (car pair) (cdr pair) title)))
       (let* ((pairs `(el-patch-swap (("[^[:alnum:][:digit:]]" . "_") ;; convert anything not alphanumeric
                                      ("__*" . "_")  ;; remove sequential underscores
                                      ("^_" . "")    ;; remove starting underscore
@@ -2267,7 +2276,7 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
                                      ("--*" . "-")  ;; remove sequential dashes
                                      ("^-" . "")    ;; remove starting dash
                                      ("-$" . "")))) ;; remove ending dash
-             (slug (-reduce-from #'replace (strip-nonspacing-marks title) pairs)))
+             (slug (-reduce-from #'cl-replace (strip-nonspacing-marks title) pairs)))
         (s-downcase slug)))))
 #+end_src
 
@@ -2275,9 +2284,9 @@ Enable auto-completion for notes.
 #+begin_src emacs-lisp
 (use-package company-org-roam
   :after org org-roam company
-  :load-path "site-lisp/org-roam"
+  :load-path "site-lisp/company-org-roam"
   :config
-  (company-org-roam-init))
+  (push #'company-org-roam company-backends))
 #+end_src
 ** toggle markup/view
 #+begin_src emacs-lisp
