@@ -1103,7 +1103,22 @@ Auto-close pairs.
 (defun rasen/copy-file-path ()
   "Copy the current buffer's path to kill ring."
   (interactive)
+  ;; TODO: optionally strip projectile-prefix
   (kill-new (buffer-file-name)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun rasen/org-copy-log-entry (arg)
+  "Copy the current org entry as a log line with timestamp. If ARG is provided, kill the entry."
+  (interactive "P")
+  (let* ((heading (org-get-heading))
+         (created (org-entry-get (point) "CREATED"))
+         (line (concat "- " created " " heading)))
+    (when arg
+      (org-cut-subtree)
+      (current-kill 1))
+    (kill-new (concat line "\n"))
+    (message line)))
 #+end_src
 
 Shamelessly stolen from https://github.com/purcell/emacs.d.
@@ -1221,6 +1236,10 @@ Automatically determine indent style.
   :diminish
   :config
   (dtrt-indent-global-mode))
+#+end_src
+** emacs pinentry
+#+begin_src emacs-lisp
+(setq epa-pinentry-mode 'loopback)
 #+end_src
 * Org-mode
 ** General
@@ -1684,12 +1703,12 @@ Actual configuration.
 
 (rasen/make-refile-hydra rasen/org-refile-hydra-resources "Resources"
   ("w" "Work"                   "~/org/ring.org.gpg" "Resources")
-  ("P" "Productivity"           "~/org/plan.org"     "Resources" "Productivity")
+  ("p" "Productivity"           "~/org/plan.org"     "Resources" "Productivity")
   ("s" "Software development"   "~/org/plan.org"     "Resources" "Software development, programming, architecture")
   ("m" "Martial Arts"           "~/org/plan.org"     "Resources" "Martial Arts")
   ("n" "Natural sciences"       "~/org/plan.org"     "Resources" "Natural sciences")
   ("d" "Design"                 "~/org/plan.org"     "Resources" "Design")
-  ("p" "Programming languages"  "~/org/plan.org"     "Resources" "Programming languages")
+  ("l" "Programming languages"  "~/org/plan.org"     "Resources" "Programming languages")
   ("W" "Writing"                "~/org/plan.org"     "Resources" "Writing")
   ("c" "Communication"          "~/org/plan.org"     "Resources" "Communication")
   ("b" "Business"               "~/org/plan.org"     "Resources" "Business")
@@ -2200,7 +2219,9 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
    "SPC n b" #'org-roam-switch-to-buffer)
   (:keymaps 'org-mode-map
    :states '(insert visual)
-   "C-c i" #'org-roam-insert)
+   "C-c i" #'org-roam-insert
+   ;; C-i is interpreted as TAB
+   "C-c TAB" #'org-roam-insert)
 
   :config
   (setq org-roam-directory (concat rasen/org-directory "/roam")
@@ -2222,6 +2243,11 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
            :file-name "%(rasen/tsid)-${slug}"
            :head "#+TITLE: ${title}\n"
            :unnarrowed t)))
+
+  ;; better defaults for graph view
+  (setq org-roam-graph-executable (executable-find "sfdp"))
+  (setq org-roam-graph-extra-config '(("overlap" . "prism")
+                                      ("splines" . "true")))
 
   ;; patch function to use kebab-case in file names
   (el-patch-defun org-roam--title-to-slug (title)
@@ -2252,6 +2278,30 @@ Enable auto-completion for notes.
   :load-path "site-lisp/org-roam"
   :config
   (company-org-roam-init))
+#+end_src
+** toggle markup/view
+#+begin_src emacs-lisp
+(defun rasen/toggle-org-view-mode ()
+  (interactive)
+  ;; partially stolen from `org-toggle-link-display'
+  (if org-link-descriptive
+      (progn
+        (remove-from-invisibility-spec '(org-link))
+        (setq-local org-hide-emphasis-markers nil)
+        (org-clear-latex-preview (point-min) (point-max))
+        (org-remove-inline-images)
+        (message "org-view-mode disabled"))
+
+    (add-to-invisibility-spec '(org-link))
+    (setq org-hide-emphasis-markers t)
+    (org--latex-preview-region (point-min) (point-max))
+    (org-display-inline-images)
+    (message "org-view-mode enabled"))
+  (setq-local org-link-descriptive (not org-link-descriptive))
+  (font-lock-fontify-buffer))
+
+(general-def 'normal 'org-mode-map
+  "SPC \\" #'rasen/toggle-org-view-mode)
 #+end_src
 ** Evilify org-mode
 #+begin_src emacs-lisp
