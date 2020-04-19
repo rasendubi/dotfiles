@@ -577,6 +577,13 @@ Run Emacs as a daemon.
 (unless (server-running-p)
   (server-start))
 #+end_src
+** direnv
+Source per-project from direnv.
+#+begin_src emacs-lisp
+(use-package direnv
+  :config
+  (direnv-mode))
+#+end_src
 ** ivy
 #+begin_src emacs-lisp
 (use-package ivy
@@ -782,7 +789,8 @@ It's enabled by default. Just diminish it.
   ;; projectile-find-file is slow on very large projects.  Enable
   ;; known-files caching for projectile to speed it up.
   ;; (Note: clear cache with `projectile-invalidate-cache', or C-u U)
-  (setq-default projectile-enable-caching t)
+  ;; (setq-default projectile-enable-caching t)
+  ;; set projectile-enable-caching on a per-project basis in .dir-locals.el
 
   (setq-default projectile-completion-system 'ivy)
   (projectile-mode))
@@ -2234,8 +2242,6 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
   (setq org-roam-directory (concat rasen/org-directory "/roam")
         org-roam-db-filename (expand-file-name "cache/org-roam.db" user-emacs-directory))
 
-  (setq org-roam-completion-system 'ivy)
-
   (setq org-roam-capture-templates
         '(("s" "static (slug)" plain (function org-roam--capture-get-point)
            "%?"
@@ -2954,14 +2960,7 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 (use-package prettier-js
   :commands (prettier-js prettier-js-mode)
   :hook
-  (typescript-mode . prettier-js-mode)
-  :init
-  (defun rasen/setup-prettier ()
-    (make-local-variable 'exec-path)
-    (add-to-list 'exec-path (string-trim (shell-command-to-string "npm bin")))
-    (setq-local prettier-js-command (executable-find "prettier")))
-
-  (add-hook 'typescript-mode-hook #'rasen/setup-prettier))
+  (typescript-mode . prettier-js-mode))
 #+end_src
 
 #+begin_src emacs-lisp

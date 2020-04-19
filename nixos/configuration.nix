@@ -227,6 +227,16 @@ in
     }
     {
       environment.systemPackages = [
+        pkgs.direnv
+      ];
+      programs.fish.shellInit = ''
+        eval (direnv hook fish)
+      '';
+    
+      services.lorri.enable = true;
+    }
+    {
+      environment.systemPackages = [
         pkgs.isync
       ];
     }
@@ -479,15 +489,10 @@ in
     
         pkgs.patchelf
     
-        pkgs.python2
         pkgs.python3
-    
-        pkgs.awscli
-        pkgs.nodejs-13_x
-        pkgs.shellcheck
       ];
-      environment.variables.NPM_CONFIG_PREFIX = "$HOME/.npm-global";
-      environment.variables.PATH = "$HOME/.npm-global/bin:$PATH";
+      # environment.variables.NPM_CONFIG_PREFIX = "$HOME/.npm-global";
+      # environment.variables.PATH = "$HOME/.npm-global/bin:$PATH";
     }
   ] ++ machine-config;
 }

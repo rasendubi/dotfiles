@@ -22,6 +22,7 @@ rec {
       counsel-projectile
       diff-hl
       diminish
+      direnv
       dockerfile-mode
       dtrt-indent
       edit-indirect
@@ -115,6 +116,7 @@ rec {
       pkgs.notmuch
       pkgs.w3m
       pkgs.imagemagick
+      pkgs.shellcheck
 
       (pkgs.python3.withPackages (pypkgs: [
         pypkgs.autopep8

@@ -519,6 +519,20 @@ I need to access my Android device.
   users.users.rasen.extraGroups = ["adbusers"];
 }
 #+end_src
+** lorri + direnv
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [
+    pkgs.direnv
+  ];
+  programs.fish.shellInit = ''
+    eval (direnv hook fish)
+  '';
+
+  services.lorri.enable = true;
+}
+#+end_src
 * Mail setup
 ** Mbsync
 I use mbsync to sync my accounts and make them available offline.
@@ -1322,15 +1336,10 @@ set-window-option -g automatic-rename
 
     pkgs.patchelf
 
-    pkgs.python2
     pkgs.python3
-
-    pkgs.awscli
-    pkgs.nodejs-13_x
-    pkgs.shellcheck
   ];
-  environment.variables.NPM_CONFIG_PREFIX = "$HOME/.npm-global";
-  environment.variables.PATH = "$HOME/.npm-global/bin:$PATH";
+  # environment.variables.NPM_CONFIG_PREFIX = "$HOME/.npm-global";
+  # environment.variables.PATH = "$HOME/.npm-global/bin:$PATH";
 }
 #+end_src
 ** Man pages
