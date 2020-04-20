@@ -226,6 +226,9 @@ in
       users.users.rasen.extraGroups = ["adbusers"];
     }
     {
+      services.fwupd.enable = true;
+    }
+    {
       environment.systemPackages = [
         pkgs.direnv
       ];

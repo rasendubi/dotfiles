@@ -519,6 +519,14 @@ I need to access my Android device.
   users.users.rasen.extraGroups = ["adbusers"];
 }
 #+end_src
+** fwupd
+fwupd is a service that allows applications to update firmware.
+#+name: nixos-section
+#+begin_src nix
+{
+  services.fwupd.enable = true;
+}
+#+end_src
 ** lorri + direnv
 #+name: nixos-section
 #+begin_src nix
