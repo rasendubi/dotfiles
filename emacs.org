@@ -1312,6 +1312,11 @@ Do not indent tags.
 #+name: org-config
 #+begin_src emacs-lisp
 (setq org-hide-emphasis-markers t)
+
+;; allow ndash/mdash before/after emphasis markers.
+;; (copy-modified from original `org-emphasis-regexp-components' definition)
+(org-set-emph-re 'org-emphasis-regexp-components
+                 '("-–—[:space:]('\"{" "-–—[:space:].,:!?;'\")}\\[" "[:space:]" "." 1))
 #+end_src
 
 Open pdfs in external viewer:
