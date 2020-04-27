@@ -1560,12 +1560,28 @@ xkb_symbols "pc+us(workman)+ua:2+inet(evdev)+group(lctrl_toggle)+ctrl(nocaps)" {
     };
     key <LNFD> {         [        Linefeed ] };
     key <HOME> {         [            Home ] };
-    key   <UP> {         [              Up ] };
+    key <UP> {
+        type= "FOUR_LEVEL",
+        # Arrow up, left-right arrow ↑ ↔
+        symbols[Group1]= [ Up, Up, U2191, U2194 ]
+    };
     key <PGUP> {         [           Prior ] };
-    key <LEFT> {         [            Left ] };
-    key <RGHT> {         [           Right ] };
+    key <LEFT> {
+        type= "FOUR_LEVEL",
+        # Left arrows ← ⟵
+        symbols[Group1]= [ Left, Left, U2190, U27f5 ]
+    };
+    key <RGHT> {
+        type= "FOUR_LEVEL",
+        # Right arrows → ⟶
+        symbols[Group1]= [ Right, Right, U2192, U27f6 ]
+    };
     key  <END> {         [             End ] };
-    key <DOWN> {         [            Down ] };
+    key <DOWN> {
+        type= "FOUR_LEVEL",
+        # Down arrow, left-right arrows ↓ ⇄
+        symbols[Group1]= [ Down, Down, U2193, U21c4 ]
+    };
     key <PGDN> {         [            Next ] };
     key  <INS> {         [          Insert ] };
     key <DELE> {         [          Delete ] };
