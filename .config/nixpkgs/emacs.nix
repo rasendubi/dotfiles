@@ -102,8 +102,12 @@ rec {
       yaml-mode
       yasnippet
 
-      # needed for org-roam
-      dash f s emacsql emacsql-sqlite
+      # from my melpa update
+      org-roam
+      company-org-roam
+      org-roam-bibtex
+      ivy-bibtex
+      org-ref
 
       # provided by pkgs.notmuch:
       # notmuch

@@ -1214,6 +1214,9 @@ Basic info: my name, email, ui, editor, [[https://git-scm.com/blog/2010/03/08/re
 
 [rerere]
     enabled = true
+
+[advice]
+    detachedHead = false
 #+end_src
 
 Configure signing with [[https://www.gnupg.org/][gpg]].

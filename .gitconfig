@@ -26,6 +26,9 @@
 [rerere]
     enabled = true
 
+[advice]
+    detachedHead = false
+
 [user]
     signingkey = EB3066C3
 

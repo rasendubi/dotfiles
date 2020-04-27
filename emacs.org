@@ -2225,7 +2225,6 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
 #+begin_src emacs-lisp
 (use-package org-roam
   :after org
-  :load-path "site-lisp/org-roam"
   :diminish
   :hook
   (after-init . org-roam-mode)
@@ -2245,7 +2244,7 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
   (require 'org-roam-protocol)
 
   (setq org-roam-directory (concat rasen/org-directory "/roam")
-        org-roam-db-filename (expand-file-name "cache/org-roam.db" user-emacs-directory))
+        org-roam-db-location (expand-file-name "cache/org-roam.db" user-emacs-directory))
 
   (setq org-roam-capture-templates
         '(("s" "static (slug)" plain (function org-roam--capture-get-point)
@@ -2265,9 +2264,18 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
            :unnarrowed t)))
 
   ;; better defaults for graph view
+  (setq org-roam-graph-executable (executable-find "dot"))
+  (setq org-roam-graph-executable (executable-find "neato"))
+  (setq org-roam-graph-executable (executable-find "fdp"))
   (setq org-roam-graph-executable (executable-find "sfdp"))
-  (setq org-roam-graph-extra-config '(("overlap" . "prism")
+  (setq org-roam-graph-extra-config '(;; ("concentrate" . "true")
+                                      ("overlap" . "prism")
+                                      ;; ("pack" . "false")
+                                      ("sep" . "20.0")
+                                      ("esep" . "0.01")
                                       ("splines" . "true")))
+  (setq org-roam-graph-node-extra-config '(("shape" . "rectangle")))
+  (setq org-roam-graph-edge-extra-config '(("dir" . "back")))
 
   ;; patch function to use kebab-case in file names
   (el-patch-defun org-roam--title-to-slug (title)
@@ -2295,9 +2303,86 @@ Enable auto-completion for notes.
 #+begin_src emacs-lisp
 (use-package company-org-roam
   :after org org-roam company
-  :load-path "site-lisp/company-org-roam"
   :config
   (push #'company-org-roam company-backends))
+#+end_src
+** org-ref
+#+begin_src emacs-lisp
+(use-package org-ref
+  :config
+  (setq reftex-default-bibliography '("~/org/roam/biblio/references.bib"))
+  (setq org-ref-default-bibliography '("~/org/roam/biblio/references.bib"))
+  (setq org-ref-pdf-directory "~/org/roam/biblio/pdf/")
+  (setq org-ref-bibliography-notes "~/org/roam/biblio/")
+
+  (setq org-ref-completion-library 'org-ref-ivy-cite)
+
+  (setq bibtex-completion-bibliography '("~/org/roam/biblio/references.bib"))
+  (setq bibtex-completion-library-path '("~/org/roam/biblio/pdf/"))
+  (setq bibtex-completion-notes-path "~/org/roam/biblio/")
+
+  (setq bibtex-autokey-year-length 4
+        bibtex-autokey-name-year-separator ""
+        bibtex-autokey-year-title-separator "-"
+        bibtex-autokey-titleword-separator "-"
+        bibtex-autokey-titlewords 5
+        bibtex-autokey-titlewords-stretch 1
+        bibtex-autokey-titleword-length 5)
+
+  ;; patch isbn-to-bibtex to handle non-ascii names/titles.
+  (el-patch-defun isbn-to-bibtex (isbn bibfile)
+    "Get bibtex entry for ISBN and insert it into BIBFILE.
+Nothing happens if an entry with the generated key already exists
+in the file. Data comes from worldcat."
+    (interactive
+     (list
+      (read-string
+       "ISBN: "
+       ;; now set initial input
+       (cond
+        ;; If region is active and it starts with a number, we use it
+        ((and  (region-active-p)
+               (s-match "^[0-9]" (buffer-substring (region-beginning) (region-end))))
+         (buffer-substring (region-beginning) (region-end)))
+        ;; if first entry in kill ring starts with a number assume it is an isbn
+        ;; and use it as the guess
+        ((stringp (car kill-ring))
+         (when (s-match "^[0-9]" (car kill-ring))
+           (car kill-ring)))
+        ;; type or paste it in
+        (t
+         nil)))
+      (completing-read "Bibfile: " (org-ref-possible-bibfiles))))
+
+    (let* ((url (format "https://www.ottobib.com/isbn/%s/bibtex" isbn))
+           (entry))
+      (with-current-buffer (url-retrieve-synchronously url t t)
+        (goto-char (point-min))
+        (when (re-search-forward (el-patch-swap "@[a-zA-Z]+{.+\\(\n\s+[a-z\s={\.,?:;'0-9\n}-]+\\)+}$"
+                                                "@[a-zA-Z]+{.+\\([^<]+\\)+}$") nil t)
+          (setq entry (match-string 0))))
+
+      (if (not entry)
+          (message "Nothing found.")
+        (find-file bibfile)
+        (goto-char (point-max))
+        (insert (with-temp-buffer
+                  (insert (concat entry "\n}"))
+                  (goto-char (point-min))
+                  (org-ref-isbn-clean-bibtex-entry)
+                  (org-ref-clean-bibtex-entry)
+                  (bibtex-fill-entry)
+                  (s-trim (buffer-string))
+                  (buffer-string)))
+        (save-buffer)))))
+
+#+end_src
+** org-roam-bibtex
+Citations and bibliography tools for org-mode.
+#+begin_src emacs-lisp
+(use-package org-roam-bibtex
+  :diminish
+  :hook (org-roam-mode . org-roam-bibtex-mode))
 #+end_src
 ** toggle markup/view
 #+begin_src emacs-lisp
@@ -3059,6 +3144,29 @@ Package edit-indirect needed to edit code blocks.
 #+begin_src emacs-lisp
 (use-package edit-indirect
   :after markdown-mode)
+#+end_src
+
+*** Markdown cliplink
+(Uses org-cliplink.)
+
+#+begin_src emacs-lisp
+(defun rasen/md-link-transformer (url title)
+  (if title
+      (format "[%s](%s)"
+              (org-cliplink-elide-string
+               (org-cliplink-escape-html4
+                (org-cliplink-title-for-url url title))
+               org-cliplink-max-length)
+              url)
+    (format "<%s>" url)))
+
+(defun rasen/md-cliplink ()
+  "Takes a URL from the clipboard and inserts an markdown-mode link
+with the title of a page found by the URL into the current
+buffer"
+  (interactive)
+  (org-cliplink-insert-transformed-title (org-cliplink-clipboard-content)
+                                         #'rasen/md-link-transformer))
 #+end_src
 *** WriteGood
 See http://bnbeckwith.com/code/writegood-mode.html
