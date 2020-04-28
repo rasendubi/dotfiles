@@ -1,12 +1,11 @@
-{ config, pkgs, lib, ... }:
+{ name, config, pkgs, lib, inputs, ... }:
 let
-  meta = import ./meta.nix;
-  machine-config = lib.getAttr meta.name {
+  machine-config = lib.getAttr name {
     omicron = [
       {
         imports = [
-          <nixos-hardware/dell/xps/13-9360>
-          <nixpkgs/nixos/modules/installer/scan/not-detected.nix>
+          (import "${inputs.nixos-hardware}/dell/xps/13-9360")
+          inputs.nixpkgs.nixosModules.notDetected
         ];
       
         boot.initrd.availableKernelModules = [ "xhci_pci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
@@ -74,16 +73,17 @@ in
     }
 
     {
-      nix.nixPath =
-        let dotfiles = "/home/rasen/dotfiles";
-        in [
-          "nixos-config=${dotfiles}/nixos/configuration.nix"
-          "dotfiles=${dotfiles}"
-          "${dotfiles}/channels"
-        ];
+      nix = {
+        package = pkgs.nixFlakes;
+        extraOptions = ''
+          experimental-features = nix-command flakes
+        '';
+      };
     }
     {
-      system.copySystemConfiguration = true;
+      nix.nixPath = [
+        "nixpkgs=${inputs.nixpkgs}"
+      ];
     }
     {
       users.extraUsers.rasen = {
@@ -92,15 +92,6 @@ in
         extraGroups = [ "users" "wheel" "input" ];
         initialPassword = "HelloWorld";
       };
-    }
-    {
-      nixpkgs.overlays = import ../nixpkgs-overlays/overlays.nix;
-    }
-    {
-      nix.useSandbox = "relaxed";
-    }
-    {
-      nix.nixPath = [ "nixpkgs-overlays=/home/rasen/dotfiles/nixpkgs-overlays/compat" ];
     }
     {
       hardware.bluetooth.enable = true;
@@ -127,7 +118,7 @@ in
     }
     {
       networking = {
-        hostName = meta.name;
+        hostName = name;
     
         networkmanager.enable = true;
     
@@ -242,17 +233,6 @@ in
       environment.systemPackages = [
         pkgs.isync
       ];
-    }
-    {
-      services.dovecot2 = {
-        enable = true;
-        enablePop3 = false;
-        enableImap = true;
-        mailLocation = "maildir:~/Mail:LAYOUT=fs";
-      };
-    
-      # dovecot has some helpers in libexec (namely, imap).
-      environment.pathsToLink = [ "/libexec/dovecot" ];
     }
     {
       environment.systemPackages = [
@@ -430,7 +410,7 @@ in
     }
     {
       services.emacs =
-        let emacsConfig = import <dotfiles/.config/nixpkgs/emacs.nix> { inherit pkgs; };
+        let emacsConfig = import .config/nixpkgs/emacs.nix { inherit pkgs; };
         in {
           enable = true;
           defaultEditor = true;

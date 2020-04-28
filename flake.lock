@@ -1,0 +1,79 @@
+{
+  "inputs": {
+    "home-manager": {
+      "info": {
+        "lastModified": 1587442074,
+        "narHash": "sha256-SmC1aP9TJImzHlNIWOTa+uwePeHoEcfGJEewXXWAtfc="
+      },
+      "inputs": {
+        "nixpkgs": {
+          "info": {
+            "lastModified": 1588003254,
+            "narHash": "sha256-QyJyT495vICUAg+TWOznULvoaW3veOnPcQfL2zAJa2M="
+          },
+          "inputs": {},
+          "locked": {
+            "owner": "NixOS",
+            "repo": "nixpkgs",
+            "rev": "32e4d072a0d8d378d9c3a18a94541c1d320bad61",
+            "type": "github"
+          },
+          "original": {
+            "id": "nixpkgs",
+            "type": "indirect"
+          }
+        }
+      },
+      "locked": {
+        "owner": "rycee",
+        "repo": "home-manager",
+        "rev": "e13bd1e79372c58cc1e86e45bdf304f4b6770fe3",
+        "type": "github"
+      },
+      "original": {
+        "owner": "rycee",
+        "ref": "bqv-flakes",
+        "repo": "home-manager",
+        "type": "github"
+      }
+    },
+    "nixos-hardware": {
+      "info": {
+        "lastModified": 1587720950,
+        "narHash": "sha256-G9/po4PZW+v+UWRK1uU12/CNnrRLKgcKfRZxUqHy+lU="
+      },
+      "inputs": {},
+      "locked": {
+        "owner": "NixOS",
+        "repo": "nixos-hardware",
+        "rev": "d928c96e3c86423e829779c84eef70848b835923",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixos-hardware",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "info": {
+        "lastModified": 1587977950,
+        "narHash": "sha256-ob0AMsXdkOuH4wDc46prH6wokQwFnS5sfxervfSQsCg="
+      },
+      "inputs": {},
+      "locked": {
+        "owner": "rasendubi",
+        "repo": "nixpkgs",
+        "rev": "0436d941517e9ece2c96e834dc17459440ebef0e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "rasendubi",
+        "ref": "melpa-2020-04-27",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    }
+  },
+  "version": 4
+}

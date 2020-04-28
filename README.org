@@ -16,15 +16,14 @@ Pieces not (yet) covered in this document are:
 - irssi config at =.irssi=;
 
 * NixOS
-I'm a [[http://nixos.org/][NixOS]] user. What's cool about it is that I can describe all my system configuration in one file (=/etc/nixos/configuration.nix=), so I can just copy it to other machine, call =nixos-rebuild= and have system with the same software, system settings, etc.
+I'm a [[http://nixos.org/][NixOS]] user. What's cool about it is that I can describe all my system configuration in one file (almost). I can execute a single command and have a system with the same software, system settings, etc.
 
-An outline looks like this.
+An outline of configuration looks like this:
 
-#+begin_src nix :tangle nixos/configuration.nix :noweb no-export :padline no
-{ config, pkgs, lib, ... }:
+#+begin_src nix :tangle nixos-config.nix :noweb no-export :padline no
+{ name, config, pkgs, lib, inputs, ... }:
 let
-  meta = import ./meta.nix;
-  machine-config = lib.getAttr meta.name {
+  machine-config = lib.getAttr name {
     omicron = [
       <<machine-omicron>>
     ];
@@ -47,43 +46,99 @@ in
 
 This =<<nixos-section>>= is replaced by other parts of this doc.
 
-** Default locations
-
-Move nixos configuration from the default location to the =dotfiles/nixos/configuration.nix=.
-
-Also disable channel mechanism and makes nixos use Nixpkgs in the =dotfiles/channels= directory. I usually follow nixpkgs-unstable, but that gives me more control.
-
+** Flakes support
+Enable experimental Flakes support.
 #+name: nixos-section
 #+begin_src nix
 {
-  nix.nixPath =
-    let dotfiles = "/home/rasen/dotfiles";
-    in [
-      "nixos-config=${dotfiles}/nixos/configuration.nix"
-      "dotfiles=${dotfiles}"
-      "${dotfiles}/channels"
-    ];
+  nix = {
+    package = pkgs.nixFlakes;
+    extraOptions = ''
+      experimental-features = nix-command flakes
+    '';
+  };
 }
 #+end_src
 
-If you want to override default configuration location for the very first =nixos-rebuild=, use =-I= flag:
-#+begin_src sh
-sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix
+Make this repository flake-compatible:
+#+begin_src nix :tangle flake.nix :noweb no-export :padline no
+{
+  description = "rasendubi's NixOS/home-manager configuration";
+
+  edition = 201909;
+
+  inputs = {
+    nixpkgs = {
+      type = "github";
+      owner = "rasendubi";
+      repo = "nixpkgs";
+      ref = "melpa-2020-04-27";
+      # owner = "NixOS";
+      # repo = "nixpkgs-channels";
+      # ref = "nixpkgs-unstable";
+    };
+    nixos-hardware = {
+      type = "github";
+      owner = "NixOS";
+      repo = "nixos-hardware";
+      flake = false;
+    };
+    home-manager = {
+      type = "github";
+      owner = "rycee";
+      repo = "home-manager";
+      ref = "bqv-flakes";
+    };
+  };
+
+  outputs = { self, nixpkgs, nixos-hardware, home-manager }@inputs:
+    let
+      system = "x86_64-linux";
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [
+          (_self: _super: self.packages.x86_64-linux)
+        ] ++ self.overlays;
+        config = { allowUnfree = true; };
+      };
+    in {
+      nixosConfigurations =
+        let
+          hosts = ["omicron"];
+          mkHost = name:
+            nixpkgs.lib.nixosSystem {
+              system = "x86_64-linux";
+              modules = [
+                { nixpkgs = { inherit pkgs; }; }
+                (import ./nixos-config.nix)
+              ];
+              specialArgs = { inherit name inputs; };
+            };
+        in nixpkgs.lib.genAttrs hosts mkHost;
+
+      packages.x86_64-linux =
+        let
+          mergePackages = nixpkgs.lib.foldr nixpkgs.lib.mergeAttrs {};
+        in
+          mergePackages [
+            <<flake-packages>>
+          ];
+
+      overlays = [
+        <<flake-overlays>>
+      ];
+    };
+}
 #+end_src
-
-** Save config
-
-Save nixos-config in the Nix store, so I can retrieve it later. The config for the currently running system is located at =/var/run/current-system/configuration.nix=.
-
+** Make nixpkgs available in NIX_PATH
 #+name: nixos-section
 #+begin_src nix
 {
-  system.copySystemConfiguration = true;
+  nix.nixPath = [
+    "nixpkgs=${inputs.nixpkgs}"
+  ];
 }
 #+end_src
-
-This setting copies only the =configuration.nix= file, which works pretty nice as I have only one configuration file and don't split it.
-
 ** Users
 I'm the only user of the system:
 
@@ -110,8 +165,8 @@ This is my small Dell XPS 13.
 #+begin_src nix
 {
   imports = [
-    <nixos-hardware/dell/xps/13-9360>
-    <nixpkgs/nixos/modules/installer/scan/not-detected.nix>
+    (import "${inputs.nixos-hardware}/dell/xps/13-9360")
+    inputs.nixpkgs.nixosModules.notDetected
   ];
 
   boot.initrd.availableKernelModules = [ "xhci_pci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
@@ -167,71 +222,20 @@ Clickpad:
   };
 }
 #+end_src
-** Local overlays
-As a responsible NixOS user, I refuse to install software blindly with =sudo make install=. That's why I must write my own nix-expressions. I keep them in my local overlay until they're merged upstream.
-
-Store overlays in a directory:
-#+name: nixos-section
-#+begin_src nix :noweb no-export
-{
-  nixpkgs.overlays = import ../nixpkgs-overlays/overlays.nix;
-}
-#+end_src
-
-Store list of overlays in =nixpkgs-overlays/overlays.nix=.
-#+begin_src nix :tangle nixpkgs-overlays/overlays.nix :noweb no-export
-[
-  <<nixpkgs-overlays>>
-]
-#+end_src
-
-To make package results testing better, I build them in isolated environment (for more info, see [[https://nixos.org/nixos/manual/options.html#opt-nix.useChroot][nixos manual]]):
-#+name: nixos-section
-#+begin_src nix
-{
-  nix.useSandbox = "relaxed";
-}
-#+end_src
-
-Note that this is ="relaxed"= instead of =true=, because I have some packages that require a network to build and thus are =__noChroot=.
-*** Compatibility with nix tools
-See https://nixos.wiki/wiki/Overlays#Using_nixpkgs.overlays_from_configuration.nix_as_.3Cnixpkgs-overlays.3E_in_your_NIX_PATH
-
-Add compat/overlays.nix:
-#+begin_src nix :tangle nixpkgs-overlays/compat/overlays.nix :mkdirp t
-self: super:
-with super.lib;
-let
-  # Using the nixos plumbing that's used to evaluate the config...
-  eval = import <nixpkgs/nixos/lib/eval-config.nix>;
-  # Evaluate the config,
-  paths = (eval {modules = [(import <nixos-config>)];})
-    # then get the `nixpkgs.overlays` option.
-    .config.nixpkgs.overlays
-  ;
-in
-foldl' (flip extends) (_: super) paths self
-#+end_src
-
-Add it to NIX_PATH:
-#+name: nixos-section
-#+begin_src nix
-{
-  nix.nixPath = [ "nixpkgs-overlays=/home/rasen/dotfiles/nixpkgs-overlays/compat" ];
-}
-#+end_src
+** Local packages
+As a responsible NixOS user, I refuse to install software blindly with =sudo make install=. That's why I must write my own nix-expressions.
 *** Custom Input font
 I like the following settings more than defaults. I also need a custom four-style family because Emacs confuses regular/medium weight otherwise. Use link specified in ~requireFile~ to download the font.
 #+DOWNLOADED: screenshot @ 2020-04-09 22:27:21
 #+ATTR_ORG: :width 360
 [[file:./images/20200409192721-screenshot.png]]
 
-#+begin_src nix :tangle nixpkgs-overlays/input-mono/default.nix :mkdirp t
-self: super:
+#+name: flake-packages
+#+begin_src nix
 {
   # note it's a new attribute and does not override old one
-  input-mono = (self.input-fonts.overrideAttrs (old: {
-    src = self.requireFile {
+  input-mono = (pkgs.input-fonts.overrideAttrs (old: {
+    src = pkgs.requireFile {
       name = "Input-Font.zip";
       url = "https://input.fontbureau.com/download/index.html?customize&fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&email=";
       sha256 = "0nn41w2b6jvsbr3r4lfy4p8w2ssjmgdjzd1pbj7p0vmawjpvx2w8";
@@ -240,79 +244,72 @@ self: super:
   }));
 }
 #+end_src
-
-Add overlay to list of overlays:
-#+name: nixpkgs-overlays
-#+begin_src nix
-(import ./input-mono)
-#+end_src
 *** Online banking
 My bank uses a two-part websigner. The first part is a browser extension (does not require additional setup) and the second part is a native host application companion (it is installed here).
 
 Pack native messaging host:
-#+begin_src nix :tangle nixpkgs-overlays/procreditbank/websigner.nix :mkdirp t
-{ stdenv
-, fetchurl
-, autoPatchelfHook
-, gtk2
-, glib
-, pcsclite
-}:
-stdenv.mkDerivation {
-  pname = "procreditbank-websigner";
-  version = "2020-01-20";
+#+name: flake-packages
+#+begin_src nix
+(let
+  websigner =
+    { stdenv
+    , fetchurl
+    , autoPatchelfHook
+    , gtk2
+    , glib
+    , pcsclite
+    }:
+    stdenv.mkDerivation {
+      pname = "procreditbank-websigner";
+      version = "2020-01-20";
 
-  src = fetchurl {
-    url = "https://ibank.procreditbank.com.ua/websigner-linux.bin";
-    sha256 = "1bm88jg7nhgrmc0q5hv35hgv4nc0d15ihl0acrhf6x5f7wv4pszv";
-  };
+      src = fetchurl {
+        url = "https://ibank.procreditbank.com.ua/websigner-linux.bin";
+        sha256 = "1bm88jg7nhgrmc0q5hv35hgv4nc0d15ihl0acrhf6x5f7wv4pszv";
+      };
 
-  nativeBuildInputs = [ autoPatchelfHook ];
+      nativeBuildInputs = [ autoPatchelfHook ];
 
-  buildInputs = [ gtk2 glib pcsclite ];
+      buildInputs = [ gtk2 glib pcsclite ];
 
-  unpackCmd = ''
-    sh $src --extract
-  '';
+      unpackCmd = ''
+        sh $src --extract
+      '';
 
-  dontConfigure = true;
+      dontConfigure = true;
 
-  dontBuild = true;
+      dontBuild = true;
 
-  installPhase = ''
-    mkdir -p $out/bin
-    mkdir -p $out/lib/websigner/hosts/firefox
-    mkdir -p $out/lib/websigner/hosts/chromium
+      installPhase = ''
+        mkdir -p $out/bin
+        mkdir -p $out/lib/websigner/hosts/firefox
+        mkdir -p $out/lib/websigner/hosts/chromium
 
-    install -m 555 x86_64-linux/npwebsigner.so $out/lib/websigner
-    install -m 777 x86_64-linux/nmwebsigner $out/lib/websigner
+        install -m 555 x86_64-linux/npwebsigner.so $out/lib/websigner
+        install -m 777 x86_64-linux/nmwebsigner $out/lib/websigner
 
-    sed "s|PLUGIN_PATH|$out/lib/websigner/nmwebsigner|" com.bifit.websigner-mozilla.json > $out/lib/websigner/hosts/firefox/com.bifit.websigner.json
-    sed "s|PLUGIN_PATH|$out/lib/websigner/nmwebsigner|" com.bifit.websigner-chrome.json > $out/lib/websigner/hosts/chromium/com.bifit.websigner.json
+        sed "s|PLUGIN_PATH|$out/lib/websigner/nmwebsigner|" com.bifit.websigner-mozilla.json > $out/lib/websigner/hosts/firefox/com.bifit.websigner.json
+        sed "s|PLUGIN_PATH|$out/lib/websigner/nmwebsigner|" com.bifit.websigner-chrome.json > $out/lib/websigner/hosts/chromium/com.bifit.websigner.json
 
-    mkdir -p $out/lib/mozilla/native-messaging-hosts
-    ln -s $out/lib/websigner/hosts/firefox/*.json $out/lib/mozilla/native-messaging-hosts
-  '';
-}
+        mkdir -p $out/lib/mozilla/native-messaging-hosts
+        ln -s $out/lib/websigner/hosts/firefox/*.json $out/lib/mozilla/native-messaging-hosts
+      '';
+    };
+in {
+  procreditbank-websigner = pkgs.callPackage websigner { };
+})
 #+end_src
 
-Initialize overlay and apply native messaging host to firefox:
-#+begin_src nix :tangle nixpkgs-overlays/procreditbank/default.nix :mkdirp t
-self: super:
-{
-  procreditbank-websigner = self.callPackage ./websigner.nix { };
-
+Override Firefox to use websigner.
+#+name: flake-overlays
+#+begin_src nix
+(self: super: {
   firefox = super.firefox.override {
     extraNativeMessagingHosts = [ self.procreditbank-websigner ];
   };
-}
+})
 #+end_src
 
-Add overlay to list of overlays:
-#+name: nixpkgs-overlays
-#+begin_src nix
-(import ./procreditbank)
-#+end_src
 ** Bluetooth
 I have a bluetooth headset, so this enables bluetooth audio in NixOS.
 
@@ -358,7 +355,7 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
 #+begin_src nix
 {
   networking = {
-    hostName = meta.name;
+    hostName = name;
 
     networkmanager.enable = true;
 
@@ -602,22 +599,6 @@ Channel sync-<<name>>-all
 Channel sync-<<name>>-spam
 Channel sync-<<name>>-sent
 ")
-#+end_src
-** Dovecot
-Dovecot serves fetched mail to gnus.
-#+name: nixos-section
-#+begin_src nix
-{
-  services.dovecot2 = {
-    enable = true;
-    enablePop3 = false;
-    enableImap = true;
-    mailLocation = "maildir:~/Mail:LAYOUT=fs";
-  };
-
-  # dovecot has some helpers in libexec (namely, imap).
-  environment.pathsToLink = [ "/libexec/dovecot" ];
-}
 #+end_src
 ** msmtp
 Msmtp is used to send mail.
@@ -1043,7 +1024,7 @@ Start emacs as a daemon:
 #+begin_src nix
 {
   services.emacs =
-    let emacsConfig = import <dotfiles/.config/nixpkgs/emacs.nix> { inherit pkgs; };
+    let emacsConfig = import .config/nixpkgs/emacs.nix { inherit pkgs; };
     in {
       enable = true;
       defaultEditor = true;
