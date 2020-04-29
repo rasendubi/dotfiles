@@ -8,19 +8,21 @@
       "inputs": {
         "nixpkgs": {
           "info": {
-            "lastModified": 1588003254,
-            "narHash": "sha256-QyJyT495vICUAg+TWOznULvoaW3veOnPcQfL2zAJa2M="
+            "lastModified": 1587977950,
+            "narHash": "sha256-ob0AMsXdkOuH4wDc46prH6wokQwFnS5sfxervfSQsCg="
           },
           "inputs": {},
           "locked": {
-            "owner": "NixOS",
+            "owner": "rasendubi",
             "repo": "nixpkgs",
-            "rev": "32e4d072a0d8d378d9c3a18a94541c1d320bad61",
+            "rev": "0436d941517e9ece2c96e834dc17459440ebef0e",
             "type": "github"
           },
           "original": {
-            "id": "nixpkgs",
-            "type": "indirect"
+            "owner": "rasendubi",
+            "ref": "melpa-2020-04-27",
+            "repo": "nixpkgs",
+            "type": "github"
           }
         }
       },

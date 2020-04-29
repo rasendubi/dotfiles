@@ -88,6 +88,7 @@ Make this repository flake-compatible:
       owner = "rycee";
       repo = "home-manager";
       ref = "bqv-flakes";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
@@ -96,9 +97,7 @@ Make this repository flake-compatible:
       system = "x86_64-linux";
       pkgs = import nixpkgs {
         inherit system;
-        overlays = [
-          (_self: _super: self.packages.x86_64-linux)
-        ] ++ self.overlays;
+        overlays = self.overlays;
         config = { allowUnfree = true; };
       };
     in {
@@ -125,8 +124,25 @@ Make this repository flake-compatible:
           ];
 
       overlays = [
+        (_self: _super: self.packages.x86_64-linux)
         <<flake-overlays>>
       ];
+
+      homeManagerConfigurations.x86_64-linux =
+        let
+          hosts = ["AlexeyShmalko"];
+          mkHost = hostname:
+            home-manager.lib.homeManagerConfiguration {
+              configuration = { ... }: {
+                nixpkgs.config.allowUnfree = true;
+                nixpkgs.overlays = self.overlays;
+                imports = [(import ./.config/nixpkgs/home.nix)];
+              };
+              username = "rasen";
+              homeDirectory = "/home/rasen";
+              inherit system pkgs;
+            };
+        in nixpkgs.lib.genAttrs hosts mkHost;
     };
 }
 #+end_src

@@ -1,5 +1,7 @@
 { pkgs, config, ... }:
 {
+  targets.genericLinux.enable = true;
+
   home.packages = [
     pkgs.dolphin
     pkgs.tmux
@@ -14,14 +16,7 @@
     pkgs.arandr
     pkgs.escrotum
     pkgs.ripgrep
-    pkgs.nodejs-10_x
     pkgs.pavucontrol
-
-    # pkgs.jetbrains.mps
-    pkgs.jetbrains.idea-community
-    # pkgs.jdk
-    pkgs.jdk11
-    # pkgs.gradle
 
     pkgs.google-play-music-desktop-player
 
@@ -29,15 +24,20 @@
     pkgs.dejavu_fonts
     pkgs.source-code-pro
     pkgs.ubuntu_font_family
-    # pkgs.unifont
     pkgs.powerline-fonts
     pkgs.terminus_font
+
+    # Emacs fonts
+    pkgs.input-mono
+    pkgs.libertine
+
+    pkgs.direnv
   ];
 
   home.sessionVariables.LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
 
   programs.emacs =
-    let e = import ./emacs.nix {};
+    let e = import ./emacs.nix { inherit pkgs; };
     in {
       enable = true;
       package = e.emacs;
@@ -45,21 +45,17 @@
     };
   services.emacs.enable = true;
 
-  # programs.firefox = {
-  #   enable = true;
-  #   extensions = with pkgs.nur.repos.recee.firefox-addons; [
-  #     ublock
-  #   ];
-  # };
+  services.lorri.enable = true;
+
   programs.browserpass = {
     enable = true;
-    browsers = ["firefox"];
+    browsers = ["firefox" "chrome"];
   };
 
-  programs.home-manager = {
-    enable = true;
-    path = "/home/rasen/dotfiles/channels/home-manager";
-  };
+  # programs.home-manager = {
+  #   enable = true;
+  #   path = "/home/rasen/dotfiles/channels/home-manager";
+  # };
 
   services.syncthing.enable = true;
 
@@ -68,6 +64,15 @@
     shellAliases = {
       g = "git";
     };
+    shellInit = ''
+      set -gx PATH $HOME/bin $PATH
+
+      if [ "$TERM" = rxvt-unicode-256color ]
+        set -x TERM xterm-256color
+      end
+
+      eval (direnv hook fish)
+    '';
   };
   # programs.bash = {
   #   enable = true;
@@ -143,13 +148,32 @@
     };
   };
 
-  # xresources.properties = {
-  #   "Xft.dpi" = "276";
-  # };
-
   programs.autorandr = {
     enable = true;
     profiles = {
+      "home" = {
+        fingerprint = {
+          DP-3 = "00ffffffffffff0010acc0a042524530031c010380351e78eae245a8554da3260b5054a54b00714f8180a9c0a940d1c0e10001010101a36600a0f0701f80302035000f282100001a000000ff004438565846383148304552420a000000fc0044454c4c205032343135510a20000000fd001d4c1e8c1e000a202020202020018802032ef15390050402071601141f1213272021220306111523091f07830100006d030c001000003c200060030201023a801871382d40582c25000f282100001e011d8018711c1620582c25000f282100009e04740030f2705a80b0588a000f282100001e565e00a0a0a02950302035000f282100001a0000000000000000008a";
+          eDP-1 = "00ffffffffffff004d108d1400000000051c0104a52213780ea0f9a95335bd240c5157000000010101010101010101010101010101014dd000a0f0703e803020350058c210000018000000000000000000000000000000000000000000fe00464e564452804c513135364431000000000002410328011200000b010a202000ee";
+        };
+        config = {
+          eDP-1 = {
+            enable = true;
+            primary = true;
+            position = "0x2160";
+            mode = "3840x2160";
+            rate = "60.00";
+            dpi = 284;
+          };
+          DP-3 = {
+            enable = true;
+            position = "0x0";
+            mode = "3840x2160";
+            rate = "29.98";
+            dpi = 183;
+          };
+        };
+      };
       "2screen" = {
         fingerprint = {
           eDP-1 = "00ffffffffffff004d108d1400000000051c0104a52213780ea0f9a95335bd240c5157000000010101010101010101010101010101014dd000a0f0703e803020350058c210000018000000000000000000000000000000000000000000fe00464e564452804c513135364431000000000002410328011200000b010a202000ee";

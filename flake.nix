@@ -24,6 +24,7 @@
       owner = "rycee";
       repo = "home-manager";
       ref = "bqv-flakes";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
@@ -32,9 +33,7 @@
       system = "x86_64-linux";
       pkgs = import nixpkgs {
         inherit system;
-        overlays = [
-          (_self: _super: self.packages.x86_64-linux)
-        ] ++ self.overlays;
+        overlays = self.overlays;
         config = { allowUnfree = true; };
       };
     in {
@@ -119,11 +118,28 @@
           ];
 
       overlays = [
+        (_self: _super: self.packages.x86_64-linux)
         (self: super: {
           firefox = super.firefox.override {
             extraNativeMessagingHosts = [ self.procreditbank-websigner ];
           };
         })
       ];
+
+      homeManagerConfigurations.x86_64-linux =
+        let
+          hosts = ["AlexeyShmalko"];
+          mkHost = hostname:
+            home-manager.lib.homeManagerConfiguration {
+              configuration = { ... }: {
+                nixpkgs.config.allowUnfree = true;
+                nixpkgs.overlays = self.overlays;
+                imports = [(import ./.config/nixpkgs/home.nix)];
+              };
+              username = "rasen";
+              homeDirectory = "/home/rasen";
+              inherit system pkgs;
+            };
+        in nixpkgs.lib.genAttrs hosts mkHost;
     };
 }
