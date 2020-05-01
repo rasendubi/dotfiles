@@ -1,10 +1,10 @@
 { name, config, pkgs, lib, inputs, ... }:
 let
   machine-config = lib.getAttr name {
-    omicron = [
+    moxps = [
       {
         imports = [
-          (import "${inputs.nixos-hardware}/dell/xps/13-9360")
+          (import "${inputs.nixos-hardware}/dell/xps/15-9560")
           inputs.nixpkgs.nixosModules.notDetected
         ];
       
@@ -57,7 +57,7 @@ let
         console.font = "ter-132n";
       }
       {
-        services.xserver.dpi = 276;
+        services.xserver.dpi = 286;
       }
     ];
   };
@@ -86,7 +86,7 @@ in
       ];
     }
     {
-      users.extraUsers.rasen = {
+      users.extraUsers.moritz = {
         isNormalUser = true;
         uid = 1000;
         extraGroups = [ "users" "wheel" "input" ];
@@ -126,7 +126,7 @@ in
         wireless.enable = false;
       };
     
-      users.extraUsers.rasen.extraGroups = [ "networkmanager" ];
+      users.extraUsers.moritz.extraGroups = [ "networkmanager" ];
     
       environment.systemPackages = [
         pkgs.networkmanagerapplet
@@ -150,7 +150,7 @@ in
     {
       services.locate = {
         enable = true;
-        localuser = "rasen";
+        localuser = "moritz";
       };
     }
     {
@@ -161,13 +161,6 @@ in
     }
     {
       programs.mosh.enable = true;
-    }
-    {
-      services.gitolite = {
-        enable = true;
-        user = "git";
-        adminPubkey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDHH15uiQw3jBbrdlcRb8wOr8KVltuwbHP/JOFAzXFO1l/4QxnKs6Nno939ugULM7Lu0Vx5g6FreuCOa2NMWk5rcjIwOzjrZnHZ7aoAVnE7H9scuz8NGnrWdc1Oq0hmcDxdZrdKdB6CPG/diGWNZy77nLvz5JcX1kPLZENPeApCERwR5SvLecA4Es5JORHz9ssEcf8I7VFpAebfQYDu+VZZvEu03P2+5SXv8+5zjiuxM7qxzqRmv0U8eftii9xgVNC7FaoRBhhM7yKkpbnqX7IeSU3WeVcw4+d1d8b9wD/sFOyGc1xAcvafLaGdgeCQGU729DupRRJokpw6bBRQGH29 rasen@omicron";
-      };
     }
     {
       services.dnsmasq = {
@@ -190,9 +183,9 @@ in
     {
       services.syncthing = {
         enable = true;
-        user = "rasen";
-        dataDir = "/home/rasen/.config/syncthing";
-        configDir = "/home/rasen/.config/syncthing";
+        user = "moritz";
+        dataDir = "/home/moritz/.config/syncthing";
+        configDir = "/home/moritz/.config/syncthing";
         openDefaultPorts = true;
       };
     }
@@ -214,7 +207,7 @@ in
     {
       services.udev.packages = [ pkgs.android-udev-rules ];
       programs.adb.enable = true;
-      users.users.rasen.extraGroups = ["adbusers"];
+      users.users.moritz.extraGroups = ["adbusers"];
     }
     {
       services.fwupd.enable = true;
@@ -251,19 +244,18 @@ in
       i18n.supportedLocales = [ "en_US.UTF-8/UTF-8" ];
     }
     {
-      time.timeZone = "Europe/Kiev";
+      time.timeZone = "Europe/Berlin";
     }
     {
       services.xserver.displayManager.lightdm.enable = true;
     }
     {
       services.xserver.windowManager = {
-        awesome = {
+        exwm = {
           enable = true;
-          luaModules = [ pkgs.luaPackages.luafilesystem pkgs.luaPackages.cjson ];
         };
       };
-      services.xserver.displayManager.defaultSession = "none+awesome";
+      services.xserver.displayManager.defaultSession = "none+exwm";
     }
     {
       services.xserver.desktopManager.xterm.enable = false;
@@ -276,14 +268,14 @@ in
       ];
     }
     {
-      services.xserver.layout = "us,ua";
-      services.xserver.xkbVariant = "workman,";
+      services.xserver.layout = "de,de,us";
+      services.xserver.xkbVariant = "bone,,";
     
       # Use same config for linux console
       console.useXkbConfig = true;
     }
     {
-      services.xserver.xkbOptions = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
+      # services.xserver.xkbOptions = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
     }
     {
       services.redshift = {
@@ -296,7 +288,7 @@ in
       environment.systemPackages = [
         pkgs.acpilight
       ];
-      users.extraUsers.rasen.extraGroups = [ "video" ];
+      users.extraUsers.moritz.extraGroups = [ "video" ];
     }
     {
       fonts = {
@@ -375,6 +367,11 @@ in
     {
       environment.systemPackages = [
         pkgs.firefox
+      ];
+    }
+    {
+      environment.systemPackages = [
+        pkgs.qutebrowser
       ];
     }
     {

@@ -8,7 +8,6 @@ Emacs does not source this file automatically, so I need to instruct it to. Chec
 ;;; init.el --- The start of my configuration
 ;;; Commentary:
 ;;; Code:
-
 (require 'package)
 (setq package-enable-at-startup nil)
 (package-initialize)
@@ -1339,7 +1338,7 @@ Use =whitespace-mode= in Org (but don't show too long lines).
 My directory for org files.
 #+name: org-config
 #+begin_src emacs-lisp
-(setq rasen/org-directory "~/org")
+(setq rasen/org-directory "~/wiki")
 #+end_src
 
 My helper to find all org files in a directory.

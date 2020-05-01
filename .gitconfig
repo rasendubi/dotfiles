@@ -1,11 +1,11 @@
 [user]
-    name = Alexey Shmalko
-    email = rasen.dubi@gmail.com
+    name = Moritz Schaefer
+    email = mollitz@gmail.com
 
 [sendemail]
     smtpencryption = ssl
     smtpserver = smtp.gmail.com
-    smtpuser = rasen.dubi@gmail.com
+    smtpuser = mollitz@gmail.com
     smtpserverport = 465
 
 [color]

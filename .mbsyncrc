@@ -4,10 +4,11 @@ Inbox ~/Mail/INBOX
 SubFolders Verbatim
 
 
+
 IMAPAccount gmail
 Host imap.gmail.com
-User rasen.dubi@gmail.com
-PassCmd "pass imap.gmail.com/rasen.dubi@gmail.com"
+User mollitz@gmail.com
+PassCmd "pass imap.gmail.com/mollitz@gmail.com"
 SSLType IMAPS
 CertificateFile /etc/ssl/certs/ca-certificates.crt
 
@@ -36,71 +37,3 @@ Group sync-gmail
 Channel sync-gmail-all
 Channel sync-gmail-spam
 Channel sync-gmail-sent
-
-
-IMAPAccount ps
-Host imap.gmail.com
-User ashmalko@doctoright.org
-PassCmd "pass imap.gmail.com/ashmalko@doctoright.org"
-SSLType IMAPS
-CertificateFile /etc/ssl/certs/ca-certificates.crt
-
-IMAPStore ps-remote
-Account ps
-
-Channel sync-ps-all
-Master :ps-remote:"[Gmail]/All Mail"
-Slave :local:protocolstandard/all
-Create Both
-SyncState *
-
-Channel sync-ps-spam
-Master :ps-remote:"[Gmail]/Spam"
-Slave :local:protocolstandard/spam
-Create Both
-SyncState *
-
-Channel sync-ps-sent
-Master :ps-remote:"[Gmail]/Sent Mail"
-Slave :local:protocolstandard/sent
-Create Both
-SyncState *
-
-Group sync-ps
-Channel sync-ps-all
-Channel sync-ps-spam
-Channel sync-ps-sent
-
-
-IMAPAccount egoless
-Host imap.gmail.com
-User me@egoless.tech
-PassCmd "pass imap.gmail.com/me@egoless.tech"
-SSLType IMAPS
-CertificateFile /etc/ssl/certs/ca-certificates.crt
-
-IMAPStore egoless-remote
-Account egoless
-
-Channel sync-egoless-all
-Master :egoless-remote:"[Gmail]/All Mail"
-Slave :local:egoless/all
-Create Both
-SyncState *
-
-Channel sync-egoless-spam
-Master :egoless-remote:"[Gmail]/Spam"
-Slave :local:egoless/spam
-Create Both
-SyncState *
-
-Channel sync-egoless-sent
-Master :egoless-remote:"[Gmail]/Sent Mail"
-Slave :local:egoless/sent
-Create Both
-SyncState *
-
-Group sync-egoless
-Channel sync-egoless-all
-Channel sync-egoless-spam
-Channel sync-egoless-sent

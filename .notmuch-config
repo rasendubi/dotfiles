@@ -1,10 +1,10 @@
 [user]
-name=Alexey Shmalko
-primary_email=rasen.dubi@gmail.com
+name=Moritz Schaefer
+primary_email=mollitz@gmail.com
 other_email=ashmalko@cybervisiontech.com,ashmalko@kaaiot.io,ashmalko@doctoright.org,me@egoless.tech
 
 [database]
-path=/home/rasen/Mail
+path=/home/moritz/Mail
 
 [new]
 tags=inbox;
