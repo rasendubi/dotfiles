@@ -8,41 +8,46 @@ let
           inputs.nixpkgs.nixosModules.notDetected
         ];
       
-        boot.initrd.availableKernelModules = [ "xhci_pci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
+        boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
         boot.kernelModules = [ "kvm-intel" ];
         boot.extraModulePackages = [ ];
       
-        nix.maxJobs = lib.mkDefault 4;
+        nix.maxJobs = lib.mkDefault 8;
       
-        powerManagement.cpuFreqGovernor = "powersave";
+        powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
       
         boot.loader.systemd-boot.enable = true;
         boot.loader.efi.canTouchEfiVariables = true;
       }
       {
-        boot.initrd.luks.devices = {
-          root = {
-            device = "/dev/disk/by-uuid/8b591c68-48cb-49f0-b4b5-2cdf14d583dc";
-            preLVM = true;
+
+        fileSystems."/" =
+          { device = "/dev/disk/by-uuid/8f0a4152-e9f1-4315-8c34-0402ff7efff4";
+            fsType = "btrfs";
           };
+      
+        fileSystems."/boot" =
+          { device = "/dev/disk/by-uuid/A227-1A0D";
+            fsType = "vfat";
+          };
+      
+        swapDevices =
+          [ { device = "/dev/disk/by-uuid/9eca5b06-730e-439f-997b-512a614ccce0"; }
+          ];
+      
+      
+        boot.initrd.luks.devices = {
+          cryptkey.device = "/dev/disk/by-uuid/ccd19ab7-0e4d-4df4-8912-b87139de56af";
+          cryptroot = {
+            device="/dev/disk/by-uuid/88242cfe-48a1-44d2-a29b-b55e6f05d3d3";
+            keyFile="/dev/mapper/cryptkey";
+          };
+          cryptswap = {
+            device="/dev/disk/by-uuid/f6fa3573-44a9-41cc-bab7-da60d21e27b3";
+            keyFile="/dev/mapper/cryptkey";
+          };
+      
         };
-        fileSystems."/boot" = {
-          device = "/dev/disk/by-uuid/BA72-5382";
-          fsType = "vfat";
-        };
-        fileSystems."/" = {
-          device = "/dev/disk/by-uuid/434a4977-ea2c-44c0-b363-e7cf6e947f00";
-          fsType = "ext4";
-          options = [ "noatime" "nodiratime" "discard" ];
-        };
-        fileSystems."/home" = {
-          device = "/dev/disk/by-uuid/8bfa73e5-c2f1-424e-9f5c-efb97090caf9";
-          fsType = "ext4";
-          options = [ "noatime" "nodiratime" "discard" ];
-        };
-        swapDevices = [
-          { device = "/dev/disk/by-uuid/26a19f99-4f3a-4bd5-b2ed-359bed344b1e"; }
-        ];
       }
       {
         services.xserver.libinput = {
@@ -61,7 +66,6 @@ let
       }
     ];
   };
-
 in
 {
   imports = [
@@ -69,7 +73,7 @@ in
       nixpkgs.config.allowUnfree = true;
 
       # The NixOS release to be compatible with for stateful data such as databases.
-      system.stateVersion = "19.09";
+      system.stateVersion = "20.03";
     }
 
     {
@@ -273,9 +277,6 @@ in
     
       # Use same config for linux console
       console.useXkbConfig = true;
-    }
-    {
-      # services.xserver.xkbOptions = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
     }
     {
       services.redshift = {
