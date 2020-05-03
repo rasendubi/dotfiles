@@ -38,7 +38,7 @@ in
       nixpkgs.config.allowUnfree = true;
 
       # The NixOS release to be compatible with for stateful data such as databases.
-      system.stateVersion = "19.09";
+      system.stateVersion = "20.03";
     }
 
     <<nixos-section>>
@@ -67,17 +67,17 @@ Make this repository flake-compatible:
 {
   description = "rasendubi's NixOS/home-manager configuration";
 
-  edition = 201909;
+  edition = 202005;
 
   inputs = {
     nixpkgs = {
       type = "github";
-      owner = "rasendubi";
-      repo = "nixpkgs";
-      ref = "melpa-2020-04-27";
-      # owner = "NixOS";
-      # repo = "nixpkgs-channels";
-      # ref = "nixpkgs-unstable";
+      # owner = "rasendubi";
+      # repo = "nixpkgs";
+      # ref = "melpa-2020-04-27";
+      owner = "NixOS";
+      repo = "nixpkgs-channels";
+      ref = "nixpkgs-unstable";
     };
     nixos-hardware = {
       type = "github";
@@ -187,13 +187,13 @@ This is my Dell XPS 15.
     inputs.nixpkgs.nixosModules.notDetected
   ];
 
-  boot.initrd.availableKernelModules = [ "xhci_pci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
+  boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
 
-  nix.maxJobs = lib.mkDefault 4;
+  nix.maxJobs = lib.mkDefault 8;
 
-  powerManagement.cpuFreqGovernor = "powersave";
+  powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -204,30 +204,31 @@ LVM on LUKS setup for disk encryption.
 #+name: machine-moxps
 #+begin_src nix
 {
-  boot.initrd.luks.devices = {
-    root = {
-      device = "/dev/disk/by-uuid/8b591c68-48cb-49f0-b4b5-2cdf14d583dc";
-      preLVM = true;
+  fileSystems."/" =
+    { device = "/dev/disk/by-uuid/8f0a4152-e9f1-4315-8c34-0402ff7efff4";
+      fsType = "btrfs";
     };
-  };
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-uuid/BA72-5382";
-    fsType = "vfat";
-  };
-  fileSystems."/" = {
-    device = "/dev/disk/by-uuid/434a4977-ea2c-44c0-b363-e7cf6e947f00";
-    fsType = "ext4";
-    options = [ "noatime" "nodiratime" "discard" ];
-  };
-  fileSystems."/home" = {
-    device = "/dev/disk/by-uuid/8bfa73e5-c2f1-424e-9f5c-efb97090caf9";
-    fsType = "ext4";
-    options = [ "noatime" "nodiratime" "discard" ];
-  };
-  swapDevices = [
-    { device = "/dev/disk/by-uuid/26a19f99-4f3a-4bd5-b2ed-359bed344b1e"; }
-  ];
-}
+
+  fileSystems."/boot" =
+    { device = "/dev/disk/by-uuid/A227-1A0D";
+      fsType = "vfat";
+    };
+
+  swapDevices =
+    [ { device = "/dev/disk/by-uuid/9eca5b06-730e-439f-997b-512a614ccce0"; }
+    ];
+
+
+  boot.initrd.luks.devices = {
+  cryptkey.device = "/dev/disk/by-uuid/ccd19ab7-0e4d-4df4-8912-b87139de56af";
+  cryptroot = {
+    device="/dev/disk/by-uuid/88242cfe-48a1-44d2-a29b-b55e6f05d3d3";
+    keyFile="/dev/mapper/cryptkey";
+    };
+  cryptswap = {
+    device="/dev/disk/by-uuid/f6fa3573-44a9-41cc-bab7-da60d21e27b3";
+    keyFile="/dev/mapper/cryptkey";
+};
 #+end_src
 
 Clickpad:
@@ -248,7 +249,8 @@ I like the following settings more than defaults. I also need a custom four-styl
 #+ATTR_ORG: :width 360
 [[file:./images/20200409192721-screenshot.png]]
 
-#+name: flake-packages
+# TODO does not work yet (just need to fix link?)
+#+name: flake-packages-old  
 #+begin_src nix
 {
   # note it's a new attribute and does not override old one
@@ -703,10 +705,10 @@ I use English and Ukrainian layouts. I also use Russian symbols, but they are on
 Map left Caps Lock to Ctrl, and left Ctrl to switch between layout. (Shift-Ctrl triggers Caps Lock function.)
 
 I toggle between them with either Caps Lock, or Menu key---I have two different keyboards, and one doesn't have Menu when Caps Lock is too far on the second. I never use Caps Lock--the feature, so it's nice to have Caps LED indicate alternate layouts.
-#+name: nixos-section
+#+name: nixos-section-unused
 #+begin_src nix
 {
-  # services.xserver.xkbOptions = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
+  services.xserver.xkbOptions = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
 }
 #+end_src
 *** Layout indicator
@@ -979,7 +981,7 @@ I'm a seasoned Vim user, but I've switched to emacs.
 #+end_src
 
 Start emacs as a daemon:
-#+name: nixos-section
+#+name: nixos-section-unused
 #+begin_src nix
 {
   services.emacs =
@@ -1273,6 +1275,7 @@ set-window-option -g automatic-rename
 #+begin_src nix
 {
   environment.systemPackages = [
+    pkgs.bash
     pkgs.wget
     pkgs.htop
     pkgs.psmisc
