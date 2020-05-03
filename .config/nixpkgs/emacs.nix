@@ -105,7 +105,7 @@ rec {
       # from my melpa update
       org-roam
       company-org-roam
-      org-roam-bibtex
+      # org-roam-bibtex
       ivy-bibtex
       org-ref
 

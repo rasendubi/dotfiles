@@ -3328,7 +3328,7 @@ See http://bnbeckwith.com/code/writegood-mode.html
 
   (defun rasen/mbsync ()
     (interactive)
-    (async-shell-command "mbsync sync-gmail & mbsync sync-egoless & mbsync sync-ps & wait; /home/rasen/dotfiles/notmuch.sh" "*mbsync*"))
+    (async-shell-command "mbsync sync-gmail & mbsync sync-egoless & mbsync sync-ps & wait; /home/moritz/nixos-config/notmuch.sh" "*mbsync*"))
 
   (general-def notmuch-hello-mode-map "f" 'rasen/mbsync)
 

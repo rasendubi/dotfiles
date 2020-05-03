@@ -1,8 +1,7 @@
-;; [[file:~/dotfiles/emacs.org::*Bootstrap][Bootstrap:1]]
+;; [[file:~/nixos-config/emacs.org::*Bootstrap][Bootstrap:1]]
 ;;; init.el --- The start of my configuration
 ;;; Commentary:
 ;;; Code:
-
 (require 'package)
 (setq package-enable-at-startup nil)
 (package-initialize)
@@ -15,7 +14,8 @@
 (require 'org-install)
 (require 'ob-tangle)
 
-(require 'el-patch)
+;; (require 'el-patch)
+(load "/home/moritz/.emacs.d/el-patch.el")
 
 ;; org-babel fixes to tangle ALL matching sections
 (defun rasen/map-regex (regex fn)

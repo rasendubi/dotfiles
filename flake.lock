@@ -1,30 +1,12 @@
 {
-  "inputs": {
+  "nodes": {
     "home-manager": {
       "info": {
         "lastModified": 1587442074,
         "narHash": "sha256-SmC1aP9TJImzHlNIWOTa+uwePeHoEcfGJEewXXWAtfc="
       },
       "inputs": {
-        "nixpkgs": {
-          "info": {
-            "lastModified": 1587977950,
-            "narHash": "sha256-ob0AMsXdkOuH4wDc46prH6wokQwFnS5sfxervfSQsCg="
-          },
-          "inputs": {},
-          "locked": {
-            "owner": "rasendubi",
-            "repo": "nixpkgs",
-            "rev": "0436d941517e9ece2c96e834dc17459440ebef0e",
-            "type": "github"
-          },
-          "original": {
-            "owner": "rasendubi",
-            "ref": "melpa-2020-04-27",
-            "repo": "nixpkgs",
-            "type": "github"
-          }
-        }
+        "nixpkgs": "nixpkgs"
       },
       "locked": {
         "owner": "rycee",
@@ -40,11 +22,11 @@
       }
     },
     "nixos-hardware": {
+      "flake": false,
       "info": {
         "lastModified": 1587720950,
         "narHash": "sha256-G9/po4PZW+v+UWRK1uU12/CNnrRLKgcKfRZxUqHy+lU="
       },
-      "inputs": {},
       "locked": {
         "owner": "NixOS",
         "repo": "nixos-hardware",
@@ -59,23 +41,30 @@
     },
     "nixpkgs": {
       "info": {
-        "lastModified": 1587977950,
-        "narHash": "sha256-ob0AMsXdkOuH4wDc46prH6wokQwFnS5sfxervfSQsCg="
+        "lastModified": 1587156643,
+        "narHash": "sha256-luYTHiRO+5VIaE3h28EKbRy4jOj3PJWPijmwkacZLgQ="
       },
-      "inputs": {},
       "locked": {
-        "owner": "rasendubi",
-        "repo": "nixpkgs",
-        "rev": "0436d941517e9ece2c96e834dc17459440ebef0e",
+        "owner": "NixOS",
+        "repo": "nixpkgs-channels",
+        "rev": "10100a97c8964e82b30f180fda41ade8e6f69e41",
         "type": "github"
       },
       "original": {
-        "owner": "rasendubi",
-        "ref": "melpa-2020-04-27",
-        "repo": "nixpkgs",
+        "owner": "NixOS",
+        "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs-channels",
         "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "home-manager": "home-manager",
+        "nixos-hardware": "nixos-hardware",
+        "nixpkgs": "nixpkgs"
       }
     }
   },
-  "version": 4
+  "root": "root",
+  "version": 5
 }

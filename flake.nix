@@ -6,12 +6,12 @@
   inputs = {
     nixpkgs = {
       type = "github";
-      owner = "rasendubi";
-      repo = "nixpkgs";
-      ref = "melpa-2020-04-27";
-      # owner = "NixOS";
-      # repo = "nixpkgs-channels";
-      # ref = "nixpkgs-unstable";
+      #owner = "moritzschaefer";
+      #repo = "nixpkgs";
+      #ref = "melpa-2020-04-27";
+      owner = "NixOS";
+      repo = "nixpkgs-channels";
+      ref = "nixpkgs-unstable";
     };
     nixos-hardware = {
       type = "github";
@@ -54,15 +54,15 @@
       packages.x86_64-linux =
         let
           mergePackages = nixpkgs.lib.foldr nixpkgs.lib.mergeAttrs {};
-        in
-          mergePackages [
+        in mergePackages
+          [
             {
               # note it's a new attribute and does not override old one
               input-mono = (pkgs.input-fonts.overrideAttrs (old: {
                 src = pkgs.requireFile {
                   name = "Input-Font.zip";
-                  url = "https://input.fontbureau.com/download/index.html?customize&fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&email=";
-                  sha256 = "0nn41w2b6jvsbr3r4lfy4p8w2ssjmgdjzd1pbj7p0vmawjpvx2w8";
+                  url = "https://input.fontbureau.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
+                  sha256 = "888bbeafe4aa6e708f5c37b42fdbab526bc1d125de5192475e7a4bb3040fc45a";
                 };
                 outputHash = "1w2i660dg04nyc6fc6r6sd3pw53h8dh8yx4iy6ccpii9gwjl9val";
               }));

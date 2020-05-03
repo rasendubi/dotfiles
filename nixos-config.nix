@@ -456,6 +456,7 @@ in
     }
     {
       environment.systemPackages = [
+        pkgs.bash
         pkgs.wget
         pkgs.htop
         pkgs.psmisc

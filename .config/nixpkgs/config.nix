@@ -1,7 +1,7 @@
 {
   allowUnfree = true;
   packageOverrides = pkgs: {
-    nur = import /home/rasen/dotfiles/channels/nur {
+    nur = import (builtins.fetchTarball "https://github.com/nix-community/NUR/archive/master.tar.gz") {
       inherit pkgs;
     };
   };

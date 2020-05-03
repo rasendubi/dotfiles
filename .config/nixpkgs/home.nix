@@ -83,8 +83,8 @@
 
 
   home.keyboard = {
-    layout = "us,ua";
-    variant = "workman,";
+    layout = "de,us,ua";
+    variant = "bone,workman,";
   };
 
   xsession.enable = true;
@@ -98,7 +98,7 @@
     # noArgb = true;
   };
   xsession.initExtra = ''
-    xkbcomp /home/rasen/dotfiles/.Xkeymap $DISPLAY
+    # xkbcomp /home/moritz/nixos-config/.Xkeymap $DISPLAY # TODO enable?
 
     autorandr -c
     xrdb -merge ~/.Xresources
