@@ -269,17 +269,17 @@ I have a bluetooth headset, so this enables bluetooth audio in NixOS.
 
 #+name: nixos-section
 #+begin_src nix
-  {
-    hardware.bluetooth.enable = true;
-    hardware.pulseaudio = {
-      enable = true;
+{
+  hardware.bluetooth.enable = true;
+  hardware.pulseaudio = {
+    enable = true;
 
-      # NixOS allows either a lightweight build (default) or full build
-      # of PulseAudio to be installed.  Only the full build has
-      # Bluetooth support, so it must be selected here.
-      package = pkgs.pulseaudioFull;
-    };
-  }
+    # NixOS allows either a lightweight build (default) or full build
+    # of PulseAudio to be installed.  Only the full build has
+    # Bluetooth support, so it must be selected here.
+    package = pkgs.pulseaudioFull;
+  };
+}
 #+end_src
 ** NTFS
 Install ntfs-3g to mount ntfs volumes in read-write mode.
@@ -1291,6 +1291,7 @@ set-window-option -g automatic-rename
     pkgs.patchelf
 
     pkgs.python3
+    pkgs.pipenv
   ];
   # environment.variables.NPM_CONFIG_PREFIX = "$HOME/.npm-global";
   # environment.variables.PATH = "$HOME/.npm-global/bin:$PATH";

@@ -20,7 +20,6 @@ let
         boot.loader.efi.canTouchEfiVariables = true;
       }
       {
-
         fileSystems."/" =
           { device = "/dev/disk/by-uuid/8f0a4152-e9f1-4315-8c34-0402ff7efff4";
             fsType = "btrfs";
@@ -37,18 +36,15 @@ let
       
       
         boot.initrd.luks.devices = {
-          cryptkey.device = "/dev/disk/by-uuid/ccd19ab7-0e4d-4df4-8912-b87139de56af";
-          cryptroot = {
-            device="/dev/disk/by-uuid/88242cfe-48a1-44d2-a29b-b55e6f05d3d3";
-            keyFile="/dev/mapper/cryptkey";
+        cryptkey.device = "/dev/disk/by-uuid/ccd19ab7-0e4d-4df4-8912-b87139de56af";
+        cryptroot = {
+          device="/dev/disk/by-uuid/88242cfe-48a1-44d2-a29b-b55e6f05d3d3";
+          keyFile="/dev/mapper/cryptkey";
           };
-          cryptswap = {
-            device="/dev/disk/by-uuid/f6fa3573-44a9-41cc-bab7-da60d21e27b3";
-            keyFile="/dev/mapper/cryptkey";
-          };
-      
-        };
-      }
+        cryptswap = {
+          device="/dev/disk/by-uuid/f6fa3573-44a9-41cc-bab7-da60d21e27b3";
+          keyFile="/dev/mapper/cryptkey";
+      };
       {
         services.xserver.libinput = {
           enable = true;
@@ -66,6 +62,7 @@ let
       }
     ];
   };
+
 in
 {
   imports = [
@@ -407,26 +404,6 @@ in
       ];
     }
     {
-      services.emacs =
-        let emacsConfig = import .config/nixpkgs/emacs.nix { inherit pkgs; };
-        in {
-          enable = true;
-          defaultEditor = true;
-          package = emacsConfig.finalEmacs;
-        };
-      environment.systemPackages = [
-        pkgs.ripgrep
-        (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science ru uk]))
-    
-        # pkgs.rustup
-        # pkgs.rustracer
-    
-        # pkgs.clojure
-        # pkgs.leiningen
-      ];
-      # environment.variables.RUST_SRC_PATH = "${pkgs.rustPlatform.rustcSrc}";
-    }
-    {
       environment.systemPackages = [
         pkgs.rxvt_unicode
       ];
@@ -472,6 +449,7 @@ in
         pkgs.patchelf
     
         pkgs.python3
+        pkgs.pipenv
       ];
       # environment.variables.NPM_CONFIG_PREFIX = "$HOME/.npm-global";
       # environment.variables.PATH = "$HOME/.npm-global/bin:$PATH";
