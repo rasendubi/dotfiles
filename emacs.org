@@ -2244,22 +2244,15 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
   (require 'org-roam-protocol)
 
   (setq org-roam-directory (concat rasen/org-directory "/roam")
-        org-roam-db-location (expand-file-name "cache/org-roam.db" user-emacs-directory))
+        org-roam-db-location (expand-file-name "cache/org-roam.db" user-emacs-directory)
+        org-roam-index-file "index.org")
+
+  (setq org-roam-graph-exclude-matcher '("biblio" "ring"))
 
   (setq org-roam-capture-templates
-        '(("s" "static (slug)" plain (function org-roam--capture-get-point)
-           "%?"
-           :file-name "${slug}"
-           :head "#+TITLE: ${title}\n"
-           :unnarrowed t)
-          ("d" "dynamic (timestamp)" plain (function org-roam--capture-get-point)
+        '(("d" "dynamic (timestamp)" plain (function org-roam--capture-get-point)
            "%?"
            :file-name "%(rasen/tsid)"
-           :head "#+TITLE: ${title}\n"
-           :unnarrowed t)
-          ("m" "mixed (timestamp+slug)" plain (function org-roam--capture-get-point)
-           "%?"
-           :file-name "%(rasen/tsid)-${slug}"
            :head "#+TITLE: ${title}\n"
            :unnarrowed t)))
 
@@ -2309,18 +2302,35 @@ Enable auto-completion for notes.
 ** org-ref
 #+begin_src emacs-lisp
 (use-package org-ref
+  :after org-roam
   :config
-  (setq reftex-default-bibliography '("~/org/roam/biblio/references.bib"))
-  (setq org-ref-default-bibliography '("~/org/roam/biblio/references.bib"))
-  (setq org-ref-pdf-directory "~/org/roam/biblio/pdf/")
-  (setq org-ref-bibliography-notes "~/org/roam/biblio/")
+  (let* ((bib-file-name '("books.bib" "papers.bib" "online.bib"))
+         (bib-directory (expand-file-name "biblio" org-roam-directory))
+         (bib-files-directory (expand-file-name "files/" bib-directory))
+         (bib-files (mapcar (lambda (x) (expand-file-name x bib-directory)) bib-file-name)))
+
+    (setq reftex-default-bibliography bib-files)
+    (setq org-ref-default-bibliography bib-files)
+    (setq bibtex-completion-bibliography bib-files)
+
+    (setq org-ref-bibliography-notes bib-directory)
+    (setq bibtex-completion-notes-path bib-directory)
+
+    (setq org-ref-pdf-directory bib-files-directory)
+    (setq bibtex-completion-library-path `(,bib-files-directory)))
+
+  (general-def 'normal 'bibtex-mode-map
+    "C-c C-c" #'org-ref-clean-bibtex-entry
+    "C-c c"   #'org-ref-clean-bibtex-entry
+    "C-c i"   #'isbn-to-bibtex
+    "C-c s"   #'bibtex-sort-buffer
+    "C-c n"   #'org-ref-open-bibtex-notes
+    ;; (o)nline
+    "C-c o"   #'org-ref-url-html-to-bibtex)
 
   (setq org-ref-completion-library 'org-ref-ivy-cite)
 
-  (setq bibtex-completion-bibliography '("~/org/roam/biblio/references.bib"))
-  (setq bibtex-completion-library-path '("~/org/roam/biblio/pdf/"))
-  (setq bibtex-completion-notes-path "~/org/roam/biblio/")
-
+  ;; Rules for automatic key generation
   (setq bibtex-autokey-year-length 4
         bibtex-autokey-name-year-separator ""
         bibtex-autokey-year-title-separator "-"
@@ -2328,6 +2338,40 @@ Enable auto-completion for notes.
         bibtex-autokey-titlewords 5
         bibtex-autokey-titlewords-stretch 1
         bibtex-autokey-titleword-length 5)
+
+  (setq bibtex-dialect 'biblatex)
+
+  ;; Do not fill entries. (It works badly with urls.)
+  (el-patch-defun bibtex-fill-field-bounds (bounds justify &optional move)
+    "Fill BibTeX field delimited by BOUNDS.
+If JUSTIFY is non-nil justify as well.
+If optional arg MOVE is non-nil move point to end of field."
+    (let ((end-field (copy-marker (bibtex-end-of-field bounds))))
+      (if (not justify)
+          (goto-char (bibtex-start-of-text-in-field bounds))
+        (goto-char (bibtex-start-of-field bounds))
+        (forward-char) ; leading comma
+        (bibtex-delete-whitespace)
+        (insert "\n")
+        (indent-to-column (+ bibtex-entry-offset
+                             bibtex-field-indentation))
+        (re-search-forward "[ \t\n]*=" end-field)
+        (replace-match "=")
+        (forward-char -1)
+        (if bibtex-align-at-equal-sign
+            (indent-to-column
+             (+ bibtex-entry-offset (- bibtex-text-indentation 2)))
+          (insert " "))
+        (forward-char)
+        (bibtex-delete-whitespace)
+        (if bibtex-align-at-equal-sign
+            (insert " ")
+          (indent-to-column bibtex-text-indentation)))
+      (el-patch-remove
+        ;; Paragraphs within fields are not preserved.  Bother?
+        (fill-region-as-paragraph (line-beginning-position) end-field
+                                  default-justification nil (point)))
+      (if move (goto-char end-field))))
 
   ;; patch isbn-to-bibtex to handle non-ascii names/titles.
   (el-patch-defun isbn-to-bibtex (isbn bibfile)
@@ -2382,7 +2426,15 @@ Citations and bibliography tools for org-mode.
 #+begin_src emacs-lisp
 (use-package org-roam-bibtex
   :diminish
-  :hook (org-roam-mode . org-roam-bibtex-mode))
+  :hook (org-roam-mode . org-roam-bibtex-mode)
+  :config
+  (setq org-roam-bibtex-templates
+        `(("r" "ref" plain #'org-roam-capture--get-point ""
+           :file-name "biblio/${slug}"
+           :head
+           ,(concat "#+TITLE: ${title}\n"
+                    "#+ROAM_KEY: ${ref}\n")
+           :unnarrowed t))))
 #+end_src
 ** toggle markup/view
 #+begin_src emacs-lisp
