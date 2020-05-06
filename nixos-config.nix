@@ -4,7 +4,7 @@ let
     omicron = [
       {
         imports = [
-          (import "${inputs.nixos-hardware}/dell/xps/13-9360")
+          # (import "${inputs.nixos-hardware}/dell/xps/13-9360")
           inputs.nixpkgs.nixosModules.notDetected
         ];
       
@@ -92,6 +92,10 @@ in
         extraGroups = [ "users" "wheel" "input" ];
         initialPassword = "HelloWorld";
       };
+      nix.trustedUsers = ["rasen"];
+    }
+    {
+      nix.useSandbox = true;
     }
     {
       hardware.bluetooth.enable = true;
@@ -464,7 +468,6 @@ in
         pkgs.zip
         pkgs.unzip
         pkgs.unrar
-        pkgs.p7zip
         pkgs.bind
         pkgs.file
         pkgs.which

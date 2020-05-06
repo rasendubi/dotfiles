@@ -16,6 +16,7 @@ Pieces not (yet) covered in this document are:
 - irssi config at =.irssi=;
 
 * NixOS
+** General
 I'm a [[http://nixos.org/][NixOS]] user. What's cool about it is that I can describe all my system configuration in one file (almost). I can execute a single command and have a system with the same software, system settings, etc.
 
 An outline of configuration looks like this:
@@ -97,7 +98,7 @@ Make this repository flake-compatible:
       system = "x86_64-linux";
       pkgs = import nixpkgs {
         inherit system;
-        overlays = self.overlays;
+        overlays = builtins.attrValues self.overlays;
         config = { allowUnfree = true; };
       };
     in {
@@ -123,10 +124,12 @@ Make this repository flake-compatible:
             <<flake-packages>>
           ];
 
-      overlays = [
-        (_self: _super: self.packages.x86_64-linux)
+      overlays = {
+        # mix-in all local packages
+        packages = (_self: _super: self.packages.x86_64-linux);
+
         <<flake-overlays>>
-      ];
+      };
 
       homeManagerConfigurations.x86_64-linux =
         let
@@ -135,7 +138,7 @@ Make this repository flake-compatible:
             home-manager.lib.homeManagerConfiguration {
               configuration = { ... }: {
                 nixpkgs.config.allowUnfree = true;
-                nixpkgs.overlays = self.overlays;
+                nixpkgs.overlays = builtins.attrValues self.overlays;
                 imports = [(import ./.config/nixpkgs/home.nix)];
               };
               username = "rasen";
@@ -167,6 +170,7 @@ I'm the only user of the system:
     extraGroups = [ "users" "wheel" "input" ];
     initialPassword = "HelloWorld";
   };
+  nix.trustedUsers = ["rasen"];
 }
 #+end_src
 
@@ -181,7 +185,7 @@ This is my small Dell XPS 13.
 #+begin_src nix
 {
   imports = [
-    (import "${inputs.nixos-hardware}/dell/xps/13-9360")
+    # (import "${inputs.nixos-hardware}/dell/xps/13-9360")
     inputs.nixpkgs.nixosModules.notDetected
   ];
 
@@ -240,6 +244,14 @@ Clickpad:
 #+end_src
 ** Local packages
 As a responsible NixOS user, I refuse to install software blindly with =sudo make install=. That's why I must write my own nix-expressions.
+*** Sandbox
+Build all packages in sandbox:
+#+name: nixos-section
+#+begin_src nix
+{
+  nix.useSandbox = true;
+}
+#+end_src
 *** Custom Input font
 I like the following settings more than defaults. I also need a custom four-style family because Emacs confuses regular/medium weight otherwise. Use link specified in ~requireFile~ to download the font.
 #+DOWNLOADED: screenshot @ 2020-04-09 22:27:21
@@ -319,11 +331,11 @@ in {
 Override Firefox to use websigner.
 #+name: flake-overlays
 #+begin_src nix
-(self: super: {
+websigner = self: super: {
   firefox = super.firefox.override {
     extraNativeMessagingHosts = [ self.procreditbank-websigner ];
   };
-})
+};
 #+end_src
 
 ** Bluetooth
@@ -1336,7 +1348,6 @@ set-window-option -g automatic-rename
     pkgs.zip
     pkgs.unzip
     pkgs.unrar
-    pkgs.p7zip
     pkgs.bind
     pkgs.file
     pkgs.which

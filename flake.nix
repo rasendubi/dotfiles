@@ -33,7 +33,7 @@
       system = "x86_64-linux";
       pkgs = import nixpkgs {
         inherit system;
-        overlays = self.overlays;
+        overlays = builtins.attrValues self.overlays;
         config = { allowUnfree = true; };
       };
     in {
@@ -117,14 +117,16 @@
             })
           ];
 
-      overlays = [
-        (_self: _super: self.packages.x86_64-linux)
-        (self: super: {
+      overlays = {
+        # mix-in all local packages
+        packages = (_self: _super: self.packages.x86_64-linux);
+
+        websigner = self: super: {
           firefox = super.firefox.override {
             extraNativeMessagingHosts = [ self.procreditbank-websigner ];
           };
-        })
-      ];
+        };
+      };
 
       homeManagerConfigurations.x86_64-linux =
         let
@@ -133,7 +135,7 @@
             home-manager.lib.homeManagerConfiguration {
               configuration = { ... }: {
                 nixpkgs.config.allowUnfree = true;
-                nixpkgs.overlays = self.overlays;
+                nixpkgs.overlays = builtins.attrValues self.overlays;
                 imports = [(import ./.config/nixpkgs/home.nix)];
               };
               username = "rasen";
