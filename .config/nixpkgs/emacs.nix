@@ -67,6 +67,7 @@ rec {
       monokai-theme
       nix-mode
       nix-sandbox
+      notmuch
       org-cliplink
       org-download
       org-drill
@@ -109,8 +110,6 @@ rec {
       ivy-bibtex
       org-ref
 
-      # provided by pkgs.notmuch:
-      # notmuch
     ]) ++
     [
       epkgs.orgPackages.org-plus-contrib
