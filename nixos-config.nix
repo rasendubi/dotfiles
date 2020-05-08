@@ -50,6 +50,42 @@ let
           accelSpeed = "0.7";
         };
       }
+      (let
+        commonOptions = {
+          repo = "borg@10.13.0.3:.";
+          encryption.mode = "keyfile-blake2";
+          encryption.passCommand = "cat /root/secrets/borg";
+          compression = "auto,lzma,9";
+          doInit = false;
+          environment = { BORG_RSH = "ssh -i /root/.ssh/borg"; };
+          # UTC
+          dateFormat = "-u +%Y-%m-%dT%H:%M:%S";
+        };
+      in {
+        services.borgbackup.jobs.omicron = commonOptions // {
+          archiveBaseName = "omicron";
+          paths = [
+            "/var/lib/gitolite/"
+            "/home/rasen/backup/"
+            "/home/rasen/.ssh/"
+            "/home/rasen/.gnupg/"
+            "/home/rasen/.password-store/"
+            "/home/rasen/dotfiles/"
+            "/home/rasen/org/"
+          ];
+        };
+        services.borgbackup.jobs.mail = commonOptions // {
+          repo = "borg@10.13.0.3:.";
+          archiveBaseName = "mail";
+          paths = [
+            "/home/rasen/Mail/"
+            "/home/rasen/.mbsync/"
+          ];
+          exclude = [
+            "/home/rasen/Mail/.notmuch"
+          ];
+        };
+      })
       {
         console.packages = [
           pkgs.terminus_font
@@ -211,9 +247,6 @@ in
     }
     {
       virtualisation.docker.enable = true;
-    }
-    {
-      environment.systemPackages = [ pkgs.borgbackup ];
     }
     {
       services.udev.packages = [ pkgs.android-udev-rules ];
