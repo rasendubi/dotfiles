@@ -30,29 +30,40 @@
 
   outputs = { self, nixpkgs, nixos-hardware, home-manager }@inputs:
     let
-      system = "x86_64-linux";
-      pkgs = import nixpkgs {
+      genAttrs = nixpkgs.lib.genAttrs;
+      genHosts = hosts: mkHost:
+        genAttrs (builtins.attrNames hosts) (name: mkHost ({ inherit name; } // hosts.${name}));
+
+      systems = ["x86_64-linux" "aarch64-linux"];
+
+      nixosHosts = {
+        omicron = { system = "x86_64-linux";  config = ./nixos-config.nix; };
+
+        # pie uses a separate config as it is very different
+        # from other hosts.
+        pie =     { system = "aarch64-linux"; config = ./pie.nix; };
+      };
+
+      homeManagerHosts = {
+        AlexeyShmalko = {
+          system = "x86_64-linux";
+          config = ./.config/nixpkgs/home.nix;
+          username = "rasen";
+          homeDirectory = "/home/rasen";
+        };
+      };
+
+      mkPkgs = system: import nixpkgs {
         inherit system;
-        overlays = builtins.attrValues self.overlays;
+        overlays = self.overlays.${system};
         config = { allowUnfree = true; };
       };
-    in {
-      nixosConfigurations =
-        let
-          hosts = ["omicron"];
-          mkHost = name:
-            nixpkgs.lib.nixosSystem {
-              system = "x86_64-linux";
-              modules = [
-                { nixpkgs = { inherit pkgs; }; }
-                (import ./nixos-config.nix)
-              ];
-              specialArgs = { inherit name inputs; };
-            };
-        in nixpkgs.lib.genAttrs hosts mkHost;
 
-      packages.x86_64-linux =
+      pkgsBySystem = genAttrs systems mkPkgs;
+
+      mkPackages = system:
         let
+          pkgs = pkgsBySystem.${system};
           mergePackages = nixpkgs.lib.foldr nixpkgs.lib.mergeAttrs {};
         in
           mergePackages [
@@ -117,31 +128,46 @@
             })
           ];
 
-      overlays = {
+      mkOverlays = system: [
         # mix-in all local packages
-        packages = (_self: _super: self.packages.x86_64-linux);
+        (_self: _super: self.packages.${system})
 
-        websigner = self: super: {
+        (self: super: {
           firefox = super.firefox.override {
             extraNativeMessagingHosts = [ self.procreditbank-websigner ];
           };
-        };
-      };
+        })
+      ];
 
-      homeManagerConfigurations.x86_64-linux =
-        let
-          hosts = ["AlexeyShmalko"];
-          mkHost = hostname:
-            home-manager.lib.homeManagerConfiguration {
-              configuration = { ... }: {
-                nixpkgs.config.allowUnfree = true;
-                nixpkgs.overlays = builtins.attrValues self.overlays;
-                imports = [(import ./.config/nixpkgs/home.nix)];
-              };
-              username = "rasen";
-              homeDirectory = "/home/rasen";
-              inherit system pkgs;
-            };
-        in nixpkgs.lib.genAttrs hosts mkHost;
+      mkNixosConfiguration = { name, system, config }:
+        let pkgs = pkgsBySystem.${system};
+        in nixpkgs.lib.nixosSystem {
+          inherit system;
+          modules = [
+            { nixpkgs = { inherit pkgs; }; }
+            (import config)
+          ];
+          specialArgs = { inherit name inputs; };
+        };
+
+      mkHomeManagerConfiguration = { system, name, config, username, homeDirectory }:
+        let pkgs = pkgsBySystem.${system};
+        in home-manager.lib.homeManagerConfiguration {
+          inherit system pkgs username homeDirectory;
+          configuration = { ... }: {
+            nixpkgs.config.allowUnfree = true;
+            nixpkgs.overlays = self.overlays.${system};
+            imports = [(import config)];
+          };
+        };
+
+    in {
+      packages = genAttrs systems mkPackages;
+
+      overlays = genAttrs systems mkOverlays;
+
+      nixosConfigurations = genHosts nixosHosts mkNixosConfiguration;
+
+      homeManagerConfigurations = genHosts homeManagerHosts mkHomeManagerConfiguration;
     };
 }
