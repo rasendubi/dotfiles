@@ -1,3 +1,6 @@
+#
+# This file is auto-generated from "README.org"
+#
 { name, config, pkgs, lib, inputs, ... }:
 let
   machine-config = lib.getAttr name {

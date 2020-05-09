@@ -22,6 +22,9 @@ I'm a [[http://nixos.org/][NixOS]] user. What's cool about it is that I can desc
 An outline of configuration looks like this:
 
 #+begin_src nix :tangle nixos-config.nix :noweb no-export :padline no
+#
+# This file is auto-generated from "README.org"
+#
 { name, config, pkgs, lib, inputs, ... }:
 let
   machine-config = lib.getAttr name {
@@ -63,6 +66,9 @@ Enable experimental Flakes support.
 
 Make this repository flake-compatible:
 #+begin_src nix :tangle flake.nix :noweb no-export :padline no
+#
+# This file is auto-generated from "README.org"
+#
 {
   description = "rasendubi's NixOS/home-manager configuration";
 

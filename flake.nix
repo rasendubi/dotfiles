@@ -1,3 +1,6 @@
+#
+# This file is auto-generated from "README.org"
+#
 {
   description = "rasendubi's NixOS/home-manager configuration";
 

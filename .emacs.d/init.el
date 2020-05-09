@@ -1,7 +1,7 @@
 ;; [[file:~/dotfiles/emacs.org::*Bootstrap][Bootstrap:1]]
-;;; init.el --- The start of my configuration
-;;; Commentary:
-;;; Code:
+;;
+;; This file is auto-generated from "emacs.org"
+;;
 
 (require 'package)
 (setq package-enable-at-startup nil)
@@ -189,5 +189,4 @@ block but are passed literally to the \"example-block\"."
     new-body))
 
 (org-babel-load-file (expand-file-name "emacs.org" rasen/dotfiles-directory))
-;;; init.el ends here
 ;; Bootstrap:1 ends here
