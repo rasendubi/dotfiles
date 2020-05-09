@@ -22,14 +22,15 @@
       }
     },
     "nixos-hardware": {
+      "flake": false,
       "info": {
-        "lastModified": 1587720950,
-        "narHash": "sha256-G9/po4PZW+v+UWRK1uU12/CNnrRLKgcKfRZxUqHy+lU="
+        "lastModified": 1588869666,
+        "narHash": "sha256-aHYi0fbp28KjS1oOFxgd3S2UcfPEdJ6MWp0d29k4FwI="
       },
       "locked": {
         "owner": "NixOS",
         "repo": "nixos-hardware",
-        "rev": "d928c96e3c86423e829779c84eef70848b835923",
+        "rev": "8e8e65ba45e8374fcb6258f9606910a77b68dbe0",
         "type": "github"
       },
       "original": {
@@ -40,18 +41,18 @@
     },
     "nixpkgs": {
       "info": {
-        "lastModified": 1588758384,
-        "narHash": "sha256-1XrjJYvbrmep/sIlXEhNIkftx6lDFDNXVErx6FXEk3c="
+        "lastModified": 1589043597,
+        "narHash": "sha256-rf8YtHAeQQkf+Fvm9lW0rroqFB0MkuOjlkMfH7dxTmM="
       },
       "locked": {
         "owner": "rasendubi",
         "repo": "nixpkgs",
-        "rev": "e0dcc6dc378668193bca7dd12811d33697f3abd1",
+        "rev": "315346dee22b606bb53ae1452b1a3e566cb8b449",
         "type": "github"
       },
       "original": {
         "owner": "rasendubi",
-        "ref": "melpa-2020-04-27",
+        "ref": "melpa-2020-05-09",
         "repo": "nixpkgs",
         "type": "github"
       }

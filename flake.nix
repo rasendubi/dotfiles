@@ -9,9 +9,13 @@
   inputs = {
     nixpkgs = {
       type = "github";
+
+      # Required for org-roam and related emacs packages.
+      # https://github.com/NixOS/nixpkgs/pull/87409
       owner = "rasendubi";
       repo = "nixpkgs";
-      ref = "melpa-2020-04-27";
+      ref = "melpa-2020-05-09";
+
       # owner = "NixOS";
       # repo = "nixpkgs-channels";
       # ref = "nixpkgs-unstable";

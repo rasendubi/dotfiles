@@ -7,7 +7,7 @@ let
     omicron = [
       {
         imports = [
-          # (import "${inputs.nixos-hardware}/dell/xps/13-9360")
+          (import "${inputs.nixos-hardware}/dell/xps/13-9360")
           inputs.nixpkgs.nixosModules.notDetected
         ];
       
