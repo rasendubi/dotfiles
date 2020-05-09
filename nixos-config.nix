@@ -58,12 +58,12 @@ let
           compression = "auto,lzma,9";
           doInit = false;
           environment = { BORG_RSH = "ssh -i /root/.ssh/borg"; };
-          # UTC
+          # UTC timestamp
           dateFormat = "-u +%Y-%m-%dT%H:%M:%S";
         };
       in {
-        services.borgbackup.jobs.omicron = commonOptions // {
-          archiveBaseName = "omicron";
+        services.borgbackup.jobs."all" = commonOptions // {
+          archiveBaseName = "${config.networking.hostName}";
           paths = [
             "/var/lib/gitolite/"
             "/home/rasen/backup/"
@@ -72,18 +72,26 @@ let
             "/home/rasen/.password-store/"
             "/home/rasen/dotfiles/"
             "/home/rasen/org/"
-          ];
-        };
-        services.borgbackup.jobs.mail = commonOptions // {
-          repo = "borg@10.13.0.3:.";
-          archiveBaseName = "mail";
-          paths = [
+      
+            # Mail
             "/home/rasen/Mail/"
             "/home/rasen/.mbsync/"
           ];
           exclude = [
+            # Scanning notmuch takes too much time and doesn't make much
+            # sense as it is easily replicable
             "/home/rasen/Mail/.notmuch"
           ];
+        };
+      
+        # Start backup on boot if missed one while laptop was off
+        systemd.timers.borgbackup-job-all.timerConfig = {
+          Persistent = true;
+        };
+      
+        # Require VPN connection for repo to be reachable
+        systemd.services.borgbackup-job-all = {
+          requires = ["openvpn-nano-vpn.service"];
         };
       })
       {
