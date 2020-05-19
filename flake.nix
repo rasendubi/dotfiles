@@ -4,6 +4,8 @@
 {
   description = "rasendubi's NixOS/home-manager configuration";
 
+  edition = 201909;
+
   inputs = {
     nixpkgs = {
       type = "github";
