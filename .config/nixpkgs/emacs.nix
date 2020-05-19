@@ -11,6 +11,7 @@ rec {
     (with epkgs.melpaPackages; [
 
       aggressive-indent
+      atomic-chrome
       avy
       beacon
       blacken
@@ -31,7 +32,6 @@ rec {
       doom-modeline
       dtrt-indent
       edit-indirect
-      edit-server
       el-patch
       elpy
       epresent
@@ -48,6 +48,7 @@ rec {
       flycheck-jest
       flycheck-rust
       forth-mode
+      gcmh
       general
       gitconfig-mode
       go-mode

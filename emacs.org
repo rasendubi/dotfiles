@@ -9,10 +9,6 @@ Emacs does not source this file automatically, so I need to instruct it to. Chec
 ;; This file is auto-generated from "emacs.org"
 ;;
 
-(require 'package)
-(setq package-enable-at-startup nil)
-(package-initialize)
-
 (defvar rasen/dotfiles-directory
   (file-name-as-directory
    (expand-file-name ".." (file-name-directory (file-truename user-init-file))))
@@ -132,11 +128,12 @@ block but are passed literally to the \"example-block\"."
                             (lambda (s)
                               ;; Comment, according to LANG mode,
                               ;; string S.  Return new string.
-                              (with-temp-buffer
-                                (funcall (org-src-get-lang-mode lang))
-                                (comment-region (point)
-                                                (progn (insert s) (point)))
-                                (org-trim (buffer-string)))))
+                              (unless org-babel-tangle-uncomment-comments
+                                (with-temp-buffer
+                                  (funcall (org-src-get-lang-mode lang))
+                                  (comment-region (point)
+                                                  (progn (insert s) (point)))
+                                  (org-trim (buffer-string))))))
                            (expand-body
                             (lambda (i)
                               ;; Expand body of code blocked
@@ -198,24 +195,39 @@ block but are passed literally to the \"example-block\"."
 #+end_src
 
 You might notice that I don't change load-path---that's because my setup relies on =org-plus-contrib= to be installed by NixOS.
-** package
-All emacs packages are installed with Nix. Disable usage of emacs internal archives.
-#+begin_src emacs-lisp
-(require 'package)
-(setq package-archives nil)
-(setq package-enable-at-startup nil)
-(package-initialize)
-#+end_src
 ** use-package
 [[https://github.com/jwiegley/use-package][use-package]] is a cool emacs library that helps managing emacs configuration making it simpler and more structured. It is the core of my configuration infrastructure and is required
 *** Initialize
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
 ;; Do not ensure packages---they are installed with Nix
 (setq use-package-always-ensure nil)
 ;; (setq use-package-verbose t)
 (eval-when-compile
   (require 'use-package))
 (require 'bind-key)
+(require 'diminish)
+#+end_src
+** GC hacks
+Suppress GC in early init.
+#+begin_src emacs-lisp :tangle .emacs.d/early-init.el
+;;;
+;;; This file is auto-generated from "emacs.org"
+;;;
+(setq gc-cons-threshold most-positive-fixnum)
+#+end_src
+
+Later on, enable the Garbage Collector Magic Trick.
+#+begin_src emacs-lisp
+(use-package gcmh
+  :config
+  (gcmh-mode 1))
+#+end_src
+** package
+All emacs packages are installed with Nix. Disable usage of emacs internal archives. (This goes to ~early-init.el~)
+#+begin_src emacs-lisp :tangle .emacs.d/early-init.el
+(require 'package)
+(setq package-archives nil)
+(setq package-enable-at-startup nil)
 #+end_src
 ** General package
 I start using [[https://github.com/noctuid/general.el][general]] to define my keybindings.
@@ -274,8 +286,8 @@ This macro copied from [[https://gist.github.com/cbowdon/012d623920bd28453bf8][h
 #+begin_src emacs-lisp
 (use-package evil
   :init
-  (setq evil-want-integration nil)
-  (setq evil-want-keybinding nil)
+  (setq evil-want-integration t
+        evil-want-keybinding nil)
   :config
   <<evil-config>>
   (evil-mode 1))
@@ -568,13 +580,6 @@ Don't clutter the current directory with auto-save files.
 Do not create lockfiles either. (I am the only user in the system and only use emacs through daemon, so that should be ok.)
 #+begin_src emacs-lisp
 (setq create-lockfiles nil)
-#+end_src
-** emacs-server
-Run Emacs as a daemon.
-#+begin_src emacs-lisp
-(load "server")
-(unless (server-running-p)
-  (server-start))
 #+end_src
 ** direnv
 Source per-project from direnv.
@@ -952,6 +957,7 @@ Show commit signatures in log.
 (use-package diff-hl
   :after magit
   :config
+  (require 'diff-hl-flydiff)
   (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
   (diff-hl-flydiff-mode t)
   (global-diff-hl-mode t))
@@ -1212,12 +1218,14 @@ Shamelessly stolen from https://github.com/purcell/emacs.d.
   :config
   (add-hook 'sql-mode-hook (lambda () (toggle-truncate-lines t))))
 #+end_src
-** edit-server
-I use [[https://www.emacswiki.org/emacs/Edit_with_Emacs][Edit with Emacs]] firefox extension.
+** Edit text in browser
+I use [[https://github.com/GhostText/GhostText][GhostText]] firefox extension.
 #+begin_src emacs-lisp
-(use-package edit-server
+(use-package atomic-chrome
   :config
-  (edit-server-start))
+  (setq atomic-chrome-default-major-mode 'markdown-mode)
+  (setq atomic-chrome-buffer-open-style 'frame)
+  (atomic-chrome-start-server))
 #+end_src
 ** LSP
 #+begin_src emacs-lisp
@@ -1666,6 +1674,8 @@ Instanly go into insert mode on capture.
 *** Refiling with hydras
 Adapted from [[https://mollermara.com/blog/Fast-refiling-in-org-mode-with-hydras/][Fast refiling in org-mode with hydras | Josh Moller-Mara]]. Extended to support refiling by outline path.
 #+begin_src emacs-lisp
+(require 'hydra)
+
 (defun rasen/concat (sequence separator)
   (mapconcat 'identity sequence separator))
 
@@ -2327,7 +2337,7 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
                                      ("^-" . "")    ;; remove starting dash
                                      ("-$" . "")))) ;; remove ending dash
              (slug (-reduce-from #'cl-replace (strip-nonspacing-marks title) pairs)))
-        (s-downcase slug)))))
+        (downcase slug)))))
 #+end_src
 
 Enable auto-completion for notes.
@@ -3003,19 +3013,6 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 
   (setq-default js2-strict-trailing-comma-warning nil))
 
-(el-patch-feature flycheck)
-(el-patch-defun flycheck-eslint-config-exists-p ()
-  "Whether there is a valid eslint config for the current buffer."
-  (let* ((executable (flycheck-find-checker-executable 'javascript-eslint))
-         (el-patch-add
-           (command (funcall flycheck-command-wrapper-function
-                             (cons executable '("--print-config" (or buffer-file-name "index.js"))))))
-         (exitcode (and executable
-                        (el-patch-swap
-                          (call-process executable nil nil nil "--print-config" (or buffer-file-name "index.js"))
-                          (el-patch-literal command (apply 'call-process (car command) nil nil nil (cdr command)))))))
-    (eq exitcode 0)))
-
 (use-package rjsx-mode
   :mode "\\.js$"
   :config
@@ -3486,8 +3483,8 @@ Emacs has built-in capability to change keyboard layout (for insert state only),
 #+end_src
 * Look and feel
 ** Remove the clutter
-Hide menu, toolbar, scrollbar.
-#+begin_src emacs-lisp
+Hide menu, toolbar, scrollbar. (Goes to early-init to avoid flash of unstyled emacs.)
+#+begin_src emacs-lisp :tangle .emacs.d/early-init.el
 (tool-bar-mode -1)
 (menu-bar-mode -1)
 (scroll-bar-mode -1)
@@ -3503,156 +3500,156 @@ Do not blink cursor.
 (blink-cursor-mode 0)
 #+end_src
 ** Color theme
-I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme.
-#+begin_src emacs-lisp
-(use-package modus-operandi-theme
-  :config
-  (setq modus-operandi-theme-slanted-constructs t)
-  (setq modus-operandi-theme-bold-constructs t)
+I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Goes to early-init to avoid flash of unstyled emacs.)
+#+begin_src emacs-lisp :tangle .emacs.d/early-init.el
+(require 'modus-operandi-theme)
 
-  ;; Use proportional fonts only when I explicitly configure them.
-  (setq modus-operandi-theme-proportional-fonts nil)
+(setq modus-operandi-theme-slanted-constructs t)
+(setq modus-operandi-theme-bold-constructs t)
 
-  (load-theme 'modus-operandi t)
+;; Use proportional fonts only when I explicitly configure them.
+(setq modus-operandi-theme-proportional-fonts nil)
 
-  (let ((class '((class color) (min-colors 89)))
-        (fg-main "#000000") (bg-main "#ffffff")
-        (fg-alt "#505050") (bg-alt "#f3f1f3")
-        (fg-dim "#282828") (bg-dim "#f8f8f8")
-        ;; specifically for on/off states (e.g. `mode-line')
-        ;;
-        ;; must be combined with themselves
-        (fg-active "#191919") (bg-active "#e0e0e0")
-        (fg-inactive "#424242") (bg-inactive "#efedef")
-        ;; special base values, used only for cases where the above
-        ;; fg-* or bg-* cannot or should not be used (to avoid confusion)
-        ;; must be combined with: {fg,bg}-{main,alt,dim}
-        (fg-special-cold "#093060") (bg-special-cold "#dde3f4")
-        (fg-special-mild "#184034") (bg-special-mild "#c4ede0")
-        (fg-special-warm "#5d3026") (bg-special-warm "#f0e0d4")
-        (fg-special-calm "#61284f") (bg-special-calm "#f8ddea")
-        ;; styles for the main constructs
-        ;;
-        ;; must be combined with: `bg-main', `bg-alt', `bg-dim'
-        (red "#a80000") (green "#005200")
-        (yellow "#8b3800") (blue "#0030a6")
-        (magenta "#721045") (cyan "#005589")
-        ;; styles for common, but still specialised constructs
-        ;;
-        ;; must be combined with: `bg-main', `bg-alt', `bg-dim'
-        (red-alt "#880000") (green-alt "#4a5700")
-        (yellow-alt "#714900") (blue-alt "#223fbf")
-        (magenta-alt "#8f0075") (cyan-alt "#185870")
-        ;; same purpose as above, just slight differences
-        ;;
-        ;; must be combined with: `bg-main', `bg-alt', `bg-dim'
-        (red-alt-other "#9d2020") (green-alt-other "#145a00")
-        (yellow-alt-other "#804000") (blue-alt-other "#0000bb")
-        (magenta-alt-other "#5317ac") (cyan-alt-other "#005a68")
-        ;; styles for elements that should be very subtle
-        ;;
-        ;; must be combined with: `bg-main', `bg-alt', `bg-dim'
-        (red-nuanced "#4d0006") (green-nuanced "#003000")
-        (yellow-nuanced "#3a2a00") (blue-nuanced "#001170")
-        (magenta-nuanced "#381050") (cyan-nuanced "#003434")
-        ;; styles for elements that should draw attention to themselves
-        ;;
-        ;; must be combined with: `bg-main'
-        (red-intense "#b60000") (green-intense "#006800")
-        (yellow-intense "#904200") (blue-intense "#1111ee")
-        (magenta-intense "#7000e0") (cyan-intense "#205b93")
-        ;; styles for background elements that should be visible yet
-        ;; subtle
-        ;;
-        ;; must be combined with: `fg-dim'
-        (red-subtle-bg "#f2b0a2") (green-subtle-bg "#aecf90")
-        (yellow-subtle-bg "#e4c340") (blue-subtle-bg "#b5d0ff")
-        (magenta-subtle-bg "#f0d3ff") (cyan-subtle-bg "#c0efff")
-        ;; styles for background elements that should be visible and
-        ;; distinguishable
-        ;;
-        ;; must be combined with: `fg-main'
-        (red-intense-bg "#ff8892") (green-intense-bg "#5ada88")
-        (yellow-intense-bg "#f5df23") (blue-intense-bg "#6aaeff")
-        (magenta-intense-bg "#d5baff") (cyan-intense-bg "#42cbd4")
-        ;; styles for refined git diffs and other contexts where both the
-        ;; foreground and the background need to have the same/similar hue
-        ;;
-        ;; must be combined with themselves OR the foregrounds can be
-        ;; combined with any of the base backgrounds
-        (red-refine-bg "#ffcccc") (green-refine-bg "#aceaac")
-        (yellow-refine-bg "#fff29a") (blue-refine-bg "#8ac7ff")
-        (magenta-refine-bg "#ffccff") (cyan-refine-bg "#8eecf4")
-        (red-refine-fg "#780000") (green-refine-fg "#004c00")
-        (yellow-refine-fg "#604000") (blue-refine-fg "#002288")
-        (magenta-refine-fg "#770077") (cyan-refine-fg "#004850")
-        ;; styles that are meant exclusively for the mode line
-        ;;
-        ;; must be combined with: `bg-active', `bg-inactive'
-        (red-active "#930000") (green-active "#005300")
-        (yellow-active "#703700") (blue-active "#0033c0")
-        (magenta-active "#6320a0") (cyan-active "#004882")
+(load-theme 'modus-operandi t)
 
-        ;; styles reserved for specific faces
-        ;;
-        ;; `bg-hl-line' is between `bg-dim' and `bg-alt', so it should
-        ;; work with all accents that cover those two, plus `bg-main'
-        ;;
-        ;; `bg-header' is between `bg-active' and `bg-inactive', so it
-        ;; can be combined with any of the "active" values, plus the
-        ;; "special" and base foreground colours
-        ;;
-        ;; `bg-region' must be combined with `fg-main'
-        ;;
-        ;; the window divider colours apply to faces with just an fg value
-        ;;
-        ;; all other pairs are combinable with themselves
-        (bg-hl-line "#f1f2f6")
-        (bg-region "#bcbcbc")
-        (fg-window-divider-inner "#888888")
-        (fg-window-divider-outer "#585858")
-        (fg-header "#2a2a2a") (bg-header "#e5e5e5")
-        (fg-whitespace "#645060") (bg-whitespace "#fff8fc")
-        (fg-paren-match "#222222") (bg-paren-match "#deb8af"))
+(let ((class '((class color) (min-colors 89)))
+      (fg-main "#000000") (bg-main "#ffffff")
+      (fg-alt "#505050") (bg-alt "#f3f1f3")
+      (fg-dim "#282828") (bg-dim "#f8f8f8")
+      ;; specifically for on/off states (e.g. `mode-line')
+      ;;
+      ;; must be combined with themselves
+      (fg-active "#191919") (bg-active "#e0e0e0")
+      (fg-inactive "#424242") (bg-inactive "#efedef")
+      ;; special base values, used only for cases where the above
+      ;; fg-* or bg-* cannot or should not be used (to avoid confusion)
+      ;; must be combined with: {fg,bg}-{main,alt,dim}
+      (fg-special-cold "#093060") (bg-special-cold "#dde3f4")
+      (fg-special-mild "#184034") (bg-special-mild "#c4ede0")
+      (fg-special-warm "#5d3026") (bg-special-warm "#f0e0d4")
+      (fg-special-calm "#61284f") (bg-special-calm "#f8ddea")
+      ;; styles for the main constructs
+      ;;
+      ;; must be combined with: `bg-main', `bg-alt', `bg-dim'
+      (red "#a80000") (green "#005200")
+      (yellow "#8b3800") (blue "#0030a6")
+      (magenta "#721045") (cyan "#005589")
+      ;; styles for common, but still specialised constructs
+      ;;
+      ;; must be combined with: `bg-main', `bg-alt', `bg-dim'
+      (red-alt "#880000") (green-alt "#4a5700")
+      (yellow-alt "#714900") (blue-alt "#223fbf")
+      (magenta-alt "#8f0075") (cyan-alt "#185870")
+      ;; same purpose as above, just slight differences
+      ;;
+      ;; must be combined with: `bg-main', `bg-alt', `bg-dim'
+      (red-alt-other "#9d2020") (green-alt-other "#145a00")
+      (yellow-alt-other "#804000") (blue-alt-other "#0000bb")
+      (magenta-alt-other "#5317ac") (cyan-alt-other "#005a68")
+      ;; styles for elements that should be very subtle
+      ;;
+      ;; must be combined with: `bg-main', `bg-alt', `bg-dim'
+      (red-nuanced "#4d0006") (green-nuanced "#003000")
+      (yellow-nuanced "#3a2a00") (blue-nuanced "#001170")
+      (magenta-nuanced "#381050") (cyan-nuanced "#003434")
+      ;; styles for elements that should draw attention to themselves
+      ;;
+      ;; must be combined with: `bg-main'
+      (red-intense "#b60000") (green-intense "#006800")
+      (yellow-intense "#904200") (blue-intense "#1111ee")
+      (magenta-intense "#7000e0") (cyan-intense "#205b93")
+      ;; styles for background elements that should be visible yet
+      ;; subtle
+      ;;
+      ;; must be combined with: `fg-dim'
+      (red-subtle-bg "#f2b0a2") (green-subtle-bg "#aecf90")
+      (yellow-subtle-bg "#e4c340") (blue-subtle-bg "#b5d0ff")
+      (magenta-subtle-bg "#f0d3ff") (cyan-subtle-bg "#c0efff")
+      ;; styles for background elements that should be visible and
+      ;; distinguishable
+      ;;
+      ;; must be combined with: `fg-main'
+      (red-intense-bg "#ff8892") (green-intense-bg "#5ada88")
+      (yellow-intense-bg "#f5df23") (blue-intense-bg "#6aaeff")
+      (magenta-intense-bg "#d5baff") (cyan-intense-bg "#42cbd4")
+      ;; styles for refined git diffs and other contexts where both the
+      ;; foreground and the background need to have the same/similar hue
+      ;;
+      ;; must be combined with themselves OR the foregrounds can be
+      ;; combined with any of the base backgrounds
+      (red-refine-bg "#ffcccc") (green-refine-bg "#aceaac")
+      (yellow-refine-bg "#fff29a") (blue-refine-bg "#8ac7ff")
+      (magenta-refine-bg "#ffccff") (cyan-refine-bg "#8eecf4")
+      (red-refine-fg "#780000") (green-refine-fg "#004c00")
+      (yellow-refine-fg "#604000") (blue-refine-fg "#002288")
+      (magenta-refine-fg "#770077") (cyan-refine-fg "#004850")
+      ;; styles that are meant exclusively for the mode line
+      ;;
+      ;; must be combined with: `bg-active', `bg-inactive'
+      (red-active "#930000") (green-active "#005300")
+      (yellow-active "#703700") (blue-active "#0033c0")
+      (magenta-active "#6320a0") (cyan-active "#004882")
 
-    (custom-theme-set-faces
-     'modus-operandi
+      ;; styles reserved for specific faces
+      ;;
+      ;; `bg-hl-line' is between `bg-dim' and `bg-alt', so it should
+      ;; work with all accents that cover those two, plus `bg-main'
+      ;;
+      ;; `bg-header' is between `bg-active' and `bg-inactive', so it
+      ;; can be combined with any of the "active" values, plus the
+      ;; "special" and base foreground colours
+      ;;
+      ;; `bg-region' must be combined with `fg-main'
+      ;;
+      ;; the window divider colours apply to faces with just an fg value
+      ;;
+      ;; all other pairs are combinable with themselves
+      (bg-hl-line "#f1f2f6")
+      (bg-region "#bcbcbc")
+      (fg-window-divider-inner "#888888")
+      (fg-window-divider-outer "#585858")
+      (fg-header "#2a2a2a") (bg-header "#e5e5e5")
+      (fg-whitespace "#645060") (bg-whitespace "#fff8fc")
+      (fg-paren-match "#222222") (bg-paren-match "#deb8af"))
 
-     ;; do not bold matches (this makes text jiggle with variable-pitch fonts
-     `(isearch ((,class (:inherit modus-theme-intense-green))))
-     `(query-replace ((,class :inherit modus-theme-intense-yellow)))
-     `(show-paren-match ((,class (:background ,bg-paren-match :foreground ,fg-paren-match))))
+  (custom-theme-set-faces
+   'modus-operandi
 
-     `(flyspell-duplicate
-       ((,(append '((supports :underline (:style wave))) class)
-         (:underline (:style wave :color ,yellow)))
-        (,class (:underline ,yellow))))
-     `(flyspell-incorrect
-       ((,(append '((supports :underline (:style wave))) class)
-         (:underline (:style wave :color ,red)))
-        (,class (:underline ,red))))
+   ;; do not bold matches (this makes text jiggle with variable-pitch fonts
+   `(isearch ((,class (:inherit modus-theme-intense-green))))
+   `(query-replace ((,class :inherit modus-theme-intense-yellow)))
+   `(show-paren-match ((,class (:background ,bg-paren-match :foreground ,fg-paren-match))))
 
-     `(italic ((,class :slant italic)))
+   `(flyspell-duplicate
+     ((,(append '((supports :underline (:style wave))) class)
+       (:underline (:style wave :color ,yellow)))
+      (,class (:underline ,yellow))))
+   `(flyspell-incorrect
+     ((,(append '((supports :underline (:style wave))) class)
+       (:underline (:style wave :color ,red)))
+      (,class (:underline ,red))))
 
-     `(org-todo ((,class :foreground ,magenta-alt-other
-                         :weight bold)))
-     `(org-archived ((,class (:foreground ,fg-alt))))
-     `(org-done ((,class :foreground ,fg-alt)))
-     `(org-headline-done ((,class :foreground ,fg-alt)))
-     `(org-agenda-done ((,class :foreground ,fg-alt)))
-     `(org-link ((,class :background ,bg-alt :underline nil :inherit link)))
-     `(org-roam-link ((,class :foreground ,green-alt-other
-                              :inherit org-link)))
-     ;; remove special styling from backlinks
-     `(org-roam-backlink ((,class))))
+   `(italic ((,class :slant italic)))
 
-    (setq org-todo-keyword-faces
-          `(("TODO"     . (:foreground ,blue-intense :inherit fixed-pitch))
-            ("NEXT"     . (:foreground ,red-intense  :inherit fixed-pitch))
-            ("BUILD"    . (:foreground ,red-intense  :inherit fixed-pitch))
-            ("WAIT"     . (:foreground ,magenta-alt  :inherit fixed-pitch))
-            ("DONE"     . (:foreground ,fg-alt       :inherit fixed-pitch))
-            ("CANCELED" . (:foreground ,fg-alt       :inherit fixed-pitch))))))
+   `(org-todo ((,class :foreground ,magenta-alt-other
+                       :weight bold)))
+   `(org-archived ((,class (:foreground ,fg-alt))))
+   `(org-done ((,class :foreground ,fg-alt)))
+   `(org-headline-done ((,class :foreground ,fg-alt)))
+   `(org-agenda-done ((,class :foreground ,fg-alt)))
+   `(org-link ((,class :background ,bg-alt :underline nil :inherit link)))
+   `(org-roam-link ((,class :foreground ,green-alt-other
+                            :inherit org-link)))
+   ;; remove special styling from backlinks
+   `(org-roam-backlink ((,class))))
+
+  (setq org-todo-keyword-faces
+        `(("TODO"     . (:foreground ,blue-intense :inherit fixed-pitch))
+          ("NEXT"     . (:foreground ,red-intense  :inherit fixed-pitch))
+          ("BUILD"    . (:foreground ,red-intense  :inherit fixed-pitch))
+          ("WAIT"     . (:foreground ,magenta-alt  :inherit fixed-pitch))
+          ("DONE"     . (:foreground ,fg-alt       :inherit fixed-pitch))
+          ("CANCELED" . (:foreground ,fg-alt       :inherit fixed-pitch)))))
 #+end_src
 ** Modeline
 #+begin_src emacs-lisp
@@ -3662,7 +3659,8 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme.
   (doom-modeline-mode 1))
 #+end_src
 ** Fonts
-#+begin_src emacs-lisp
+Goes to early init.
+#+begin_src emacs-lisp :tangle .emacs.d/early-init.el
 (defun rasen/font-exists-p (font)
   "Check if the FONT exists."
   (and (display-graphic-p) (not (null (x-list-fonts font)))))
@@ -3697,7 +3695,7 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme.
 #+end_src
 
 Apply my font settings when new frame is created (useful when emacs is started in daemon mode).
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle .emacs.d/early-init.el
 (defun rasen/font-hook (frame)
   (select-frame frame)
   (rasen/set-my-fonts))
