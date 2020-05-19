@@ -4,21 +4,12 @@
 {
   description = "rasendubi's NixOS/home-manager configuration";
 
-  edition = 201909;
-
   inputs = {
     nixpkgs = {
       type = "github";
-
-      # Required for org-roam and related emacs packages.
-      # https://github.com/NixOS/nixpkgs/pull/87409
-      owner = "rasendubi";
-      repo = "nixpkgs";
-      ref = "melpa-2020-05-09";
-
-      # owner = "NixOS";
-      # repo = "nixpkgs-channels";
-      # ref = "nixpkgs-unstable";
+      owner = "NixOS";
+      repo = "nixpkgs-channels";
+      ref = "nixpkgs-unstable";
     };
     nixos-hardware = {
       type = "github";
@@ -33,9 +24,14 @@
       ref = "bqv-flakes";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    emacs-overlay = {
+      type = "github";
+      owner = "nix-community";
+      repo = "emacs-overlay";
+    };
   };
 
-  outputs = { self, nixpkgs, nixos-hardware, home-manager }@inputs:
+  outputs = { self, nixpkgs, nixos-hardware, home-manager, ... }@inputs:
     let
       genAttrs = nixpkgs.lib.genAttrs;
       genHosts = hosts: mkHost:
@@ -137,11 +133,13 @@
 
       mkOverlays = system: [
         # mix-in all local packages
-        (_self: _super: self.packages.${system})
+        (final: prev: self.packages.${system})
 
-        (self: super: {
-          firefox = super.firefox.override {
-            extraNativeMessagingHosts = [ self.procreditbank-websigner ];
+        inputs.emacs-overlay.overlay
+
+        (final: prev: {
+          firefox = prev.firefox.override {
+            extraNativeMessagingHosts = [ final.procreditbank-websigner ];
           };
         })
       ];

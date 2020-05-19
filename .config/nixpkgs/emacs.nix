@@ -1,12 +1,15 @@
 { pkgs ? import <nixpkgs> {} }:
 rec {
-  emacs = pkgs.emacs.override {
-    # Build emacs with proper imagemagick support.
-    # See https://github.com/NixOS/nixpkgs/issues/70631#issuecomment-570085306
-    imagemagick = pkgs.imagemagickBig;
-  };
+  emacs = pkgs.emacsGit;
+  # emacs = pkgs.emacsUnstable;
+  # emacs = pkgs.emacs.override {
+  #   # Build emacs with proper imagemagick support.
+  #   # See https://github.com/NixOS/nixpkgs/issues/70631#issuecomment-570085306
+  #   imagemagick = pkgs.imagemagickBig;
+  # };
   emacsPackages = (epkgs:
     (with epkgs.melpaPackages; [
+
       aggressive-indent
       avy
       beacon
@@ -18,12 +21,14 @@ rec {
       company
       company-box
       company-lsp
+      company-org-roam
       counsel
       counsel-projectile
       diff-hl
       diminish
       direnv
       dockerfile-mode
+      doom-modeline
       dtrt-indent
       edit-indirect
       edit-server
@@ -52,11 +57,13 @@ rec {
       haskell-mode
       imenu-list
       ivy
+      ivy-bibtex
       jinja2-mode
       js2-mode
       json-mode
       ledger-mode
       lispyville
+      lsp-haskell
       lsp-mode
       lsp-ui
       lua-mode
@@ -71,6 +78,9 @@ rec {
       org-cliplink
       org-download
       org-drill
+      org-ref
+      org-roam
+      org-roam-bibtex
       org-super-agenda
       paren-face
       php-mode
@@ -102,13 +112,6 @@ rec {
       writegood-mode
       yaml-mode
       yasnippet
-
-      # from my melpa update
-      org-roam
-      company-org-roam
-      org-roam-bibtex
-      ivy-bibtex
-      org-ref
 
     ]) ++
     [

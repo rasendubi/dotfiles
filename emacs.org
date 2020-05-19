@@ -1163,9 +1163,12 @@ Shamelessly stolen from https://github.com/purcell/emacs.d.
 ** Google translate
 #+begin_src emacs-lisp
 (use-package google-translate
-  :general ('normal '(markdown-mode-map org-mode-map)
-            "g t" #'rasen/google-translate-at-point
-            "g T" #'google-translate-smooth-translate)
+  :general
+  ('normal
+   '(markdown-mode-map org-mode-map)
+   "z g t" #'rasen/google-translate-at-point
+   "z g T" #'google-translate-smooth-translate)
+
   :commands (google-translate-smooth-translate)
   :config
   (defun rasen/google-translate-at-point (arg)
@@ -1219,7 +1222,7 @@ I use [[https://www.emacswiki.org/emacs/Edit_with_Emacs][Edit with Emacs]] firef
 ** LSP
 #+begin_src emacs-lisp
 (use-package lsp-mode
-  :hook (rust-mode . lsp)
+  :hook ((rust-mode haskell-mode) . lsp)
   :config
   (setq lsp-prefer-flymake nil))
 
@@ -1243,6 +1246,38 @@ Automatically determine indent style.
   :diminish
   :config
   (dtrt-indent-global-mode))
+#+end_src
+** tab-bar-mode
+New in Emacs 27.
+#+begin_src emacs-lisp
+(use-package tab-bar
+  :general
+  ('motion
+   "M-h"  #'tab-bar-switch-to-prev-tab
+   "M-l"  #'tab-bar-switch-to-next-tab)
+  :config
+  (general-def 'normal
+    "M-h"  #'tab-bar-switch-to-prev-tab
+    "M-l"  #'tab-bar-switch-to-next-tab)
+  (general-def '(normal visual) 'org-mode-map
+    "M-h" nil
+    "M-l" nil)
+  (general-def '(normal visual) 'evil-org-mode-map
+    "M-h" nil
+    "M-l" nil)
+  (general-def 'org-mode-map
+    "M-h" nil
+    "M-l" nil)
+
+  (setq tab-bar-select-tab-modifiers '(meta))
+  (setq tab-bar-tab-hints t)
+
+  ;; Show tab bar only if there are >1 tab
+  (setq tab-bar-show nil)
+  ;; Do not show buttons
+  (setq tab-bar-close-button-show nil
+        tab-bar-new-button-show nil)
+  (tab-bar-mode))
 #+end_src
 ** emacs pinentry
 #+begin_src emacs-lisp
@@ -1276,6 +1311,10 @@ Automatically determine indent style.
    )
   ('(insert normal) 'org-mode-map
    "C-c ,"  #'org-time-stamp-inactive)
+  ('org-mode-map
+   ;; tabs
+   "M-l" nil
+   "M-h" nil)
   :gfhook 'flyspell-mode
   :ensure org-plus-contrib
   :init
@@ -2321,11 +2360,16 @@ Enable auto-completion for notes.
   (general-def 'normal 'bibtex-mode-map
     "C-c C-c" #'org-ref-clean-bibtex-entry
     "C-c c"   #'org-ref-clean-bibtex-entry
-    "C-c i"   #'isbn-to-bibtex
     "C-c s"   #'bibtex-sort-buffer
     "C-c n"   #'org-ref-open-bibtex-notes
+
+    ;; (a)ttach pdf
+    "C-c a"   #'org-ref-bibtex-assoc-pdf-with-entry
+    "C-c f"   #'org-ref-bibtex-pdf
+
     ;; (o)nline
-    "C-c o"   #'org-ref-url-html-to-bibtex)
+    "C-c o"   #'org-ref-url-html-to-bibtex
+    "C-c i"   #'isbn-to-bibtex)
 
   (setq org-ref-completion-library 'org-ref-ivy-cite)
 
@@ -2686,13 +2730,13 @@ Pretty self-explaining.
   (setq haskell-compile-cabal-build-command-alt "cd %s && cabal build --ghc-options=-ferror-spans")
 
   ;; Use Nix for stack ghci
-  (add-to-list 'haskell-process-args-stack-ghci "--nix")
+  (add-to-list 'haskell-process-args-stack-ghci "--fast --nix")
   (add-to-list 'haskell-process-args-stack-ghci "--test")
 
   ;; Use Nix for default build/test command
   (projectile-register-project-type 'haskell-stack
                                     '("stack.yaml")
-                                    :compile "stack build --nix"
+                                    :compile "stack build --fast --nix"
                                     :test "stack build --nix --test")
 
   (general-def haskell-mode-map
@@ -2732,6 +2776,11 @@ Pretty self-explaining.
                  '(haskell-left-arrows
                    (regexp . "\\(\\s-+\\)\\(<-\\|←\\)\\s-+")
                    (modes . '(haskell-mode literate-haskell-mode))))))
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package lsp-haskell
+  :after haskell-mode lsp-mode)
 #+end_src
 ** Rust
 #+begin_src emacs-lisp
@@ -3606,96 +3655,11 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme.
             ("CANCELED" . (:foreground ,fg-alt       :inherit fixed-pitch))))))
 #+end_src
 ** Modeline
-I use spaceline.
 #+begin_src emacs-lisp
-(use-package spaceline
+(use-package doom-modeline
   :config
-  (setq evil-normal-state-tag "N"
-        evil-insert-state-tag "I"
-        evil-visual-state-tag "V"
-        evil-operator-state-tag "O"
-        evil-replace-state-tag "R"
-        evil-motion-state-tag "M"
-        evil-emacs-state-tag "E")
-
-  (require 'spaceline-config)
-  (setq spaceline-highlight-face-func #'spaceline-highlight-face-evil-state)
-
-  ;; modifications:
-  ;; - always show org-clock (I often use org-clock for clocking tasks
-  ;;   that I do *outside* of emacs.)
-  ;; - always show process (background tasks usually run in an
-  ;;   inactive window)
-  ;; - show projectile-root
-  ;; - hide file info (modified status, file size) when inactive
-  ;; - hide right side when inactive (it has little useful info and is
-  ;;   less important than left side)
-  ;;
-  ;; note: patching has an additional benefit that `el-patch-validate'
-  ;; can verify the original function did not change.
-  (el-patch-feature spaceline-config)
-  (el-patch-defun (el-patch-swap spaceline--theme rasen/--spaceline-theme) (left second-left &rest additional-segments)
-    "Convenience function for the spacemacs and emacs themes."
-    (spaceline-compile
-      `(,left
-        (anzu :priority 95)
-        auto-compile
-        (el-patch-add ((buffer-modified buffer-size)
-                       :priority 98
-                       :when active))
-        (el-patch-add projectile-root :when active)
-        ,second-left
-        (major-mode :priority 79)
-        (process (el-patch-remove :when active))
-        ((flycheck-error flycheck-warning flycheck-info)
-         :when active
-         :priority 89)
-        (minor-modes :when active
-                     :priority 9)
-        (mu4e-alert-segment :when active)
-        (erc-track :when active)
-        (version-control :when active
-                         :priority 78)
-        (org-pomodoro :when active)
-        (org-clock (el-patch-remove :when active))
-        nyan-cat)
-      `(which-function
-        (python-pyvenv :fallback python-pyenv)
-        (purpose :priority 94)
-        (battery :when active)
-        (selection-info :priority 95)
-        input-method
-        ((buffer-encoding-abbrev
-          point-position
-          line-column)
-         :separator " | "
-         :priority 96
-         (el-patch-add :when active))
-        (global :when active)
-        ,@additional-segments
-        (buffer-position :priority 99 (el-patch-add :when active))
-        (hud :priority 99 (el-patch-add :when active))))
-
-  (setq-default mode-line-format '("%e" (:eval (spaceline-ml-main)))))
-
-  (el-patch-defun (el-patch-swap spaceline-spacemacs-theme rasen/spaceline-theme) (&rest additional-segments)
-    "Install the modeline used by Spacemacs.
-
-ADDITIONAL-SEGMENTS are inserted on the right, between `global' and
-`buffer-position'."
-    (apply '(el-patch-swap spaceline--theme rasen/--spaceline-theme)
-           '((persp-name
-              workspace-number
-              window-number)
-             :fallback evil-state
-             :face highlight-face
-             :priority 100
-             (el-patch-add :when active))
-           '(((el-patch-remove buffer-modified buffer-size) buffer-id remote-host)
-             :priority 98)
-           additional-segments))
-
-  (rasen/spaceline-theme))
+  (setq doom-modeline-icon nil)
+  (doom-modeline-mode 1))
 #+end_src
 ** Fonts
 #+begin_src emacs-lisp

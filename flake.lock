@@ -1,5 +1,22 @@
 {
   "nodes": {
+    "emacs-overlay": {
+      "info": {
+        "lastModified": 1589876250,
+        "narHash": "sha256-sMy0JnRivTuifVui8ujynWeabIR3Ay4ZUVbxOoeIv3o="
+      },
+      "locked": {
+        "owner": "nix-community",
+        "repo": "emacs-overlay",
+        "rev": "2750e58615917b7e125dac4c723b1ee30ddaab6c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "emacs-overlay",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "info": {
         "lastModified": 1587442074,
@@ -24,13 +41,13 @@
     "nixos-hardware": {
       "flake": false,
       "info": {
-        "lastModified": 1588869666,
-        "narHash": "sha256-aHYi0fbp28KjS1oOFxgd3S2UcfPEdJ6MWp0d29k4FwI="
+        "lastModified": 1589797638,
+        "narHash": "sha256-rAG5ytoOBBkfUoMP5BrZqdTlrpL/mK6WXNG+hopxY9U="
       },
       "locked": {
         "owner": "NixOS",
         "repo": "nixos-hardware",
-        "rev": "8e8e65ba45e8374fcb6258f9606910a77b68dbe0",
+        "rev": "4b129a0f711aea22c52ad8ff48a3126a1b32a988",
         "type": "github"
       },
       "original": {
@@ -41,24 +58,25 @@
     },
     "nixpkgs": {
       "info": {
-        "lastModified": 1589043597,
-        "narHash": "sha256-rf8YtHAeQQkf+Fvm9lW0rroqFB0MkuOjlkMfH7dxTmM="
+        "lastModified": 1589844680,
+        "narHash": "sha256-I4OYatIJsEZvEUkAGdTlJjAuUuAq7A1GA/kepUQic1o="
       },
       "locked": {
-        "owner": "rasendubi",
-        "repo": "nixpkgs",
-        "rev": "315346dee22b606bb53ae1452b1a3e566cb8b449",
+        "owner": "NixOS",
+        "repo": "nixpkgs-channels",
+        "rev": "0f5ce2fac0c726036ca69a5524c59a49e2973dd4",
         "type": "github"
       },
       "original": {
-        "owner": "rasendubi",
-        "ref": "melpa-2020-05-09",
-        "repo": "nixpkgs",
+        "owner": "NixOS",
+        "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs-channels",
         "type": "github"
       }
     },
     "root": {
       "inputs": {
+        "emacs-overlay": "emacs-overlay",
         "home-manager": "home-manager",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs"
