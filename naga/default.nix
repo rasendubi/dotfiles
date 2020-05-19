@@ -1,6 +1,4 @@
-{ pkgs ? import <nixpkgs> { }
-}:
-with pkgs;
+{ stdenv, python3Packages }:
 python3Packages.buildPythonApplication {
   name = "naga-1.0";
 

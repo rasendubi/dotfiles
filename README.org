@@ -288,6 +288,22 @@ Build all packages in sandbox:
   nix.useSandbox = true;
 }
 #+end_src
+*** Naga
+This is an integration package for Razer Naga Chroma and my awesome wm setup.
+#+name: flake-packages
+#+begin_src nix
+{
+  naga = pkgs.callPackage ./naga { };
+}
+#+end_src
+
+Go install it right away:
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [ pkgs.naga ];
+}
+#+end_src
 *** Custom Input font
 I like the following settings more than defaults. I also need a custom four-style family because Emacs confuses regular/medium weight otherwise. Use link specified in ~requireFile~ to download the font.
 #+DOWNLOADED: screenshot @ 2020-04-09 22:27:21

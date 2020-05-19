@@ -32,6 +32,9 @@
     pkgs.libertine
 
     pkgs.direnv
+
+    # from my packages
+    pkgs.naga
   ];
 
   home.sessionVariables.LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";

@@ -145,6 +145,9 @@ in
       nix.useSandbox = true;
     }
     {
+      environment.systemPackages = [ pkgs.naga ];
+    }
+    {
       hardware.bluetooth.enable = true;
       hardware.pulseaudio = {
         enable = true;

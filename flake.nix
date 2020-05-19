@@ -73,6 +73,9 @@
         in
           mergePackages [
             {
+              naga = pkgs.callPackage ./naga { };
+            }
+            {
               # note it's a new attribute and does not override old one
               input-mono = (pkgs.input-fonts.overrideAttrs (old: {
                 src = pkgs.requireFile {
