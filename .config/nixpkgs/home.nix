@@ -39,13 +39,11 @@
 
   home.sessionVariables.LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
 
-  programs.emacs =
-    let e = import ./emacs.nix { inherit pkgs; };
-    in {
-      enable = true;
-      package = e.emacs;
-      extraPackages = e.emacsPackages;
-    };
+  programs.emacs = {
+    enable = true;
+    package = pkgs.my-emacs.base;
+    extraPackages = pkgs.my-emacs.packages;
+  };
   services.emacs.enable = true;
 
   services.lorri.enable = true;

@@ -460,13 +460,11 @@ in
       ];
     }
     {
-      services.emacs =
-        let emacsConfig = import .config/nixpkgs/emacs.nix { inherit pkgs; };
-        in {
-          enable = true;
-          defaultEditor = true;
-          package = emacsConfig.finalEmacs;
-        };
+      services.emacs = {
+        enable = true;
+        defaultEditor = true;
+        package = pkgs.my-emacs;
+      };
       environment.systemPackages = [
         pkgs.ripgrep
         (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science ru uk]))

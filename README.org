@@ -72,8 +72,6 @@ Make this repository flake-compatible:
 {
   description = "rasendubi's NixOS/home-manager configuration";
 
-  edition = 201909;
-
   inputs = {
     nixpkgs = {
       type = "github";
@@ -287,6 +285,18 @@ Build all packages in sandbox:
 {
   nix.useSandbox = true;
 }
+#+end_src
+*** Emacs
+Not really a new package. Just emacs with my packages, so it can be installed without the rest of the system.
+#+name: flake-packages
+#+begin_src nix
+(let emacsConfig = import .config/nixpkgs/emacs.nix { inherit pkgs; };
+ in {
+   my-emacs = emacsConfig.finalEmacs // {
+     base = emacsConfig.emacs;
+     packages = emacsConfig.emacsPackages;
+   };
+ })
 #+end_src
 *** Naga
 This is an integration package for Razer Naga Chroma and my awesome wm setup.
@@ -1149,13 +1159,11 @@ Start emacs as a daemon:
 #+name: nixos-section
 #+begin_src nix
 {
-  services.emacs =
-    let emacsConfig = import .config/nixpkgs/emacs.nix { inherit pkgs; };
-    in {
-      enable = true;
-      defaultEditor = true;
-      package = emacsConfig.finalEmacs;
-    };
+  services.emacs = {
+    enable = true;
+    defaultEditor = true;
+    package = pkgs.my-emacs;
+  };
   environment.systemPackages = [
     pkgs.ripgrep
     (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science ru uk]))

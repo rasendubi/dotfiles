@@ -141,5 +141,5 @@ rec {
     ]
   );
 
-  finalEmacs = (pkgs.emacsPackagesNgGen emacs).emacsWithPackages emacsPackages;
+  finalEmacs = (pkgs.emacsPackagesGen emacs).emacsWithPackages emacsPackages;
 }

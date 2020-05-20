@@ -4,8 +4,6 @@
 {
   description = "rasendubi's NixOS/home-manager configuration";
 
-  edition = 201909;
-
   inputs = {
     nixpkgs = {
       type = "github";
@@ -72,6 +70,13 @@
           mergePackages = nixpkgs.lib.foldr nixpkgs.lib.mergeAttrs {};
         in
           mergePackages [
+            (let emacsConfig = import .config/nixpkgs/emacs.nix { inherit pkgs; };
+             in {
+               my-emacs = emacsConfig.finalEmacs // {
+                 base = emacsConfig.emacs;
+                 packages = emacsConfig.emacsPackages;
+               };
+             })
             {
               naga = pkgs.callPackage ./naga { };
             }
