@@ -128,9 +128,19 @@ in
       };
     }
     {
-      nix.nixPath = [
-        "nixpkgs=${inputs.nixpkgs}"
-      ];
+      # for compatibility with nix-shell, nix-build, etc.
+      environment.etc.nixpkgs.source = inputs.nixpkgs;
+      nix.nixPath = ["nixpkgs=/etc/nixpkgs"];
+    
+      # register self and nixpkgs as flakes for quick access
+      nix.registry = {
+        self.flake = inputs.self;
+    
+        nixpkgs = {
+          from = { id = "nixpkgs"; type = "indirect"; };
+          flake = inputs.nixpkgs;
+        };
+      };
     }
     {
       users.extraUsers.rasen = {
@@ -140,12 +150,6 @@ in
         initialPassword = "HelloWorld";
       };
       nix.trustedUsers = ["rasen"];
-    }
-    {
-      nix.useSandbox = true;
-    }
-    {
-      environment.systemPackages = [ pkgs.naga ];
     }
     {
       hardware.bluetooth.enable = true;
@@ -162,6 +166,12 @@ in
       environment.systemPackages = [
         pkgs.ntfs3g
       ];
+    }
+    {
+      nix.useSandbox = true;
+    }
+    {
+      environment.systemPackages = [ pkgs.naga ];
     }
     {
       services.openvpn.servers.nano-vpn = {
@@ -396,7 +406,10 @@ in
         pkgs.yubikey-personalization-gui
       ];
     
-      services.udev.packages = [ pkgs.yubikey-personalization ];
+      services.udev.packages = [
+        pkgs.yubikey-personalization
+        pkgs.libu2f-host
+      ];
     }
     {
       environment.systemPackages = [

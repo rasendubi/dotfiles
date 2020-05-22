@@ -2349,6 +2349,7 @@ Enable auto-completion for notes.
 #+end_src
 ** org-ref
 #+begin_src emacs-lisp
+(use-package ivy-bibtex)
 (use-package org-ref
   :after org-roam
   :config
@@ -2367,6 +2368,7 @@ Enable auto-completion for notes.
     (setq org-ref-pdf-directory bib-files-directory)
     (setq bibtex-completion-library-path `(,bib-files-directory)))
 
+  (require 'org-ref-url-utils)
   (general-def 'normal 'bibtex-mode-map
     "C-c C-c" #'org-ref-clean-bibtex-entry
     "C-c c"   #'org-ref-clean-bibtex-entry

@@ -183,13 +183,23 @@ Make this repository flake-compatible:
     };
 }
 #+end_src
-** Make nixpkgs available in NIX_PATH
+** Re-expose nixpkgs
 #+name: nixos-section
 #+begin_src nix
 {
-  nix.nixPath = [
-    "nixpkgs=${inputs.nixpkgs}"
-  ];
+  # for compatibility with nix-shell, nix-build, etc.
+  environment.etc.nixpkgs.source = inputs.nixpkgs;
+  nix.nixPath = ["nixpkgs=/etc/nixpkgs"];
+
+  # register self and nixpkgs as flakes for quick access
+  nix.registry = {
+    self.flake = inputs.self;
+
+    nixpkgs = {
+      from = { id = "nixpkgs"; type = "indirect"; };
+      flake = inputs.nixpkgs;
+    };
+  };
 }
 #+end_src
 ** Users
@@ -276,9 +286,37 @@ Clickpad:
   };
 }
 #+end_src
-** Local packages
+** Bluetooth
+I have a bluetooth headset, so this enables bluetooth audio in NixOS.
+
+#+name: nixos-section
+#+begin_src nix
+  {
+    hardware.bluetooth.enable = true;
+    hardware.pulseaudio = {
+      enable = true;
+
+      # NixOS allows either a lightweight build (default) or full build
+      # of PulseAudio to be installed.  Only the full build has
+      # Bluetooth support, so it must be selected here.
+      package = pkgs.pulseaudioFull;
+    };
+  }
+#+end_src
+** NTFS
+Install ntfs-3g to mount ntfs volumes in read-write mode.
+
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [
+    pkgs.ntfs3g
+  ];
+}
+#+end_src
+* Local packages
 As a responsible NixOS user, I refuse to install software blindly with =sudo make install=. That's why I must write my own nix-expressions.
-*** Sandbox
+** Sandbox
 Build all packages in sandbox:
 #+name: nixos-section
 #+begin_src nix
@@ -286,7 +324,7 @@ Build all packages in sandbox:
   nix.useSandbox = true;
 }
 #+end_src
-*** Emacs
+** Emacs
 Not really a new package. Just emacs with my packages, so it can be installed without the rest of the system.
 #+name: flake-packages
 #+begin_src nix
@@ -298,7 +336,7 @@ Not really a new package. Just emacs with my packages, so it can be installed wi
    };
  })
 #+end_src
-*** Naga
+** Naga
 This is an integration package for Razer Naga Chroma and my awesome wm setup.
 #+name: flake-packages
 #+begin_src nix
@@ -314,7 +352,7 @@ Go install it right away:
   environment.systemPackages = [ pkgs.naga ];
 }
 #+end_src
-*** Custom Input font
+** Custom Input font
 I like the following settings more than defaults. I also need a custom four-style family because Emacs confuses regular/medium weight otherwise. Use link specified in ~requireFile~ to download the font.
 #+DOWNLOADED: screenshot @ 2020-04-09 22:27:21
 #+ATTR_ORG: :width 360
@@ -334,7 +372,7 @@ I like the following settings more than defaults. I also need a custom four-styl
   }));
 }
 #+end_src
-*** Online banking
+** Online banking
 My bank uses a two-part websigner. The first part is a browser extension (does not require additional setup) and the second part is a native host application companion (it is installed here).
 
 Pack native messaging host:
@@ -398,35 +436,6 @@ Override Firefox to use websigner.
     extraNativeMessagingHosts = [ final.procreditbank-websigner ];
   };
 })
-#+end_src
-
-** Bluetooth
-I have a bluetooth headset, so this enables bluetooth audio in NixOS.
-
-#+name: nixos-section
-#+begin_src nix
-  {
-    hardware.bluetooth.enable = true;
-    hardware.pulseaudio = {
-      enable = true;
-
-      # NixOS allows either a lightweight build (default) or full build
-      # of PulseAudio to be installed.  Only the full build has
-      # Bluetooth support, so it must be selected here.
-      package = pkgs.pulseaudioFull;
-    };
-  }
-#+end_src
-** NTFS
-Install ntfs-3g to mount ntfs volumes in read-write mode.
-
-#+name: nixos-section
-#+begin_src nix
-{
-  environment.systemPackages = [
-    pkgs.ntfs3g
-  ];
-}
 #+end_src
 * Services
 ** VPN
@@ -1012,7 +1021,10 @@ Here go applications (almost) every normal user needs.
     pkgs.yubikey-personalization-gui
   ];
 
-  services.udev.packages = [ pkgs.yubikey-personalization ];
+  services.udev.packages = [
+    pkgs.yubikey-personalization
+    pkgs.libu2f-host
+  ];
 }
 #+end_src
 ** password-store
