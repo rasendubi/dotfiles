@@ -17,7 +17,7 @@ let
       
         nix.maxJobs = lib.mkDefault 4;
       
-        powerManagement.cpuFreqGovernor = "powersave";
+        # powerManagement.cpuFreqGovernor = "powersave";
       
         boot.loader.systemd-boot.enable = true;
         boot.loader.efi.canTouchEfiVariables = true;
@@ -128,6 +128,14 @@ in
       };
     }
     {
+      imports = [inputs.home-manager.nixosModules.home-manager];
+      home-manager = {
+        useUserPackages = true;
+        useGlobalPkgs = true;
+        users.rasen = inputs.self.lib.home-manager-common;
+      };
+    }
+    {
       # for compatibility with nix-shell, nix-build, etc.
       environment.etc.nixpkgs.source = inputs.nixpkgs;
       nix.nixPath = ["nixpkgs=/etc/nixpkgs"];
@@ -171,9 +179,6 @@ in
       nix.useSandbox = true;
     }
     {
-      environment.systemPackages = [ pkgs.naga ];
-    }
-    {
       services.openvpn.servers.nano-vpn = {
         config = ''
           config /root/openvpn/nano-vpn.ovpn
@@ -191,10 +196,6 @@ in
       };
     
       users.extraUsers.rasen.extraGroups = [ "networkmanager" ];
-    
-      environment.systemPackages = [
-        pkgs.networkmanagerapplet
-      ];
     }
     {
       services.avahi = {
@@ -209,7 +210,6 @@ in
         support32Bit = true;
       };
     
-      environment.systemPackages = [ pkgs.pavucontrol ];
     }
     {
       services.locate = {
@@ -281,31 +281,6 @@ in
       services.fwupd.enable = true;
     }
     {
-      environment.systemPackages = [
-        pkgs.direnv
-      ];
-      programs.fish.shellInit = ''
-        eval (direnv hook fish)
-      '';
-    
-      services.lorri.enable = true;
-    }
-    {
-      environment.systemPackages = [
-        pkgs.isync
-      ];
-    }
-    {
-      environment.systemPackages = [
-        pkgs.msmtp
-      ];
-    }
-    {
-      environment.systemPackages = [
-        pkgs.notmuch
-      ];
-    }
-    {
       services.xserver.enable = true;
     }
     {
@@ -328,13 +303,6 @@ in
     }
     {
       services.xserver.desktopManager.xterm.enable = false;
-    }
-    {
-      environment.systemPackages = [
-        pkgs.wmname
-        pkgs.xclip
-        pkgs.escrotum
-      ];
     }
     {
       services.xserver.layout = "us,ua";
@@ -361,19 +329,18 @@ in
     }
     {
       fonts = {
+        fontconfig.enable = true;
         enableFontDir = true;
         enableGhostscriptFonts = false;
     
         fonts = with pkgs; [
-          inconsolata
-          dejavu_fonts
-          source-code-pro
-          ubuntu_font_family
-          unifont
-    
-          # Used by Emacs
-          input-mono
-          libertine
+          pkgs.inconsolata
+          pkgs.dejavu_fonts
+          pkgs.source-code-pro
+          pkgs.ubuntu_font_family
+          pkgs.unifont
+          pkgs.powerline-fonts
+          pkgs.terminus_font
         ];
       };
     }
@@ -412,87 +379,15 @@ in
       ];
     }
     {
-      environment.systemPackages = [
-        (pkgs.pass.withExtensions (exts: [ exts.pass-otp ]))
-      ];
-    }
-    {
-      programs.browserpass.enable = true;
-    }
-    {
-      environment.systemPackages = [
-        pkgs.gwenview
-        pkgs.dolphin
-        pkgs.kdeFrameworks.kfilemetadata
-        pkgs.filelight
-        pkgs.shared_mime_info
-      ];
-    }
-    {
       environment.pathsToLink = [ "/share" ];
-    }
-    {
-      environment.systemPackages = [
-        pkgs.google-chrome
-      ];
-    }
-    {
-      environment.systemPackages = [
-        pkgs.firefox
-      ];
-    }
-    {
-      environment.systemPackages = [
-        pkgs.zathura
-      ];
     }
     {
       programs.slock.enable = true;
     }
     {
       environment.systemPackages = [
-        pkgs.xss-lock
-      ];
-    }
-    {
-      environment.systemPackages = [
-        pkgs.google-play-music-desktop-player
-        pkgs.tdesktop # Telegram
-    
-        pkgs.mplayer
-        pkgs.smplayer
-    
-        # Used by naga setup
-        pkgs.xdotool
-      ];
-    }
-    {
-      environment.systemPackages = [
         (pkgs.vim_configurable.override { python3 = true; })
         pkgs.neovim
-      ];
-    }
-    {
-      services.emacs = {
-        enable = true;
-        defaultEditor = true;
-        package = pkgs.my-emacs;
-      };
-      environment.systemPackages = [
-        pkgs.ripgrep
-        (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science ru uk]))
-    
-        # pkgs.rustup
-        # pkgs.rustracer
-    
-        # pkgs.clojure
-        # pkgs.leiningen
-      ];
-      # environment.variables.RUST_SRC_PATH = "${pkgs.rustPlatform.rustcSrc}";
-    }
-    {
-      environment.systemPackages = [
-        pkgs.rxvt_unicode
       ];
     }
     {
@@ -509,8 +404,7 @@ in
     }
     {
       environment.systemPackages = [
-        pkgs.gitFull
-        pkgs.gitg
+        pkgs.git
       ];
     }
     {
@@ -530,6 +424,7 @@ in
         pkgs.file
         pkgs.which
         pkgs.utillinuxCurses
+        pkgs.ripgrep
     
         pkgs.patchelf
     

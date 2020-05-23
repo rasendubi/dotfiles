@@ -270,23 +270,6 @@ Set PATH env variable from =exec-path=. This is required for =shell-command= to 
 #+begin_src emacs-lisp
 (setenv "PATH" (string-join exec-path ":"))
 #+end_src
-** String interpolation
-I use string interpolation in the main =README.org=.
-
-This macro copied from [[https://gist.github.com/cbowdon/012d623920bd28453bf8][here]].
-#+begin_src emacs-lisp :noweb no
-(defmacro rasen/interpolate-string (text)
-  "Expand text like \"Hello <<name>>\" to (format \"Hello %s\" name)."
-  (let ((pattern "<<\\(.*?\\)>>"))
-    ;; The regexp matches anything between delimiters, non-greedily
-    (with-temp-buffer
-      (save-excursion (insert text))
-      (let ((matches '()))
-        (while (re-search-forward pattern nil t)
-          (push (match-string 1) matches)
-          (replace-match "%s" t t))
-`(format ,(buffer-string) ,@(reverse (mapcar 'read matches)))))))
-#+end_src
 * Evil
 ** General
 #+begin_src emacs-lisp

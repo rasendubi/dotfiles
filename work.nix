@@ -1,92 +1,27 @@
-{ pkgs, config, ... }:
+{ lib, pkgs, config, ... }:
 {
   targets.genericLinux.enable = true;
 
+  gtk.enable = true;
+  qt.enable = true;
+
   home.packages = [
-    pkgs.dolphin
-    pkgs.tmux
-    pkgs.xdotool
-    pkgs.xss-lock
-    (pkgs.pass.withExtensions (exts: [ exts.pass-otp ]))
-    pkgs.acpilight
-
     pkgs.minicom
-    pkgs.firefox
-    pkgs.google-chrome
     pkgs.arandr
-    pkgs.escrotum
     pkgs.ripgrep
-    pkgs.pavucontrol
-
-    pkgs.google-play-music-desktop-player
-
-    pkgs.inconsolata
-    pkgs.dejavu_fonts
-    pkgs.source-code-pro
-    pkgs.ubuntu_font_family
-    pkgs.powerline-fonts
-    pkgs.terminus_font
-
-    # Emacs fonts
-    pkgs.input-mono
-    pkgs.libertine
-
-    pkgs.direnv
-
-    # from my packages
-    pkgs.naga
   ];
+
+  programs.git.userEmail = lib.mkForce "alexey.shmalko@ringteam.com";
 
   home.sessionVariables.LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
 
-  programs.emacs = {
-    enable = true;
-    package = pkgs.my-emacs.base;
-    extraPackages = pkgs.my-emacs.packages;
-  };
-  services.emacs.enable = true;
-
-  services.lorri.enable = true;
-
-  programs.browserpass = {
-    enable = true;
-    browsers = ["firefox" "chrome"];
-  };
-
+  # This does not work after migration to flakes
   # programs.home-manager = {
   #   enable = true;
   #   path = "/home/rasen/dotfiles/channels/home-manager";
   # };
 
   services.syncthing.enable = true;
-
-  programs.fish = {
-    enable = true;
-    shellAliases = {
-      g = "git";
-    };
-    shellInit = ''
-      set -gx PATH $HOME/bin $PATH
-
-      if [ "$TERM" = rxvt-unicode-256color ]
-        set -x TERM xterm-256color
-      end
-
-      eval (direnv hook fish)
-    '';
-  };
-  # programs.bash = {
-  #   enable = true;
-  #   shellAliases = {
-  #     g = "git";
-  #   };
-  # };
-
-
-  home.keyboard = {
-    layout = "us,ua";
-    variant = "workman,";
-  };
 
   xsession.enable = true;
   xsession.windowManager.awesome = {
@@ -99,55 +34,12 @@
     # noArgb = true;
   };
   xsession.initExtra = ''
-    xkbcomp /home/rasen/dotfiles/.Xkeymap $DISPLAY
-
     autorandr -c
     xrdb -merge ~/.Xresources
   '';
   # ~/.screenlayout/default.sh
 
-  fonts.fontconfig.enable = true;
-
   programs.htop.enable = true;
-  programs.urxvt = {
-    enable = true;
-    iso14755 = false;
-
-    fonts = [
-      "-*-terminus-medium-r-normal-*-32-*-*-*-*-*-iso10646-1"
-    ];
-
-    scroll = {
-      bar.enable = false;
-      lines = 65535;
-      scrollOnOutput = false;
-      scrollOnKeystroke = true;
-    };
-    extraConfig = {
-      "loginShell" = "true";
-      "urgentOnBell" = "true";
-      "secondaryScroll" = "true";
-
-      "background" = "#101010";
-      "foreground" = "#d0d0d0";
-      "color0" = "#101010";
-      "color1" = "#960050";
-      "color2" = "#66aa11";
-      "color3" = "#c47f2c";
-      "color4" = "#30309b";
-      "color5" = "#7e40a5";
-      "color6" = "#3579a8";
-      "color7" = "#9999aa";
-      "color8" = "#303030";
-      "color9" = "#ff0090";
-      "color10" = "#80ff00";
-      "color11" = "#ffba68";
-      "color12" = "#5f5fee";
-      "color13" = "#bb88dd";
-      "color14" = "#4eb4fa";
-      "color15" = "#d0d0d0";
-    };
-  };
 
   programs.autorandr = {
     enable = true;
@@ -199,17 +91,6 @@
         };
       };
     };
-  };
-
-  programs.zathura = {
-    enable = true;
-    options = {
-      incremental-search = true;
-    };
-    extraConfig = ''
-      map j scroll up
-      map k scroll down
-    '';
   };
 
   services.unclutter = {
