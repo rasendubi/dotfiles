@@ -11,8 +11,8 @@
 (require 'org-install)
 (require 'ob-tangle)
 
+;; [[[[file:~/dotfiles/emacs.org::patch-ob-tangle][patch-ob-tangle]]][patch-ob-tangle]]
 (require 'el-patch)
-
 ;; org-babel fixes to tangle ALL matching sections
 (defun rasen/map-regex (regex fn)
   "Map the REGEX over the BUFFER executing FN.
@@ -184,6 +184,7 @@ block but are passed literally to the \"example-block\"."
               (concat "\n" prefix))))))
       (funcall nb-add (buffer-substring index (point-max))))
     new-body))
+;; patch-ob-tangle ends here
 
 (org-babel-load-file (expand-file-name "emacs.org" rasen/dotfiles-directory))
 ;; Bootstrap:1 ends here

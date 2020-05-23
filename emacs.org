@@ -4,7 +4,7 @@
 ** Bootstrap
 Emacs does not source this file automatically, so I need to instruct it to. Check [[https://orgmode.org/worg/org-contrib/babel/intro.html#emacs-initialization][org-babel documentation]] for more info. The following snippet is an adaptation of that idea and goes to my ~.emacs.d/init.el~.
 
-#+begin_src emacs-lisp :tangle .emacs.d/init.el :noweb no
+#+begin_src emacs-lisp :tangle .emacs.d/init.el
 ;;
 ;; This file is auto-generated from "emacs.org"
 ;;
@@ -17,8 +17,16 @@ Emacs does not source this file automatically, so I need to instruct it to. Chec
 (require 'org-install)
 (require 'ob-tangle)
 
-(require 'el-patch)
+<<patch-ob-tangle>>
 
+(org-babel-load-file (expand-file-name "emacs.org" rasen/dotfiles-directory))
+#+end_src
+
+*** Patch ob-tangle
+This patches ob-tangle to allow defining sections with the same name multiple times. All sections with the same name are concatenated. (This was the default behavior some time ago, so this restores it.)
+#+name: patch-ob-tangle
+#+begin_src emacs-lisp :noweb no
+(require 'el-patch)
 ;; org-babel fixes to tangle ALL matching sections
 (defun rasen/map-regex (regex fn)
   "Map the REGEX over the BUFFER executing FN.
@@ -190,8 +198,6 @@ block but are passed literally to the \"example-block\"."
               (concat "\n" prefix))))))
       (funcall nb-add (buffer-substring index (point-max))))
     new-body))
-
-(org-babel-load-file (expand-file-name "emacs.org" rasen/dotfiles-directory))
 #+end_src
 
 You might notice that I don't change load-path---that's because my setup relies on =org-plus-contrib= to be installed by NixOS.
