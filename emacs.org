@@ -249,13 +249,9 @@ The following provides key binding to quickly open my emacs or system configurat
 
 #+begin_src emacs-lisp
 (defun rasen/find-emacs-config (arg)
-  "Open emacs.org configuration file.
-
-When PREFIX is set, open emacs.nix configuration file."
-  (interactive "P")
-  (if arg
-      (find-file (expand-file-name ".config/nixpkgs/emacs.nix" rasen/dotfiles-directory))
-    (find-file (expand-file-name "emacs.org" rasen/dotfiles-directory))))
+  "Open emacs.org configuration file."
+  (interactive)
+  (find-file (expand-file-name "emacs.org" rasen/dotfiles-directory)))
 
 (defun rasen/find-system-config ()
   (interactive)
@@ -622,6 +618,7 @@ Evilify ivy-occur.
   "C-n"  #'ivy-occur-next-line
   "C-p"  #'ivy-occur-previous-line
   "RET"  #'ivy-occur-press-and-switch
+  "TAB"  #'ivy-occur-press
   "C-e"  #'ivy-occur-press-and-switch
   "g r"  #'ivy-occur-revert-buffer
   "g g"  #'evil-goto-first-line
@@ -1280,6 +1277,16 @@ New in Emacs 27.
 #+begin_src emacs-lisp
 (setq epa-pinentry-mode 'loopback)
 #+end_src
+** Disable GC in minibuffer
+#+begin_src emacs-lisp
+(defun rasen/minibuffer-setup-hook ()
+  (setq gc-cons-threshold most-positive-fixnum))
+(defun rasen/minibuffer-exit-hook ()
+  (setq gc-cons-threshold 800000))
+
+(add-hook 'minibuffer-setup-hook #'rasen/minibuffer-setup-hook)
+(add-hook 'minibuffer-exit-hook  #'rasen/minibuffer-exit-hook)
+#+end_src
 * Org-mode
 ** General
 #+begin_src emacs-lisp
@@ -1305,6 +1312,8 @@ New in Emacs 27.
 
    "SPC w"  #'org-refile
    "SPC r"  #'org-archive-subtree-default
+
+   "RET n s" #'org-narrow-to-subtree
    )
   ('(insert normal) 'org-mode-map
    "C-c ,"  #'org-time-stamp-inactive)
@@ -2232,6 +2241,85 @@ Fix exporting for confluence.
 #+begin_src emacs-lisp
 (add-to-list 'org-modules 'ox-confluence)
 (setq org-ascii-verbatim-format "\{\{%s\}\}")
+
+(defun rasen/org-ox-confluence ()
+  (interactive)
+  (save-excursion
+    (save-restriction
+      (when (region-active-p)
+        (narrow-to-region (region-beginning) (region-end)))
+
+      (goto-char (point-min))
+      (perform-replace "-" "&#45;"
+                       nil              ; replace all
+                       nil              ; not regex
+                       nil              ; replace on word boundaries
+                       )
+      (goto-char (point-min))
+      (perform-replace "_" "&#95;"
+                       nil              ; replace all
+                       nil              ; not regex
+                       nil              ; replace on word boundaries
+                       )
+      (goto-char (point-min))
+      (perform-replace "{" "&#123;"
+                       nil              ; replace all
+                       nil              ; not regex
+                       nil              ; replace on word boundaries
+                       )
+      (goto-char (point-min))
+      (perform-replace "}" "&#125;"
+                       nil              ; replace all
+                       nil              ; not regex
+                       nil              ; replace on word boundaries
+                       )
+      (goto-char (point-min))
+      (perform-replace "[" "&#91;"
+                       nil              ; replace all
+                       nil              ; not regex
+                       nil              ; replace on word boundaries
+                       )
+      (goto-char (point-min))
+      (perform-replace "]" "&#93;"
+                       nil              ; replace all
+                       nil              ; not regex
+                       nil              ; replace on word boundaries
+                       ))))
+
+(setq rasen/confluence-block-known-languages
+      '("actionscript3"
+        "applescript"
+        "bash"
+        "c#"
+        "cpp"
+        "css"
+        "coldfusion"
+        "delphi"
+        "diff"
+        "erl" ; Erlang
+        "groovy"
+        "xml" ; and HTML
+        "java"
+        "jfx" ; Java FX
+        "js"
+        "php"
+        "perl"
+        "text"
+        "powershell"
+        "py"
+        "ruby"
+        "sql"
+        "sass"
+        "scala"
+        "vb" ; Visual Basic
+        "yml"))
+
+(el-patch-defun org-confluence--block (language theme contents)
+  (concat (el-patch-swap "\{code:theme=" "\{code") (el-patch-remove theme)
+          (when (el-patch-swap language (member language rasen/confluence-block-known-languages)) (format (el-patch-swap "|language=%s" ":language=%s") language))
+          "}\n"
+          contents
+          "\{code\}\n"))
 #+end_src
 ** Crypt
 Allow encrypted entries in org files.
@@ -2290,6 +2378,11 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
         '(("d" "dynamic (timestamp)" plain (function org-roam--capture-get-point)
            "%?"
            :file-name "%(rasen/tsid)"
+           :head "#+TITLE: ${title}\n"
+           :unnarrowed t)
+          ("r" "ring (timestamp)" plain (function org-roam--capture-get-point)
+           "%?"
+           :file-name "ring/%(rasen/tsid)"
            :head "#+TITLE: ${title}\n"
            :unnarrowed t)))
 
@@ -2503,6 +2596,11 @@ Citations and bibliography tools for org-mode.
 
 (general-def 'normal 'org-mode-map
   "SPC \\" #'rasen/toggle-org-view-mode)
+#+end_src
+** org-reveal
+#+begin_src emacs-lisp
+(use-package ox-reveal
+  :load-path "site-lisp/org-reveal")
 #+end_src
 ** Evilify org-mode
 #+begin_src emacs-lisp
@@ -2963,7 +3061,11 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 
 #+begin_src emacs-lisp
 (use-package py-autopep8
-  :hook (elpy-mode . py-autopep8-enable-on-save))
+  :hook (elpy-mode . py-autopep8-enable-on-save)
+  :config
+  (defun rasen/autopep8-disable-on-save ()
+    (interactive)
+    (remove-hook 'before-save-hook 'py-autopep8-buffer t)))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -3178,6 +3280,11 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 (use-package groovy-mode
   :mode "\\.\\(groovy\\|gradle\\)$")
 #+end_src
+** Kotlin
+#+begin_src emacs-lisp
+(use-package kotlin-mode
+  :mode "\\.kt'")
+#+end_src
 ** Forth
 #+begin_src emacs-lisp
 (use-package forth-mode
@@ -3309,7 +3416,7 @@ See http://bnbeckwith.com/code/writegood-mode.html
 #+end_src
 ** protobuf
 #+begin_src emacs-lisp
-(use-package protbuf-mode
+(use-package protobuf-mode
   :mode "\\.proto$")
 #+end_src
 * Mail setup
@@ -3384,7 +3491,7 @@ See http://bnbeckwith.com/code/writegood-mode.html
 #+begin_src emacs-lisp
 (use-package notmuch
   :config
-  ;; (setq mm-text-html-renderer 'w3m)
+  ;; (setq mm-text-html-renderer 'shr)
 
   (setq notmuch-archive-tags '("-unread"))
   (setq notmuch-saved-searches
@@ -3417,7 +3524,12 @@ See http://bnbeckwith.com/code/writegood-mode.html
 
   (defun rasen/mbsync ()
     (interactive)
-    (async-shell-command "mbsync sync-gmail & mbsync sync-egoless & mbsync sync-ps & wait; /home/rasen/dotfiles/notmuch.sh" "*mbsync*"))
+    (async-shell-command "notmuch new" "*mbsync*"))
+
+  (defun rasen/notmuch-search-mute ()
+    (interactive)
+    (notmuch-search-tag '("+muted"))
+    (notmuch-search-archive-thread))
 
   (general-def notmuch-hello-mode-map "f" 'rasen/mbsync)
 
@@ -3427,8 +3539,11 @@ See http://bnbeckwith.com/code/writegood-mode.html
                notmuch-show-mode-map)
     "g" 'notmuch-refresh-all-buffers)
 
-  (general-def 'notmuch-search-mode-map "k" #'notmuch-search-archive-thread)
-  (general-def 'notmuch-show-mode-map "k" #'notmuch-show-archive-thread-then-next)
+  (general-def 'notmuch-search-mode-map
+    "k" #'notmuch-search-archive-thread
+    "m" #'rasen/notmuch-search-mute)
+  (general-def 'notmuch-show-mode-map
+    "k" #'notmuch-show-archive-thread-then-next)
   ;; remap old function
   (general-def '(notmuch-search-mode-map
                  notmuch-show-mode-map)
