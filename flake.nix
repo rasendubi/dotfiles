@@ -178,9 +178,11 @@
               programs.direnv.enable = true;
             }
             {
-              accounts.email = {
-                maildirBasePath = "Mail";
-              };
+              # Store mails in ~/Mail
+              accounts.email.maildirBasePath = "Mail";
+            
+              # Use mbsync to fetch email. Configuration is constructed manually
+              # to keep my current email layout.
               programs.mbsync = {
                 enable = true;
                 extraConfig = lib.mkBefore ''
@@ -191,6 +193,7 @@
                 '';
               };
             
+              # Notmuch for email browsing, tagging, and searching.
               programs.notmuch = {
                 enable = true;
                 new.ignore = [
@@ -208,6 +211,9 @@
                   "/^archive/"
                 ];
               };
+            
+              # msmtp for sending mail
+              programs.msmtp.enable = true;
             
               # My Maildir layout predates home-manager configuration, so I do not
               # use mbsync config generation from home-manager, to keep layout
