@@ -239,6 +239,19 @@ All emacs packages are installed with Nix. Disable usage of emacs internal archi
 I start using [[https://github.com/noctuid/general.el][general]] to define my keybindings.
 #+begin_src emacs-lisp
 (use-package general)
+
+;; Definer for my leader
+(general-create-definer --leader-def    :prefix "SPC")
+(general-create-definer --s-leader-def  :prefix "s-SPC")
+
+;; Extra-hackery to define key with multiple prefixes
+(defmacro leader-def (&rest args)
+  (declare (indent defun))
+  `(progn (--leader-def   ,@args)
+          (--s-leader-def ,@args)))
+
+;; Definer for my leader + applied globally across all windows
+(general-create-definer s-leader-def :prefix "SPC" :global-prefix "s-SPC" :keymaps '(motion))
 #+end_src
 ** Other
 I constantly improve my configuration to make me more efficient.
@@ -248,7 +261,7 @@ The following provides key binding to quickly open my emacs or system configurat
 (They are global and come first, so they are still defined if I mess up with the later configuration and the rest of config file is not loaded.)
 
 #+begin_src emacs-lisp
-(defun rasen/find-emacs-config (arg)
+(defun rasen/find-emacs-config ()
   "Open emacs.org configuration file."
   (interactive)
   (find-file (expand-file-name "emacs.org" rasen/dotfiles-directory)))
@@ -265,6 +278,216 @@ The following provides key binding to quickly open my emacs or system configurat
 Set PATH env variable from =exec-path=. This is required for =shell-command= to find executables available in =exec-path=. (Most notably, org-mode latex preview fails without this.)
 #+begin_src emacs-lisp
 (setenv "PATH" (string-join exec-path ":"))
+#+end_src
+* EXWM
+** General
+#+begin_src emacs-lisp
+(use-package exwm
+  :init
+  ;; these must be set before exwm is loaded
+  (setq mouse-autoselect-window t
+        focus-follow-mouse t)
+  :config
+  (setq exwm-workspace-show-all-buffers t)
+  (setq exwm-layout-show-all-buffers t)
+
+  <<exwm-randr>>
+
+  (use-package exwm-systemtray
+    :config
+    (exwm-systemtray-enable))
+
+  ;; Make class name the buffer name
+  (add-hook 'exwm-update-class-hook
+            (lambda ()
+              (exwm-workspace-rename-buffer exwm-class-name)))
+
+  (exwm-enable))
+
+#+end_src
+
+#+name: exwm-randr
+#+begin_src emacs-lisp
+(use-package exwm-randr
+  :config
+  (setq exwm-workspace-number 2)
+  (setq exwm-randr-workspace-output-plist '(0 "eDP-1"
+                                              1 "DP-1"))
+
+  (add-hook 'exwm-randr-screen-change-hook
+            (lambda ()
+              (rasen/start-command "autorandr -c")))
+
+  ;;          (lambda ()
+  ;;            (start-process-shell-command
+  ;;             "xrandr" nil "xrandr --output DP-1 --mode 3840x2160 --pos 0x0 --rotate normal --output eDP-1 --mode 3200x1800 --pos 320x2160 --rotate normal")))
+
+  (exwm-randr-enable))
+#+end_src
+
+** Autostart
+#+begin_src emacs-lisp
+(defun rasen/autostart (cmd)
+  "Start CMD unless already running."
+  (let ((buf-name (concat "*" cmd "*")))
+    (unless (process-live-p (get-buffer-process buf-name))
+      (start-process-shell-command cmd buf-name cmd))))
+
+(rasen/autostart "naga")
+(rasen/autostart "nm-applet")
+(rasen/autostart "xss-lock -n \"xset dpms force off\" slock")
+(rasen/autostart "xkbcomp ~/dotfiles/Xkeymap $DISPLAY")
+#+end_src
+** Key bindings
+#+begin_src emacs-lisp
+(use-package evil
+  :defer t
+  :commands (evil-window-split
+             evil-window-vsplit)
+  :config
+  (evil-set-initial-state 'exwm-mode 'motion))
+
+(defun rasen/start-command (command &optional buffer)
+  "Start shell COMMAND in the background. If BUFFER is provided, log process output to that buffer."
+  (start-process-shell-command command buffer command))
+
+(defun rasen/switch-start (buffer cmd)
+  "Switch to buffer with name BUFFER or start one with CMD."
+  (if-let (b (get-buffer buffer))
+      (switch-to-buffer b)
+    (rasen/start-command cmd)))
+
+(defun rasen/exwm-firefox ()
+  (interactive)
+  (rasen/switch-start "Firefox" "firefox"))
+
+(defun rasen/exwm-telegram ()
+  (interactive)
+  (rasen/switch-start "TelegramDesktop" "telegram-desktop"))
+
+(defun rasen/exwm-google-play-music ()
+  (interactive)
+  (rasen/switch-start "Google Play Music Desktop Player" "google-play-music-desktop-player"))
+
+(defun rasen/terminal ()
+  (interactive)
+  (rasen/start-command "urxvt"))
+(defun rasen/lock-screen ()
+  (interactive)
+  (rasen/start-command "slock")
+  (run-at-time "1 sec" nil
+               (lambda ()
+                 (rasen/start-command "xset dpms force off"))))
+
+(defun rasen/screenshot ()
+  (interactive)
+  ;; -sC — choose selection + save to clipboard
+  (rasen/start-command "escrotum -sC"))
+
+;; From https://emacsredux.com/blog/2013/04/28/switch-to-previous-buffer/
+(defun rasen/switch-to-previous-buffer ()
+  "Switch to previously open buffer.
+  Repeated invocations toggle between the two most recently open buffers."
+  (interactive)
+  (switch-to-buffer (other-buffer (current-buffer))))
+
+;; despite the fact s-SPC binds to nil, EXWM will add s-SPC to
+;; global prefix key.
+(exwm-input-set-key (kbd "s-SPC") nil)
+
+(exwm-input-set-key (kbd "s-R") #'exwm-reset)
+(exwm-input-set-key (kbd "s-Q") #'save-buffers-kill-terminal)
+(exwm-input-set-key (kbd "s-r") (lambda (command)
+                                  (interactive (list (read-shell-command "Run: ")))
+                                  (rasen/start-command command)))
+(exwm-input-set-key (kbd "s-w") #'exwm-workspace-switch)
+(exwm-input-set-key (kbd "s-b") #'counsel-switch-buffer)
+(exwm-input-set-key (kbd "s-q") #'kill-this-buffer)
+
+(exwm-input-set-key (kbd "s-\\") #'exwm-input-toggle-keyboard)
+(exwm-input-set-key (kbd "<s-escape>") #'rasen/switch-to-previous-buffer)
+(exwm-input-set-key (kbd "<s-tab>") #'counsel-switch-buffer)
+
+;; window management
+(exwm-input-set-key (kbd "s--") #'delete-other-windows)
+(exwm-input-set-key (kbd "s-0") #'delete-window)
+(exwm-input-set-key (kbd "s-h") #'windmove-left)
+(exwm-input-set-key (kbd "s-j") #'windmove-down)
+(exwm-input-set-key (kbd "s-k") #'windmove-up)
+(exwm-input-set-key (kbd "s-l") #'windmove-right)
+(exwm-input-set-key (kbd "s-s") #'evil-window-split)
+(exwm-input-set-key (kbd "s-v") #'evil-window-vsplit)
+
+(exwm-input-set-key (kbd "s-1") #'rasen/exwm-firefox)
+(exwm-input-set-key (kbd "s-4") #'rasen/exwm-telegram)
+(exwm-input-set-key (kbd "s-7") #'rasen/exwm-google-play-music)
+(exwm-input-set-key (kbd "s-9") #'notmuch)
+(exwm-input-set-key (kbd "<s-return>") #'eshell)
+(exwm-input-set-key (kbd "<s-S-return>") #'rasen/terminal)
+(exwm-input-set-key (kbd "s-M-l") #'rasen/lock-screen)
+(exwm-input-set-key (kbd "<print>") #'rasen/screenshot)
+
+;; media
+(exwm-input-set-key (kbd "<XF86AudioMute>")
+                    (lambda () (interactive) (rasen/start-command "amixer set Master toggle")))
+(exwm-input-set-key (kbd "<XF86AudioRaiseVolume>")
+                    (lambda () (interactive) (rasen/start-command "amixer set Master 2%+")))
+(exwm-input-set-key (kbd "<XF86AudioLowerVolume>")
+                    (lambda () (interactive) (rasen/start-command "amixer set Master 2%-")))
+;; screen brightness
+(exwm-input-set-key (kbd "<XF86MonBrightnessUp>")
+                    (lambda () (interactive) (rasen/start-command "xbacklight -inc 10")))
+(exwm-input-set-key (kbd "<XF86MonBrightnessDown>")
+                    (lambda () (interactive) (rasen/start-command "xbacklight -dec 10")))
+
+;; These only make sense for X windows (which run exwm-mode)
+(general-def 'exwm-mode-map
+  "C-c" nil ;; disable default bindings
+
+  "s-f" #'exwm-layout-toggle-fullscreen
+  "s-z" #'exwm-layout-toggle-mode-line
+  "s-C-SPC" #'exwm-floating-toggle-floating
+
+  "<f12>" #'rasen/find-emacs-config
+  "<C-f12>" #'rasen/find-system-config
+
+  "<f1> v" #'counsel-describe-variable)
+
+;; do not forward anything besides keys defined with
+;; `exwm-input-set-key' and `exwm-mode-map'
+(setq exwm-input-prefix-keys '())
+
+;; Without the next line, EXWM won't intercept necessary prefix keys
+(exwm-input--update-global-prefix-keys)
+#+end_src
+** Razer
+Handle input from Razer mouse. (See naga package in top-level README.)
+#+begin_src emacs-lisp
+(defun rasen/exwm-send-keys (keys)
+  (dolist (key (append keys nil))
+    (exwm-input--fake-key key)))
+
+(defun rasen/razer (code value)
+  (with-current-buffer (window-buffer (selected-window))
+    ;; (message "(razer %s %s) class-name=%s" code value exwm-class-name)
+    (when (string= value "down")
+      (cond ((= code 11) (rasen/switch-to-previous-buffer))
+            ((string= exwm-class-name "Firefox")
+             (cond
+              ((= code 1) (rasen/exwm-send-keys (kbd "<M-left>"))) ;; back (history)
+              ((= code 2) (rasen/exwm-send-keys (kbd "<C-prior>"))) ;; prev tab
+              ((= code 3) (rasen/exwm-send-keys (kbd "<C-next>"))) ;; next tab
+              ((= code 4) (rasen/exwm-send-keys (kbd "<M-right>")));; next (history)
+              ((= code 5) (rasen/exwm-send-keys (kbd "C-S-t"))) ;; restore last closed tab
+              ((= code 6) (rasen/exwm-send-keys (kbd "C-w"))) ;; close tab
+              ))
+            ((string= exwm-class-name "TelegramDesktop")
+             (cond
+              ((= code 1) (rasen/exwm-send-keys (kbd "<escape>"))) ;; deselect conversation
+              ((= code 2) (rasen/exwm-send-keys (kbd "<C-S-tab>"))) ;; prev conversation
+              ((= code 3) (rasen/exwm-send-keys (kbd "<C-tab>"))) ;; next conversation
+              ))
+            (t (message "razer-unhandled %s" value))))))
 #+end_src
 * Evil
 ** General
@@ -309,8 +532,8 @@ Swap =.= and =;=.
 
 #+name: evil-config
 #+begin_src emacs-lisp
-(general-def 'motion
-  "SPC ;"  #'eval-expression)
+(s-leader-def
+  ";"  #'eval-expression)
 #+end_src
 
 Close other window.
@@ -321,8 +544,8 @@ Close other window.
   (other-window 1)
   (quit-window))
 
-(general-def 'motion
-  "SPC q"  #'rasen/quit-other)
+(s-leader-def
+  "q"  #'rasen/quit-other)
 #+end_src
 
 Move to beginning/end of line with =H= and =L= respectively.
@@ -366,8 +589,10 @@ Save buffer with =SPC SPC=.
       (save-some-buffers)
     (save-buffer)))
 
-(general-def 'normal
-  "SPC SPC" #'rasen/save-buffer)
+(s-leader-def 'normal
+  "SPC" #'rasen/save-buffer)
+(s-leader-def
+  "s-SPC" #'save-some-buffers)
 #+end_src
 ** Swap k and j
 With workman layout, =j= is located on qwerty =y= and =k=---on qwerty =n=; thus =j= is higher than =k=, and it is not convenient to press lower key for going up. Just swap them.
@@ -483,9 +708,10 @@ evil-collection is a collection of evil bindings for different modes.
 And evil commands to go to navigate errors.
 #+name: evil-config
 #+begin_src emacs-lisp
+(leader-def 'motion
+  ","  #'previous-error
+  "."  #'next-error)
 (general-def 'motion
-  "SPC ,"  #'previous-error
-  "SPC ."  #'next-error
   "M-,"    #'previous-error
   "M-."    #'next-error)
 #+end_src
@@ -566,6 +792,15 @@ Do not create lockfiles either. (I am the only user in the system and only use e
 #+begin_src emacs-lisp
 (setq create-lockfiles nil)
 #+end_src
+** eshell
+#+begin_src emacs-lisp
+(use-package eshell
+  :commands (eshell)
+  :config
+  (with-eval-after-load 'em-term
+    (add-to-list 'eshell-visual-commands "nethack")
+    (setq eshell-destroy-buffer-when-process-dies t)))
+#+end_src
 ** direnv
 Source per-project from direnv.
 #+begin_src emacs-lisp
@@ -578,8 +813,8 @@ Source per-project from direnv.
 (use-package ivy
   :demand
   :general
-  ('motion
-   "SPC b" #'ivy-switch-buffer)
+  (s-leader-def
+    "b"  #'ivy-switch-buffer)
   :diminish ivy-mode
   :config
   <<ivy-config>>
@@ -652,9 +887,10 @@ I use smex for improved =counsel-M-x= (show most frequently used commands first)
   :demand
   :diminish counsel-mode
   :general
+  (s-leader-def
+    "x"  #'counsel-M-x
+    "f"  #'counsel-find-file)
   ('motion
-   "SPC x"  #'counsel-M-x
-   "SPC f"  #'counsel-find-file
    "g r"    #'counsel-git-grep
    "g /"    #'counsel-rg)
   ('read-expression-map
@@ -698,8 +934,7 @@ Use imenu to jump to symbols in the current buffer.
       (imenu-list-smart-toggle)
     (counsel-imenu)))
 
-(general-def 'normal
-  "SPC g" #'rasen/imenu-or-list)
+(leader-def 'motion  "g" #'rasen/imenu-or-list)
 #+end_src
 ** wgrep
 Edit grep buffers and apply changes to the files.
@@ -760,8 +995,9 @@ It's enabled by default. Just diminish it.
 #+begin_src emacs-lisp
 (use-package projectile
   :general
+  (s-leader-def
+    "p" #'projectile-command-map)
   ('motion
-   "SPC p"  #'projectile-command-map
    ;; That works much better than the default
    "g f"    #'projectile-find-file-dwim
    "U"      #'projectile-find-file
@@ -847,8 +1083,7 @@ Evilify magit-blame.
   "gk"   #'magit-blame-next-chunk-same-commit
   "gj"   #'magit-blame-previous-chunk-same-commit)
 
-(general-def 'motion magit-blame-mode-map
-  "SPC" (lookup-key evil-motion-state-map (kbd "SPC")))
+(general-def magit-blame-read-only-mode-map "SPC" nil) ;; expose my leader
 
 (general-def
   :states `(,evil-magit-state visual)
@@ -1271,7 +1506,8 @@ New in Emacs 27.
   ;; Do not show buttons
   (setq tab-bar-close-button-show nil
         tab-bar-new-button-show nil)
-  (tab-bar-mode))
+  ;; (tab-bar-mode)
+)
 #+end_src
 ** emacs pinentry
 #+begin_src emacs-lisp
@@ -1294,27 +1530,25 @@ New in Emacs 27.
   :mode ("\\.org$" . org-mode)
   :general
   ("C-c l"  #'org-store-link)
-  ('motion
-   "SPC c"  #'org-capture
-   "SPC a"  #'org-agenda
+  (s-leader-def
+    "c"  #'org-capture
+    "a"  #'org-agenda
 
-   "SPC o"  #'org-clock-out
-   "SPC l"  #'org-clock-in-last
-   "SPC j"  #'org-clock-goto)
-  ('normal
-   'org-mode-map
-   "SPC t"  #'org-todo
-   "SPC s"  #'org-schedule
-   "SPC d"  #'org-deadline
-   "SPC i"  #'org-clock-in
+    "o"  #'org-clock-out
+    "l"  #'org-clock-in-last
+    "j"  #'org-clock-goto)
+  (leader-def 'normal 'org-mode-map
+    "t"  #'org-todo
+    "s"  #'org-schedule
+    "d"  #'org-deadline
+    "i"  #'org-clock-in
 
-   "SPC T"  #'rasen/org-do-today
+    "T"  #'rasen/org-do-today
 
-   "SPC w"  #'org-refile
-   "SPC r"  #'org-archive-subtree-default
+    "w"  #'org-refile
+    "r"  #'org-archive-subtree-default
 
-   "RET n s" #'org-narrow-to-subtree
-   )
+    "n s" #'org-narrow-to-subtree)
   ('(insert normal) 'org-mode-map
    "C-c ,"  #'org-time-stamp-inactive)
   ('org-mode-map
@@ -1579,13 +1813,9 @@ Instanly go into insert mode on capture.
 (general-def
   :keymaps 'org-capture-mode-map
   :states 'normal
-  "'"      #'org-capture-finalize
-  "SPC w"  #'org-capture-refile)
-
-(general-def
-  :keymaps 'org-capture-mode-map
-  "C-c C-c" (rasen/hard-way "'")
-  "C-c C-w" (rasen/hard-way "SPC w"))
+  "'"      #'org-capture-finalize)
+(leader-def 'normal 'org-capture-mode-map
+  "w" #'org-capture-refile)
 #+end_src
 ** Capturing images
 #+begin_src emacs-lisp
@@ -1791,12 +2021,9 @@ Actual configuration.
 
   ("q" nil "cancel"))
 
-(general-def 'normal 'org-mode-map
-  "SPC w" #'rasen/org-refile-hydra/body)
-(general-def 'motion 'org-agenda-mode-map
-  "SPC w" #'rasen/org-refile-hydra/body)
-(general-def 'normal 'org-capture-mode-map
-  "SPC w" #'rasen/org-refile-hydra/body)
+(leader-def 'normal 'org-mode-map         "w" #'rasen/org-refile-hydra/body)
+(leader-def 'motion 'org-agenda-mode-map  "w" #'rasen/org-refile-hydra/body)
+(leader-def 'normal 'org-capture-mode-map "w" #'rasen/org-refile-hydra/body)
 #+end_src
 *** Refile last but *before* archive
 I like my archive sibling to be the last child. The default org-refile ignores that at refiles all entries *after* archive.
@@ -2355,10 +2582,10 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
   (after-init . org-roam-mode)
 
   :general
-  (:states 'normal
-   "SPC n r" #'org-roam
-   "SPC n f" #'org-roam-find-file
-   "SPC n b" #'org-roam-switch-to-buffer)
+  (s-leader-def
+   "n r" #'org-roam
+   "n f" #'org-roam-find-file
+   "n b" #'org-roam-switch-to-buffer)
   (:keymaps 'org-mode-map
    :states '(insert visual)
    "C-c i" #'org-roam-insert
@@ -2451,6 +2678,7 @@ Enable auto-completion for notes.
     (setq bibtex-completion-library-path `(,bib-files-directory)))
 
   (require 'org-ref-url-utils)
+  (require 'org-ref-isbn)
   (general-def 'normal 'bibtex-mode-map
     "C-c C-c" #'org-ref-clean-bibtex-entry
     "C-c c"   #'org-ref-clean-bibtex-entry
@@ -2510,6 +2738,7 @@ If optional arg MOVE is non-nil move point to end of field."
                                   default-justification nil (point)))
       (if move (goto-char end-field))))
 
+  (el-patch-feature org-ref-isbn)
   ;; patch isbn-to-bibtex to handle non-ascii names/titles.
   (el-patch-defun isbn-to-bibtex (isbn bibfile)
     "Get bibtex entry for ISBN and insert it into BIBFILE.
@@ -2594,13 +2823,8 @@ Citations and bibliography tools for org-mode.
   (setq-local org-link-descriptive (not org-link-descriptive))
   (font-lock-fontify-buffer))
 
-(general-def 'normal 'org-mode-map
-  "SPC \\" #'rasen/toggle-org-view-mode)
-#+end_src
-** org-reveal
-#+begin_src emacs-lisp
-(use-package ox-reveal
-  :load-path "site-lisp/org-reveal")
+(leader-def 'normal 'org-mode-map
+  "\\" #'rasen/toggle-org-view-mode)
 #+end_src
 ** Evilify org-mode
 #+begin_src emacs-lisp
@@ -2620,6 +2844,10 @@ Citations and bibliography tools for org-mode.
               (evil-org-set-key-theme)))
   (require 'evil-org-agenda)
   (evil-org-agenda-set-keys)
+
+  ;; when editing code blocks, use current window and do not
+  ;; reorganize my frame
+  (setq org-src-window-setup 'current-window)
 
   (general-def 'normal org-mode-map
     "'"        #'org-edit-special
@@ -2649,20 +2877,15 @@ Citations and bibliography tools for org-mode.
     "M-j"  #'org-agenda-drag-line-backward)
 
   (general-def 'motion org-agenda-mode-map
-    ;; unset prefix
-    "SPC"      nil
-    "SPC SPC"  #'org-save-all-org-buffers
-    "SPC s"    #'org-agenda-schedule
-    "C-c C-s"  (rasen/hard-way "SPC s")
-    "SPC d"    #'org-agenda-deadline
-    "C-c C-d"  (rasen/hard-way "SPC d")
-    "SPC w"    #'org-agenda-refile
-    "C-c C-w"  (rasen/hard-way "SPC w")
-
-    "SPC t"    #'org-agenda-todo
-
+    "SPC"      nil ;; unset prefix
     "go"       #'org-agenda-open-link
-    "gl"       #'org-agenda-log-mode))
+    "gl"       #'org-agenda-log-mode)
+  (leader-def 'motion org-agenda-mode-map
+    "SPC"  #'org-save-all-org-buffers
+    "s"    #'org-agenda-schedule
+    "d"    #'org-agenda-deadline
+    "w"    #'org-agenda-refile
+    "t"    #'org-agenda-todo))
 #+end_src
 Use emacs-state in org-lint buffers.
 #+name: org-config
@@ -3491,6 +3714,7 @@ See http://bnbeckwith.com/code/writegood-mode.html
 #+begin_src emacs-lisp
 (use-package notmuch
   :config
+  (setenv "NOTMUCH_CONFIG" "/home/rasen/.config/notmuch/notmuchrc")
   ;; (setq mm-text-html-renderer 'shr)
 
   (setq notmuch-archive-tags '("-unread"))
@@ -3524,7 +3748,11 @@ See http://bnbeckwith.com/code/writegood-mode.html
 
   (defun rasen/mbsync ()
     (interactive)
-    (async-shell-command "notmuch new" "*mbsync*"))
+    (let ((mbsync-cmd (if (string= (system-name) "omicron")
+                          "mbsync sync-gmail & mbsync sync-egoless & mbsync sync-ps & wait; /home/rasen/dotfiles/notmuch.sh"
+                        "notmuch new")))
+      (async-shell-command mbsync-cmd "*mbsync*")))
+
 
   (defun rasen/notmuch-search-mute ()
     (interactive)
@@ -3763,6 +3991,21 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Go
   :config
   (setq doom-modeline-icon nil)
   (doom-modeline-mode 1))
+#+end_src
+
+Display time and battery in modeline.
+#+begin_src emacs-lisp
+(use-package time
+  ;; builtin
+  :config
+  (setq display-time-default-load-average nil)
+  (setq display-time-24hr-format t)
+  (display-time-mode 1))
+
+(use-package battery
+  ;; builtin
+  :config
+  (display-battery-mode 1))
 #+end_src
 ** Fonts
 Goes to early init.

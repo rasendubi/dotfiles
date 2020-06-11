@@ -179,6 +179,7 @@ Expose home-manager configurations.
       configuration = { ... }: {
         nixpkgs.config.allowUnfree = true;
         nixpkgs.overlays = self.overlays.${system};
+        nixpkgs.config.firefox.enableTridactylNative = true;
         imports = [
           self.lib.home-manager-common
 
@@ -706,6 +707,7 @@ Expose Emacs with my packages as a top-level package.
     [
       epkgs.orgPackages.org-plus-contrib
       epkgs.elpaPackages.adaptive-wrap
+      epkgs.exwm
 
       pkgs.ycmd
       pkgs.notmuch
@@ -1146,19 +1148,42 @@ Setup timezone:
   services.xserver.displayManager.lightdm.enable = true;
 }
 #+end_src
-** Window manager
-I use [[http://awesome.naquadah.org/][awesome wm]]:
+** Window manager (EXWM)
+I recently switched to use EXWM as my window manager.
+
+NixOS has an EXWM module, but my feeling is that it's too limiting.
+#+name: nixos-section
+#+begin_src nix
+{
+  services.xserver.windowManager.session = lib.singleton {
+    name = "exwm";
+    start = ''
+      exec ${pkgs.my-emacs}/bin/emacsclient -a "" -c
+    '';
+  };
+  services.xserver.displayManager.defaultSession = "none+exwm";
+}
+#+end_src
+
+Without a window compositor, I have experienced window tearing (especially in Firefox)—with picom everything runs smoothly.
+#+name: home-manager-section
+#+begin_src nix
+{
+  services.picom.enable = true;
+}
+#+end_src
+
+** Awesome WM (backup)
+Keep [[http://awesome.naquadah.org/][awesome wm]] as a backup window manager.
 
 #+name: nixos-section
 #+begin_src nix
 {
-  services.xserver.windowManager = {
-    awesome = {
-      enable = true;
-      luaModules = [ pkgs.luaPackages.luafilesystem pkgs.luaPackages.cjson ];
-    };
+  services.xserver.windowManager.awesome = {
+    enable = true;
+    luaModules = [ pkgs.luaPackages.luafilesystem pkgs.luaPackages.cjson ];
   };
-  services.xserver.displayManager.defaultSession = "none+awesome";
+  services.xserver.displayManager.defaultSession = lib.mkDefault "none+awesome";
 }
 #+end_src
 
@@ -1178,7 +1203,16 @@ These packages are used by my awesome wm setup:
     pkgs.wmname
     pkgs.xclip
     pkgs.escrotum
+    pkgs.xorg.xkbcomp
   ];
+}
+#+end_src
+
+Link awesome wm configuration in place.
+#+name: home-manager-section
+#+begin_src nix
+{
+  xdg.configFile."awesome".source = ./.config/awesome;
 }
 #+end_src
 ** Keyboard
@@ -1485,9 +1519,6 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 
     pkgs.mplayer
     pkgs.smplayer
-
-    # Used by naga-awesome wm setup
-    pkgs.xdotool
   ];
 }
 #+end_src
@@ -1829,7 +1860,7 @@ This install a number of default man pages for the linux/posix system.
 }
 #+end_src
 * Other configs
-# #+name: home-manager-section
+#+name: home-manager-section
 #+begin_src nix
 {
   home.file = {
@@ -1841,7 +1872,5 @@ This install a number of default man pages for the linux/posix system.
   programs.fish.shellInit = ''
     set -x PATH ${./bin} $PATH
   '';
-
-  xdg.configFile."awesome".source = ./.config/awesome;
 }
 #+end_src

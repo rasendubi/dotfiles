@@ -30,19 +30,24 @@
   };
 
   xsession.enable = true;
-  xsession.windowManager.awesome = {
-    enable = true;
-    luaModules = [
-      pkgs.luaPackages.luafilesystem
-      pkgs.luaPackages.cjson
-    ];
-    # try this?
-    # noArgb = true;
-  };
   xsession.initExtra = ''
     autorandr -c
     xrdb -merge ~/.Xresources
+    xkbcomp ${./Xkeymap} $DISPLAY
   '';
+  xsession.windowManager.command = ''
+    ${pkgs.my-emacs}/bin/emacsclient -a "" -c
+  '';
+
+  # xsession.windowManager.awesome = {
+  #   enable = true;
+  #   luaModules = [
+  #     pkgs.luaPackages.luafilesystem
+  #     pkgs.luaPackages.cjson
+  #   ];
+  #   # try this?
+  #   # noArgb = true;
+  # };
   # ~/.screenlayout/default.sh
 
   programs.htop.enable = true;
@@ -131,6 +136,8 @@
         flavor = "gmail.com";
         address = "alexey.shmalko@ringteam.com";
         realName = "Alexey Shmalko";
+
+        passwordCommand = "pass imap.gmail.com/alexey.shmalko@ringteam.com";
 
         mbsync = {
           enable = true;

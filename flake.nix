@@ -109,6 +109,7 @@
             configuration = { ... }: {
               nixpkgs.config.allowUnfree = true;
               nixpkgs.overlays = self.overlays.${system};
+              nixpkgs.config.firefox.enableTridactylNative = true;
               imports = [
                 self.lib.home-manager-common
       
@@ -276,11 +277,18 @@
                 in map mkGmailBox emails;
             }
             {
+              services.picom.enable = true;
+            }
+            {
               home.packages = [
                 pkgs.wmname
                 pkgs.xclip
                 pkgs.escrotum
+                pkgs.xorg.xkbcomp
               ];
+            }
+            {
+              xdg.configFile."awesome".source = ./.config/awesome;
             }
             {
               home.keyboard = {
@@ -367,9 +375,6 @@
             
                 pkgs.mplayer
                 pkgs.smplayer
-            
-                # Used by naga-awesome wm setup
-                pkgs.xdotool
               ];
             }
             {
@@ -568,6 +573,17 @@
                 '';
               };
             }
+            {
+              home.file = {
+                ".vim".source = ./.vim;
+                ".nvim".source = ./.vim;
+                ".nethackrc".source = ./.nethackrc;
+              };
+            
+              programs.fish.shellInit = ''
+                set -x PATH ${./bin} $PATH
+              '';
+            }
           ];
         };
         homeManagerConfigurations = genHosts homeManagerHosts mkHomeManagerConfiguration;
@@ -759,6 +775,7 @@
                   [
                     epkgs.orgPackages.org-plus-contrib
                     epkgs.elpaPackages.adaptive-wrap
+                    epkgs.exwm
               
                     pkgs.ycmd
                     pkgs.notmuch

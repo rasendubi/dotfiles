@@ -293,13 +293,20 @@ in
       services.xserver.displayManager.lightdm.enable = true;
     }
     {
-      services.xserver.windowManager = {
-        awesome = {
-          enable = true;
-          luaModules = [ pkgs.luaPackages.luafilesystem pkgs.luaPackages.cjson ];
-        };
+      services.xserver.windowManager.session = lib.singleton {
+        name = "exwm";
+        start = ''
+          exec ${pkgs.my-emacs}/bin/emacsclient -a "" -c
+        '';
       };
-      services.xserver.displayManager.defaultSession = "none+awesome";
+      services.xserver.displayManager.defaultSession = "none+exwm";
+    }
+    {
+      services.xserver.windowManager.awesome = {
+        enable = true;
+        luaModules = [ pkgs.luaPackages.luafilesystem pkgs.luaPackages.cjson ];
+      };
+      services.xserver.displayManager.defaultSession = lib.mkDefault "none+awesome";
     }
     {
       services.xserver.desktopManager.xterm.enable = false;
