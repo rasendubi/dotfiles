@@ -1,6 +1,5 @@
-;; [[file:~/dotfiles/emacs.org::*Bootstrap][Bootstrap:1]]
 ;;
-;; This file is auto-generated from "emacs.org"
+;; This file is auto-generated from "README.org"
 ;;
 
 (defvar rasen/dotfiles-directory
@@ -11,7 +10,6 @@
 (require 'org-install)
 (require 'ob-tangle)
 
-;; [[[[file:~/dotfiles/emacs.org::patch-ob-tangle][patch-ob-tangle]]][patch-ob-tangle]]
 (require 'el-patch)
 ;; org-babel fixes to tangle ALL matching sections
 (defun rasen/map-regex (regex fn)
@@ -184,7 +182,5 @@ block but are passed literally to the \"example-block\"."
               (concat "\n" prefix))))))
       (funcall nb-add (buffer-substring index (point-max))))
     new-body))
-;; patch-ob-tangle ends here
 
-(org-babel-load-file (expand-file-name "emacs.org" rasen/dotfiles-directory))
-;; Bootstrap:1 ends here
+(org-babel-load-file (expand-file-name "README.org" rasen/dotfiles-directory))

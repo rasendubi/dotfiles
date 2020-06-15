@@ -108,8 +108,8 @@
             inherit system pkgs username homeDirectory;
             configuration = { ... }: {
               nixpkgs.config.allowUnfree = true;
-              nixpkgs.overlays = self.overlays.${system};
               nixpkgs.config.firefox.enableTridactylNative = true;
+              nixpkgs.overlays = self.overlays.${system};
               imports = [
                 self.lib.home-manager-common
       
@@ -152,9 +152,6 @@
               };
             }
             {
-              home.packages = [ pkgs.naga ];
-            }
-            {
               programs.emacs = {
                 enable = true;
                 package = pkgs.my-emacs.base;
@@ -169,14 +166,172 @@
               ];
             }
             {
-              home.packages = [pkgs.networkmanagerapplet];
+              services.picom.enable = true;
+            }
+            {
+              home.packages = [
+                pkgs.xss-lock
+              ];
+            }
+            {
+              home.packages = [ pkgs.escrotum ];
+            }
+            {
+              home.keyboard = {
+                layout = "us,ua";
+                variant = "workman,";
+              };
+            }
+            {
+              xsession.initExtra = ''
+                xkbcomp ${./Xkeymap} $DISPLAY
+              '';
+            }
+            {
+              home.packages = [ pkgs.xorg.xkbcomp ];
+            }
+            {
+              home.packages = [ pkgs.naga ];
+            }
+            {
+              home.packages = [ pkgs.networkmanagerapplet ];
+            }
+            {
+              programs.direnv.enable = true;
+              services.lorri.enable = true;
+            }
+            {
+              programs.autorandr = {
+                enable = true;
+                profiles =
+                  let
+                    omicron = "00ffffffffffff004d104a14000000001e190104a51d11780ede50a3544c99260f505400000001010101010101010101010101010101cd9180a0c00834703020350026a510000018a47480a0c00834703020350026a510000018000000fe0052584e3439814c513133335a31000000000002410328001200000b010a202000cc";
+                    work = "00ffffffffffff004d108d1400000000051c0104a52213780ea0f9a95335bd240c5157000000010101010101010101010101010101014dd000a0f0703e803020350058c210000018000000000000000000000000000000000000000000fe00464e564452804c513135364431000000000002410328011200000b010a202000ee";
+                    home-monitor = "00ffffffffffff0010acc0a042524530031c010380351e78eae245a8554da3260b5054a54b00714f8180a9c0a940d1c0e10001010101a36600a0f0701f80302035000f282100001a000000ff004438565846383148304552420a000000fc0044454c4c205032343135510a20000000fd001d4c1e8c1e000a202020202020018802032ef15390050402071601141f1213272021220306111523091f07830100006d030c001000003c200060030201023a801871382d40582c25000f282100001e011d8018711c1620582c25000f282100009e04740030f2705a80b0588a000f282100001e565e00a0a0a02950302035000f282100001a0000000000000000008a";
+                    work-monitor = "00ffffffffffff0010acc2d0545741312c1b010380351e78eaad75a9544d9d260f5054a54b008100b300d100714fa9408180d1c00101565e00a0a0a02950302035000e282100001a000000ff004d59334e44374234314157540a000000fc0044454c4c205032343138440a20000000fd0031561d711c000a202020202020010302031bb15090050403020716010611121513141f2065030c001000023a801871382d40582c45000e282100001e011d8018711c1620582c25000e282100009ebf1600a08038134030203a000e282100001a7e3900a080381f4030203a000e282100001a00000000000000000000000000000000000000000000000000000000d8";
+                  in {
+                  "omicron" = {
+                    fingerprint = {
+                      eDP-1 = omicron;
+                    };
+                    config = {
+                      eDP-1 = {
+                        enable = true;
+                        primary = true;
+                        position = "0x0";
+                        mode = "3200x1800";
+                        rate = "60.00";
+                      };
+                    };
+                  };
+                  "omicron-home" = {
+                    fingerprint = {
+                      eDP-1 = omicron;
+                      DP-1 = home-monitor;
+                    };
+                    config = {
+                      eDP-1 = {
+                        enable = true;
+                        primary = true;
+                        position = "320x2160";
+                        mode = "3200x1800";
+                        rate = "60.00";
+                      };
+                      DP-1 = {
+                        enable = true;
+                        position = "0x0";
+                        mode = "3840x2160";
+                        rate = "60.00";
+                      };
+                    };
+                  };
+            
+                  "work" = {
+                    fingerprint = {
+                      eDP-1 = work;
+                    };
+                    config = {
+                      eDP-1 = {
+                        enable = true;
+                        primary = true;
+                        position = "0x0";
+                        mode = "3840x2160";
+                        rate = "60.00";
+                        dpi = 284;
+                      };
+                    };
+                  };
+                  "work-home" = {
+                    fingerprint = {
+                      eDP-1 = work;
+                      DP-3 = home-monitor;
+                    };
+                    config = {
+                      eDP-1 = {
+                        enable = true;
+                        primary = true;
+                        position = "0x2160";
+                        mode = "3840x2160";
+                        rate = "60.00";
+                        dpi = 284;
+                      };
+                      DP-3 = {
+                        enable = true;
+                        position = "0x0";
+                        mode = "3840x2160";
+                        rate = "29.98";
+                        dpi = 183;
+                      };
+                    };
+                  };
+                  "work-work" = {
+                    fingerprint = {
+                      eDP-1 = work;
+                      DP-3 = work-monitor;
+                    };
+                    config = {
+                      eDP-1 = {
+                        enable = true;
+                        primary = true;
+                        position = "0x1440";
+                        mode = "3840x2160";
+                        rate = "60.00";
+                        dpi = 284;
+                      };
+                      DP-3 = {
+                        enable = true;
+                        position = "640x0";
+                        mode = "2560x1440";
+                        rate = "59.95";
+                        dpi = 124;
+                      };
+                    };
+                  };
+                };
+              };
+            }
+            {
+              home.packages = [ pkgs.acpilight ];
             }
             {
               home.packages = [ pkgs.pavucontrol ];
             }
             {
-              services.lorri.enable = true;
-              programs.direnv.enable = true;
+              home.packages = [
+                pkgs.firefox
+                pkgs.google-chrome
+              ];
+            }
+            {
+              xdg.configFile."tridactyl/tridactylrc".text = ''
+                " drop all existing configuration
+                sanitize tridactyllocal tridactylsync
+                
+                bind J scrollline -10
+                bind K scrollline 10
+                bind j scrollline -2
+                bind k scrollline 2
+              '';
             }
             {
               # Store mails in ~/Mail
@@ -277,53 +432,6 @@
                 in map mkGmailBox emails;
             }
             {
-              services.picom.enable = true;
-            }
-            {
-              home.packages = [
-                pkgs.wmname
-                pkgs.xclip
-                pkgs.escrotum
-                pkgs.xorg.xkbcomp
-              ];
-            }
-            {
-              xdg.configFile."awesome".source = ./.config/awesome;
-            }
-            {
-              home.keyboard = {
-                layout = "us,ua";
-                variant = "workman,";
-              };
-            }
-            {
-            
-              xsession.initExtra = ''
-                xkbcomp ${./Xkeymap} $DISPLAY
-              '';
-            }
-            {
-              home.packages = [pkgs.acpilight];
-            }
-            {
-              fonts.fontconfig.enable = true;
-              home.packages = [
-                pkgs.inconsolata
-                pkgs.dejavu_fonts
-                pkgs.source-code-pro
-                pkgs.ubuntu_font_family
-                pkgs.unifont
-                pkgs.powerline-fonts
-                pkgs.terminus_font
-              ];
-            }
-            {
-              xresources.properties = {
-                "Xft.dpi" = 276;
-                "Xcursor.size" = 64;
-              };
-            }
-            {
               home.packages = [
                 (pkgs.pass.withExtensions (exts: [ exts.pass-otp ]))
               ];
@@ -344,12 +452,6 @@
               ];
             }
             {
-              home.packages = [
-                pkgs.firefox
-                pkgs.google-chrome
-              ];
-            }
-            {
               programs.zathura = {
                 enable = true;
                 options = {
@@ -365,11 +467,6 @@
             }
             {
               home.packages = [
-                pkgs.xss-lock
-              ];
-            }
-            {
-              home.packages = [
                 pkgs.google-play-music-desktop-player
                 pkgs.tdesktop # Telegram
             
@@ -380,8 +477,11 @@
             {
               home.packages = [
                 (pkgs.vim_configurable.override { python3 = true; })
-                pkgs.neovim
               ];
+            }
+            {
+              home.file.".vim".source = ./.vim;
+              home.file.".vimrc".source = ./.vim/init.vim;
             }
             {
               programs.urxvt = {
@@ -468,6 +568,40 @@
               '';
             }
             {
+              programs.tmux = {
+                enable = true;
+                keyMode = "vi";
+                # Use C-a as prefix
+                shortcut = "a";
+                # To make vim work properly
+                terminal = "screen-256color";
+            
+                # start numbering from 1
+                baseIndex = 1;
+                # Allows for faster key repetition
+                escapeTime = 0;
+                historyLimit = 10000;
+            
+                reverseSplit = true;
+            
+                clock24 = true;
+            
+                extraConfig = ''
+                  bind-key S-left swap-window -t -1
+                  bind-key S-right swap-window -t +1
+            
+                  bind h select-pane -L
+                  bind k select-pane -D
+                  bind j select-pane -U
+                  bind l select-pane -R
+            
+                  bind r source-file ~/.tmux.conf \; display-message "Config reloaded..."
+            
+                  set-window-option -g automatic-rename
+                '';
+              };
+            }
+            {
               programs.git = {
                 enable = true;
                 package = pkgs.gitAndTools.gitFull;
@@ -540,43 +674,25 @@
               };
             }
             {
-              programs.tmux = {
-                enable = true;
-                keyMode = "vi";
-                # Use C-a as prefix
-                shortcut = "a";
-                # To make vim work properly
-                terminal = "screen-256color";
-            
-                # start numbering from 1
-                baseIndex = 1;
-                # Allows for faster key repetition
-                escapeTime = 0;
-                historyLimit = 10000;
-            
-                reverseSplit = true;
-            
-                clock24 = true;
-            
-                extraConfig = ''
-                  bind-key S-left swap-window -t -1
-                  bind-key S-right swap-window -t +1
-            
-                  bind h select-pane -L
-                  bind k select-pane -D
-                  bind j select-pane -U
-                  bind l select-pane -R
-            
-                  bind r source-file ~/.tmux.conf \; display-message "Config reloaded..."
-            
-                  set-window-option -g automatic-rename
-                '';
+              fonts.fontconfig.enable = true;
+              home.packages = [
+                pkgs.inconsolata
+                pkgs.dejavu_fonts
+                pkgs.source-code-pro
+                pkgs.ubuntu_font_family
+                pkgs.unifont
+                pkgs.powerline-fonts
+                pkgs.terminus_font
+              ];
+            }
+            {
+              xresources.properties = {
+                "Xft.dpi" = 276;
+                "Xcursor.size" = 64;
               };
             }
             {
               home.file = {
-                ".vim".source = ./.vim;
-                ".nvim".source = ./.vim;
                 ".nethackrc".source = ./.nethackrc;
               };
             
@@ -594,19 +710,166 @@
             pkgs = pkgsBySystem.${system};
           in
             mergeSections [
+              (let
+                emacs-base = pkgs.emacsGit;
+                # emacs = pkgs.emacsUnstable;
+                # emacs = pkgs.emacs.override {
+                #   # Build emacs with proper imagemagick support.
+                #   # See https://github.com/NixOS/nixpkgs/issues/70631#issuecomment-570085306
+                #   imagemagick = pkgs.imagemagickBig;
+                # };
+                emacs-packages = (epkgs:
+                  (with epkgs.melpaPackages; [
+              
+                    aggressive-indent
+                    atomic-chrome
+                    avy
+                    bash-completion
+                    beacon
+                    blacken
+                    cider
+                    clojure-mode
+                    cmake-mode
+                    color-identifiers-mode
+                    company
+                    company-box
+                    company-lsp
+                    company-org-roam
+                    counsel
+                    counsel-projectile
+                    diff-hl
+                    diminish
+                    direnv
+                    dockerfile-mode
+                    doom-modeline
+                    dtrt-indent
+                    edit-indirect
+                    el-patch
+                    elpy
+                    epresent
+                    evil
+                    evil-collection
+                    evil-magit
+                    evil-numbers
+                    evil-org
+                    evil-surround
+                    evil-swap-keys
+                    fish-completion
+                    fish-mode
+                    flycheck
+                    flycheck-inline
+                    flycheck-jest
+                    flycheck-rust
+                    forth-mode
+                    gcmh
+                    general
+                    gitconfig-mode
+                    go-mode
+                    google-translate
+                    graphviz-dot-mode
+                    groovy-mode
+                    haskell-mode
+                    imenu-list
+                    ivy
+                    ivy-bibtex
+                    jinja2-mode
+                    js2-mode
+                    json-mode
+                    ledger-mode
+                    lispyville
+                    lsp-haskell
+                    lsp-mode
+                    lsp-ui
+                    lua-mode
+                    magit
+                    markdown-mode
+                    modus-operandi-theme
+                    monokai-theme
+                    nix-mode
+                    nix-sandbox
+                    notmuch
+                    org-cliplink
+                    org-download
+                    org-drill
+                    org-ref
+                    org-roam
+                    org-roam-bibtex
+                    org-super-agenda
+                    paren-face
+                    php-mode
+                    pip-requirements
+                    plantuml-mode
+                    prettier-js
+                    projectile
+                    protobuf-mode
+                    psc-ide
+                    purescript-mode
+                    py-autopep8
+                    racer
+                    restclient
+                    rjsx-mode
+                    rust-mode
+                    smex
+                    spaceline
+                    terraform-mode
+                    tide
+                    typescript-mode
+                    use-package
+                    visual-fill-column
+                    vterm
+                    vue-mode
+                    w3m
+                    web-mode
+                    wgrep
+                    which-key
+                    whitespace-cleanup-mode
+                    writegood-mode
+                    yaml-mode
+                    yasnippet
+              
+                  ]) ++
+                  [
+                    epkgs.orgPackages.org-plus-contrib
+                    epkgs.elpaPackages.adaptive-wrap
+                    epkgs.exwm
+              
+                    # required for org-roam/emacsql-sqlite3
+                    pkgs.sqlite
+              
+                    pkgs.ycmd
+                    pkgs.notmuch
+                    pkgs.w3m
+                    pkgs.imagemagick
+                    pkgs.shellcheck
+              
+                    (pkgs.python3.withPackages (pypkgs: [
+                      pypkgs.autopep8
+                      pypkgs.black
+                      pypkgs.flake8
+                      pypkgs.mypy
+                      pypkgs.pylint
+                      pypkgs.virtualenv
+                    ]))
+              
+                    (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science ru uk]))
+              
+                    # latex for displaying fragments in org-mode
+                    (pkgs.texlive.combine {
+                      inherit (pkgs.texlive) scheme-small dvipng dvisvgm mhchem ;
+                    })
+                  ]
+                );
+              
+                emacs-final = (pkgs.emacsPackagesGen emacs-base).emacsWithPackages emacs-packages;
+              
+               in {
+                 my-emacs = emacs-final // {
+                   base = emacs-base;
+                   packages = emacs-packages;
+                 };
+               })
               {
                 naga = pkgs.callPackage ./naga { };
-              }
-              {
-                # note it's a new attribute and does not override old one
-                input-mono = (pkgs.input-fonts.overrideAttrs (old: {
-                  src = pkgs.requireFile {
-                    name = "Input-Font.zip";
-                    url = "https://input.fontbureau.com/download/index.html?customize&fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&email=";
-                    sha256 = "0nn41w2b6jvsbr3r4lfy4p8w2ssjmgdjzd1pbj7p0vmawjpvx2w8";
-                  };
-                  outputHash = "1w2i660dg04nyc6fc6r6sd3pw53h8dh8yx4iy6ccpii9gwjl9val";
-                }));
               }
               (let
                 websigner =
@@ -656,159 +919,17 @@
               in {
                 procreditbank-websigner = pkgs.callPackage websigner { };
               })
-              (let
-                emacs-base = pkgs.emacsGit;
-                # emacs = pkgs.emacsUnstable;
-                # emacs = pkgs.emacs.override {
-                #   # Build emacs with proper imagemagick support.
-                #   # See https://github.com/NixOS/nixpkgs/issues/70631#issuecomment-570085306
-                #   imagemagick = pkgs.imagemagickBig;
-                # };
-                emacs-packages = (epkgs:
-                  (with epkgs.melpaPackages; [
-              
-                    aggressive-indent
-                    atomic-chrome
-                    avy
-                    beacon
-                    blacken
-                    cider
-                    clojure-mode
-                    cmake-mode
-                    color-identifiers-mode
-                    company
-                    company-box
-                    company-lsp
-                    company-org-roam
-                    counsel
-                    counsel-projectile
-                    diff-hl
-                    diminish
-                    direnv
-                    dockerfile-mode
-                    doom-modeline
-                    dtrt-indent
-                    edit-indirect
-                    el-patch
-                    elpy
-                    epresent
-                    evil
-                    evil-collection
-                    evil-magit
-                    evil-numbers
-                    evil-org
-                    evil-surround
-                    evil-swap-keys
-                    fish-mode
-                    flycheck
-                    flycheck-inline
-                    flycheck-jest
-                    flycheck-rust
-                    forth-mode
-                    gcmh
-                    general
-                    gitconfig-mode
-                    go-mode
-                    google-translate
-                    graphviz-dot-mode
-                    groovy-mode
-                    haskell-mode
-                    imenu-list
-                    ivy
-                    ivy-bibtex
-                    jinja2-mode
-                    js2-mode
-                    json-mode
-                    ledger-mode
-                    lispyville
-                    lsp-haskell
-                    lsp-mode
-                    lsp-ui
-                    lua-mode
-                    magit
-                    markdown-mode
-                    mbsync
-                    modus-operandi-theme
-                    monokai-theme
-                    nix-mode
-                    nix-sandbox
-                    notmuch
-                    org-cliplink
-                    org-download
-                    org-drill
-                    org-ref
-                    org-roam
-                    org-roam-bibtex
-                    org-super-agenda
-                    paren-face
-                    php-mode
-                    pip-requirements
-                    plantuml-mode
-                    prettier-js
-                    projectile
-                    protobuf-mode
-                    psc-ide
-                    purescript-mode
-                    py-autopep8
-                    racer
-                    restclient
-                    rjsx-mode
-                    rust-mode
-                    smex
-                    spaceline
-                    terraform-mode
-                    tide
-                    typescript-mode
-                    use-package
-                    visual-fill-column
-                    vue-mode
-                    w3m
-                    web-mode
-                    wgrep
-                    which-key
-                    whitespace-cleanup-mode
-                    writegood-mode
-                    yaml-mode
-                    yasnippet
-              
-                  ]) ++
-                  [
-                    epkgs.orgPackages.org-plus-contrib
-                    epkgs.elpaPackages.adaptive-wrap
-                    epkgs.exwm
-              
-                    pkgs.ycmd
-                    pkgs.notmuch
-                    pkgs.w3m
-                    pkgs.imagemagick
-                    pkgs.shellcheck
-              
-                    (pkgs.python3.withPackages (pypkgs: [
-                      pypkgs.autopep8
-                      pypkgs.black
-                      pypkgs.flake8
-                      pypkgs.mypy
-                      pypkgs.pylint
-                      pypkgs.virtualenv
-                    ]))
-              
-                    (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science ru uk]))
-              
-                    # latex for displaying fragments in org-mode
-                    (pkgs.texlive.combine {
-                      inherit (pkgs.texlive) scheme-small dvipng dvisvgm mhchem ;
-                    })
-                  ]
-                );
-              
-                emacs-final = (pkgs.emacsPackagesGen emacs-base).emacsWithPackages emacs-packages;
-              
-               in {
-                 my-emacs = emacs-final // {
-                   base = emacs-base;
-                   packages = emacs-packages;
-                 };
-               })
+              {
+                # note it's a new attribute and does not override old one
+                input-mono = (pkgs.input-fonts.overrideAttrs (old: {
+                  src = pkgs.requireFile {
+                    name = "Input-Font.zip";
+                    url = "https://input.fontbureau.com/download/index.html?customize&fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&email=";
+                    sha256 = "0nn41w2b6jvsbr3r4lfy4p8w2ssjmgdjzd1pbj7p0vmawjpvx2w8";
+                  };
+                  outputHash = "1w2i660dg04nyc6fc6r6sd3pw53h8dh8yx4iy6ccpii9gwjl9val";
+                }));
+              }
             ];
       
       in {
@@ -819,12 +940,12 @@
           # mix-in all local packages, so they are available as pkgs.${packages-name}
           (final: prev: self.packages.${system})
       
+          inputs.emacs-overlay.overlay
           (final: prev: {
             firefox = prev.firefox.override {
               extraNativeMessagingHosts = [ final.procreditbank-websigner ];
             };
           })
-          inputs.emacs-overlay.overlay
         ];
       in {
         overlays = genAttrs systems mkOverlays;

@@ -19,8 +19,10 @@
 /.emacs.d/auto-save-list
 /.emacs.d/backups/
 /.emacs.d/bookmarks
+/.emacs.d/cache/
 /.emacs.d/custom.el
 /.emacs.d/elpa
+/.emacs.d/elpy/
 /.emacs.d/ensime
 /.emacs.d/eshell
 /.emacs.d/history
@@ -43,6 +45,5 @@
 /.vim/haskellmode.config
 /.vim/spell/
 /.zsh/cache
+/README.el
 /emacs.el
-/.emacs.d/elpy/
-/.emacs.d/cache/

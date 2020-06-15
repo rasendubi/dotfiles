@@ -23,7 +23,6 @@ def main():
 
     for event in device.read_loop():
         if event.type == evdev.ecodes.EV_KEY:
-            # subprocess.call(['awesome-client', 'razer({}, "{}")'.format(event.code - 1, value_to_string(event.value))])
             subprocess.call(
                 [
                     "emacsclient",
