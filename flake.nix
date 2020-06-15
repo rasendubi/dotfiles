@@ -284,6 +284,29 @@
                       };
                     };
                   };
+                  "work-home-usbc" = {
+                    fingerprint = {
+                      eDP-1 = work;
+                      DP-1 = home-monitor;
+                    };
+                    config = {
+                      eDP-1 = {
+                        enable = true;
+                        primary = true;
+                        position = "0x2160";
+                        mode = "3840x2160";
+                        rate = "60.00";
+                        dpi = 284;
+                      };
+                      DP-1 = {
+                        enable = true;
+                        position = "0x0";
+                        mode = "3840x2160";
+                        rate = "29.98";
+                        dpi = 183;
+                      };
+                    };
+                  };
                   "work-work" = {
                     fingerprint = {
                       eDP-1 = work;

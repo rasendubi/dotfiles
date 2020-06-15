@@ -897,6 +897,11 @@ I use [[https://github.com/noctuid/general.el][general]] to define my keybinding
 (general-create-definer s-leader-def
   :keymaps '(motion) :prefix "SPC"
   :global-prefix "s-SPC")
+
+(use-package evil
+  :config
+  ;; free-up prefix
+  (s-leader-def :keymaps '(motion normal visual) "" nil))
 #+end_src
 ** Don't clutter system
 Save custom configuration in the =~/.emacs.d/custom.el= file so emacs does not clutter =init.el=.
@@ -1367,6 +1372,13 @@ Common key bindings. (emacs-lisp)
   :commands (evil-window-split
              evil-window-vsplit))
 
+(defun rasen/exwm-next-workspace ()
+  (interactive)
+  ;; (let ((cur exwm-workspace-current-index)
+  ;;       (max exwm-workspace-number))
+  ;;   (exwm-workspace-switch (% (+ cur 1) max)))
+  (other-frame 1))
+
 ;; despite the fact s-SPC binds to nil, EXWM will add s-SPC to
 ;; global prefix key.
 (exwm-input-set-key (kbd "s-SPC") nil)
@@ -1393,6 +1405,8 @@ Common key bindings. (emacs-lisp)
 (exwm-input-set-key (kbd "s-l") #'windmove-right)
 (exwm-input-set-key (kbd "s-s") #'evil-window-split)
 (exwm-input-set-key (kbd "s-v") #'evil-window-vsplit)
+(exwm-input-set-key (kbd "s-.") #'rasen/exwm-next-workspace)
+
 
 (exwm-input-set-key (kbd "<s-f1>") (lookup-key (current-global-map) (kbd "<f1>")))
 
@@ -1771,6 +1785,7 @@ Emacs determines what to do with each keypress.
               ((= code 4) (rasen/exwm-send-keys (kbd "<M-right>")));; next (history)
               ((= code 5) (rasen/exwm-send-keys (kbd "C-S-t"))) ;; restore last closed tab
               ((= code 6) (rasen/exwm-send-keys (kbd "C-w"))) ;; close tab
+              ((= code 12) (rasen/exwm-send-keys (kbd "<C-tab>"))) ;; switch to previous tab
               ))
             ((string= exwm-class-name "TelegramDesktop")
              (cond
@@ -1778,7 +1793,7 @@ Emacs determines what to do with each keypress.
               ((= code 2) (rasen/exwm-send-keys (kbd "<C-S-tab>"))) ;; prev conversation
               ((= code 3) (rasen/exwm-send-keys (kbd "<C-tab>"))) ;; next conversation
               ))
-            (t (message "razer-unhandled %s" value))))))
+            (t (message "razer-unhandled %s" code))))))
 #+end_src
 * Network
 ** NetworkManager
@@ -2095,6 +2110,29 @@ Configure EXWM to use autorandr. (emacs-lisp)
           };
         };
       };
+      "work-home-usbc" = {
+        fingerprint = {
+          eDP-1 = work;
+          DP-1 = home-monitor;
+        };
+        config = {
+          eDP-1 = {
+            enable = true;
+            primary = true;
+            position = "0x2160";
+            mode = "3840x2160";
+            rate = "60.00";
+            dpi = 284;
+          };
+          DP-1 = {
+            enable = true;
+            position = "0x0";
+            mode = "3840x2160";
+            rate = "29.98";
+            dpi = 183;
+          };
+        };
+      };
       "work-work" = {
         fingerprint = {
           eDP-1 = work;
@@ -2183,6 +2221,11 @@ Also, Pulseaudio is a requirement for Firefox Quantum. (~<<nixos-section>>~)
 {
   home.packages = [ pkgs.pavucontrol ];
 }
+#+end_src
+
+Start pulseaudio on WM start. (emacs-lisp)
+#+begin_src emacs-lisp
+(rasen/autostart "start-pulseaudio-x11")
 #+end_src
 
 Bind volume control commands. (emacs-lisp)
@@ -2356,12 +2399,6 @@ Override Firefox to use websigner. (~<<flake-overlays>>~)
   :config
   <<evil-config>>
   (evil-mode 1))
-#+end_src
-
-Use =SPC= as a leader.
-#+name: evil-config
-#+begin_src emacs-lisp
-(general-def :states '(motion normal visual) "SPC" nil)
 #+end_src
 
 Hard way: prohibit usage of keybindings I have more efficient bindings for.
@@ -4428,6 +4465,44 @@ vterm is a terminal emulator using libvterm. Which allows running it within Emac
     "C-c" nil
     "C-c C-c" #'vterm-send-C-c))
 
+#+end_src
+
+Run command in vterm. Adapter from [[https://www.reddit.com/r/emacs/comments/ft84xy/run_shell_command_in_new_vterm/][r/emacs: Run shell command in vterm]]. (emacs-lisp)
+#+begin_src emacs-lisp
+(defun rasen/vterm-start--vterm-kill (process event)
+  "A process sentinel. Kills PROCESS's buffer if it is live."
+  (let ((b (process-buffer process)))
+    (and (buffer-live-p b)
+         (kill-buffer b))))
+
+(defun rasen/vterm-start (command)
+  "Execute string COMMAND in a new vterm.
+
+Interactively, prompt for COMMAND with the current buffer's file
+name supplied. When called from Dired, supply the name of the
+file at point.
+
+Like `async-shell-command`, but run in a vterm for full terminal features.
+
+The new vterm buffer is named in the form `*foo bar.baz*`, the
+command and its arguments in earmuffs.
+
+When the command terminates, the shell remains open, but when the
+shell exits, the buffer is killed."
+  (interactive
+   (list
+    (let* ((f (cond (buffer-file-name)
+                    ((eq major-mode 'dired-mode)
+                     (dired-get-filename nil t))))
+           (filename (and f (concat " " (shell-quote-argument ((file-relative-name f)))))))
+      (read-shell-command "Terminal command: "
+                          (cons filename 0)
+                          (cons 'shell-command-history 1)
+                          (and filename (list filename))))))
+  (with-current-buffer (vterm (concat "*" command "*"))
+    (set-process-sentinel vterm--process #'rasen/vterm-start--vterm-kill)
+    (vterm-send-string command)
+    (vterm-send-return)))
 #+end_src
 *** fish
 [[https://fishshell.com/][fish]] is a cool shell, I use it as my default for day-to-day work.
