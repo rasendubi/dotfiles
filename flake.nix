@@ -795,6 +795,7 @@
                     imenu-list
                     ivy
                     ivy-bibtex
+                    ivy-pass
                     jinja2-mode
                     js2-mode
                     json-mode
@@ -819,6 +820,7 @@
                     org-roam-bibtex
                     org-super-agenda
                     paren-face
+                    pass
                     php-mode
                     pip-requirements
                     plantuml-mode

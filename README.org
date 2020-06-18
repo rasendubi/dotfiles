@@ -519,6 +519,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       imenu-list
       ivy
       ivy-bibtex
+      ivy-pass
       jinja2-mode
       js2-mode
       json-mode
@@ -543,6 +544,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       org-roam-bibtex
       org-super-agenda
       paren-face
+      pass
       php-mode
       pip-requirements
       plantuml-mode
@@ -1294,7 +1296,7 @@ NixOS has an EXWM module, but my feeling is that it's too limiting. (~<<nixos-se
   services.xserver.windowManager.session = lib.singleton {
     name = "exwm";
     start = ''
-      exec ${pkgs.my-emacs}/bin/emacs
+      exec emacs
     '';
       # exec ${pkgs.my-emacs}/bin/emacsclient -a "" -c
   };
@@ -1379,6 +1381,10 @@ Common key bindings. (emacs-lisp)
   ;;   (exwm-workspace-switch (% (+ cur 1) max)))
   (other-frame 1))
 
+(defun rasen/move-tab-other-frame ()
+  (interactive)
+  (tab-bar-move-tab-to-frame nil))
+
 ;; despite the fact s-SPC binds to nil, EXWM will add s-SPC to
 ;; global prefix key.
 (exwm-input-set-key (kbd "s-SPC") nil)
@@ -1405,8 +1411,29 @@ Common key bindings. (emacs-lisp)
 (exwm-input-set-key (kbd "s-l") #'windmove-right)
 (exwm-input-set-key (kbd "s-s") #'evil-window-split)
 (exwm-input-set-key (kbd "s-v") #'evil-window-vsplit)
-(exwm-input-set-key (kbd "s-.") #'rasen/exwm-next-workspace)
 
+(exwm-input-set-key (kbd "s-.") #'rasen/exwm-next-workspace)
+(exwm-input-set-key (kbd "s->") #'rasen/move-tab-other-frame) ;; s-S-.
+
+(general-def
+  :prefix-command 'rasen/tab-map
+  "t" #'tab-bar-mode
+  "1" #'tab-bar-select-tab
+  "2" #'tab-bar-select-tab
+  "3" #'tab-bar-select-tab
+  "4" #'tab-bar-select-tab
+  "5" #'tab-bar-select-tab
+  "6" #'tab-bar-select-tab
+  "7" #'tab-bar-select-tab
+  "8" #'tab-bar-select-tab
+  "9" #'tab-bar-select-tab
+  "n" #'tab-bar-new-tab
+  "h" #'tab-bar-switch-to-prev-tab
+  "l" #'tab-bar-switch-to-next-tab
+  ">" #'tab-bar-move-tab-to-frame
+  "k" #'tab-bar-close-tab)
+(s-leader-def "t" #'rasen/tab-map)
+(exwm-input-set-key (kbd "s-t") #'rasen/tab-map)
 
 (exwm-input-set-key (kbd "<s-f1>") (lookup-key (current-global-map) (kbd "<f1>")))
 
@@ -1761,7 +1788,11 @@ And I believe I need to add my user to ~input~ group to fix permissions (~<<nixo
 
 Activate it on EXWM start (emacs-lisp).
 #+begin_src emacs-lisp
-(rasen/autostart "naga")
+(defun rasen/naga ()
+  (interactive)
+  (rasen/autostart "naga"))
+
+(rasen/naga)
 #+end_src
 **** TODO Start naga on plugdev
 *** Emacs handler
@@ -2017,8 +2048,9 @@ Configure EXWM to use autorandr. (emacs-lisp)
                                               1 "DP-1"))
 
   (add-hook 'exwm-randr-screen-change-hook
-            (lambda ()
-              (rasen/start-command "autorandr -c")))
+            (defun rasen/autorandr ()
+              (interactive)
+              (rasen/start-command "autorandr -c" "*autorandr*")))
 
   (exwm-randr-enable))
 #+end_src
@@ -4303,6 +4335,15 @@ Install [[https://github.com/browserpass/browserpass][browserpass]] firefox exte
     browsers = ["firefox" "chrome"];
   };
 }
+#+end_src
+
+Integration with Emacs. (emacs-lisp)
+#+begin_src emacs-lisp
+(use-package ivy-pass
+  :commands (ivy-pass))
+
+(use-package pass
+  :commands (pass))
 #+end_src
 ** KDE apps
 I don't use full KDE but some apps are definitely nice.

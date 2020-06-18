@@ -166,7 +166,7 @@ in
       services.xserver.windowManager.session = lib.singleton {
         name = "exwm";
         start = ''
-          exec ${pkgs.my-emacs}/bin/emacs
+          exec emacs
         '';
           # exec ${pkgs.my-emacs}/bin/emacsclient -a "" -c
       };
