@@ -3740,9 +3740,9 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
 
   :general
   (s-leader-def
-   "n r" #'org-roam
-   "n f" #'org-roam-find-file
-   "n b" #'org-roam-switch-to-buffer)
+    "n r" #'org-roam
+    "n f" #'org-roam-find-file
+    "n b" #'org-roam-switch-to-buffer)
   (:keymaps 'org-mode-map
    :states '(insert visual)
    "C-c i" #'org-roam-insert
@@ -3753,27 +3753,72 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
   (require 'org-roam-protocol)
 
   (setq org-roam-directory (concat rasen/org-directory "/roam")
+        ;; move `org-roam-db-location' off roam directory, so syncthing does not sync it
         org-roam-db-location (expand-file-name "cache/org-roam.db" user-emacs-directory)
         org-roam-index-file "index.org")
 
-  (setq org-roam-graph-exclude-matcher '("biblio" "ring"))
+  ;; Submitted at https://github.com/org-roam/org-roam/pull/851
+  (defun org-roam--extract-tags-first-directory (file)
+    "Extract tags from path FILE. The first directory component after `org-roam-directory' is used as a tag."
+    (when-let ((dir-relative (file-name-directory
+                              (file-relative-name file org-roam-directory))))
+      (list (car (f-split dir-relative)))))
 
+  (setq org-roam-tag-sources '(prop first-directory))
+
+  (defconst rasen/slip-boxes
+    '(;; Default slip-box with permanent notes
+      ("d" "default"     "")
+
+      ;; "Life project"—everything that doesn't fit in other slip
+      ;; boxes. Examples are: my gratitude journal, small projects,
+      ;; article drafts, idea list.
+      ("l" "life"        "life/")
+
+      ;; Work notes
+      ("r" "ring"        "ring/")
+
+      ;; Literature notes
+      ("" "literature"   "biblio/"))
+    "My Zettelkasten slip boxes. Format is a list of (capture-key name directory).")
+
+  (defun rasen/move-to-slip-box (slip-box)
+    "Move file to specified SLIP-BOX."
+    (interactive (list (completing-read "Move to slip-box: "
+                                        (mapcar (lambda (x) (nth 2 x)) rasen/slip-boxes))))
+    (let* ((filename (buffer-file-name))
+           (directory (file-name-directory filename))
+           (name (file-name-nondirectory filename))
+           (new-name (f-join org-roam-directory slip-box name)))
+      (unless filename
+        (error "Buffer '%s' is not visiting file!" (buffer-name)))
+      (rename-file filename new-name)
+      (set-visited-file-name new-name t)
+      (revert-buffer t t t)
+      (set-buffer-modified-p t)
+      (save-buffer)))
+
+  ;; exclude non-default slip-boxes from graph
+  (setq org-roam-graph-exclude-matcher
+        (seq-filter (lambda (x) (not (string-empty-p x)))
+                    (mapcar (lambda (x) (nth 2 x)) rasen/slip-boxes)))
+
+  ;; one capture template per slip-box
   (setq org-roam-capture-templates
-        '(("d" "dynamic (timestamp)" plain (function org-roam--capture-get-point)
-           "%?"
-           :file-name "%(rasen/tsid)"
-           :head "#+TITLE: ${title}\n"
-           :unnarrowed t)
-          ("r" "ring (timestamp)" plain (function org-roam--capture-get-point)
-           "%?"
-           :file-name "ring/%(rasen/tsid)"
-           :head "#+TITLE: ${title}\n"
-           :unnarrowed t)))
+        (mapcar (lambda (x)
+                  (let ((key  (nth 0 x))
+                        (name (nth 1 x))
+                        (dir  (nth 2 x)))
+                    `(,key ,name plain (function org-roam--capture-get-point) "%?"
+                           :file-name ,(concat dir "%(rasen/tsid)")
+                           :head "#+TITLE: ${title}\n"
+                           :unnarrowed t)))
+                rasen/slip-boxes))
 
   ;; better defaults for graph view
-  (setq org-roam-graph-executable (executable-find "dot"))
-  (setq org-roam-graph-executable (executable-find "neato"))
-  (setq org-roam-graph-executable (executable-find "fdp"))
+  ;; (setq org-roam-graph-executable (executable-find "dot"))
+  ;; (setq org-roam-graph-executable (executable-find "neato"))
+  ;; (setq org-roam-graph-executable (executable-find "fdp"))
   (setq org-roam-graph-executable (executable-find "sfdp"))
   (setq org-roam-graph-extra-config '(;; ("concentrate" . "true")
                                       ("overlap" . "prism")
@@ -4259,6 +4304,9 @@ Email sending.
         message-sendmail-envelope-from nil ; 'header
         message-sendmail-extra-arguments '("--read-envelope-from"))
 
+  (setq mml-secure-smime-sign-with-sender t)
+  (setq mml-secure-openpgp-sign-with-sender t)
+
   ;; Add signature by default
   (add-hook 'message-setup-hook 'mml-secure-message-sign-pgpmime)
   ;; Verify other's signatures
@@ -4298,6 +4346,11 @@ Here go applications (almost) every normal user needs.
 
   services.pcscd.enable = true;
 }
+#+end_src
+
+Request passwords in Emacs minibuffer. (emacs-lisp)
+#+begin_src emacs-lisp
+(setq epa-pinentry-mode 'loopback)
 #+end_src
 ** Yubikey
 #+name: nixos-section
