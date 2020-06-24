@@ -555,6 +555,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       purescript-mode
       py-autopep8
       racer
+      racket-mode
       restclient
       rjsx-mode
       rust-mode
@@ -3782,6 +3783,18 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
       ("" "literature"   "biblio/"))
     "My Zettelkasten slip boxes. Format is a list of (capture-key name directory).")
 
+  (defun rasen/roam-rename (new-name)
+    "Move file to NEW-NAME. `org-roam' takes care of adjusting all links."
+    (let ((filename (buffer-file-name)))
+      (unless filename
+        (error "Buffer '%s' is not visiting file!" (buffer-name)))
+      (rename-file filename new-name)
+      (set-visited-file-name new-name t)
+      (revert-buffer t t t)
+      ;; trigger save-buffer for org-roam to regenerate `org-roam-buffer'.
+      (set-buffer-modified-p t)
+      (save-buffer)))
+
   (defun rasen/move-to-slip-box (slip-box)
     "Move file to specified SLIP-BOX."
     (interactive (list (completing-read "Move to slip-box: "
@@ -3790,13 +3803,7 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
            (directory (file-name-directory filename))
            (name (file-name-nondirectory filename))
            (new-name (f-join org-roam-directory slip-box name)))
-      (unless filename
-        (error "Buffer '%s' is not visiting file!" (buffer-name)))
-      (rename-file filename new-name)
-      (set-visited-file-name new-name t)
-      (revert-buffer t t t)
-      (set-buffer-modified-p t)
-      (save-buffer)))
+      (rasen/roam-rename new-name)))
 
   ;; exclude non-default slip-boxes from graph
   (setq org-roam-graph-exclude-matcher
@@ -5859,6 +5866,40 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
   :after clojure-mode
   :config
   (evil-set-initial-state 'cider-stacktrace-mode 'emacs))
+#+end_src
+*** Racket
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.packages = [ pkgs.racket ];
+}
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package racket-mode
+  :mode "\\.rkt$"
+  :gfhook
+  #'lispyville-mode
+  #'aggressive-indent-mode
+  #'paren-face-mode
+  :general
+  ('motion
+   'racket-mode-map
+   "g h" #'racket-repl-describe
+   "SPC e" #'rasen/racket-evil-send-last-sexp)
+  ('racket-repl-mode-map
+   "C-j" nil)
+  ('insert
+   'racket-repl-mode-map
+   "C-j" #'newline-and-indent)
+  :config
+  (evil-set-initial-state 'racket-describe-mode 'motion)
+
+  (defun rasen/racket-evil-send-last-sexp ()
+    (interactive)
+    (save-excursion
+      (right-char)
+      (racket-send-last-sexp))))
 #+end_src
 *** Groovy
 #+begin_src emacs-lisp

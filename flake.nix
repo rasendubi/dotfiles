@@ -697,6 +697,9 @@
               };
             }
             {
+              home.packages = [ pkgs.racket ];
+            }
+            {
               fonts.fontconfig.enable = true;
               home.packages = [
                 pkgs.inconsolata
@@ -831,6 +834,7 @@
                     purescript-mode
                     py-autopep8
                     racer
+                    racket-mode
                     restclient
                     rjsx-mode
                     rust-mode
