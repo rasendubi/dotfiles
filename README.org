@@ -586,7 +586,10 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       # required for org-roam/emacsql-sqlite3
       pkgs.sqlite
 
-      pkgs.ycmd
+      (pkgs.ycmd.override (old: {
+        # racerd is currently broken
+        rustracerd = null;
+      }))
       pkgs.notmuch
       pkgs.w3m
       pkgs.imagemagick
@@ -1297,7 +1300,8 @@ NixOS has an EXWM module, but my feeling is that it's too limiting. (~<<nixos-se
   services.xserver.windowManager.session = lib.singleton {
     name = "exwm";
     start = ''
-      exec emacs
+      xhost +SI:localuser:$USER
+      exec emacs -f server-start
     '';
       # exec ${pkgs.my-emacs}/bin/emacsclient -a "" -c
   };

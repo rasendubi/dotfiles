@@ -865,7 +865,10 @@
                     # required for org-roam/emacsql-sqlite3
                     pkgs.sqlite
               
-                    pkgs.ycmd
+                    (pkgs.ycmd.override (old: {
+                      # racerd is currently broken
+                      rustracerd = null;
+                    }))
                     pkgs.notmuch
                     pkgs.w3m
                     pkgs.imagemagick

@@ -1,11 +1,9 @@
 {
   "nodes": {
     "emacs-overlay": {
-      "info": {
-        "lastModified": 1592079663,
-        "narHash": "sha256-kfNjShwuRs1Bd4I9yHsJTIm4iVcPV9esJIhyn99v9BY="
-      },
       "locked": {
+        "lastModified": 1592079663,
+        "narHash": "sha256-kfNjShwuRs1Bd4I9yHsJTIm4iVcPV9esJIhyn99v9BY=",
         "owner": "nix-community",
         "repo": "emacs-overlay",
         "rev": "2212df77f9a2d6eaa81d42b0ee55fb27d389495c",
@@ -18,14 +16,14 @@
       }
     },
     "home-manager": {
-      "info": {
-        "lastModified": 1589826413,
-        "narHash": "sha256-0qaxqdvPhRiaxtRLdhIYS384gP2VtHG2CzlxZzbfhwI="
-      },
       "inputs": {
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": [
+          "nixpkgs"
+        ]
       },
       "locked": {
+        "lastModified": 1589826413,
+        "narHash": "sha256-0qaxqdvPhRiaxtRLdhIYS384gP2VtHG2CzlxZzbfhwI=",
         "owner": "rycee",
         "repo": "home-manager",
         "rev": "a7a96ab121a3df4386499ebaacf23e726f0c5711",
@@ -40,11 +38,9 @@
     },
     "nixos-hardware": {
       "flake": false,
-      "info": {
-        "lastModified": 1589985348,
-        "narHash": "sha256-8e2qG0TPTmRPCG2aSpLypuTgK4gN1U8exBKI42u3OJU="
-      },
       "locked": {
+        "lastModified": 1589985348,
+        "narHash": "sha256-8e2qG0TPTmRPCG2aSpLypuTgK4gN1U8exBKI42u3OJU=",
         "owner": "NixOS",
         "repo": "nixos-hardware",
         "rev": "2f2c2d9ef5dcc663a504819ad73cc98a4cd26458",
@@ -57,14 +53,12 @@
       }
     },
     "nixpkgs": {
-      "info": {
-        "lastModified": 1590129350,
-        "narHash": "sha256-jtwV7Q8J963B6UF188MvFeKA41XH1mf1VI0tOXOBmlk="
-      },
       "locked": {
+        "lastModified": 1592894789,
+        "narHash": "sha256-xWa49W3fzNd5IdzMqF9JE1OkXWHFG2q+9I1yc87MI0c=",
         "owner": "NixOS",
         "repo": "nixpkgs-channels",
-        "rev": "571212eb839d482992adb05479b86eeb6a9c7b2f",
+        "rev": "2cd2e7267e5b9a960c2997756cb30e86f0958a6b",
         "type": "github"
       },
       "original": {
@@ -84,5 +78,5 @@
     }
   },
   "root": "root",
-  "version": 5
+  "version": 7
 }

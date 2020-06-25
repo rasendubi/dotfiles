@@ -36,7 +36,8 @@
     xkbcomp ${./Xkeymap} $DISPLAY
   '';
   xsession.windowManager.command = ''
-    ${pkgs.my-emacs}/bin/emacsclient -a "" -c
+    xhost +SI:localuser:$USER
+    exec emacs -f server-start
   '';
 
   # xsession.windowManager.awesome = {
