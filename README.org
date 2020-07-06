@@ -4552,6 +4552,8 @@ vterm is a terminal emulator using libvterm. Which allows running it within Emac
 (use-package vterm
   :commands vterm
   :config
+  (setq vterm-kill-buffer-on-exit t)
+
   (add-hook 'vterm-mode-hook #'rasen/disable-hl-line-mode)
   ;; (push 'vterm-mode evil-motion-state-modes)
   (general-def 'vterm-mode-map
@@ -5824,7 +5826,8 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
   :init
   (defun rasen/setup-tide-mode ()
     (interactive)
-    (tide-setup)
+    (with-demoted-errors "tide-setup: %S"
+      (tide-setup))
     (flycheck-mode +1)
     (setq flycheck-check-syntax-automatically '(save mode-enabled))
     (eldoc-mode +1)
