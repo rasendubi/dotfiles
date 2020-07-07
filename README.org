@@ -114,7 +114,7 @@ Nix flakes are still an experimental feature, so you need the following in NixOS
 
 For non-NixOS system, install ~nixFlakes~ and put the following into =~/.config/nix/nix.conf=.
 #+begin_src conf
-experimental-features = nix-command flakes
+experimental-features = nix-command flakes ca-references
 #+end_src
 
 ** NixOS
@@ -1635,7 +1635,8 @@ I never use Caps Lock–the feature, so it's nice to have Caps LED indicate alte
 #+name: nixos-section
 #+begin_src nix
 {
-  services.xserver.xkbOptions = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
+  # services.xserver.xkbOptions = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
+  services.xserver.xkbOptions = "grp:caps_toggle,grp_led:caps";
 }
 #+end_src
 
@@ -2050,7 +2051,8 @@ Configure EXWM to use autorandr. (emacs-lisp)
   :config
   (setq exwm-workspace-number 2)
   (setq exwm-randr-workspace-output-plist '(0 "eDP-1"
-                                              1 "DP-1"))
+                                              1 "DP-1"
+                                              1 "DP-3"))
 
   (add-hook 'exwm-randr-screen-change-hook
             (defun rasen/autorandr ()

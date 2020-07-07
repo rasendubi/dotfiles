@@ -1177,7 +1177,7 @@ xkb_compatibility "complete+ledcaps(group_lock)" {
     };
 };
 
-xkb_symbols "pc+us(workman)+ua:2+us:3+inet(evdev)+group(lctrl_toggle)+ctrl(nocaps)" {
+xkb_symbols "pc+us(workman)+ua:2+us:3+inet(evdev)+group(caps_toggle)" {
 
     name[group1]="English (Workman)";
     name[group2]="Ukrainian";
@@ -1354,10 +1354,8 @@ xkb_symbols "pc+us(workman)+ua:2+us:3+inet(evdev)+group(lctrl_toggle)+ctrl(nocap
     };
     key <RTRN> {         [          Return ] };
     key <LCTL> {
-        type= "TWO_LEVEL",
-        symbols[Group1]= [ ISO_Next_Group, ISO_Prev_Group ], # Workman -> UA     (Shift -> Qwerty)
-        symbols[Group2]= [ ISO_Prev_Group, ISO_Next_Group ], # UA -> Workman     (Shift -> Qwerty)
-        symbols[Group3]= [ ISO_Next_Group, NoSymbol ]        # Qwerty -> Workman (Shift -> Qwerty)
+        type= "FOUR_LEVEL",
+        symbols[Group1]= [       Control_L,       Control_L,       BackSpace,       BackSpace ]
     };
     key <AC01> {
         type= "ALPHABETIC",
@@ -1530,8 +1528,10 @@ xkb_symbols "pc+us(workman)+ua:2+us:3+inet(evdev)+group(lctrl_toggle)+ctrl(nocap
         symbols = [ space, space, nobreakspace, thinspace ]
     };
     key <CAPS> {
-        type= "FOUR_LEVEL",
-        symbols[Group1]= [       Control_L,       Control_L,       BackSpace,       BackSpace ]
+        type= "TWO_LEVEL",
+        symbols[Group1]= [ ISO_Next_Group, ISO_Prev_Group ], # Workman -> UA     (Shift -> Qwerty)
+        symbols[Group2]= [ ISO_Prev_Group, ISO_Next_Group ], # UA -> Workman     (Shift -> Qwerty)
+        symbols[Group3]= [ ISO_Next_Group, NoSymbol ]        # Qwerty -> Workman (Shift -> Qwerty)
     };
     key <FK01> {
         type= "CTRL+ALT",

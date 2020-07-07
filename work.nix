@@ -9,11 +9,29 @@
     pkgs.minicom
     pkgs.arandr
     pkgs.ripgrep
+    # pkgs.zoom-us
+    pkgs.dtach
+    pkgs.android-studio
+    pkgs.wmname
+    pkgs.adb
+
+    # pkgs.androidsdk_9_0
+    # pkgs.androidndkPkgs
+    # pkgs.androidenv
+
+    pkgs.pinentry-qt
+    pkgs.skype
+
+    pkgs.xxkb
+    pkgs.brogue
   ];
 
   programs.git.userEmail = lib.mkForce "alexey.shmalko@ringteam.com";
 
   home.sessionVariables.LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
+
+  # Fix for "Unknown terminal type rxvt-unicode-256color"
+  home.sessionVariables.TERMINFO_DIRS = "${pkgs.ncurses}/share/terminfo:${pkgs.rxvt-unicode-unwrapped.terminfo}/share/terminfo";
 
   # This does not work after migration to flakes
   # programs.home-manager = {
@@ -23,11 +41,11 @@
 
   services.syncthing.enable = true;
 
-  services.gpg-agent = {
-    enable = true;
-    enableSshSupport = true;
-    pinentryFlavor = "qt";
-  };
+  # services.gpg-agent = {
+  #   enable = true;
+  #   enableSshSupport = true;
+  #   pinentryFlavor = "qt";
+  # };
 
   xsession.enable = true;
   xsession.initExtra = ''
@@ -62,7 +80,8 @@
         address = "alexey.shmalko@ringteam.com";
         realName = "Alexey Shmalko";
 
-        passwordCommand = "pass imap.gmail.com/alexey.shmalko@ringteam.com";
+        # passwordCommand = "pass imap.gmail.com/alexey.shmalko@ringteam.com";
+        passwordCommand = "cat ~/alexey.shmalko@ringteam.com";
 
         mbsync = {
           enable = true;
