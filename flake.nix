@@ -862,6 +862,31 @@
                     epkgs.elpaPackages.adaptive-wrap
                     epkgs.exwm
               
+                    (epkgs.melpaBuild rec {
+                      pname = "org-fc";
+                      version = "20200708";
+                      src = pkgs.fetchFromGitHub {
+                        owner = "l3kn";
+                        repo = "org-fc";
+                        rev = "d8155cd9b7d67bf55e2ef2760389693fca668f71";
+                        sha256 = "sha256-KhaEQI0V+UeE1VKSI0C0KKGT9qcg1pdFoO1DUFsUA9U=";
+                      };
+                      packageRequires = [ epkgs.orgPackages.org-plus-contrib ];
+                      propagatedUserEnvPkgs = [ pkgs.findutils pkgs.gawk ];
+              
+                      recipe = pkgs.writeText "recipe" ''
+                       (org-fc
+                        :repo "l3kn/org-fc"
+                        :fetcher github
+                        :files ("*.el" "demo.org" "awk"))
+                      '';
+              
+                      meta = {
+                        description = "Spaced Repetition System for Emacs org-mode";
+                        license = pkgs.lib.licenses.gpl3;
+                      };
+                    })
+              
                     # required for org-roam/emacsql-sqlite3
                     pkgs.sqlite
               

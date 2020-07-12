@@ -583,6 +583,31 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       epkgs.elpaPackages.adaptive-wrap
       epkgs.exwm
 
+      (epkgs.melpaBuild rec {
+        pname = "org-fc";
+        version = "20200708";
+        src = pkgs.fetchFromGitHub {
+          owner = "l3kn";
+          repo = "org-fc";
+          rev = "d8155cd9b7d67bf55e2ef2760389693fca668f71";
+          sha256 = "sha256-KhaEQI0V+UeE1VKSI0C0KKGT9qcg1pdFoO1DUFsUA9U=";
+        };
+        packageRequires = [ epkgs.orgPackages.org-plus-contrib ];
+        propagatedUserEnvPkgs = [ pkgs.findutils pkgs.gawk ];
+
+        recipe = pkgs.writeText "recipe" ''
+         (org-fc
+          :repo "l3kn/org-fc"
+          :fetcher github
+          :files ("*.el" "demo.org" "awk"))
+        '';
+
+        meta = {
+          description = "Spaced Repetition System for Emacs org-mode";
+          license = pkgs.lib.licenses.gpl3;
+        };
+      })
+
       # required for org-roam/emacsql-sqlite3
       pkgs.sqlite
 
@@ -642,7 +667,6 @@ Install Emacs with Home manager (~<<home-manager-section>>~)
 }
 #+end_src
 
-For the main emacs configuration, check [[./emacs.org][emacs.org]] file.
 ** Bootstrap Emacs config
 Besides tangling into Flake/NixOS configuration files, this file /is/ Emacs configuration.
 
@@ -4016,6 +4040,45 @@ Citations and bibliography tools for org-mode.
            ,(concat "#+TITLE: ${title}\n"
                     "#+ROAM_KEY: ${ref}\n")
            :unnarrowed t))))
+#+end_src
+** org-fc
+Flashcards/spaced repetition system for org-mode. It works with many files better than org-drill (and many files is what I have with org-roam).
+
+#+begin_src emacs-lisp
+(use-package org-fc
+  :config
+  (require 'org-fc-keymap-hint)
+
+  (setq org-fc-directories (list rasen/org-directory))
+  (setq org-fc-review-history-file (expand-file-name "org-fc-history.tsv" rasen/org-directory))
+
+  ;; (setq org-fc-stats-review-min-box 2)
+
+  (general-def 'normal 'org-fc-review-flip-mode-map
+    "RET" #'org-fc-review-flip
+    "n"   #'org-fc-review-flip
+    "s"   #'org-fc-review-suspend-card
+    "p"   #'org-fc-review-edit
+    "q"   #'org-fc-review-quit)
+
+  (general-def 'normal 'org-fc-review-rate-mode-map
+    "a"   #'org-fc-review-rate-again
+    "h"   #'org-fc-review-rate-hard
+    "g"   #'org-fc-review-rate-good
+    "e"   #'org-fc-review-rate-easy
+    "s"   #'org-fc-review-suspend-card
+    "p"   #'org-fc-review-edit
+    "q"   #'org-fc-review-quit)
+
+  (general-def 'normal 'org-fc-review-edit-mode-map
+    "'"   #'org-fc-review-resume)
+
+  (general-def 'normal 'org-fc-dashboard-mode-map
+    "r"   #'org-fc-review-dashboard-context
+    "g"   (defun rasen/org-fc-dashboard ()
+            (interactive)
+            (org-fc-dashboard 'all))
+    "q"   #'quit-window))
 #+end_src
 ** toggle markup/view
 #+begin_src emacs-lisp
