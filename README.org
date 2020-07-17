@@ -1417,6 +1417,7 @@ Common key bindings. (emacs-lisp)
 ;; despite the fact s-SPC binds to nil, EXWM will add s-SPC to
 ;; global prefix key.
 (exwm-input-set-key (kbd "s-SPC") nil)
+(exwm-input-set-key (kbd "s-x") #'counsel-M-x)
 
 (exwm-input-set-key (kbd "s-R") #'exwm-reset)
 (exwm-input-set-key (kbd "s-Q") #'save-buffers-kill-terminal)
@@ -4054,6 +4055,42 @@ Flashcards/spaced repetition system for org-mode. It works with many files bette
 
   ;; (setq org-fc-stats-review-min-box 2)
 
+  (defun rasen/org-fc-upcoming-histogram ()
+    "Draw a histogram of upcoming review."
+    (interactive)
+    (let* ((positions (org-fc-index-positions (org-fc-index 'all)))
+           (total (length positions))
+           (sorted (seq-sort
+                    (lambda (x y) (time-less-p
+                                   (plist-get x :due)
+                                   (plist-get y :due)))
+                    positions))
+           (next-review (plist-get (car sorted) :due))
+           (next-review-diff (time-to-seconds (time-subtract next-review nil)))
+           (grouped (seq-group-by
+                     (lambda (x)
+                       (format-time-string "%F" (plist-get x :due)))
+                     sorted))
+           (grouped-count (mapcar (lambda (x)
+                                    (cons (car x) (length (cdr x))))
+                                  grouped)))
+      (with-output-to-temp-buffer "*org-fc-upcoming*"
+        (princ "Upcoming reviews:\n\n")
+        (mapc
+         (lambda (x)
+           (princ (car x))
+           (princ (format " %3s " (cdr x)))
+           (princ (make-string (cdr x) ?+))
+           (princ "\n"))
+         grouped-count)
+        (princ "\n")
+        (princ (format-time-string "Next review: %F %T" next-review))
+        (if (> next-review-diff 0)
+            (princ (format " (in %s)\n" (format-seconds "%D %H %z%M" next-review-diff)))
+          (princ " (ready)\n"))
+        (princ (format "Total positions: %s" total)))
+      (switch-to-buffer-other-window "*org-fc-upcoming*")))
+
   (general-def 'normal 'org-fc-review-flip-mode-map
     "RET" #'org-fc-review-flip
     "n"   #'org-fc-review-flip
@@ -4078,6 +4115,7 @@ Flashcards/spaced repetition system for org-mode. It works with many files bette
     "g"   (defun rasen/org-fc-dashboard ()
             (interactive)
             (org-fc-dashboard 'all))
+    "h"   #'rasen/org-fc-upcoming-histogram
     "q"   #'quit-window))
 #+end_src
 ** toggle markup/view
