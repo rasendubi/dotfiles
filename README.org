@@ -4055,10 +4055,27 @@ Flashcards/spaced repetition system for org-mode. It works with many files bette
 
   ;; (setq org-fc-stats-review-min-box 2)
 
+  (el-patch-defun org-fc-index-flatten-card (card)
+    "Flatten CARD into a list of positions.
+Relevant data from the card is included in each position
+element."
+    (mapcar
+     (lambda (pos)
+       (list
+        :path (plist-get card :path)
+        :id (plist-get card :id)
+        (el-patch-add :suspended (plist-get card :suspended))
+        :type (plist-get card :type)
+        :due (plist-get pos :due)
+        :position (plist-get pos :position)))
+     (plist-get card :positions)))
+
   (defun rasen/org-fc-upcoming-histogram ()
     "Draw a histogram of upcoming review."
     (interactive)
-    (let* ((positions (org-fc-index-positions (org-fc-index 'all)))
+    (let* ((positions (seq-filter (lambda (x)
+                                    (not (plist-get x :suspended)))
+                                  (org-fc-index-positions (org-fc-index 'all))))
            (total (length positions))
            (sorted (seq-sort
                     (lambda (x y) (time-less-p
