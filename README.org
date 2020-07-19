@@ -1509,6 +1509,23 @@ Common key bindings. (emacs-lisp)
 ;; Without the next line, EXWM won't intercept necessary prefix keys
 (exwm-input--update-global-prefix-keys)
 #+end_src
+** Window layout
+Rules to automatically layout windows when they appear.
+#+begin_src emacs-lisp
+(setq display-buffer-alist
+      '(("\\*\\(Help\\|Error\\)\\*" .
+         (display-buffer-in-side-window
+          (side . right)
+          (slot . 1)
+          (window-width . 70)
+          (no-other-window . t)))
+        ("\\*org-roam\\*" .
+         (display-buffer-in-side-window
+          (side . right)
+          (slot . -1)
+          (window-width . 70)
+          (no-other-window . t)))))
+#+end_src
 ** Screen locking
 I use ~xss-lock~ + ~slock~ for screen locking. Actual handling is coded in Emacs.
 *** Slock
