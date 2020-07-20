@@ -1519,6 +1519,12 @@ Rules to automatically layout windows when they appear.
           (slot . 1)
           (window-width . 70)
           (no-other-window . t)))
+        ("\\*\\(Calendar\\)\\*" .
+         (display-buffer-in-side-window
+          (side . bottom)
+          (slot . -1)
+          ;; (window-width . 80)
+          (no-other-window . t)))
         ("\\*org-roam\\*" .
          (display-buffer-in-side-window
           (side . right)
