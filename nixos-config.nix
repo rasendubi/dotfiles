@@ -459,7 +459,7 @@ in
         flameshot
         libreoffice
         wineWowPackages.stable
-        winetricks
+        # winetricks
         spotify
         gimp-with-plugins
     

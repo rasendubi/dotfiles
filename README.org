@@ -1062,7 +1062,7 @@ Don't require additional setup.
     flameshot
     libreoffice
     wineWowPackages.stable
-    winetricks
+    # winetricks  # requires p7zip (which is unsafe...)
     spotify
     gimp-with-plugins
 
