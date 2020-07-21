@@ -3,6 +3,15 @@ let
   machine-config = lib.getAttr name {
     moxps = [
       {
+        environment.systemPackages = with pkgs; let
+          nvidia-offload = pkgs.writeShellScriptBin "nvidia-offload" ''
+            export __NV_PRIME_RENDER_OFFLOAD=1
+            export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
+            export __GLX_VENDOR_LIBRARY_NAME=nvidia
+            export __VK_LAYER_NV_optimus=NVIDIA_only
+            exec -a "$0" "$@"
+          '';
+        in [nvidia-offload];
         imports = [
           (import "${inputs.nixos-hardware}/dell/xps/15-9560")
           inputs.nixpkgs.nixosModules.notDetected
@@ -14,8 +23,21 @@ let
       
         nix.maxJobs = lib.mkDefault 8;
       
-        powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
+        services.undervolt = {
+          enable = true;
+          coreOffset = "-125";
+          gpuOffset = "-75";
+        };
       
+        powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
+        hardware.nvidia.prime = {
+          # Bus ID of the Intel GPU. You can find it using lspci, either under 3D or VGA
+          intelBusId = "PCI:0:2:0";
+          # Bus ID of the NVIDIA GPU. You can find it using lspci, either under 3D or VGA
+          nvidiaBusId = "PCI:1:0:0";
+        };
+        hardware.nvidia.prime.offload.enable = true;
+        hardware.bumblebee.enable = lib.mkForce false;
         boot.loader.systemd-boot.enable = true;
         boot.loader.efi.canTouchEfiVariables = true;
       }
@@ -36,15 +58,17 @@ let
       
       
         boot.initrd.luks.devices = {
-        cryptkey.device = "/dev/disk/by-uuid/ccd19ab7-0e4d-4df4-8912-b87139de56af";
-        cryptroot = {
-          device="/dev/disk/by-uuid/88242cfe-48a1-44d2-a29b-b55e6f05d3d3";
-          keyFile="/dev/mapper/cryptkey";
+          cryptkey.device = "/dev/disk/by-uuid/ccd19ab7-0e4d-4df4-8912-b87139de56af";
+          cryptroot = {
+            device="/dev/disk/by-uuid/88242cfe-48a1-44d2-a29b-b55e6f05d3d3";
+            keyFile="/dev/mapper/cryptkey";
+            };
+          cryptswap = {
+            device="/dev/disk/by-uuid/f6fa3573-44a9-41cc-bab7-da60d21e27b3";
+            keyFile="/dev/mapper/cryptkey";
           };
-        cryptswap = {
-          device="/dev/disk/by-uuid/f6fa3573-44a9-41cc-bab7-da60d21e27b3";
-          keyFile="/dev/mapper/cryptkey";
-      };
+        };
+      }
       {
         services.xserver.libinput = {
           enable = true;
@@ -58,7 +82,7 @@ let
         console.font = "ter-132n";
       }
       {
-        services.xserver.dpi = 286;
+        services.xserver.dpi = 240;
       }
     ];
   };
@@ -95,13 +119,22 @@ in
       };
     }
     {
+      environment.systemPackages = [
+        pkgs.home-manager
+      ];
+    }
+    {
       hardware.bluetooth.enable = true;
+      services.blueman.enable = true;
+      hardware.bluetooth.config.General.Enable = "Source,Sink,Media,Socket";
       hardware.pulseaudio = {
         enable = true;
     
         # NixOS allows either a lightweight build (default) or full build
         # of PulseAudio to be installed.  Only the full build has
         # Bluetooth support, so it must be selected here.
+    
+        extraModules = [ pkgs.pulseaudio-modules-bt ];
         package = pkgs.pulseaudioFull;
       };
     }
@@ -111,10 +144,10 @@ in
       ];
     }
     {
-      services.openvpn.servers.nano-vpn = {
-        config = ''
-          config /root/openvpn/nano-vpn.ovpn
-        '';
+      fileSystems."/mnt/cclab_nas" = {
+        device = "//nas22.ethz.ch/biol_imhs_ciaudo";
+        fsType = "cifs";
+        options = [ "credentials=/home/moritz/.secret/cclab_nas.credentials" "workgroup=d.ethz.ch" "uid=moritz" "gid=users" ];
       };
     }
     {
@@ -144,6 +177,8 @@ in
       hardware.pulseaudio = {
         enable = true;
         support32Bit = true;
+        zeroconf.discovery.enable = true;
+        systemWide = false;
       };
     
       environment.systemPackages = [ pkgs.pavucontrol ];
@@ -156,7 +191,7 @@ in
     }
     {
       services.openssh = {
-        enable = true;
+        enable = false;
         passwordAuthentication = false;
       };
     }
@@ -201,6 +236,9 @@ in
     }
     {
       virtualisation.docker.enable = true;
+      environment.systemPackages = [
+        pkgs.docker-compose
+      ];
     }
     {
       environment.systemPackages = [ pkgs.borgbackup ];
@@ -222,6 +260,10 @@ in
       '';
     
       services.lorri.enable = true;
+    }
+    {
+      # services.udisks2.enable = true;
+      services.devmon.enable = true;
     }
     {
       environment.systemPackages = [
@@ -248,12 +290,32 @@ in
       time.timeZone = "Europe/Berlin";
     }
     {
-      services.xserver.displayManager.lightdm.enable = true;
+      services.xserver.displayManager.lightdm = {
+        enable = true;
+        autoLogin = {
+          user = "moritz";
+          enable = true;
+        };
+      };
     }
     {
       services.xserver.windowManager = {
         exwm = {
           enable = true;
+          extraPackages = epkgs: with epkgs; [ emacsql-sqlite ];
+          enableDefaultConfig = false;  # todo disable and enable loadScript
+          # careful, 'loadScript option' was merged from Vizaxo into my personal nixpkgs repo.
+          loadScript = ''
+            (require 'exwm)
+            (require 'exwm-systemtray)
+            (require 'exwm-randr)
+            ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "HDMI1" 2 "DP2" 3 "eDP1" 4 "HDMI1" 5 "DP2"))
+            (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "eDP1" 2 "HDMI1" 3 "eDP1" 4 "eDP1" 5 "eDP1"))
+            (add-hook 'exwm-randr-screen-change-hook (lambda () (start-process-shell-command "xrandr" nil "xrandr --fb 7680x2160 --output HDMI1 --auto --scale 2x2 --pos 0x0  --output eDP1 --auto --scale 1x1 --pos 3840x0")))
+            (exwm-randr-enable)
+            (exwm-systemtray-enable)
+            (exwm-enable)
+          '';
         };
       };
       services.xserver.displayManager.defaultSession = "none+exwm";
@@ -285,6 +347,7 @@ in
       hardware.acpilight.enable = true;
       environment.systemPackages = [
         pkgs.acpilight
+        pkgs.brightnessctl
       ];
       users.extraUsers.moritz.extraGroups = [ "video" ];
     }
@@ -307,14 +370,17 @@ in
       };
     }
     {
-      programs.gnupg.agent = {
-        enable = true;
-        enableSSHSupport = true;
-        pinentryFlavor = "qt";
+      programs.ssh = {
+        startAgent = true;
       };
+      # programs.gnupg.agent = {
+      #   enable = true;
+      #   enableSSHSupport = true;
+      #   pinentryFlavor = "gtk2";
+      # };
     
-      ## is it no longer needed?
-      #
+      # is it no longer needed?
+      
       # systemd.user.sockets.gpg-agent-ssh = {
       #   wantedBy = [ "sockets.target" ];
       #   listenStreams = [ "%t/gnupg/S.gpg-agent.ssh" ];
@@ -327,15 +393,6 @@ in
       # };
     
       services.pcscd.enable = true;
-    }
-    {
-      environment.systemPackages = [
-        pkgs.yubikey-manager
-        pkgs.yubikey-personalization
-        pkgs.yubikey-personalization-gui
-      ];
-    
-      services.udev.packages = [ pkgs.yubikey-personalization ];
     }
     {
       environment.systemPackages = [
@@ -371,6 +428,7 @@ in
       environment.systemPackages = [
         pkgs.qutebrowser
       ];
+      environment.variables.QUTE_BIB_FILEPATH = "/home/moritz/wiki/papers/references.bib";
     }
     {
       environment.systemPackages = [
@@ -386,21 +444,50 @@ in
       ];
     }
     {
-      environment.systemPackages = [
-        pkgs.google-play-music-desktop-player
-        pkgs.tdesktop # Telegram
+      environment.systemPackages = with pkgs; [
+        igv
+      ];
+    }
+    {
+      environment.systemPackages = with pkgs; [
+        audacity
+        google-play-music-desktop-player
+        tdesktop # Telegram
+        signal-cli # Signal
+        signal-desktop # Signal
+        zoom-us
+        flameshot
+        libreoffice
+        wineWowPackages.stable
+        winetricks
+        spotify
+        gimp-with-plugins
     
-        pkgs.mplayer
-        pkgs.smplayer
+        mplayer
+        smplayer
     
         # Used by naga setup
-        pkgs.xdotool
+        xdotool
       ];
+    }
+    {
+      environment.variables.XDG_CONFIG_DIRS = [ "/etc/xdg" ]; # we should probably have this in NixOS by default
+      environment.etc."xdg/mimeapps.list" = {
+        text = ''
+          [Default Applications]
+          image/png=inkscape.desktop;
+        '';
+      };
     }
     {
       environment.systemPackages = [
         (pkgs.vim_configurable.override { python3 = true; })
         pkgs.neovim
+      ];
+    }
+    {
+      environment.systemPackages = [
+        pkgs.conda
       ];
     }
     {
@@ -429,27 +516,106 @@ in
     {
       environment.systemPackages = [
         pkgs.tmux
+        pkgs.python37Packages.powerline
       ];
     }
     {
-      environment.systemPackages = [
-        pkgs.bash
-        pkgs.wget
-        pkgs.htop
-        pkgs.psmisc
-        pkgs.zip
-        pkgs.unzip
-        pkgs.unrar
-        pkgs.p7zip
-        pkgs.bind
-        pkgs.file
-        pkgs.which
-        pkgs.utillinuxCurses
+      environment.systemPackages = let python = (with pkgs; python3.withPackages (python-packages: with python-packages; [
+        python3
+        pandas
+        biopython
+        scikitlearn
+        matplotlib
+        pyproj
+        seaborn
+        requests
+        ipdb
+        isort
+        tox
+        tqdm
+        xlrd
+        pyyaml
+        matplotlib-venn
     
-        pkgs.patchelf
-    
-        pkgs.python3
+        fritzconnection
+        #jupyter
+        #jupyter_core
+        powerline
+        # moritzsphd
+        tabulate
+        # swifter
+        gffutils
+        pyensembl
+        pybedtools
+        pybigwig
+        xdg
+        epc
+        jupyterlab
+        jupyter_console
+        ipykernel
+        pyperclip
+        scikit-plot
+        scikit-bio
+        powerline
+        # ptvsd
+      ])); in with pkgs.python37Packages; [
+        python  # let is stronger than with, which is why this installs the correct python (the one defined above)
         pkgs.pipenv
+        pip
+        importmagic
+        epc
+        python-language-server
+        selenium
+      ];
+      environment.variables.LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${stdenv.cc.cc.lib}/lib/libstdc++.so.6";
+    }
+    {
+      environment.systemPackages = with pkgs; [
+        bedtools
+      ];
+    }
+    {
+      environment.systemPackages = with pkgs; [
+        gitAndTools.hub
+        youtube-dl
+        sshfs
+        bash
+        wget
+        htop
+        psmisc
+        zip
+        unzip
+        unrar
+        # p7zip marked as insecure
+        bind
+        file
+        which
+        utillinuxCurses
+        powerstat
+        pciutils
+        ag
+        ispell
+        usbutils
+        libv4l
+        v4l-utils
+        gparted
+        etcher
+        powerline-fonts
+        xsel
+        tree
+        gitAndTools.diff-so-fancy
+        gitAndTools.git-hub
+        pypi2nix
+        lsyncd
+        gnupg
+        imagemagick
+    
+    
+        patchelf
+    
+        cmake
+        gnumake
+    
       ];
       # environment.variables.NPM_CONFIG_PREFIX = "$HOME/.npm-global";
       # environment.variables.PATH = "$HOME/.npm-global/bin:$PATH";

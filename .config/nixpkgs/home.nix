@@ -1,49 +1,63 @@
 { pkgs, config, ... }:
 {
-  targets.genericLinux.enable = true;
+  # targets.genericLinux.enable = true;
 
-  home.packages = [
-    pkgs.dolphin
-    pkgs.tmux
-    pkgs.xdotool
-    pkgs.xss-lock
-    (pkgs.pass.withExtensions (exts: [ exts.pass-otp ]))
-    pkgs.acpilight
 
-    pkgs.minicom
-    pkgs.firefox
-    pkgs.google-chrome
-    pkgs.arandr
-    pkgs.escrotum
-    pkgs.ripgrep
-    pkgs.pavucontrol
+  # python
+#   home.packages = with pkgs; let moritzsphd = python37Packages.buildPythonPackage rec {
+#   name = "moritzsphd";
+#   src = /home/moritz/Projects/moritzsphd;
+#   propagatedBuildInputs = with python37Packages; [ numpy ];  # incomplete..
+# }; in
+home.packages =   with pkgs; [
+    xpdf # this is an insecure package. an exception is in config.nix
+    dolphin
+    tmux
+    xdotool
+    xss-lock
+    (pass.withExtensions (exts: [ exts.pass-otp ]))
+    acpilight
 
-    pkgs.google-play-music-desktop-player
+    minicom
+    firefox
+    google-chrome
+    arandr
+    escrotum
+    ripgrep
+    pavucontrol
 
-    pkgs.inconsolata
-    pkgs.dejavu_fonts
-    pkgs.source-code-pro
-    pkgs.ubuntu_font_family
-    pkgs.powerline-fonts
-    pkgs.terminus_font
+    google-play-music-desktop-player
+    feh
+    inkscape
+
+    inconsolata
+    dejavu_fonts
+    source-code-pro
+    ubuntu_font_family
+    powerline-fonts
+    terminus_font
 
     # Emacs fonts
-    pkgs.input-mono
-    pkgs.libertine
+    # input-mono
+    libertine
 
-    pkgs.direnv
-  ];
+    direnv
+    clipit
+    vlc
+    betaflight-configurator
+
+    ];
 
   home.sessionVariables.LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
 
-  programs.emacs =
-    let e = import ./emacs.nix { inherit pkgs; };
-    in {
-      enable = true;
-      package = e.emacs;
-      extraPackages = e.emacsPackages;
-    };
-  services.emacs.enable = true;
+  # programs.emacs =
+  #   let e = import ./emacs.nix { inherit pkgs; };
+  #   in {
+  #     enable = true;
+  #     package = e.emacs;
+  #     extraPackages = e.emacsPackages;
+  #   };
+  # services.emacs.enable = true;
 
   services.lorri.enable = true;
 
@@ -57,7 +71,7 @@
   #   path = "/home/rasen/dotfiles/channels/home-manager";
   # };
 
-  services.syncthing.enable = true;
+  # services.syncthing.enable = true; # already enabled in the main config
 
   programs.fish = {
     enable = true;
@@ -87,16 +101,11 @@
     variant = "bone,workman,";
   };
 
-  xsession.enable = true;
-  xsession.windowManager.awesome = {
-    enable = true;
-    luaModules = [
-      pkgs.luaPackages.luafilesystem
-      pkgs.luaPackages.cjson
-    ];
-    # try this?
-    # noArgb = true;
-  };
+  # xsession.enable = true;
+
+  #xsession.windowManager.exwm = {
+  #  enable = true;
+  #};
   xsession.initExtra = ''
     # xkbcomp /home/moritz/nixos-config/.Xkeymap $DISPLAY # TODO enable?
 
@@ -108,45 +117,83 @@
   fonts.fontconfig.enable = true;
 
   programs.htop.enable = true;
-  programs.urxvt = {
-    enable = true;
-    iso14755 = false;
+#   programs.urxvt = {
+#     enable = true;
+#     iso14755 = false;
 
-    fonts = [
-      "-*-terminus-medium-r-normal-*-32-*-*-*-*-*-iso10646-1"
-    ];
+#     fonts = [
+#       "-*-terminus-medium-r-normal-*-32-*-*-*-*-*-iso10646-1"
+#     ];
 
-    scroll = {
-      bar.enable = false;
-      lines = 65535;
-      scrollOnOutput = false;
-      scrollOnKeystroke = true;
-    };
-    extraConfig = {
-      "loginShell" = "true";
-      "urgentOnBell" = "true";
-      "secondaryScroll" = "true";
+#     scroll = {
+#       # urxvt.scrollTtyOutput:   false
+#       # urxvt.scrollTtyKeypress:  true
+#       # urxvt.secondaryScroll:    true
+#       #URxvt.intensityStyles: false
+#       bar.enable = false;
+#       lines = 65535;
+#       scrollOnOutput = false;
+#       scrollOnKeystroke = true;
+#     };
+#     extraConfig = let
+#       colors = {
+#         S_yellow = "#b58900";
+#         S_orange = "#cb4b16";
+#         S_red = "#dc322f";
+#         S_magenta = "#d33682";
+#         S_violet = "#6c71c4";
+#         S_blue = "#268bd2";
+#         S_cyan = "#2aa198";
+#         S_green = "#859900";
 
-      "background" = "#101010";
-      "foreground" = "#d0d0d0";
-      "color0" = "#101010";
-      "color1" = "#960050";
-      "color2" = "#66aa11";
-      "color3" = "#c47f2c";
-      "color4" = "#30309b";
-      "color5" = "#7e40a5";
-      "color6" = "#3579a8";
-      "color7" = "#9999aa";
-      "color8" = "#303030";
-      "color9" = "#ff0090";
-      "color10" = "#80ff00";
-      "color11" = "#ffba68";
-      "color12" = "#5f5fee";
-      "color13" = "#bb88dd";
-      "color14" = "#4eb4fa";
-      "color15" = "#d0d0d0";
-    };
-  };
+#         S_base03 = "#002b36";
+#         S_base02 = "#073642";
+#         S_base01 = "#586e75";
+#         S_base00 = "#657b83";
+#         S_base0 = "#839496";
+#         S_base1 = "#93a1a1";
+#         S_base2 = "#eee8d5";
+#         S_base3 = "#fdf6e3";
+#       };
+#     in with colors; {
+#       "loginShell" = "true";
+#       "urgentOnBell" = "true";
+#       "secondaryScroll" = "true";
+
+#       "background" = S_base03;
+#       "foreground" = S_base0;
+#       "fading" = 40;
+#       "fadeColor" = S_base03;
+#       "cursorColor" = S_base1;
+#       "pointerColorBackground" = S_base01;
+#       "pointerColorForeground" = S_base1
+# ;
+#       "color0" = S_base02;
+#       "color1" = S_red;
+#       "color2" = S_green;
+#       "color3" = S_yellow;
+#       "color4" = S_blue;
+#       "color5" = S_magenta;
+#       "color6" = S_cyan;
+#       "color7" = S_base2;
+#       "color8" = S_base03;
+#       "color9" = S_orange;
+#       "color10" = S_base01;
+#       "color11" = S_base00;
+#       "color12" = S_base0;
+#       "color13" = S_violet;
+#       "color14" = S_base1;
+#       "color15" = S_base3;
+#       "Xft.dpi" = 240;
+#       "Xcursor.size" = 64;
+#       "Xft.autohint" = 0;
+#       "Xft.lcdfilter" = "lcddefault";
+#       "Xft.hintstyle" = "hintfull";
+#       "Xft.hinting" = 1;
+#       "Xft.antialias" = 1;
+#       "Xft.rgba" = "rgb";
+#     };
+#   };
 
   programs.autorandr = {
     enable = true;
@@ -163,7 +210,7 @@
             position = "0x2160";
             mode = "3840x2160";
             rate = "60.00";
-            dpi = 284;
+            dpi = 240;
           };
           DP-3 = {
             enable = true;
@@ -186,7 +233,7 @@
             position = "0x1440";
             mode = "3840x2160";
             rate = "60.00";
-            dpi = 284;
+            dpi = 240;
           };
           DP-3 = {
             enable = true;
@@ -200,18 +247,20 @@
     };
   };
 
-  programs.zathura = {
-    enable = true;
-    options = {
-      incremental-search = true;
-    };
-    extraConfig = ''
-      map j scroll up
-      map k scroll down
-    '';
-  };
+  # programs.zathura = {
+  #   enable = true;
+  #   options = {
+  #     incremental-search = true;
+  #   };
+  #   extraConfig = ''
+  #     map j scroll up
+  #     map k scroll down
+  #   '';
+  # };
 
   services.unclutter = {
     enable = true;
   };
+
+  services.network-manager-applet.enable = true;
 }

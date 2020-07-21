@@ -1,4 +1,4 @@
-Xft.dpi: 286
+Xft.dpi: 240
 Xcursor.size: 64
 urxvt.loginShell:         true
 urxvt.saveLines:         65535
