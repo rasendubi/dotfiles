@@ -1517,7 +1517,7 @@ Rules to automatically layout windows when they appear.
          (display-buffer-in-side-window
           (side . right)
           (slot . 1)
-          (window-width . 70)
+          (window-width . 80)
           (no-other-window . t)))
         ("\\*\\(Calendar\\)\\*" .
          (display-buffer-in-side-window
@@ -1529,13 +1529,13 @@ Rules to automatically layout windows when they appear.
          (display-buffer-in-side-window
           (side . right)
           (slot . -1)
-          (window-width . 70)
+          (window-width . 80)
           (no-other-window . t)))))
 #+end_src
 ** Screen locking
 I use ~xss-lock~ + ~slock~ for screen locking. Actual handling is coded in Emacs.
 *** Slock
-[[http://tools.suckless.org/slock/][Slock]] is a simple X display locker and should probably not crash as xscreensaver does.
+[[http://tools.suckless.org/slock/][Slock]] is a simple X display locker and does not crash as xscreensaver does.
 
 Slock tries to disable OOM killer (so the locker is not killed when memory is low) and this requires a suid flag for executable. Otherwise, you get the following message:
 #+begin_src fundamental
@@ -4131,14 +4131,28 @@ element."
         (princ (format "Total positions: %s" total)))
       (switch-to-buffer-other-window "*org-fc-upcoming*")))
 
-  (general-def 'normal 'org-fc-review-flip-mode-map
+  (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-flip-mode
+    (kbd "RET") 'org-fc-review-flip
+    (kbd "n") 'org-fc-review-flip
+    (kbd "s") 'org-fc-review-suspend-card
+    (kbd "q") 'org-fc-review-quit)
+
+  (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-rate-mode
+    (kbd "a") 'org-fc-review-rate-again
+    (kbd "h") 'org-fc-review-rate-hard
+    (kbd "g") 'org-fc-review-rate-good
+    (kbd "e") 'org-fc-review-rate-easy
+    (kbd "s") 'org-fc-review-suspend-card
+    (kbd "q") 'org-fc-review-quit)
+
+  (general-def '(normal motion) 'org-fc-review-flip-mode-map
     "RET" #'org-fc-review-flip
     "n"   #'org-fc-review-flip
     "s"   #'org-fc-review-suspend-card
     "p"   #'org-fc-review-edit
     "q"   #'org-fc-review-quit)
 
-  (general-def 'normal 'org-fc-review-rate-mode-map
+  (general-def '(normal motion) 'org-fc-review-rate-mode-map
     "a"   #'org-fc-review-rate-again
     "h"   #'org-fc-review-rate-hard
     "g"   #'org-fc-review-rate-good
