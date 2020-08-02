@@ -895,11 +895,11 @@ Here go applications (almost) every normal user needs.
   programs.ssh = {
     startAgent = true;
   };
-  # programs.gnupg.agent = {
-  #   enable = true;
-  #   enableSSHSupport = true;
-  #   pinentryFlavor = "gtk2";
-  # };
+  programs.gnupg.agent = {
+    enable = true;
+    enableSSHSupport = false;
+    pinentryFlavor = "qt";
+  };
 
   # is it no longer needed?
   
@@ -924,6 +924,9 @@ Install [[https://www.passwordstore.org/][password-store]] along with [[https://
 {
   environment.systemPackages = [
     (pkgs.pass.withExtensions (exts: [ exts.pass-otp ]))
+    pkgs.pinentry-curses
+    pkgs.pinentry-qt
+    pkgs.pinentry-emacs
   ];
 }
 #+end_src
@@ -975,7 +978,7 @@ I use Firefox Quantum as my default browser now.
 #+begin_src nix
 {
   environment.systemPackages = [
-    pkgs.firefox
+    (pkgs.firefox.override { extraNativeMessagingHosts = [ pkgs.passff-host ]; })
   ];
 }
 #+end_src
@@ -1452,6 +1455,8 @@ set-window-option -g automatic-rename
     epc
     python-language-server
     selenium
+    pkgs.zlib
+    pkgs.zlib.dev
   ];
   environment.variables.LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${stdenv.cc.cc.lib}/lib/libstdc++.so.6";
 }
@@ -1471,6 +1476,7 @@ set-window-option -g automatic-rename
 #+begin_src nix
 {
   environment.systemPackages = with pkgs; [
+    sqlite
     gitAndTools.hub
     youtube-dl
     sshfs

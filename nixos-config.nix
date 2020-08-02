@@ -373,11 +373,11 @@ in
       programs.ssh = {
         startAgent = true;
       };
-      # programs.gnupg.agent = {
-      #   enable = true;
-      #   enableSSHSupport = true;
-      #   pinentryFlavor = "gtk2";
-      # };
+      programs.gnupg.agent = {
+        enable = true;
+        enableSSHSupport = false;
+        pinentryFlavor = "gtk2";
+      };
     
       # is it no longer needed?
       
@@ -397,6 +397,9 @@ in
     {
       environment.systemPackages = [
         (pkgs.pass.withExtensions (exts: [ exts.pass-otp ]))
+        pkgs.pinentry-curses
+        pkgs.pinentry-qt
+        pkgs.pinentry-emacs
       ];
     }
     {
@@ -421,7 +424,7 @@ in
     }
     {
       environment.systemPackages = [
-        pkgs.firefox
+        (pkgs.firefox.override { extraNativeMessagingHosts = [ pkgs.passff-host ]; })
       ];
     }
     {
@@ -459,7 +462,7 @@ in
         flameshot
         libreoffice
         wineWowPackages.stable
-        # winetricks
+        # winetricks  # requires p7zip (which is unsafe...)
         spotify
         gimp-with-plugins
     
@@ -566,6 +569,8 @@ in
         epc
         python-language-server
         selenium
+        pkgs.zlib
+        pkgs.zlib.dev
       ];
       environment.variables.LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${stdenv.cc.cc.lib}/lib/libstdc++.so.6";
     }
