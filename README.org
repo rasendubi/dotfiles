@@ -81,7 +81,7 @@ Make this repository flake-compatible:
       owner = "moritzschaefer";
       # repo = "nixpkgs-channels";
       repo = "nixpkgs";
-      rev = "f54b789c7b6162b9abfc205392169af0a78ec3c2";
+      rev = "2dec29ab5f5dda2310e5218bbb66acfc31836b60";
       # ref = "nixpkgs-unstable";
       ref = "master";
     };
@@ -222,8 +222,8 @@ This is my Dell XPS 15.
 
   services.undervolt = {
     enable = true;
-    coreOffset = "-125";
-    gpuOffset = "-75";
+    coreOffset = -125;
+    gpuOffset = -75;
   };
 
   powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
@@ -726,10 +726,12 @@ Setup timezone:
 #+name: nixos-section
 #+begin_src nix
 {
-  services.xserver.displayManager.lightdm = {
-    enable = true;
+  services.xserver.displayManager = {
     autoLogin = {
       user = "moritz";
+      enable = true;
+    };
+    lightdm = {
       enable = true;
     };
   };

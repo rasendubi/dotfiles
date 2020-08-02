@@ -25,8 +25,8 @@ let
       
         services.undervolt = {
           enable = true;
-          coreOffset = "-125";
-          gpuOffset = "-75";
+          coreOffset = -125;
+          gpuOffset = -75;
         };
       
         powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
@@ -376,7 +376,7 @@ in
       programs.gnupg.agent = {
         enable = true;
         enableSSHSupport = false;
-        pinentryFlavor = "gtk2";
+        pinentryFlavor = "qt";
       };
     
       # is it no longer needed?
@@ -581,6 +581,7 @@ in
     }
     {
       environment.systemPackages = with pkgs; [
+        sqlite
         gitAndTools.hub
         youtube-dl
         sshfs

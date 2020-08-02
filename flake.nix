@@ -12,7 +12,7 @@
       owner = "moritzschaefer";
       # repo = "nixpkgs-channels";
       repo = "nixpkgs";
-      rev = "f54b789c7b6162b9abfc205392169af0a78ec3c2";
+      rev = "2dec29ab5f5dda2310e5218bbb66acfc31836b60";
       # ref = "nixpkgs-unstable";
       ref = "master";
     };
