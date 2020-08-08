@@ -2908,7 +2908,7 @@ Schedule task for today and mark it NEXT.
 I use this a lot during daily planning.
 #+name: org-config
 #+begin_src emacs-lisp
-(defun rasen/org-do-today (arg)
+(defun rasen/org-do-today (&optional arg)
   "Schedule task for today and mark it NEXT.
 
 If prefix is supplied, select different scheduled time."
@@ -3200,7 +3200,6 @@ Actual configuration.
   ("o" "Open-source"            "~/org/plan.org"     "Areas" "Open-source")
   ("P" "Planning"               "~/org/plan.org"     "Areas" "Planning")
   ("s" "Self-development"       "~/org/plan.org"     "Areas" "Self-development")
-  ("f" "Future of Software"     "~/org/plan.org"     "Areas" "Future of Software")
   ("H" "Health"                 "~/org/plan.org"     "Areas" "Health")
   ("C" "Cats"                   "~/org/plan.org"     "Areas" "Cats")
   ("e" "egoless.tech"           "~/org/plan.org"     "Areas" "egoless.tech")
@@ -3211,7 +3210,9 @@ Actual configuration.
   ("w" "Work"                   "~/org/ring.org.gpg" "Resources")
   ("p" "Productivity"           "~/org/plan.org"     "Resources" "Productivity")
   ("s" "Software development"   "~/org/plan.org"     "Resources" "Software development, programming, architecture")
-  ("m" "Martial Arts"           "~/org/plan.org"     "Resources" "Martial Arts")
+  ("f" "Future of Software"     "~/org/plan.org"     "Resources" "Future of Software")
+  ("m" "Management"             "~/org/plan.org"     "Resources" "Management")
+  ("M" "Martial Arts"           "~/org/plan.org"     "Resources" "Martial Arts")
   ("n" "Natural sciences"       "~/org/plan.org"     "Resources" "Natural sciences")
   ("d" "Design"                 "~/org/plan.org"     "Resources" "Design")
   ("l" "Programming languages"  "~/org/plan.org"     "Resources" "Programming languages")
@@ -4073,7 +4074,7 @@ Flashcards/spaced repetition system for org-mode. It works with many files bette
   :config
   (require 'org-fc-keymap-hint)
 
-  (setq org-fc-directories (list rasen/org-directory))
+  (setq org-fc-directories (list (expand-file-name "roam" rasen/org-directory)))
   (setq org-fc-review-history-file (expand-file-name "org-fc-history.tsv" rasen/org-directory))
 
   ;; (setq org-fc-stats-review-min-box 2)
@@ -4170,7 +4171,153 @@ element."
             (interactive)
             (org-fc-dashboard 'all))
     "h"   #'rasen/org-fc-upcoming-histogram
-    "q"   #'quit-window))
+    "q"   #'quit-window)
+
+  <<org-fc-review-todos>>)
+#+end_src
+
+** org-fc review todos
+My modifications to support reviewing arbitrary todo lists with spaced repetition.
+#+name: org-fc-review-todos
+#+begin_src emacs-lisp
+(defcustom rasen/org-fc-todos-context `(:paths (,(expand-file-name "plan.org" rasen/org-directory))
+                                        :filter (type "nocard"))
+  "Context in which to search for todo cards.")
+
+;; Special org-fc card type with no flipping
+(defun org-fc-type-nocard-init ()
+  "Mark headline as a no-card."
+  (interactive)
+  (org-fc--init-card "nocard")
+  (org-fc-review-data-update '("single")))
+
+(defun org-fc-type-nocard-setup (_position)
+  "Prepare a no-card for review."
+  (interactive)
+  (org-fc-noop))
+
+(org-fc-register-type
+ 'nocard
+ #'org-fc-type-nocard-setup
+ #'org-fc-noop
+ #'org-fc-noop)
+
+(defvar rasen/org-fc-todos-current-card nil)
+(defun rasen/org-fc-todos-next-card ()
+  "Present a single card from the current buffer for review."
+  (interactive)
+  (save-buffer)
+  (let* ((index (org-fc-index rasen/org-fc-todos-context))
+         (cards (org-fc-index-filter-due index))
+         (positions (org-fc-index-shuffled-positions cards)))
+    (if (null positions)
+        (progn
+          (message "No cards due right now")
+          (setq hydra-deactivate t))
+      (rasen/org-fc-todos-present-position (car positions)))))
+
+(defun rasen/org-fc-todos-present-position (card)
+  (let* ((path (plist-get card :path))
+         (id (plist-get card :id))
+         (type (plist-get card :type))
+         (position (plist-get card :position)))
+    (let ((buffer (find-buffer-visiting path)))
+      (with-current-buffer (find-file path)
+        (goto-char (point-min))
+        (org-fc-id-goto id path)
+        (org-reveal)
+
+        (setq rasen/org-fc-todos-current-card card)
+        (setq org-fc-timestamp (time-to-seconds (current-time)))))))
+
+(el-patch-defun (el-patch-swap org-fc-review-update-data rasen/org-fc-todos-review-update-data) (path id position rating delta)
+  "Update the review data of the card.
+Also add a new entry in the review history file.  PATH, ID,
+POSITION identify the position that was reviewed, RATING is a
+review rating and DELTA the time in seconds between showing and
+rating the card."
+  (org-fc-with-point-at-entry
+   ;; If the card is marked as a demo card, don't log its reviews and
+   ;; don't update its review data
+   (unless (member org-fc-demo-tag (org-get-tags))
+     (let* ((data (org-fc-get-review-data))
+            (current (assoc position data #'string=)))
+       (unless current
+         (error "No review data found for this position"))
+       (let ((ease (string-to-number (cl-second current)))
+             (box (string-to-number (cl-third current)))
+             (interval (string-to-number (cl-fourth current))))
+         (el-patch-remove (org-fc-review-history-add
+                           (list
+                            (org-fc-timestamp-now)
+                            path
+                            id
+                            position
+                            (format "%.2f" ease)
+                            (format "%d" box)
+                            (format "%.2f" interval)
+                            (symbol-name rating)
+                            (format "%.2f" delta)
+                            (symbol-name org-fc-algorithm))))
+         (cl-destructuring-bind (next-ease next-box next-interval)
+             (org-fc-sm2-next-parameters ease box interval rating)
+           (setcdr
+            current
+            (list (format "%.2f" next-ease)
+                  (number-to-string next-box)
+                  (format "%.2f" next-interval)
+                  (org-fc-timestamp-in next-interval)))
+           (org-fc-set-review-data data)))))))
+
+(defun rasen/org-fc-todos-rate (rating)
+  "Rate the card at point with RATING."
+  (if-let ((card rasen/org-fc-todos-current-card))
+      (if (string= (plist-get card :id) (org-id-get))
+          (let* ((path (plist-get card :path))
+                 (id (plist-get card :id))
+                 (position (plist-get card :position))
+                 (now (time-to-seconds (current-time)))
+                 (delta (- now org-fc-timestamp)))
+            (rasen/org-fc-todos-review-update-data path id position rating delta)
+            (rasen/org-fc-todos-next-card))
+        (message "Flashcard ID mismatch"))
+    (message "No flashcard review is in progress")))
+(defun rasen/org-fc-todos-rate-soon ()
+  (interactive)
+  (rasen/org-fc-todos-rate 'hard))
+(defun rasen/org-fc-todos-rate-normal ()
+  (interactive)
+  (rasen/org-fc-todos-rate 'good))
+(defun rasen/org-fc-todos-rate-later ()
+  (interactive)
+  (rasen/org-fc-todos-rate 'easy))
+(defun rasen/org-fc-todos-today ()
+  (interactive)
+  (rasen/org-do-today)
+  (rasen/org-fc-todos-rate 'again))
+
+(defun rasen/org-fc-todos-estimate-next-interval (rating)
+  (org-fc-with-point-at-entry
+   (let* ((data (org-fc-get-review-data))
+          (current (assoc (plist-get rasen/org-fc-todos-current-card :position) data #'string=)))
+     (let ((ease (string-to-number (cl-second current)))
+           (box (string-to-number (cl-third current)))
+           (interval (string-to-number (cl-fourth current))))
+       (cl-destructuring-bind (next-ease next-box next-interval) (org-fc-sm2-next-parameters ease box interval rating)
+         next-interval)))))
+
+(defun rasen/org-fc-todos-hydra-hint (name rating)
+  (format "%s (%.2f days)" name (rasen/org-fc-todos-estimate-next-interval rating)))
+
+(defhydra rasen/hydra-todo-review (:pre (rasen/org-fc-todos-next-card))
+  "todo-review"
+  ("q" nil "quit")
+  ("s" #'rasen/org-fc-todos-rate-soon   (rasen/org-fc-todos-hydra-hint "soon"   'hard))
+  ("n" #'rasen/org-fc-todos-rate-normal (rasen/org-fc-todos-hydra-hint "normal" 'good))
+  ("l" #'rasen/org-fc-todos-rate-later  (rasen/org-fc-todos-hydra-hint "later"  'easy))
+  ("t" #'rasen/org-fc-todos-today "today")
+  ("S" #'org-fc-suspend-card "suspend")
+  ("d" #'org-cut-subtree "delete"))
 #+end_src
 ** toggle markup/view
 #+begin_src emacs-lisp
