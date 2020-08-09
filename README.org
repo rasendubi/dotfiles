@@ -4212,9 +4212,17 @@ My modifications to support reviewing arbitrary todo lists with spaced repetitio
          (positions (org-fc-index-shuffled-positions cards)))
     (if (null positions)
         (progn
-          (message "No cards due right now")
+          (message "No todos due right now")
+          (setq rasen/org-fc-todos-current-card nil)
           (setq hydra-deactivate t))
-      (rasen/org-fc-todos-present-position (car positions)))))
+      (progn
+        (rasen/org-fc-todos-present-position (car positions))
+        (when (string= (org-get-todo-state) "DONE")
+          (org-toggle-tag "fc" 'off)
+          (let ((position (org-fc-review-data-position t)))
+            (kill-region (car position) (cdr position))
+            (org-remove-empty-drawer-at (car position)))
+          (rasen/org-fc-todos-next-card))))))
 
 (defun rasen/org-fc-todos-present-position (card)
   (let* ((path (plist-get card :path))
@@ -4281,7 +4289,7 @@ rating the card."
             (rasen/org-fc-todos-review-update-data path id position rating delta)
             (rasen/org-fc-todos-next-card))
         (message "Flashcard ID mismatch"))
-    (message "No flashcard review is in progress")))
+    (message "No todos review is in progress")))
 (defun rasen/org-fc-todos-rate-soon ()
   (interactive)
   (rasen/org-fc-todos-rate 'hard))
@@ -4294,30 +4302,40 @@ rating the card."
 (defun rasen/org-fc-todos-today ()
   (interactive)
   (rasen/org-do-today)
-  (rasen/org-fc-todos-rate 'again))
+  (rasen/org-fc-todos-rate 'again)
+  (rasen/org-fc-todos-rate 'hard))
 
 (defun rasen/org-fc-todos-estimate-next-interval (rating)
-  (org-fc-with-point-at-entry
-   (let* ((data (org-fc-get-review-data))
-          (current (assoc (plist-get rasen/org-fc-todos-current-card :position) data #'string=)))
-     (let ((ease (string-to-number (cl-second current)))
-           (box (string-to-number (cl-third current)))
-           (interval (string-to-number (cl-fourth current))))
-       (cl-destructuring-bind (next-ease next-box next-interval) (org-fc-sm2-next-parameters ease box interval rating)
-         next-interval)))))
+  (condition-case err
+      (org-fc-with-point-at-entry
+       (let* ((data (org-fc-get-review-data))
+              (current (assoc (plist-get rasen/org-fc-todos-current-card :position) data #'string=)))
+         (let ((ease (string-to-number (cl-second current)))
+               (box (string-to-number (cl-third current)))
+               (interval (string-to-number (cl-fourth current))))
+           (cl-destructuring-bind (next-ease next-box next-interval) (org-fc-sm2-next-parameters ease box interval rating)
+             next-interval))))
+    (error 0)))
 
 (defun rasen/org-fc-todos-hydra-hint (name rating)
   (format "%s (%.2f days)" name (rasen/org-fc-todos-estimate-next-interval rating)))
 
-(defhydra rasen/hydra-todo-review (:pre (rasen/org-fc-todos-next-card))
-  "todo-review"
+(defhydra rasen/hydra-todos-review ()
+  "todos review"
   ("q" nil "quit")
   ("s" #'rasen/org-fc-todos-rate-soon   (rasen/org-fc-todos-hydra-hint "soon"   'hard))
   ("n" #'rasen/org-fc-todos-rate-normal (rasen/org-fc-todos-hydra-hint "normal" 'good))
   ("l" #'rasen/org-fc-todos-rate-later  (rasen/org-fc-todos-hydra-hint "later"  'easy))
+  ("o" #'org-open-at-point "open")
   ("t" #'rasen/org-fc-todos-today "today")
   ("S" #'org-fc-suspend-card "suspend")
   ("d" #'org-cut-subtree "delete"))
+
+(defun rasen/todos-review ()
+  (interactive)
+  (rasen/org-fc-todos-next-card)
+  (when rasen/org-fc-todos-current-card
+    (rasen/hydra-todos-review/body)))
 #+end_src
 ** toggle markup/view
 #+begin_src emacs-lisp
