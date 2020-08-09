@@ -4215,14 +4215,7 @@ My modifications to support reviewing arbitrary todo lists with spaced repetitio
           (message "No todos due right now")
           (setq rasen/org-fc-todos-current-card nil)
           (setq hydra-deactivate t))
-      (progn
-        (rasen/org-fc-todos-present-position (car positions))
-        (when (string= (org-get-todo-state) "DONE")
-          (org-toggle-tag "fc" 'off)
-          (let ((position (org-fc-review-data-position t)))
-            (kill-region (car position) (cdr position))
-            (org-remove-empty-drawer-at (car position)))
-          (rasen/org-fc-todos-next-card))))))
+      (rasen/org-fc-todos-present-position (car positions)))))
 
 (defun rasen/org-fc-todos-present-position (card)
   (let* ((path (plist-get card :path))
@@ -4301,9 +4294,18 @@ rating the card."
   (rasen/org-fc-todos-rate 'easy))
 (defun rasen/org-fc-todos-today ()
   (interactive)
-  (rasen/org-do-today)
   (rasen/org-fc-todos-rate 'again)
-  (rasen/org-fc-todos-rate 'hard))
+  (rasen/org-do-today)
+  (rasen/org-fc-todos-next-card))
+
+(defun rasen/org-fc-todos-update-fc ()
+  (when (member org-fc-flashcard-tag (org-get-tags nil 'local))
+    (cond
+     ((string= "NEXT" org-state) (org-toggle-tag org-fc-suspended-tag 'on))
+     ((string= "TODO" org-state) (org-toggle-tag org-fc-suspended-tag 'off))
+     ((string= "DONE" org-state) (org-toggle-tag org-fc-suspended-tag 'on)))))
+
+(add-hook 'org-after-todo-state-change-hook #'rasen/org-fc-todos-update-fc)
 
 (defun rasen/org-fc-todos-estimate-next-interval (rating)
   (condition-case err
