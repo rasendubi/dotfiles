@@ -12,6 +12,12 @@
       ref = "nixpkgs-unstable";
     };
 
+    nixpkgs-stable = {
+      type = "github";
+      owner = "NixOS";
+      repo = "nixpkgs-channels";
+      ref = "nixos-20.03";
+    };
     home-manager = {
       type = "github";
       owner = "rycee";
@@ -491,7 +497,7 @@
             {
               home.packages = [
                 pkgs.google-play-music-desktop-player
-                pkgs.tdesktop # Telegram
+                # pkgs.tdesktop # Telegram
             
                 pkgs.mplayer
                 pkgs.smplayer
@@ -997,6 +1003,13 @@
           # mix-in all local packages, so they are available as pkgs.${packages-name}
           (final: prev: self.packages.${system})
       
+          (final: prev: {
+            stable = import inputs.nixpkgs-stable {
+              inherit system;
+              overlays = self.overlays.${system};
+              config = { allowUnfree = true; };
+            };
+          })
           inputs.emacs-overlay.overlay
           (final: prev: {
             firefox = prev.firefox.override {

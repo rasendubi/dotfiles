@@ -1,4 +1,4 @@
-#+PROPERTY: header-args :noweb yes :results silent
+#+PROPERTY: header-args :tangle yes :noweb yes :results silent
 
 * Introduction
 Hi there! That's my dotfiles.
@@ -18,7 +18,7 @@ This file contains Emacs configuration, NixOS configuration for omicron, and com
 
 To generate actual nix files, you can open this file in Emacs, and execute =M-x org-babel-tangle=. Or from command line with the following command.
 
-#+begin_src sh
+#+begin_src sh :tangle no
 emacs README.org --batch -f org-babel-tangle
 #+end_src
 
@@ -113,10 +113,35 @@ Nix flakes are still an experimental feature, so you need the following in NixOS
 #+end_src
 
 For non-NixOS system, install ~nixFlakes~ and put the following into =~/.config/nix/nix.conf=.
-#+begin_src conf
+#+begin_src conf :tangle no
 experimental-features = nix-command flakes ca-references
 #+end_src
 
+** Stable packages
+For packages that are broken in nixpkgs-unstable, expose the latest stable channel as ~pkgs.stable~.
+
+Add input:
+#+name: flake-inputs
+#+begin_src nix
+nixpkgs-stable = {
+  type = "github";
+  owner = "NixOS";
+  repo = "nixpkgs-channels";
+  ref = "nixos-20.03";
+};
+#+end_src
+
+Add overlay:
+#+name: flake-overlays
+#+begin_src nix
+(final: prev: {
+  stable = import inputs.nixpkgs-stable {
+    inherit system;
+    overlays = self.overlays.${system};
+    config = { allowUnfree = true; };
+  };
+})
+#+end_src
 ** NixOS
 Expose NixOS configurations.
 #+name: flake-outputs-nixos
@@ -1538,7 +1563,7 @@ I use ~xss-lock~ + ~slock~ for screen locking. Actual handling is coded in Emacs
 [[http://tools.suckless.org/slock/][Slock]] is a simple X display locker and does not crash as xscreensaver does.
 
 Slock tries to disable OOM killer (so the locker is not killed when memory is low) and this requires a suid flag for executable. Otherwise, you get the following message:
-#+begin_src fundamental
+#+begin_src fundamental :tangle no
 slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 #+end_src
 
@@ -2362,7 +2387,7 @@ fwupd is a service that allows applications to update firmware. (~<<nixos-sectio
 #+end_src
 
 Execute the following command to update firmware.
-#+begin_src sh
+#+begin_src sh :tangle no
 fwupdmgr get-updates
 #+end_src
 * Browsers
@@ -2381,7 +2406,7 @@ Tridactyl is a Firefox plugin that provides Vim-like bindings.
 
 Here is my config. (~<<tridactylrc>>~)
 #+name: tridactylrc
-#+begin_src fundamental
+#+begin_src fundamental :tangle no
 " drop all existing configuration
 sanitize tridactyllocal tridactylsync
 
@@ -4000,56 +4025,7 @@ If optional arg MOVE is non-nil move point to end of field."
         ;; Paragraphs within fields are not preserved.  Bother?
         (fill-region-as-paragraph (line-beginning-position) end-field
                                   default-justification nil (point)))
-      (if move (goto-char end-field))))
-
-  (el-patch-feature org-ref-isbn)
-  ;; patch isbn-to-bibtex to handle non-ascii names/titles.
-  (el-patch-defun isbn-to-bibtex (isbn bibfile)
-    "Get bibtex entry for ISBN and insert it into BIBFILE.
-Nothing happens if an entry with the generated key already exists
-in the file. Data comes from worldcat."
-    (interactive
-     (list
-      (read-string
-       "ISBN: "
-       ;; now set initial input
-       (cond
-        ;; If region is active and it starts with a number, we use it
-        ((and  (region-active-p)
-               (s-match "^[0-9]" (buffer-substring (region-beginning) (region-end))))
-         (buffer-substring (region-beginning) (region-end)))
-        ;; if first entry in kill ring starts with a number assume it is an isbn
-        ;; and use it as the guess
-        ((stringp (car kill-ring))
-         (when (s-match "^[0-9]" (car kill-ring))
-           (car kill-ring)))
-        ;; type or paste it in
-        (t
-         nil)))
-      (completing-read "Bibfile: " (org-ref-possible-bibfiles))))
-
-    (let* ((url (format "https://www.ottobib.com/isbn/%s/bibtex" isbn))
-           (entry))
-      (with-current-buffer (url-retrieve-synchronously url t t)
-        (goto-char (point-min))
-        (when (re-search-forward (el-patch-swap "@[a-zA-Z]+{.+\\(\n\s+[a-z\s={\.,?:;'0-9\n}-]+\\)+}$"
-                                                "@[a-zA-Z]+{.+\\([^<]+\\)+}$") nil t)
-          (setq entry (match-string 0))))
-
-      (if (not entry)
-          (message "Nothing found.")
-        (find-file bibfile)
-        (goto-char (point-max))
-        (insert (with-temp-buffer
-                  (insert (concat entry "\n}"))
-                  (goto-char (point-min))
-                  (org-ref-isbn-clean-bibtex-entry)
-                  (org-ref-clean-bibtex-entry)
-                  (bibtex-fill-entry)
-                  (s-trim (buffer-string))
-                  (buffer-string)))
-        (save-buffer)))))
-
+      (if move (goto-char end-field)))))
 #+end_src
 ** org-roam-bibtex
 Citations and bibliography tools for org-mode.
@@ -4094,12 +4070,12 @@ element."
         :position (plist-get pos :position)))
      (plist-get card :positions)))
 
-  (defun rasen/org-fc-upcoming-histogram ()
+  (defun rasen/org-fc-upcoming-histogram (&optional context)
     "Draw a histogram of upcoming review."
-    (interactive)
+    (interactive (list (org-fc-select-context)))
     (let* ((positions (seq-filter (lambda (x)
                                     (not (plist-get x :suspended)))
-                                  (org-fc-index-positions (org-fc-index 'all))))
+                                  (org-fc-index-positions (org-fc-index (or context 'all)))))
            (total (length positions))
            (sorted (seq-sort
                     (lambda (x y) (time-less-p
@@ -4294,8 +4270,11 @@ rating the card."
   (rasen/org-fc-todos-rate 'easy))
 (defun rasen/org-fc-todos-today ()
   (interactive)
-  (rasen/org-fc-todos-rate 'again)
-  (rasen/org-do-today)
+  (save-excursion
+    (rasen/org-fc-todos-rate 'again))
+  (save-excursion
+    (rasen/org-do-today))
+  (save-buffer)
   (rasen/org-fc-todos-next-card))
 
 (defun rasen/org-fc-todos-update-fc ()
@@ -4780,7 +4759,7 @@ KDE apps might have issues with mime types without this:
 {
   home.packages = [
     pkgs.google-play-music-desktop-player
-    pkgs.tdesktop # Telegram
+    # pkgs.tdesktop # Telegram
 
     pkgs.mplayer
     pkgs.smplayer
@@ -4867,7 +4846,7 @@ I use urxvt as my terminal emulator.
 #+end_src
 
 Urxvt gets its setting from =.Xresources= file. If you ever want to reload it on-the-fly, type the following (or press =C-c C-c= if you're reading this document in emacs now):
-#+begin_src sh
+#+begin_src sh :tangle no
 xrdb ~/.Xresources
 #+end_src
 *** vterm
