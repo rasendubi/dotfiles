@@ -918,8 +918,9 @@
               
                     # latex for displaying fragments in org-mode
                     (pkgs.texlive.combine {
-                      inherit (pkgs.texlive) scheme-small dvipng dvisvgm mhchem ;
+                      inherit (pkgs.texlive) scheme-small dvipng dvisvgm mhchem tikz-cd ;
                     })
+                    pkgs.ghostscript
                   ]
                 );
               
