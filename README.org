@@ -3237,15 +3237,16 @@ Actual configuration.
   ("p" "Productivity"           "~/org/plan.org"     "Resources" "Productivity")
   ("s" "Software development"   "~/org/plan.org"     "Resources" "Software development, programming, architecture")
   ("f" "Future of Software"     "~/org/plan.org"     "Resources" "Future of Software")
-  ("m" "Management"             "~/org/plan.org"     "Resources" "Management")
-  ("M" "Martial Arts"           "~/org/plan.org"     "Resources" "Martial Arts")
+  ("M" "Management"             "~/org/plan.org"     "Resources" "Management")
+  ("a" "Martial Arts"           "~/org/plan.org"     "Resources" "Martial Arts")
   ("n" "Natural sciences"       "~/org/plan.org"     "Resources" "Natural sciences")
   ("d" "Design"                 "~/org/plan.org"     "Resources" "Design")
   ("l" "Programming languages"  "~/org/plan.org"     "Resources" "Programming languages")
   ("W" "Writing"                "~/org/plan.org"     "Resources" "Writing")
   ("c" "Communication"          "~/org/plan.org"     "Resources" "Communication")
   ("b" "Business"               "~/org/plan.org"     "Resources" "Business")
-  ("g" "Gamedev"                "~/org/plan.org"     "Resources" "Gamedev"))
+  ("g" "Gamedev"                "~/org/plan.org"     "Resources" "Gamedev")
+  ("m" "Misc"                   "~/org/plan.org"     "Resources" "Misc"))
 
 (defhydra rasen/org-refile-hydra (:foreign-keys run :exit t)
   "Refile"
@@ -3942,7 +3943,17 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
                                      ("^-" . "")    ;; remove starting dash
                                      ("-$" . "")))) ;; remove ending dash
              (slug (-reduce-from #'cl-replace (strip-nonspacing-marks title) pairs)))
-        (downcase slug)))))
+        (downcase slug))))
+
+  (defun rasen/refile-weight ()
+    "Refile current item as weight log."
+    (interactive)
+    (save-excursion
+      (save-window-excursion
+        (rasen/org-copy-log-entry t)
+        (org-roam-find-file "(life) My Weight" nil nil t)
+        (goto-char (point-max))
+        (yank)))))
 #+end_src
 
 Enable auto-completion for notes.
@@ -4284,6 +4295,18 @@ rating the card."
   (save-buffer)
   (rasen/org-fc-todos-next-card))
 
+(defun rasen/org-fc-todos-suspend ()
+  (interactive)
+  (org-fc-suspend-card)
+  (save-buffer)
+  (rasen/org-fc-todos-next-card))
+
+(defun rasen/org-fc-todos-delete ()
+  (interactive)
+  (org-cut-subtree)
+  (save-buffer)
+  (rasen/org-fc-todos-next-card))
+
 (defun rasen/org-fc-todos-update-fc ()
   (when (member org-fc-flashcard-tag (org-get-tags nil 'local))
     (cond
@@ -4316,8 +4339,8 @@ rating the card."
   ("l" #'rasen/org-fc-todos-rate-later  (rasen/org-fc-todos-hydra-hint "later"  'easy))
   ("o" #'org-open-at-point "open")
   ("t" #'rasen/org-fc-todos-today "today")
-  ("S" #'org-fc-suspend-card "suspend")
-  ("d" #'org-cut-subtree "delete"))
+  ("S" #'rasen/org-fc-todos-suspend "suspend")
+  ("d" #'rasen/org-fc-todos-delete "delete"))
 
 (defun rasen/todos-review ()
   (interactive)
@@ -4766,7 +4789,7 @@ KDE apps might have issues with mime types without this:
 {
   home.packages = [
     pkgs.google-play-music-desktop-player
-    # pkgs.tdesktop # Telegram
+    pkgs.tdesktop # Telegram
 
     pkgs.mplayer
     pkgs.smplayer

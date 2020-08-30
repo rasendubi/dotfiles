@@ -497,7 +497,7 @@
             {
               home.packages = [
                 pkgs.google-play-music-desktop-player
-                # pkgs.tdesktop # Telegram
+                pkgs.tdesktop # Telegram
             
                 pkgs.mplayer
                 pkgs.smplayer
