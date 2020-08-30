@@ -13,7 +13,7 @@
     pkgs.dtach
     pkgs.android-studio
     pkgs.wmname
-    pkgs.adb
+    # pkgs.adb
 
     # pkgs.androidsdk_9_0
     # pkgs.androidndkPkgs

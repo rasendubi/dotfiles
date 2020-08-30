@@ -22,7 +22,7 @@
       type = "github";
       owner = "rycee";
       repo = "home-manager";
-      ref = "bqv-flakes";
+      ref = "master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixos-hardware = {
@@ -733,6 +733,7 @@
               '';
             }
           ];
+          home.stateVersion = "20.09";
         };
         homeManagerConfigurations = genHosts homeManagerHosts mkHomeManagerConfiguration;
       })

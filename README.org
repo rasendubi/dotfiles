@@ -178,7 +178,7 @@ home-manager = {
   type = "github";
   owner = "rycee";
   repo = "home-manager";
-  ref = "bqv-flakes";
+  ref = "master";
   inputs.nixpkgs.follows = "nixpkgs";
 };
 #+end_src
@@ -219,6 +219,7 @@ in {
     imports = [
       <<home-manager-section>>
     ];
+    home.stateVersion = "20.09";
   };
   homeManagerConfigurations = genHosts homeManagerHosts mkHomeManagerConfiguration;
 })
@@ -1520,7 +1521,7 @@ Common key bindings. (emacs-lisp)
 (exwm-input-set-key (kbd "s-4") #'rasen/exwm-telegram)
 (exwm-input-set-key (kbd "s-7") #'rasen/exwm-google-play-music)
 (exwm-input-set-key (kbd "s-9") #'notmuch)
-(exwm-input-set-key (kbd "<s-return>") #'eshell)
+(exwm-input-set-key (kbd "<s-return>") #'vterm)
 (exwm-input-set-key (kbd "<s-S-return>") #'rasen/terminal)
 
 (exwm-input-set-key (kbd "s-z") #'exwm-layout-toggle-mode-line)
