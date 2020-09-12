@@ -1710,8 +1710,8 @@ I never use Caps Lock–the feature, so it's nice to have Caps LED indicate alte
 #+name: nixos-section
 #+begin_src nix
 {
-  # services.xserver.xkbOptions = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
-  services.xserver.xkbOptions = "grp:caps_toggle,grp_led:caps";
+  services.xserver.xkbOptions = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
+  # services.xserver.xkbOptions = "grp:caps_toggle,grp_led:caps";
 }
 #+end_src
 
