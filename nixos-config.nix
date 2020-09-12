@@ -204,7 +204,10 @@ in
       networking = {
         hostName = name;
     
-        networkmanager.enable = true;
+        networkmanager = {
+          enable = true;
+          wifi.powersave = false;
+        };
     
         # disable wpa_supplicant
         wireless.enable = false;
