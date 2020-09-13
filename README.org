@@ -517,6 +517,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       doom-modeline
       dtrt-indent
       edit-indirect
+      eglot
       el-patch
       elpy
       epresent
@@ -5553,16 +5554,24 @@ Dim parens.
 LSP is Language Server Protocol. Some languages support it usually provide better completion and diagnostics.
 #+begin_src emacs-lisp
 (use-package lsp-mode
+  :disabled t
   :commands (lsp)
   :hook ((rust-mode haskell-mode) . lsp)
   :config
-  (setq lsp-prefer-flymake nil))
+  (setq lsp-prefer-flymake nil)
+  (setq lsp-rust-rls-server-command "rls")
+  (setq lsp-rust-analyzer-server-command "rust-analyzer"))
 
 (use-package lsp-ui
+  :disabled t
   :commands lsp-ui-mode)
 
 (use-package company-lsp
+  :disabled t
   :commands company-lsp)
+
+(use-package eglot
+  :hook ((rust-mode) . eglot-ensure))
 #+end_src
 *** Commenting
 #+begin_src emacs-lisp

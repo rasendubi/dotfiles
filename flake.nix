@@ -777,6 +777,7 @@
                     doom-modeline
                     dtrt-indent
                     edit-indirect
+                    eglot
                     el-patch
                     elpy
                     epresent
