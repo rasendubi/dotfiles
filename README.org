@@ -3791,6 +3791,7 @@ Fix exporting for confluence.
         "vb" ; Visual Basic
         "yml"))
 
+(require 'ox-confluence)
 (el-patch-defun org-confluence--block (language theme contents)
   (concat (el-patch-swap "\{code:theme=" "\{code") (el-patch-remove theme)
           (when (el-patch-swap language (member language rasen/confluence-block-known-languages)) (format (el-patch-swap "|language=%s" ":language=%s") language))
