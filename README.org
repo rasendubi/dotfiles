@@ -5869,6 +5869,11 @@ Pretty self-explaining.
   :config
   (add-hook 'flycheck-mode-hook #'flycheck-rust-setup))
 #+end_src
+*** Go
+#+begin_src emacs-lisp
+(use-package go-mode
+  :mode ("\\.go$" . go-mode))
+#+end_src
 *** C/C++
 **** Doxygen
 This const is taken from doxymacs and is subject to GPLv2. I've copied it my dotfiles as I don't need all doxymacs features and setup is non-trivial. (It requires compilation, there is no melpa package.)
