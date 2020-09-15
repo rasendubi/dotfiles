@@ -195,6 +195,7 @@ in
     }
     {
       services.xserver.xkbOptions = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
+      # services.xserver.xkbOptions = "grp:caps_toggle,grp_led:caps";
     }
     {
       users.users.rasen.extraGroups = [ "input" ];

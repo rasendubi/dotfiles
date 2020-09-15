@@ -47,3 +47,4 @@
 /.zsh/cache
 /README.el
 /emacs.el
+/README.nix

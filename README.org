@@ -5413,6 +5413,14 @@ Make '_' a part of words so that commands like =evil-forward-word-begin= work pr
 (add-hook 'prog-mode-hook
           (lambda () (modify-syntax-entry ?_ "w")))
 #+end_src
+*** Color compilation mode
+#+begin_src emacs-lisp
+(require 'ansi-color)
+(add-hook 'compilation-filter-hook
+          (defun rasen/colorize-compilation-buffer ()
+            (when (eq major-mode 'compilation-mode)
+              (ansi-color-apply-on-region compilation-filter-start (point-max)))))
+#+end_src
 *** projectile
 #+begin_src emacs-lisp
 (use-package projectile
