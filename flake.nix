@@ -795,7 +795,6 @@
                     flycheck-jest
                     flycheck-rust
                     forth-mode
-                    gcmh
                     general
                     gitconfig-mode
                     go-mode

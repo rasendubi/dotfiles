@@ -3,6 +3,8 @@
 ;;;
 
 (setq gc-cons-threshold most-positive-fixnum)
+(add-hook 'emacs-startup-hook (defun rasen/restore-gc-threshold ()
+                                (setq gc-cons-threshold 800000)))
 
 (require 'package)
 (setq package-archives nil)

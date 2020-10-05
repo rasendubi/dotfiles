@@ -535,7 +535,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       flycheck-jest
       flycheck-rust
       forth-mode
-      gcmh
       general
       gitconfig-mode
       go-mode
@@ -907,15 +906,11 @@ block but are passed literally to the \"example-block\"."
     new-body))
 #+end_src
 ** GC hacks
-Suppress GC in early init. (~.emacs.d/early-init.el~)
+Suppress GC in early init and restore it after init is complete. (~.emacs.d/early-init.el~)
 #+begin_src emacs-lisp :tangle .emacs.d/early-init.el
 (setq gc-cons-threshold most-positive-fixnum)
-#+end_src
-
-Later on, enable the Garbage Collector Magic Trick. (emacs-lisp)
-#+begin_src emacs-lisp
-(require 'gcmh)
-(gcmh-mode 1)
+(add-hook 'emacs-startup-hook (defun rasen/restore-gc-threshold ()
+                                (setq gc-cons-threshold 800000)))
 #+end_src
 ** use-package
 [[https://github.com/jwiegley/use-package][use-package]] is a cool emacs library that helps managing emacs configuration making it simpler and more structured. (emacs-lisp)
