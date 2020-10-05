@@ -4014,6 +4014,15 @@ Enable auto-completion for notes.
 
   (setq bibtex-dialect 'biblatex)
 
+  ;; `isbn-to-bibtex' fails with "(wrong-type-argument stringp nil)"
+  ;; error down in `org-ref-isbn-clean-bibtex-entry' functions. This
+  ;; happens because temporary buffer is not in `bibtex-mode', so
+  ;; `bibtex-entry-head' variable is not set.
+  ;;
+  ;; Prepend `bibtex-mode' to the list of processors, so the next ones
+  ;; work correctly.
+  (add-hook 'org-ref-isbn-clean-bibtex-entry-hook #'bibtex-mode)
+
   ;; Do not fill entries. (It works badly with urls.)
   (el-patch-defun bibtex-fill-field-bounds (bounds justify &optional move)
     "Fill BibTeX field delimited by BOUNDS.
