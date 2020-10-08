@@ -2818,6 +2818,12 @@ Do not indent tags.
 (setq org-ellipsis "…")
 #+end_src
 
+By default, show overview when opening org files. (This used to be default.)
+#+name: org-config
+#+begin_src emacs-lisp
+(setq org-startup-folded t)
+#+end_src
+
 Make the table header float if scrolled out of view.
 #+name: org-config
 #+begin_src emacs-lisp
