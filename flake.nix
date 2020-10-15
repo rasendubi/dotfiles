@@ -12,7 +12,7 @@
       owner = "moritzschaefer";
       # repo = "nixpkgs-channels";
       repo = "nixpkgs";
-      rev = "2dec29ab5f5dda2310e5218bbb66acfc31836b60";
+      rev = "e52053d8473d5d350bc66ca3016684fe79587a87";
       # ref = "nixpkgs-unstable";
       ref = "master";
     };
@@ -21,6 +21,9 @@
       owner = "NixOS";
       repo = "nixos-hardware";
       flake = false;
+    };
+    nur = {
+      url = github:nix-community/NUR;
     };
     home-manager = {
       type = "github";
@@ -31,7 +34,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixos-hardware, home-manager }@inputs:
+  outputs = { self, nixpkgs, nixos-hardware, home-manager, nur }@inputs:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
@@ -47,8 +50,9 @@
             nixpkgs.lib.nixosSystem {
               system = "x86_64-linux";
               modules = [
-                { nixpkgs = { inherit pkgs; }; }
+                { nixpkgs = { inherit pkgs;  }; }
                 (import ./nixos-config.nix)
+                { nixpkgs.overlays = [ nur.overlay ]; }
               ];
               specialArgs = { inherit name inputs; };
             };

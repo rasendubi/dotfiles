@@ -1,0 +1,4 @@
+#!/bin/sh
+# the firts one does not works 
+# qemu-system-x86_64 -drive file=/home/moritz/win_qemu/windows.qcow2,format=qcow2 -m 4G -smp 4 --enable-kvm -cpu host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time -net nic -net user,smb=/home/moritz/WindowsVM -vga qxl  -device virtio-serial-pci -show-cursor
+qemu-system-x86_64 -drive file=/home/moritz/win_qemu/windows.qcow2,format=qcow2 -m 4G -smp 4 --enable-kvm -cpu host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time -net nic  -net user #,smb=/home/moritz/WindowsVM

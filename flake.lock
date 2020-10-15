@@ -1,14 +1,14 @@
 {
   "nodes": {
     "home-manager": {
-      "info": {
-        "lastModified": 1587442074,
-        "narHash": "sha256-SmC1aP9TJImzHlNIWOTa+uwePeHoEcfGJEewXXWAtfc="
-      },
       "inputs": {
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": [
+          "nixpkgs"
+        ]
       },
       "locked": {
+        "lastModified": 1587442074,
+        "narHash": "sha256-SmC1aP9TJImzHlNIWOTa+uwePeHoEcfGJEewXXWAtfc=",
         "owner": "rycee",
         "repo": "home-manager",
         "rev": "e13bd1e79372c58cc1e86e45bdf304f4b6770fe3",
@@ -23,11 +23,9 @@
     },
     "nixos-hardware": {
       "flake": false,
-      "info": {
-        "lastModified": 1587720950,
-        "narHash": "sha256-G9/po4PZW+v+UWRK1uU12/CNnrRLKgcKfRZxUqHy+lU="
-      },
       "locked": {
+        "lastModified": 1587720950,
+        "narHash": "sha256-G9/po4PZW+v+UWRK1uU12/CNnrRLKgcKfRZxUqHy+lU=",
         "owner": "NixOS",
         "repo": "nixos-hardware",
         "rev": "d928c96e3c86423e829779c84eef70848b835923",
@@ -40,21 +38,34 @@
       }
     },
     "nixpkgs": {
-      "info": {
-        "lastModified": 1596375983,
-        "narHash": "sha256-QwOCnEKSwhkWZklC7/oHatQPpeSNo5X9N5Ee2wIojaU="
-      },
       "locked": {
+        "lastModified": 1601814593,
+        "narHash": "sha256-/TfxRvS6VHhUkNypokmLyMJ+uUeKfCldsmDvRKE2iVA=",
         "owner": "moritzschaefer",
         "repo": "nixpkgs",
-        "rev": "2dec29ab5f5dda2310e5218bbb66acfc31836b60",
+        "rev": "e52053d8473d5d350bc66ca3016684fe79587a87",
         "type": "github"
       },
       "original": {
         "owner": "moritzschaefer",
         "ref": "master",
         "repo": "nixpkgs",
-        "rev": "2dec29ab5f5dda2310e5218bbb66acfc31836b60",
+        "rev": "e52053d8473d5d350bc66ca3016684fe79587a87",
+        "type": "github"
+      }
+    },
+    "nur": {
+      "locked": {
+        "lastModified": 1596374527,
+        "narHash": "sha256-n3LvJfMdu7mwSm+yavwae+Mzf6wi8Uz8px7jz95p0Ps=",
+        "owner": "nix-community",
+        "repo": "NUR",
+        "rev": "c43447bb3f73ee9c9ab9ffcd270d4a78d155fe32",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "NUR",
         "type": "github"
       }
     },
@@ -62,10 +73,11 @@
       "inputs": {
         "home-manager": "home-manager",
         "nixos-hardware": "nixos-hardware",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "nur": "nur"
       }
     }
   },
   "root": "root",
-  "version": 5
+  "version": 7
 }

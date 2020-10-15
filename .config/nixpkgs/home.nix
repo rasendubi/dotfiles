@@ -1,7 +1,54 @@
 { pkgs, config, ... }:
 {
   # targets.genericLinux.enable = true;
+  xdg.configFile."tridactyl/tridactylrc".text = "bind ;r js javascript:location.href = 'org-protocol:/roam-ref?template=r&ref=' + encodeURIComponent(location.href) + '&title=' + encodeURIComponent(document.title)
+";
 
+  # this (maybe) fixes the issue that zoom cannot change to bluetooth sink: https://unix.stackexchange.com/questions/452907/pavucontrol-wont-change-output-on-some-apps
+  home.file.".alsoftrc".text = ''
+[pulse]
+allow-moves=yes
+  '';
+  xdg.configFile."dunst/dunstrc".source = ../dunst/dunstrc;
+
+  # autostart
+  xdg.configFile."autostart/nm-applet.desktop".source = "/run/current-system/sw/share/applications/nm-applet.desktop";
+  xdg.configFile."autostart/firefox.desktop".source = "/run/current-system/sw/share/applications/firefox.desktop";
+  xdg.configFile."autostart/rxvt-unicode.desktop".source = "/run/current-system/sw/share/applications/rxvt-unicode.desktop";
+#   xdg.configFile."autostart/clipit.desktop".text = ''[Desktop Entry]  <- I use clipmon now..
+# Icon=clipit-trayicon
+# Exec=clipit
+# Terminal=false
+# Type=Application
+# Categories=GTK;GNOME;Application;Utility;
+# Name=ClipIt'';
+  xdg.configFile."autostart/blueman-applet.desktop".text = ''[Desktop Entry]
+Name=Blueman Applet
+Comment=Manage your Bluetooth connections
+Icon=bluetooth
+Exec=blueman-applet
+Terminal=false
+Type=Application
+NoDisplay=true
+NotShowIn=KDE;GNOME;'';
+  xdg.configFile."autostart/pasystray.desktop".text = ''[Desktop Entry]
+Version=1.0
+Name=PulseAudio System Tray
+GenericName=
+Comment=An Applet for PulseAudio
+Exec=pasystray
+Icon=pasystray
+StartupNotify=true
+Type=Application
+Categories=AudioVideo;Audio;
+Keywords=pulseaudio;tray;system tray;applet;volume;'';
+  xdg.configFile."autostart/flameshot.desktop".text = ''[Desktop Entry]
+Name=Flameshot
+Comment=Screenshot tool
+Exec=flameshot
+Icon=flameshot
+StartupNotify=true
+Type=Application'';
 
   # python
 #   home.packages = with pkgs; let moritzsphd = python37Packages.buildPythonPackage rec {
@@ -27,8 +74,6 @@ home.packages =   with pkgs; [
     pavucontrol
 
     google-play-music-desktop-player
-    feh
-    inkscape
 
     inconsolata
     dejavu_fonts
@@ -85,6 +130,11 @@ home.packages =   with pkgs; [
         set -x TERM xterm-256color
       end
 
+      ssh-add -l > /dev/null
+      if [ $status -ne 0 ]
+          ssh-add
+      end
+
       eval (direnv hook fish)
     '';
   };
@@ -106,6 +156,11 @@ home.packages =   with pkgs; [
   #xsession.windowManager.exwm = {
   #  enable = true;
   #};
+  # xsession.pointerCursor = {
+  #   name = "Vanilla-DMZ";
+  #   package = pkgs.vanilla-dmz;
+  #   size = 128;
+  # };
   xsession.initExtra = ''
     # xkbcomp /home/moritz/nixos-config/.Xkeymap $DISPLAY # TODO enable?
 
@@ -194,9 +249,9 @@ home.packages =   with pkgs; [
 #       "Xft.rgba" = "rgb";
 #     };
 #   };
-
+  # this is colliding with the configs I already have in ~/.config/autorandr, so I disabled it
   programs.autorandr = {
-    enable = true;
+    enable = false;
     profiles = {
       "home" = {
         fingerprint = {
@@ -210,7 +265,7 @@ home.packages =   with pkgs; [
             position = "0x2160";
             mode = "3840x2160";
             rate = "60.00";
-            dpi = 240;
+            dpi = 220;
           };
           DP-3 = {
             enable = true;
@@ -233,7 +288,7 @@ home.packages =   with pkgs; [
             position = "0x1440";
             mode = "3840x2160";
             rate = "60.00";
-            dpi = 240;
+            dpi = 220;
           };
           DP-3 = {
             enable = true;

@@ -13,12 +13,13 @@ let
           '';
         in [nvidia-offload];
         imports = [
-          (import "${inputs.nixos-hardware}/dell/xps/15-9560")
+          (import "${inputs.nixos-hardware}/dell/xps/15-9560/intel")
           inputs.nixpkgs.nixosModules.notDetected
         ];
       
         boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
         boot.kernelModules = [ "kvm-intel" ];
+        boot.kernelParams = [ "acpi_rev_override=1" "pcie_aspm=off" "nouveau.modeset=0" ];
         boot.extraModulePackages = [ ];
       
         nix.maxJobs = lib.mkDefault 8;
@@ -36,8 +37,15 @@ let
           # Bus ID of the NVIDIA GPU. You can find it using lspci, either under 3D or VGA
           nvidiaBusId = "PCI:1:0:0";
         };
-        hardware.nvidia.prime.offload.enable = true;
+        hardware.nvidia.prime.offload.enable = false;  # TODO
         hardware.bumblebee.enable = lib.mkForce false;
+        # hardware.opengl = {
+        #   enable = true;
+        #   extraPackages = with pkgs; [
+        #     libGL
+        #   ];
+        #   setLdLibraryPath = true;
+        # };
         boot.loader.systemd-boot.enable = true;
         boot.loader.efi.canTouchEfiVariables = true;
       }
@@ -74,6 +82,11 @@ let
           enable = true;
           accelSpeed = "0.7";
         };
+        # displayManager.lightdm.greeters.gtk.cursorTheme = {  # TODO if home manager cursor doesnt work
+        #   name = "Vanilla-DMZ";
+        #   package = pkgs.vanilla-dmz;
+        #   size = 64;
+        # };
       }
       {
         console.packages = [
@@ -86,7 +99,16 @@ let
       }
     ];
   };
-
+  # nur-no-pkgs = import (builtins.fetchTarball {
+  #   url = "https://github.com/nix-community/NUR/archive/master.tar.gz";
+  #   sha256 = "10dq8abmw30lrpwfg7yb1zn6fb5d2q94yhsvg6dwcknn46nilbxs";
+  # }) {
+  #     nurpkgs = pkgs;
+  #     inherit pkgs;
+  #     repoOverrides = {
+  #       moritzschaefer = import /home/moritz/Projects/nur-packages;
+  #     };
+  #   };
 in
 {
   imports = [
@@ -94,7 +116,7 @@ in
       nixpkgs.config.allowUnfree = true;
 
       # The NixOS release to be compatible with for stateful data such as databases.
-      system.stateVersion = "20.03";
+      system.stateVersion = "20.09";
     }
 
     {
@@ -144,11 +166,86 @@ in
       ];
     }
     {
+      environment.systemPackages = [
+        pkgs.sshfs
+      ];
       fileSystems."/mnt/cclab_nas" = {
         device = "//nas22.ethz.ch/biol_imhs_ciaudo";
         fsType = "cifs";
-        options = [ "credentials=/home/moritz/.secret/cclab_nas.credentials" "workgroup=d.ethz.ch" "uid=moritz" "gid=users" ];
+        options = [ "credentials=/home/moritz/.secret/cclab_nas.credentials" "workgroup=d.ethz.ch" "uid=moritz" "gid=users" "noauto"];
       };
+    
+    # https://releases.nixos.org/nix-dev/2016-September/021763.html  TODO not working :/
+      fileSystems."/mnt/cclab_server" = let
+        sshAsUser = user: 
+          pkgs.writeScript "ssh_as_${user}" ''
+            exec ${pkgs.sudo}/bin/sudo -i -u ${user} \
+              ${pkgs.openssh}/bin/ssh $@
+          '';
+      in {
+        # device = "sshfs#schamori@mhs-cclab-srv001.ethz.ch:/";
+        fsType = "fuse";
+        device = "${pkgs.sshfsFuse}/bin/sshfs#schamori@mhs-cclab-srv001.ethz.ch:/";
+        options = [
+                "noauto" "_netdev" "allow_other" "x-gvfs-hide" #"reconnect"  # "x-systemd.automount" 
+                "ServerAliveInterval=5" "ServerAliveCountMax=1"
+                "uid=30925" "gid=100" "umask=0"   # TODO comment if fails
+                "ssh_command=${sshAsUser "moritz"}"
+              ];
+      };
+      
+      # https://soultrace.net/mount-network-share-after-boot/ <- more beautiful
+      networking.networkmanager.dispatcherScripts = [
+        {
+          source = pkgs.writeText "mountHook" ''
+            if [ "$2" != "vpn-up" ]; then
+                logger "exit: event $2 != vpn-up"
+                exit
+            fi
+            mount /mnt/cclab_nas
+            # mount /mnt/cclab_server
+            logger "Mounted cclab_nas"
+          '';
+          type = "basic";
+        }
+        {
+          source = pkgs.writeText "umountHook" ''
+            if [ "$2" != "vpn-pre-down" ]; then
+                logger "exit: event $2 != vpn-pre-down"
+                exit
+            fi
+            umount -a -l -t cifs
+            umount /mnt/cclab_server
+            logger "Unmounted cclab_nas"
+          '';
+          type = "pre-down";
+        }
+      ];
+      
+      systemd.services.suspend-disconnect = {
+        description = "Disconnect VPN before suspend";
+        wantedBy = [ "systemd-suspend.service" ];
+        before = [ "systemd-suspend.service" ];
+        script = ''
+          /run/current-system/sw/bin/nmcli con down id VPN\ ETHZ 2> /tmp/suspend
+        '';
+        serviceConfig.Type = "oneshot";
+      };
+      # systemd.services.tun-connect = {
+      #   wants = [ "sys-devices-virtual-net-tun0.device" ];
+      #   after = [ "sys-devices-virtual-net-tun0.device" ];
+      #   requires = [];
+      #   services.systemd-logind.environment.SYSTEMD_LOG_LEVEL
+      #   requires
+      #   script = ''
+      #   echo "cte" > /tmp/vpn
+      #   mount /mnt/cclab_nas
+      #   '';
+      # };
+      # powerManagement.powerDownCommands = "\"fusermount -u /home/moritz/sshfs \"\n\"echo ieie > /tmp/testt\"";  # doesn't work (at least not without reboot..)
+    }
+    {
+      system.autoUpgrade.enable = true;
     }
     {
       networking = {
@@ -182,6 +279,15 @@ in
       };
     
       environment.systemPackages = [ pkgs.pavucontrol ];
+    }
+    {
+      services.printing.enable = true;
+      services.printing.drivers = with pkgs; [
+        gutenprint
+        gutenprintBin
+        samsungUnifiedLinuxDriver
+        splix
+      ];
     }
     {
       services.locate = {
@@ -238,7 +344,11 @@ in
       virtualisation.docker.enable = true;
       environment.systemPackages = [
         pkgs.docker-compose
+        pkgs.kvm
+        pkgs.qemu
       ];
+    
+      users.users.moritz.extraGroups = ["libvirtd"];  # required for qemu I think 
     }
     {
       environment.systemPackages = [ pkgs.borgbackup ];
@@ -290,10 +400,12 @@ in
       time.timeZone = "Europe/Berlin";
     }
     {
-      services.xserver.displayManager.lightdm = {
-        enable = true;
+      services.xserver.displayManager = {
         autoLogin = {
           user = "moritz";
+          enable = true;
+        };
+        lightdm = {
           enable = true;
         };
       };
@@ -302,23 +414,28 @@ in
       services.xserver.windowManager = {
         exwm = {
           enable = true;
-          extraPackages = epkgs: with epkgs; [ emacsql-sqlite ];
+          extraPackages = epkgs: with epkgs; [ emacsql-sqlite pkgs.imagemagick ];
           enableDefaultConfig = false;  # todo disable and enable loadScript
           # careful, 'loadScript option' was merged from Vizaxo into my personal nixpkgs repo.
           loadScript = ''
             (require 'exwm)
-            (require 'exwm-systemtray)
+            ;; most of it is now in .spacemacs.d/lisp/exwm.el
+            ;; (require 'exwm-systemtray)
             (require 'exwm-randr)
             ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "HDMI1" 2 "DP2" 3 "eDP1" 4 "HDMI1" 5 "DP2"))
-            (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "eDP1" 2 "HDMI1" 3 "eDP1" 4 "eDP1" 5 "eDP1"))
-            (add-hook 'exwm-randr-screen-change-hook (lambda () (start-process-shell-command "xrandr" nil "xrandr --fb 7680x2160 --output HDMI1 --auto --scale 2x2 --pos 0x0  --output eDP1 --auto --scale 1x1 --pos 3840x0")))
-            (exwm-randr-enable)
-            (exwm-systemtray-enable)
+            ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "eDP1" 2 "HDMI1" 3 "eDP1" 4 "eDP1" 5 "eDP1"))
+            ;; (add-hook 'exwm-randr-screen-change-hook (lambda () (start-process-shell-command "xrandr" nil "xrandr --fb 7680x2160 --output HDMI1 --auto --scale 2x2 --pos 0x0  --output eDP1 --auto --scale 1x1 --pos 3840x0"))) ;; TODO this leads to an endless cascade of screen updates.. -.-
+            ;; (exwm-randr-enable)
+            ;; (exwm-systemtray-enable)
             (exwm-enable)
           '';
         };
       };
-      services.xserver.displayManager.defaultSession = "none+exwm";
+      services.xserver.displayManager.defaultSession = "plasma5+exwm";  # Firefox works more fluently with plasma5+exwm instead of "none+exwm"
+      services.xserver.desktopManager = {
+        plasma5.enable = true;
+        xfce.enable = true;
+      };
     }
     {
       services.xserver.desktopManager.xterm.enable = false;
@@ -331,8 +448,28 @@ in
       ];
     }
     {
+      environment.systemPackages = with pkgs; [
+        dunst
+      ];
+      systemd.user.services."dunst" = {
+        enable = true;
+        description = "";
+        wantedBy = [ "default.target" ];
+        serviceConfig.Restart = "always";
+        serviceConfig.RestartSec = 2;
+        serviceConfig.ExecStart = "${pkgs.dunst}/bin/dunst";
+      };
+    }
+    {
       services.xserver.layout = "de,de,us";
       services.xserver.xkbVariant = "bone,,";
+    
+      # Use same config for linux console
+      console.useXkbConfig = true;
+    }
+    {
+      services.xserver.autoRepeatDelay = 180;
+      services.xserver.autoRepeatInterval = 50;
     
       # Use same config for linux console
       console.useXkbConfig = true;
@@ -357,6 +494,7 @@ in
         enableGhostscriptFonts = false;
     
         fonts = with pkgs; [
+          corefonts
           inconsolata
           dejavu_fonts
           source-code-pro
@@ -395,15 +533,13 @@ in
       services.pcscd.enable = true;
     }
     {
-      environment.systemPackages = [
-        (pkgs.pass.withExtensions (exts: [ exts.pass-otp ]))
-        pkgs.pinentry-curses
-        pkgs.pinentry-qt
-        pkgs.pinentry-emacs
+      environment.systemPackages = with pkgs; [
+        (pass.withExtensions (exts: [ exts.pass-otp ]))
+        pinentry-curses
+        pinentry-qt
+        pinentry-emacs
       ];
-    }
-    {
-      programs.browserpass.enable = true;
+      # services.keepassx.enable = true;
     }
     {
       environment.systemPackages = [
@@ -452,7 +588,29 @@ in
       ];
     }
     {
+      environment.systemPackages =
+        let wrapper = pkgs.writeScriptBin "spotify-highres" ''
+          #!${pkgs.stdenv.shell}
+          exec ${pkgs.spotify}/bin/spotify --force-device-scale-factor=2
+          '';
+      in
+         [ pkgs.spotify wrapper ];
+    }
+    {
+      environment.systemPackages = [ pkgs.steam ];
+    }
+    {
       environment.systemPackages = with pkgs; [
+        gnome3.cheese
+        pandoc   # TODO make a latex section
+        # haskellPackages.pandoc-crossref  # broken...
+        haskellPackages.pandoc-citeproc
+        texlive.combined.scheme-full
+        sparkleshare
+        gnome3.gpaste
+        autorandr
+        
+        kdenlive
         audacity
         google-play-music-desktop-player
         tdesktop # Telegram
@@ -463,7 +621,6 @@ in
         libreoffice
         wineWowPackages.stable
         # winetricks  # requires p7zip (which is unsafe...)
-        spotify
         gimp-with-plugins
     
         mplayer
@@ -479,10 +636,12 @@ in
         text = ''
           [Default Applications]
           image/png=inkscape.desktop;
+          image/svg+xml=inkscape.desktop;
         '';
       };
     }
     {
+      environment.variables.EDITOR = "vim";
       environment.systemPackages = [
         (pkgs.vim_configurable.override { python3 = true; })
         pkgs.neovim
@@ -500,9 +659,10 @@ in
     }
     {
       fonts = {
-        fonts = [
-          pkgs.powerline-fonts
-          pkgs.terminus_font
+        fonts = with pkgs; [
+          powerline-fonts
+          terminus_font
+    
         ];
       };
     }
@@ -523,6 +683,10 @@ in
       ];
     }
     {
+      environment.systemPackages = let R-with-my-packages = pkgs.rWrapper.override{ packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra ]; };
+      in [ R-with-my-packages ];
+    }
+    {
       environment.systemPackages = let python = (with pkgs; python3.withPackages (python-packages: with python-packages; [
         python3
         pandas
@@ -539,6 +703,8 @@ in
         xlrd
         pyyaml
         matplotlib-venn
+        networkx
+        statsmodels
     
         fritzconnection
         #jupyter
@@ -553,6 +719,7 @@ in
         pybigwig
         xdg
         epc
+        importmagic
         jupyterlab
         jupyter_console
         ipykernel
@@ -560,19 +727,27 @@ in
         scikit-plot
         scikit-bio
         powerline
+        python-language-server
+        pyls-isort
+        pyls-mypy
         # ptvsd
-      ])); in with pkgs.python37Packages; [
+      ])); in with pkgs.python3Packages; [
         python  # let is stronger than with, which is why this installs the correct python (the one defined above)
         pkgs.pipenv
         pip
-        importmagic
-        epc
+        pkgs.nodePackages.pyright
         python-language-server
         selenium
-        pkgs.zlib
-        pkgs.zlib.dev
+        # pkgs.zlib
+        #pkgs.zlib.dev
+        # nur-no-pkgs.repos.moritzschaefer.python3Packages.cytoflow
       ];
-      environment.variables.LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${stdenv.cc.cc.lib}/lib/libstdc++.so.6";
+      # environment.variables.LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${stdenv.cc.cc.lib}/lib/libstdc++.so.6";  # TODO doesnt work anymore because of libgl 
+    }
+    {
+      environment.systemPackages = with pkgs; [
+        libGL
+      ];
     }
     {
       environment.systemPackages = with pkgs; [
@@ -581,6 +756,8 @@ in
     }
     {
       environment.systemPackages = with pkgs; [
+        tldr
+        nmap
         sqlite
         gitAndTools.hub
         youtube-dl
