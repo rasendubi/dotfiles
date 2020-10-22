@@ -16,6 +16,19 @@ let
           (import "${inputs.nixos-hardware}/dell/xps/15-9560/intel")
           inputs.nixpkgs.nixosModules.notDetected
         ];
+        # accelerateion
+        nixpkgs.config.packageOverrides = pkgs: {
+          vaapiIntel = pkgs.vaapiIntel.override { enableHybridCodec = true; };
+        };
+        hardware.opengl = {
+          enable = true;
+          extraPackages = with pkgs; [
+            intel-media-driver # LIBVA_DRIVER_NAME=iHD
+            vaapiIntel         # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
+            vaapiVdpau
+            libvdpau-va-gl
+          ];
+        };
       
         boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
         boot.kernelModules = [ "kvm-intel" ];
@@ -29,7 +42,7 @@ let
           coreOffset = -125;
           gpuOffset = -75;
         };
-      
+        services.tlp.enable = true;
         powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
         hardware.nvidia.prime = {
           # Bus ID of the Intel GPU. You can find it using lspci, either under 3D or VGA
@@ -39,15 +52,7 @@ let
         };
         hardware.nvidia.prime.offload.enable = false;  # TODO
         hardware.bumblebee.enable = lib.mkForce false;
-        # hardware.opengl = {
-        #   enable = true;
-        #   extraPackages = with pkgs; [
-        #     libGL
-        #   ];
-        #   setLdLibraryPath = true;
-        # };
-        boot.loader.systemd-boot.enable = true;
-        boot.loader.efi.canTouchEfiVariables = true;
+      
       }
       {
         fileSystems."/" =
@@ -414,7 +419,7 @@ in
       services.xserver.windowManager = {
         exwm = {
           enable = true;
-          extraPackages = epkgs: with epkgs; [ emacsql-sqlite pkgs.imagemagick ];
+          extraPackages = epkgs: with epkgs; [ emacsql-sqlite pkgs.imagemagick ];  # unfortunately, adding zmq and jupyter here, didn't work so I had to install them manually (i.e. compiling emacs-zmq)
           enableDefaultConfig = false;  # todo disable and enable loadScript
           # careful, 'loadScript option' was merged from Vizaxo into my personal nixpkgs repo.
           loadScript = ''
@@ -596,8 +601,13 @@ in
       in
          [ pkgs.spotify wrapper ];
     }
+    services.tor.enable = true;
+    services.tor.client.enable = true;
     {
       environment.systemPackages = [ pkgs.steam ];
+      hardware.opengl.driSupport32Bit = true;
+      hardware.opengl.extraPackages32 = with pkgs.pkgsi686Linux; [ libva vaapiIntel];
+      hardware.pulseaudio.support32Bit = true;
     }
     {
       environment.systemPackages = with pkgs; [
