@@ -1481,6 +1481,16 @@ Common key bindings. (emacs-lisp)
 (s-leader-def "t" #'rasen/tab-map)
 (exwm-input-set-key (kbd "s-t") #'rasen/tab-map)
 
+(exwm-input-set-key (kbd "s-1") #'tab-bar-select-tab)
+(exwm-input-set-key (kbd "s-2") #'tab-bar-select-tab)
+(exwm-input-set-key (kbd "s-3") #'tab-bar-select-tab)
+(exwm-input-set-key (kbd "s-4") #'tab-bar-select-tab)
+(exwm-input-set-key (kbd "s-5") #'tab-bar-select-tab)
+(exwm-input-set-key (kbd "s-6") #'tab-bar-select-tab)
+(exwm-input-set-key (kbd "s-7") #'tab-bar-select-tab)
+(exwm-input-set-key (kbd "s-8") #'tab-bar-select-tab)
+(exwm-input-set-key (kbd "s-9") #'tab-bar-select-tab)
+
 (exwm-input-set-key (kbd "<s-f1>") (lookup-key (current-global-map) (kbd "<f1>")))
 
 (defun rasen/exwm-firefox ()
@@ -1506,10 +1516,10 @@ Common key bindings. (emacs-lisp)
   (interactive)
   (switch-to-buffer (other-buffer (current-buffer))))
 
-(exwm-input-set-key (kbd "s-1") #'rasen/exwm-firefox)
-(exwm-input-set-key (kbd "s-4") #'rasen/exwm-telegram)
-(exwm-input-set-key (kbd "s-7") #'rasen/exwm-google-play-music)
-(exwm-input-set-key (kbd "s-9") #'notmuch)
+(exwm-input-set-key (kbd "s-!") #'rasen/exwm-firefox)           ;; s-S-1
+(exwm-input-set-key (kbd "s-$") #'rasen/exwm-telegram)          ;; s-S-4
+(exwm-input-set-key (kbd "s-&") #'rasen/exwm-google-play-music) ;; s-S-7
+(exwm-input-set-key (kbd "s-(") #'notmuch)                      ;; s-S-9
 (exwm-input-set-key (kbd "<s-return>") #'vterm)
 (exwm-input-set-key (kbd "<s-S-return>") #'rasen/terminal)
 
@@ -1523,6 +1533,7 @@ Common key bindings. (emacs-lisp)
   "<f1> v" #'counsel-describe-variable)
 
 ;; Without the next line, EXWM won't intercept necessary prefix keys
+;; (if you rebind them after EXWM has started)
 (exwm-input--update-global-prefix-keys)
 #+end_src
 ** Window layout
