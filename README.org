@@ -931,7 +931,7 @@ I use [[https://github.com/noctuid/general.el][general]] to define my keybinding
 
 ;; Definer for my leader
 (general-create-definer --leader-def   :prefix "SPC")
-(general-create-definer --s-leader-def :prefix "s-SPC")
+(general-create-definer --s-leader-def :prefix "s-SPC" :non-normal-prefix "s-SPC")
 
 ;; Extra-hackery to define key with multiple prefixes
 (defmacro leader-def (&rest args)
