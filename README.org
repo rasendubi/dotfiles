@@ -6517,6 +6517,31 @@ See http://bnbeckwith.com/code/writegood-mode.html
   :config
   (add-hook 'sql-mode-hook (lambda () (toggle-truncate-lines t))))
 #+end_src
+*** PlantUML
+Install plantuml.
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.packages = [ pkgs.plantuml ];
+}
+#+end_src
+
+Emacs configuration.
+#+begin_src emacs-lisp
+(use-package plantuml-mode
+  :config
+  (setq plantuml-executable-path (executable-find "plantuml"))
+  (setq plantuml-jar-path (expand-file-name "../lib/plantuml.jar" (file-name-directory (file-truename plantuml-executable-path))))
+  (setq org-plantuml-jar-path plantuml-jar-path)
+
+  (setq plantuml-default-exec-mode 'executable)
+  (setq plantuml-exec-mode 'executable)
+
+  (setenv "PLANTUML_LIMIT_SIZE" "8192")
+
+  (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
+  (org-babel-do-load-languages 'org-babel-load-languages '((plantuml . t))))
+#+end_src
 * Look and Feel
 ** Remove the clutter
 Hide menu, toolbar, scrollbar. (Goes to early-init to avoid flash of unstyled emacs.)

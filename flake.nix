@@ -749,6 +749,9 @@
               home.packages = [ pkgs.racket ];
             }
             {
+              home.packages = [ pkgs.plantuml ];
+            }
+            {
               fonts.fontconfig.enable = true;
               home.packages = [
                 pkgs.inconsolata
