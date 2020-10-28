@@ -4153,31 +4153,23 @@ element."
          grouped-count))
       (switch-to-buffer-other-window "*org-fc-upcoming*")))
 
-  (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-flip-mode
-    (kbd "RET") 'org-fc-review-flip
-    (kbd "n") 'org-fc-review-flip
-    (kbd "s") 'org-fc-review-suspend-card
-    (kbd "q") 'org-fc-review-quit)
-
-  (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-rate-mode
-    (kbd "a") 'org-fc-review-rate-again
-    (kbd "h") 'org-fc-review-rate-hard
-    (kbd "g") 'org-fc-review-rate-good
-    (kbd "e") 'org-fc-review-rate-easy
-    (kbd "s") 'org-fc-review-suspend-card
-    (kbd "q") 'org-fc-review-quit)
-
-  (general-def '(normal motion) 'org-fc-review-flip-mode-map
+  (general-def 'normal 'org-fc-review-flip-mode-map
     "RET" #'org-fc-review-flip
     "n"   #'org-fc-review-flip
     "s"   #'org-fc-review-suspend-card
     "p"   #'org-fc-review-edit
     "q"   #'org-fc-review-quit)
 
-  (general-def '(normal motion) 'org-fc-review-rate-mode-map
+  (general-def 'normal 'org-fc-review-rate-mode-map
     "a"   #'org-fc-review-rate-again
     "h"   #'org-fc-review-rate-hard
     "g"   #'org-fc-review-rate-good
+    ;; There seems to be an issue binding "g" and it still behaves as
+    ;; a prefix for other commands in rate mode.
+    ;;
+    ;; Bind `org-fc-review-rate-good' to "n" as well to workaround
+    ;; this.
+    "n"   #'org-fc-review-rate-good
     "e"   #'org-fc-review-rate-easy
     "s"   #'org-fc-review-suspend-card
     "p"   #'org-fc-review-edit
