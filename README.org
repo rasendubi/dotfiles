@@ -1889,7 +1889,7 @@ Emacs determines what to do with each keypress.
     ;; (message "(razer %s %s) class-name=%s" code value exwm-class-name)
     (when (string= value "down")
       (cond ((= code 11) (rasen/switch-to-previous-buffer))
-            ((string= exwm-class-name "Firefox")
+            ((or (string= exwm-class-name "Firefox") (string= exwm-class-name "Google-chrome"))
              (cond
               ((= code 1) (rasen/exwm-send-keys (kbd "<M-left>"))) ;; back (history)
               ((= code 2) (rasen/exwm-send-keys (kbd "<C-prior>"))) ;; prev tab
