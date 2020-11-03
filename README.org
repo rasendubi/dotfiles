@@ -47,7 +47,7 @@ The following goes to ~flake.nix~ file.
     nixpkgs = {
       type = "github";
       owner = "NixOS";
-      repo = "nixpkgs-channels";
+      repo = "nixpkgs";
       ref = "nixpkgs-unstable";
     };
 
@@ -126,7 +126,7 @@ Add input:
 nixpkgs-stable = {
   type = "github";
   owner = "NixOS";
-  repo = "nixpkgs-channels";
+  repo = "nixpkgs";
   ref = "nixos-20.03";
 };
 #+end_src
@@ -1208,12 +1208,6 @@ Fix whitespaces on file save.
   :diminish whitespace-cleanup-mode
   :config
   (global-whitespace-cleanup-mode 1))
-#+end_src
-** undo-tree
-It's enabled by default. Just diminish it.
-#+begin_src emacs-lisp
-(use-package undo-tree
-  :diminish (undo-tree-mode global-undo-tree-mode))
 #+end_src
 ** which-key
 [[https://github.com/justbur/emacs-which-key][which-key]] is a minor mode for Emacs that displays the key bindings following your currently entered incomplete command (a prefix) in a popup.
@@ -3332,7 +3326,16 @@ being set to t and copy to the target location, don't move it.
 Beware that keeping refiled entries may result in duplicated ID
 properties.
 
-RFLOC can be a refile location obtained in a different way.
+RFLOC can be a refile location obtained in a different way.  It
+should be a list with the following 4 elements:
+
+1. Name - an identifier for the refile location, typically the
+headline text
+2. File - the file the refile location is in
+3. nil - used for generating refile location candidates, not
+needed when passing RFLOC
+4. Position - the position in the specified file of the
+headline to refile under
 
 MSG is a string to replace \"Refile\" in the default prompt with
 another verb.  E.g. `org-copy' sets this parameter to \"Copy\".
@@ -6594,7 +6597,7 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
 {
   fonts = {
     fontconfig.enable = true;
-    enableFontDir = true;
+    fontDir.enable = true;
     enableGhostscriptFonts = false;
 
     fonts = with pkgs; [

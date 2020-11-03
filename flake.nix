@@ -8,14 +8,14 @@
     nixpkgs = {
       type = "github";
       owner = "NixOS";
-      repo = "nixpkgs-channels";
+      repo = "nixpkgs";
       ref = "nixpkgs-unstable";
     };
 
     nixpkgs-stable = {
       type = "github";
       owner = "NixOS";
-      repo = "nixpkgs-channels";
+      repo = "nixpkgs";
       ref = "nixos-20.03";
     };
     home-manager = {

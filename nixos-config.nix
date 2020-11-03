@@ -409,7 +409,7 @@ in
     {
       fonts = {
         fontconfig.enable = true;
-        enableFontDir = true;
+        fontDir.enable = true;
         enableGhostscriptFonts = false;
     
         fonts = with pkgs; [
