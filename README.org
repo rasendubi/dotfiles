@@ -4156,27 +4156,31 @@ element."
          grouped-count))
       (switch-to-buffer-other-window "*org-fc-upcoming*")))
 
-  (general-def 'normal 'org-fc-review-flip-mode-map
-    "RET" #'org-fc-review-flip
-    "n"   #'org-fc-review-flip
-    "s"   #'org-fc-review-suspend-card
-    "p"   #'org-fc-review-edit
-    "q"   #'org-fc-review-quit)
+  (general-define-key
+   :definer 'minor-mode
+   :states 'normal
+   :keymaps 'org-fc-review-flip-mode
+   "RET" 'org-fc-review-flip
+   "n" 'org-fc-review-flip
+   "s" 'org-fc-review-suspend-card
+   "q" 'org-fc-review-quit)
 
-  (general-def 'normal 'org-fc-review-rate-mode-map
-    "a"   #'org-fc-review-rate-again
-    "h"   #'org-fc-review-rate-hard
-    "g"   #'org-fc-review-rate-good
-    ;; There seems to be an issue binding "g" and it still behaves as
-    ;; a prefix for other commands in rate mode.
-    ;;
-    ;; Bind `org-fc-review-rate-good' to "n" as well to workaround
-    ;; this.
-    "n"   #'org-fc-review-rate-good
-    "e"   #'org-fc-review-rate-easy
-    "s"   #'org-fc-review-suspend-card
-    "p"   #'org-fc-review-edit
-    "q"   #'org-fc-review-quit)
+  (general-define-key
+   :definer 'minor-mode
+   :states 'normal
+   :keymaps 'org-fc-review-rate-mode
+   "a" 'org-fc-review-rate-again
+   "h" 'org-fc-review-rate-hard
+   "g" 'org-fc-review-rate-good
+   ;; There seems to be an issue binding "g" and it still behaves as
+   ;; a prefix for other commands in rate mode.
+   ;;
+   ;; Bind `org-fc-review-rate-good' to "n" as well to workaround
+   ;; this.
+   "n" 'org-fc-review-rate-good
+   "e" 'org-fc-review-rate-easy
+   "s" 'org-fc-review-suspend-card
+   "q" 'org-fc-review-quit)
 
   (general-def 'normal 'org-fc-review-edit-mode-map
     "'"   #'org-fc-review-resume)
