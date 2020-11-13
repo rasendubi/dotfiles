@@ -595,6 +595,18 @@
                       vterm_printf '51;E'(string join "" $vterm_elisp)
                   end
                 '';
+            
+                # Use current directory as title. The title is picked up by
+                # `vterm-buffer-name-string` in emacs.
+                #
+                # prompt_pwd is like pwd, but shortens directory name:
+                # /home/rasen/dotfiles -> ~/dotfiles
+                # /home/rasen/prg/project -> ~/p/project
+                functions.fish_title = ''
+                  function fish_title
+                    prompt_pwd
+                  end
+                '';
               };
             }
             {

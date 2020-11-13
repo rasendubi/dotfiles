@@ -4948,8 +4948,9 @@ vterm is a terminal emulator using libvterm. Which allows running it within Emac
     "C-h" #'vterm--self-insert
     "<return>" #'vterm-send-return
     "C-c" nil
-    "C-c C-c" #'vterm-send-C-c))
+    "C-c C-c" #'vterm-send-C-c)
 
+  (setq vterm-buffer-name-string "vterm %s"))
 #+end_src
 
 Fish configuration to work with vterm (~<<home-manager-section>>~):
@@ -4994,6 +4995,18 @@ Fish configuration to work with vterm (~<<home-manager-section>>~):
             set -a vterm_elisp (printf '"%s" ' (string replace -a -r '([\\\\"])' '\\\\\\\\$1' $arg))
           end
           vterm_printf '51;E'(string join "" $vterm_elisp)
+      end
+    '';
+
+    # Use current directory as title. The title is picked up by
+    # `vterm-buffer-name-string` in emacs.
+    #
+    # prompt_pwd is like pwd, but shortens directory name:
+    # /home/rasen/dotfiles -> ~/dotfiles
+    # /home/rasen/prg/project -> ~/p/project
+    functions.fish_title = ''
+      function fish_title
+        prompt_pwd
       end
     '';
   };
