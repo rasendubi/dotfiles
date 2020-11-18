@@ -90,7 +90,7 @@ Make this repository flake-compatible:
       owner = "moritzschaefer";
       # repo = "nixpkgs-channels";
       repo = "nixpkgs";
-      rev = "e52053d8473d5d350bc66ca3016684fe79587a87";
+      rev = "246294708d4b4d0f7a9b63fb3b6866860ed78704";
       # ref = "nixpkgs-unstable";
       ref = "master";
     };
@@ -343,6 +343,7 @@ I have a bluetooth headset, so this enables bluetooth audio in NixOS.
 #+begin_src nix
 {
   hardware.bluetooth.enable = true;
+  hardware.bluetooth.powerOnBoot = false;
   services.blueman.enable = true;
   hardware.bluetooth.config.General.Enable = "Source,Sink,Media,Socket";
   hardware.pulseaudio = {
@@ -460,6 +461,43 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
 }
 #+end_src
 
+** Hibernate on battery low
+#+name: nixos-section
+#+begin_src nix
+{
+  systemd.timers.hibernate-on-low-battery = {
+    wantedBy = [ "multi-user.target" ];
+    timerConfig = {
+      OnUnitActiveSec = "120";
+      OnBootSec= "120";
+    };
+  };
+  systemd.services.hibernate-on-low-battery =
+    let
+      battery-level-sufficient = pkgs.writeShellScriptBin
+        "battery-level-sufficient" ''
+        test "$(cat /sys/class/power_supply/BAT0/status)" != Discharging \
+          || test "$(cat /sys/class/power_supply/BAT0/capacity)" -ge 5
+      '';
+    in
+      {
+        serviceConfig = { Type = "oneshot"; };
+        onFailure = [ "hibernate.target" ];
+        script = "${battery-level-sufficient}/bin/battery-level-sufficient";
+      };
+}
+#+end_src
+
+** Garbage collection/Cleaning
+#+name: nixos-section
+#+begin_src nix
+{
+  nix.gc.automatic = true;
+  nix.gc.options = "--delete-older-than 12d";
+}
+#+end_src
+
+
 * Services
 ** NetworkManager
 #+name: nixos-section
@@ -522,6 +560,7 @@ https://nixos.wiki/wiki/Printing
     samsungUnifiedLinuxDriver
     splix
   ];
+  services.system-config-printer.enable = true;
 }
 #+end_src
 
@@ -672,6 +711,16 @@ Automatic USB stick mounting
   services.devmon.enable = true;
 }
 #+end_src
+** Logind
+#+name: nixos-section
+#+begin_src nix
+{
+  services.logind.extraConfig = ''
+    HandlePowerKey=suspend
+  '';
+}
+#+end_src
+
 * Mail setup
 ** Mbsync
 I use mbsync to sync my accounts and make them available offline.
@@ -871,28 +920,26 @@ I use EXWM:
         (require 'exwm-randr)
         ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "HDMI1" 2 "DP2" 3 "eDP1" 4 "HDMI1" 5 "DP2"))
         ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "eDP1" 2 "HDMI1" 3 "eDP1" 4 "eDP1" 5 "eDP1"))
-        ;; (add-hook 'exwm-randr-screen-change-hook (lambda () (start-process-shell-command "xrandr" nil "xrandr --fb 7680x2160 --output HDMI1 --auto --scale 2x2 --pos 0x0  --output eDP1 --auto --scale 1x1 --pos 3840x0"))) ;; TODO this leads to an endless cascade of screen updates.. -.-
         ;; (exwm-randr-enable)
         ;; (exwm-systemtray-enable)
         (exwm-enable)
       '';
     };
+    stumpwm.enable = true;
   };
   services.xserver.displayManager.defaultSession = "plasma5+exwm";  # Firefox works more fluently with plasma5+exwm instead of "none+exwm"
   services.xserver.desktopManager = {
+    xterm.enable = false;
     plasma5.enable = true;
-    xfce.enable = true;
+    xfce = {
+      enable = true;
+      noDesktop= true;
+      enableXfwm = true;
+    };
   };
 }
 #+end_src
 
-Disabling xterm makes awesome wm a default choice in slim:  # TODO delete
-#+name: nixos-section
-#+begin_src nix
-{
-  services.xserver.desktopManager.xterm.enable = false;
-}
-#+end_src
 
 These packages are used by my awesome wm setup:
 #+name: nixos-section
@@ -932,6 +979,7 @@ I use English and Ukrainian layouts. I also use Russian symbols, but they are on
 {
   services.xserver.layout = "de,de,us";
   services.xserver.xkbVariant = "bone,,";
+  services.xserver.xkbOptions= "terminate:ctrl_alt_bksp";
 
   # Use same config for linux console
   console.useXkbConfig = true;
@@ -997,7 +1045,7 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
 #+begin_src nix
 {
   fonts = {
-    enableFontDir = true;
+    fontDir.enable = true;
     enableGhostscriptFonts = false;
 
     fonts = with pkgs; [
@@ -1019,8 +1067,8 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
 These are for moxps-only.
 
 #+begin_src fundamental :tangle .Xresources
-Xft.dpi: 240
-Xcursor.size: 64
+Xft.dpi: 120
+Xcursor.size: 32
 #+end_src
 
 #+name: machine-moxps
@@ -1036,7 +1084,7 @@ Xcursor.size: 64
 #+name: machine-moxps
 #+begin_src nix
 {
-  services.xserver.dpi = 240;
+  services.xserver.dpi = 120;
 }
 #+end_src
 * Applications
@@ -1234,22 +1282,22 @@ Don't require additional setup.
 {
   environment.systemPackages = with pkgs; [
     gnome3.cheese
+    gnome3.gnome-screenshot
     pandoc   # TODO make a latex section
     # haskellPackages.pandoc-crossref  # broken...
     haskellPackages.pandoc-citeproc
-    texlive.combined.scheme-full
+    # texlive.combined.scheme-full
     sparkleshare
     gnome3.gpaste
     autorandr
     
-    kdenlive
+    # kdenlive  # fails in current unstable
     audacity
     google-play-music-desktop-player
     tdesktop # Telegram
     signal-cli # Signal
     signal-desktop # Signal
     zoom-us
-    flameshot
     libreoffice
     wineWowPackages.stable
     # winetricks  # requires p7zip (which is unsafe...)
@@ -1328,6 +1376,12 @@ Start emacs as a daemon:
   ];
 }
 #+end_src
+
+#+name: flake-overlays
+#+begin_src nix
+  (_self: _super: { conda = _super.conda.override { extraPkgs = [ _super.which ]; }; })  # this is an overlay
+#+end_src
+
 ** rxvt-unicode
 I use urxvt as my terminal emulator:
 #+name: nixos-section
@@ -1600,7 +1654,7 @@ set-window-option -g automatic-rename
 #+name: nixos-section
 #+begin_src nix
 {
-  environment.systemPackages = let R-with-my-packages = pkgs.rWrapper.override{ packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra ]; };
+  environment.systemPackages = let R-with-my-packages = pkgs.rWrapper.override{ packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra INSPEcT XVector S4Vectors]; };
   in [ R-with-my-packages ];
 }
 #+end_src
@@ -1611,6 +1665,7 @@ set-window-option -g automatic-rename
   environment.systemPackages = let python = (with pkgs; python3.withPackages (python-packages: with python-packages; [
     python3
     pandas
+    openpyxl
     biopython
     scikitlearn
     matplotlib
@@ -1626,11 +1681,17 @@ set-window-option -g automatic-rename
     matplotlib-venn
     networkx
     statsmodels
+    up-set-plot
+    # jedi
+    # json-rpc
+    # service-factory
 
     fritzconnection
-    #jupyter
-    #jupyter_core
+    # jupyter
+    # jupyter_core
     powerline
+    adjust-text
+    # up-set-plot
     # moritzsphd
     tabulate
     # swifter
@@ -1665,6 +1726,70 @@ set-window-option -g automatic-rename
   ];
   # environment.variables.LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${stdenv.cc.cc.lib}/lib/libstdc++.so.6";  # TODO doesnt work anymore because of libgl 
 }
+#+end_src
+
+#+name: flake-overlays
+#+begin_src nix
+( let
+    myOverride = {
+      packageOverrides = _self: _super: {
+        service-factory =_super.buildPythonPackage rec {
+          pname = "service_factory";
+          version = "0.1.6";
+          propagatedBuildInputs = [ _super.pytest ];
+          doCheck = false;
+          src = _super.fetchPypi {
+            inherit pname version;
+            sha256 = "abd8e715e2d32ee83ea4bbe365d34e0f94e3068ec03683f09f4512f657e1cd64";
+          };
+        };
+      
+        json-rpc =_super.buildPythonPackage rec {
+          pname = "json-rpc";
+          version = "1.13.0";
+          buildInputs = [ _super.pytest ];
+          propagatedBuildInputs = [ _super.pytest ];
+          doCheck = false;
+          src = _super.fetchPypi {
+            inherit pname version;
+            sha256 = "def0dbcf5b7084fc31d677f2f5990d988d06497f2f47f13024274cfb2d5d7589";
+          };
+        };
+        up-set-plot = _super.buildPythonPackage rec {
+          pname = "UpSetPlot";
+          version = "0.4.1";
+          buildInputs = [ _super.pytestrunner ];
+          propagatedBuildInputs = [ _super.matplotlib _super.pandas ];
+          doCheck = false;
+          src = _super.fetchPypi {
+            inherit pname version;
+            sha256 = "c1e23af4d90ca88d024cdea45dc3a84591cd97a80a6a3dfc18b5e7ad2b93944f";
+          };
+        };
+        adjust-text = _super.buildPythonPackage rec {
+          pname = "adjustText";
+          version = "0.7.3";
+          propagatedBuildInputs = [ _super.matplotlib _super.numpy ];
+          doCheck = false;
+          src = _super.fetchPypi {
+            inherit pname version;
+            sha256 = "b90e275a95b4d980cbbac7967914b8d66477c09bc346a0b3c9e2125bba664b06";
+          };
+        };
+      };
+    };
+  in _self: _super: rec {
+    # Add an override for each required python version. 
+    # There’s currently no way to add a package that’s automatically picked up by 
+    # all python versions, besides editing python-packages.nix
+    python2 = _super.python2.override myOverride;
+    python3 = _super.python3.override myOverride;
+    python38 = _super.python38.override myOverride;
+    python2Packages = python2.pkgs;
+    python3Packages = python3.pkgs;
+    # python37Packages = python37.pkgs;
+    python38Packages = python38.pkgs;
+  } )
 #+end_src
 ** Libraries
 #+name: nixos-section
@@ -1726,6 +1851,8 @@ set-window-option -g automatic-rename
     lsyncd
     gnupg
     imagemagick
+    gdb
+    ncdu
 
 
     patchelf

@@ -1,5 +1,5 @@
-Xft.dpi: 240
-Xcursor.size: 64
+Xft.dpi: 120
+Xcursor.size: 32
 urxvt.loginShell:         true
 urxvt.saveLines:         65535
 urxvt.urgentOnBell:       true

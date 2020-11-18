@@ -100,7 +100,7 @@ let
         console.font = "ter-132n";
       }
       {
-        services.xserver.dpi = 240;
+        services.xserver.dpi = 120;
       }
     ];
   };
@@ -152,6 +152,7 @@ in
     }
     {
       hardware.bluetooth.enable = true;
+      hardware.bluetooth.powerOnBoot = false;
       services.blueman.enable = true;
       hardware.bluetooth.config.General.Enable = "Source,Sink,Media,Socket";
       hardware.pulseaudio = {
@@ -253,6 +254,32 @@ in
       system.autoUpgrade.enable = true;
     }
     {
+      systemd.timers.hibernate-on-low-battery = {
+        wantedBy = [ "multi-user.target" ];
+        timerConfig = {
+          OnUnitActiveSec = "120";
+          OnBootSec= "120";
+        };
+      };
+      systemd.services.hibernate-on-low-battery =
+        let
+          battery-level-sufficient = pkgs.writeShellScriptBin
+            "battery-level-sufficient" ''
+            test "$(cat /sys/class/power_supply/BAT0/status)" != Discharging \
+              || test "$(cat /sys/class/power_supply/BAT0/capacity)" -ge 5
+          '';
+        in
+          {
+            serviceConfig = { Type = "oneshot"; };
+            onFailure = [ "hibernate.target" ];
+            script = "${battery-level-sufficient}/bin/battery-level-sufficient";
+          };
+    }
+    {
+      nix.gc.automatic = true;
+      nix.gc.options = "--delete-older-than 12d";
+    }
+    {
       networking = {
         hostName = name;
     
@@ -293,6 +320,7 @@ in
         samsungUnifiedLinuxDriver
         splix
       ];
+      services.system-config-printer.enable = true;
     }
     {
       services.locate = {
@@ -381,6 +409,11 @@ in
       services.devmon.enable = true;
     }
     {
+      services.logind.extraConfig = ''
+        HandlePowerKey=suspend
+      '';
+    }
+    {
       environment.systemPackages = [
         pkgs.isync
       ];
@@ -429,21 +462,23 @@ in
             (require 'exwm-randr)
             ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "HDMI1" 2 "DP2" 3 "eDP1" 4 "HDMI1" 5 "DP2"))
             ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "eDP1" 2 "HDMI1" 3 "eDP1" 4 "eDP1" 5 "eDP1"))
-            ;; (add-hook 'exwm-randr-screen-change-hook (lambda () (start-process-shell-command "xrandr" nil "xrandr --fb 7680x2160 --output HDMI1 --auto --scale 2x2 --pos 0x0  --output eDP1 --auto --scale 1x1 --pos 3840x0"))) ;; TODO this leads to an endless cascade of screen updates.. -.-
             ;; (exwm-randr-enable)
             ;; (exwm-systemtray-enable)
             (exwm-enable)
           '';
         };
+        stumpwm.enable = true;
       };
       services.xserver.displayManager.defaultSession = "plasma5+exwm";  # Firefox works more fluently with plasma5+exwm instead of "none+exwm"
       services.xserver.desktopManager = {
+        xterm.enable = false;
         plasma5.enable = true;
-        xfce.enable = true;
+        xfce = {
+          enable = true;
+          noDesktop= true;
+          enableXfwm = true;
+        };
       };
-    }
-    {
-      services.xserver.desktopManager.xterm.enable = false;
     }
     {
       environment.systemPackages = [
@@ -468,6 +503,7 @@ in
     {
       services.xserver.layout = "de,de,us";
       services.xserver.xkbVariant = "bone,,";
+      services.xserver.xkbOptions= "terminate:ctrl_alt_bksp";
     
       # Use same config for linux console
       console.useXkbConfig = true;
@@ -495,7 +531,7 @@ in
     }
     {
       fonts = {
-        enableFontDir = true;
+        fontDir.enable = true;
         enableGhostscriptFonts = false;
     
         fonts = with pkgs; [
@@ -601,8 +637,10 @@ in
       in
          [ pkgs.spotify wrapper ];
     }
-    services.tor.enable = true;
-    services.tor.client.enable = true;
+    {
+      services.tor.enable = false;
+      services.tor.client.enable = false;
+    }
     {
       environment.systemPackages = [ pkgs.steam ];
       hardware.opengl.driSupport32Bit = true;
@@ -612,22 +650,22 @@ in
     {
       environment.systemPackages = with pkgs; [
         gnome3.cheese
+        gnome3.gnome-screenshot
         pandoc   # TODO make a latex section
         # haskellPackages.pandoc-crossref  # broken...
         haskellPackages.pandoc-citeproc
-        texlive.combined.scheme-full
+        # texlive.combined.scheme-full
         sparkleshare
         gnome3.gpaste
         autorandr
         
-        kdenlive
+        # kdenlive  # fails in current unstable
         audacity
         google-play-music-desktop-player
         tdesktop # Telegram
         signal-cli # Signal
         signal-desktop # Signal
         zoom-us
-        flameshot
         libreoffice
         wineWowPackages.stable
         # winetricks  # requires p7zip (which is unsafe...)
@@ -693,13 +731,14 @@ in
       ];
     }
     {
-      environment.systemPackages = let R-with-my-packages = pkgs.rWrapper.override{ packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra ]; };
+      environment.systemPackages = let R-with-my-packages = pkgs.rWrapper.override{ packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra INSPEcT XVector S4Vectors]; };
       in [ R-with-my-packages ];
     }
     {
       environment.systemPackages = let python = (with pkgs; python3.withPackages (python-packages: with python-packages; [
         python3
         pandas
+        openpyxl
         biopython
         scikitlearn
         matplotlib
@@ -715,11 +754,17 @@ in
         matplotlib-venn
         networkx
         statsmodels
+        up-set-plot
+        # jedi
+        # json-rpc
+        # service-factory
     
         fritzconnection
-        #jupyter
-        #jupyter_core
+        # jupyter
+        # jupyter_core
         powerline
+        adjust-text
+        # up-set-plot
         # moritzsphd
         tabulate
         # swifter
@@ -802,6 +847,8 @@ in
         lsyncd
         gnupg
         imagemagick
+        gdb
+        ncdu
     
     
         patchelf

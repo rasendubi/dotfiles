@@ -42,13 +42,13 @@ StartupNotify=true
 Type=Application
 Categories=AudioVideo;Audio;
 Keywords=pulseaudio;tray;system tray;applet;volume;'';
-  xdg.configFile."autostart/flameshot.desktop".text = ''[Desktop Entry]
-Name=Flameshot
-Comment=Screenshot tool
-Exec=flameshot
-Icon=flameshot
-StartupNotify=true
-Type=Application'';
+#   xdg.configFile."autostart/flameshot.desktop".text = ''[Desktop Entry]
+# Name=Flameshot
+# Comment=Screenshot tool
+# Exec=flameshot
+# Icon=flameshot
+# StartupNotify=true
+# Type=Application'';
 
   # python
 #   home.packages = with pkgs; let moritzsphd = python37Packages.buildPythonPackage rec {
