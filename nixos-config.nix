@@ -1,148 +1,12 @@
 { name, config, pkgs, lib, inputs, ... }:
 let
   machine-config = lib.getAttr name {
-    moxps = [
-      {
-        environment.systemPackages = with pkgs; let
-          nvidia-offload = pkgs.writeShellScriptBin "nvidia-offload" ''
-            export __NV_PRIME_RENDER_OFFLOAD=1
-            export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
-            export __GLX_VENDOR_LIBRARY_NAME=nvidia
-            export __VK_LAYER_NV_optimus=NVIDIA_only
-            exec -a "$0" "$@"
-          '';
-        in [nvidia-offload];
-        imports = [
-          (import "${inputs.nixos-hardware}/dell/xps/15-9560/xps-common.nix")  # instead of default
-          (import "${inputs.nixos-hardware}/common/cpu/intel")
-          (import "${inputs.nixos-hardware}/common/pc/laptop")  # tlp.enable = true
-          (import "${inputs.nixos-hardware}/common/pc/laptop/acpi_call.nix")  # tlp.enable = true
-          (import "${inputs.nixos-hardware}/common/pc/laptop/ssd")
-          inputs.nixpkgs.nixosModules.notDetected
-        ];
-        # accelerateion
-        nixpkgs.config.packageOverrides = pkgs: {
-          vaapiIntel = pkgs.vaapiIntel.override { enableHybridCodec = true; };
-        };
-        hardware.opengl = {
-          enable = true;
-          extraPackages = with pkgs; [
-            intel-media-driver # LIBVA_DRIVER_NAME=iHD
-            vaapiIntel         # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
-            vaapiVdpau
-            libvdpau-va-gl
-          ];
-        };
-      
-        boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
-        boot.kernelModules = [ "kvm-intel" ];
-        boot.kernelParams = [ "acpi_rev_override=5" "pcie_aspm=off" "nouveau.modeset=0" ];  # 5,6,1 doesn't seem to make a difference
-      
-        # from nixos-hardware
-        boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11 ];
-        boot.blacklistedKernelModules = [ "bbswitch" "nouveau" ];
-        services.xserver.videoDrivers = [ "intel" "nvidia" ];
-      
-        nix.maxJobs = lib.mkDefault 8;
-      
-        services.undervolt = {
-          enable = true;
-          coreOffset = -125;
-          gpuOffset = -75;
-        };
-        powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
-      
-      
-        # Nvidia stuff (https://discourse.nixos.org/t/how-to-use-nvidia-prime-offload-to-run-the-x-server-on-the-integrated-board/9091/13)
-        boot.extraModprobeConfig = "options nvidia \"NVreg_DynamicPowerManagement=0x02\"\n";
-        services.udev.extraRules = ''
-          # Remove NVIDIA USB xHCI Host Controller devices, if present
-          ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{remove}="1"
-      
-          # Remove NVIDIA USB Type-C UCSI devices, if present
-          ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c8000", ATTR{remove}="1"
-      
-          # Remove NVIDIA Audio devices, if present
-          ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{remove}="1"
-      
-          # Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
-          ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
-          ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
-      
-          # Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
-          ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
-          ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
-          '';
-        hardware.nvidia = {
-          # nvidiaPersistenced = true;
-          powerManagement.enable = true;
-          modesetting.enable = true;
-          prime = {
-            offload.enable = true;
-            # Bus ID of the Intel GPU. You can find it using lspci, either under 3D or VGA
-            intelBusId = "PCI:0:2:0";
-            # Bus ID of the NVIDIA GPU. You can find it using lspci, either under 3D or VGA
-            nvidiaBusId = "PCI:1:0:0";
-          };
-        };
-        hardware.bumblebee.enable = false;
-        hardware.bumblebee.pmMethod = "none";
-      }
-      {
-        fileSystems."/" =
-          { device = "/dev/disk/by-uuid/8f0a4152-e9f1-4315-8c34-0402ff7efff4";
-            fsType = "btrfs";
-          };
-      
-        fileSystems."/boot" =
-          { device = "/dev/disk/by-uuid/A227-1A0D";
-            fsType = "vfat";
-          };
-      
-        swapDevices =
-          [ { device = "/dev/disk/by-uuid/9eca5b06-730e-439f-997b-512a614ccce0"; }
-          ];
-      
-      
-        boot.initrd.luks.devices = {
-          cryptkey.device = "/dev/disk/by-uuid/ccd19ab7-0e4d-4df4-8912-b87139de56af";
-          cryptroot = {
-            device="/dev/disk/by-uuid/88242cfe-48a1-44d2-a29b-b55e6f05d3d3";
-            keyFile="/dev/mapper/cryptkey";
-            };
-          cryptswap = {
-            device="/dev/disk/by-uuid/f6fa3573-44a9-41cc-bab7-da60d21e27b3";
-            keyFile="/dev/mapper/cryptkey";
-          };
-        };
-      }
-      {
-        services.xserver.libinput = {
-          enable = true;
-          accelSpeed = "0.7";
-        };
-        # displayManager.lightdm.greeters.gtk.cursorTheme = {  # TODO if home manager cursor doesnt work
-        #   name = "Vanilla-DMZ";
-        #   package = pkgs.vanilla-dmz;
-        #   size = 64;
-        # };
-      }
-      {
-        console.packages = [
-          pkgs.terminus_font
-        ];
-        console.font = "ter-132n";
-      }
-      {
-        services.xserver.dpi = 120;
-      }
-    ];
     mobook = [
       {
         imports = [
           (import "${inputs.nixos-hardware}/apple/macbook-pro")
           (import "${inputs.nixos-hardware}/common/pc/laptop/ssd")
-          inputs.nixpkgs.modules.hardware.network.broadcom-43xx # <- using import vs not using import?
+          # inputs.nixpkgs.modules.hardware.network.broadcom-43xx # <- using import vs not using import?
          #  <nixpkgs/nixos/modules/hardware/network/broadcom-43xx.nix> <- this is when using channels instead of flakes?
           inputs.nixpkgs.nixosModules.notDetected
         ];
@@ -150,8 +14,8 @@ let
         services.udev.extraRules =
           # Disable XHC1 wakeup signal to avoid resume getting triggered some time
           # after suspend. Reboot required for this to take effect.
-          lib.optionalString
-            (lib.versionAtLeast pkgs.kernelPackages.kernel.version "3.13")
+          # lib.optionalString
+            # (lib.versionAtLeast pkgs.kernelPackages.kernel.version "3.13")
             ''SUBSYSTEM=="pci", KERNEL=="0000:00:14.0", ATTR{power/wakeup}="disabled"'';
         boot.loader.systemd-boot.enable = true;
         boot.loader.efi.canTouchEfiVariables = true;
@@ -170,38 +34,48 @@ let
         #   ];
         # };
       
-        # boot.kernelModules = [ "kvm-intel" ];
+        boot.kernelModules = [ "kvm-intel" ];
       
         # powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
       }
       {
-        fileSystems."/" =
-          { device = "/dev/disk/by-uuid/8f0a4152-e9f1-4315-8c34-0402ff7efff4";
-            fsType = "btrfs";
-          };
+     boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
+  fileSystems."/boot" =
+    { device = "/dev/disk/by-uuid/E64F-3226";
+      fsType = "vfat";
+    };
+
+  swapDevices =
+    [ { device = "/dev/disk/by-uuid/912c5850-5f71-4d15-8b69-1e0dad5718b0"; }
+    ];
+
+  fileSystems."/" =
+    { device = "/dev/disk/by-uuid/73edc386-3f1a-46ff-9ae1-76a4fd6c0ea4";
+      fsType = "btrfs";
+    };
+
+  boot.initrd.luks.devices = {
+    cryptkey = {
+      device = "/dev/disk/by-uuid/179ecdea-edd4-4dc5-b8c3-5ed760bc2a0d";
+    };
+    cryptroot = {
+      device = "/dev/disk/by-uuid/623db0a5-d0e0-405a-88ae-b83a3d321656";
+      keyFile = "/dev/mapper/cryptkey";
+    };
+    cryptswap = {
+      device = "/dev/disk/by-uuid/da63991e-8edd-48db-bc4b-66fbc96917eb";
+      keyFile = "/dev/mapper/cryptkey";
+    };
+  };
+
+
+  powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
+  # high-resolution display
+  hardware.video.hidpi.enable = lib.mkDefault true;
+}
+
+
       
-        fileSystems."/boot" =
-          { device = "/dev/disk/by-uuid/A227-1A0D";
-            fsType = "vfat";
-          };
-      
-        swapDevices =
-          [ { device = "/dev/disk/by-uuid/9eca5b06-730e-439f-997b-512a614ccce0"; }
-          ];
-      
-      
-        boot.initrd.luks.devices = {
-          cryptkey.device = "/dev/disk/by-uuid/ccd19ab7-0e4d-4df4-8912-b87139de56af";
-          cryptroot = {
-            device="/dev/disk/by-uuid/88242cfe-48a1-44d2-a29b-b55e6f05d3d3";
-            keyFile="/dev/mapper/cryptkey";
-            };
-          cryptswap = {
-            device="/dev/disk/by-uuid/f6fa3573-44a9-41cc-bab7-da60d21e27b3";
-            keyFile="/dev/mapper/cryptkey";
-          };
-        };
-      }
       {
         services.xserver.libinput = {
           enable = true;

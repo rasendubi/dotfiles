@@ -63,7 +63,7 @@
     in {
       nixosConfigurations =
         let
-          hosts = ["moxps" "mobook"];
+          hosts = ["mobook"];
           mkHost = name:
             nixpkgs.lib.nixosSystem {
               system = "x86_64-linux";

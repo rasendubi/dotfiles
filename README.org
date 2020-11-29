@@ -373,7 +373,7 @@ This is my late 2013 MBP.
   imports = [
     (import "${inputs.nixos-hardware}/apple/macbook-pro")
     (import "${inputs.nixos-hardware}/common/pc/laptop/ssd")
-    inputs.nixpkgs.modules.hardware.network.broadcom-43xx # <- using import vs not using import?
+    #inputs.nixpkgs.modules.hardware.network.broadcom-43xx # <- using import vs not using import?
    #  <nixpkgs/nixos/modules/hardware/network/broadcom-43xx.nix> <- this is when using channels instead of flakes?
     inputs.nixpkgs.nixosModules.notDetected
   ];
@@ -381,9 +381,20 @@ This is my late 2013 MBP.
   services.udev.extraRules =
     # Disable XHC1 wakeup signal to avoid resume getting triggered some time
     # after suspend. Reboot required for this to take effect.
-    lib.optionalString
-      (lib.versionAtLeast pkgs.kernelPackages.kernel.version "3.13")
+    # lib.optionalString
+      #(lib.versionAtLeast pkgs.kernelPackages.kernel.version "3.13")
       ''SUBSYSTEM=="pci", KERNEL=="0000:00:14.0", ATTR{power/wakeup}="disabled"'';
+
+  systemd.services.disable-gpe06 = {
+    description = "Disable GPE06 interrupt leading to high kworker";
+    wantedBy = [ "multi-user.target" ];
+    script = ''
+      /run/current-system/sw/bin/bash -c 'echo "disable" > /sys/firmware/acpi/interrupts/gpe06'
+    '';
+    serviceConfig.Type = "oneshot";
+  };
+
+
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
       
@@ -401,9 +412,11 @@ This is my late 2013 MBP.
   #   ];
   # };
 
-  # boot.kernelModules = [ "kvm-intel" ];
+  boot.kernelModules = [ "kvm-intel" ];
+  boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
 
-  # powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
+  hardware.video.hidpi.enable = lib.mkDefault true;
+  powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
 }
 #+end_src
 
@@ -411,30 +424,31 @@ LVM on LUKS setup for disk encryption.
 #+name: machine-mobook
 #+begin_src nix
 {
-  fileSystems."/" =
-    { device = "/dev/disk/by-uuid/8f0a4152-e9f1-4315-8c34-0402ff7efff4";
-      fsType = "btrfs";
-    };
-
   fileSystems."/boot" =
-    { device = "/dev/disk/by-uuid/A227-1A0D";
+    { device = "/dev/disk/by-uuid/E64F-3226";
       fsType = "vfat";
     };
 
   swapDevices =
-    [ { device = "/dev/disk/by-uuid/9eca5b06-730e-439f-997b-512a614ccce0"; }
+    [ { device = "/dev/disk/by-uuid/912c5850-5f71-4d15-8b69-1e0dad5718b0"; }
     ];
 
+  fileSystems."/" =
+    { device = "/dev/disk/by-uuid/73edc386-3f1a-46ff-9ae1-76a4fd6c0ea4";
+      fsType = "btrfs";
+    };
 
   boot.initrd.luks.devices = {
-    cryptkey.device = "/dev/disk/by-uuid/ccd19ab7-0e4d-4df4-8912-b87139de56af";
+    cryptkey = {
+      device = "/dev/disk/by-uuid/179ecdea-edd4-4dc5-b8c3-5ed760bc2a0d";
+    };
     cryptroot = {
-      device="/dev/disk/by-uuid/88242cfe-48a1-44d2-a29b-b55e6f05d3d3";
-      keyFile="/dev/mapper/cryptkey";
-      };
+      device = "/dev/disk/by-uuid/623db0a5-d0e0-405a-88ae-b83a3d321656";
+      keyFile = "/dev/mapper/cryptkey";
+    };
     cryptswap = {
-      device="/dev/disk/by-uuid/f6fa3573-44a9-41cc-bab7-da60d21e27b3";
-      keyFile="/dev/mapper/cryptkey";
+      device = "/dev/disk/by-uuid/da63991e-8edd-48db-bc4b-66fbc96917eb";
+      keyFile = "/dev/mapper/cryptkey";
     };
   };
 }
