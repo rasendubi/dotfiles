@@ -24,6 +24,9 @@ let
     moxps = [
       <<machine-moxps>>
     ];
+    mobook = [
+      <<machine-mobook>>
+    ];
   };
   # nur-no-pkgs = import (builtins.fetchTarball {
   #   url = "https://github.com/nix-community/NUR/archive/master.tar.gz";
@@ -122,7 +125,7 @@ Make this repository flake-compatible:
     in {
       nixosConfigurations =
         let
-          hosts = ["moxps"];
+          hosts = ["moxps" "mobook"];
           mkHost = name:
             nixpkgs.lib.nixosSystem {
               system = "x86_64-linux";
@@ -334,6 +337,96 @@ LVM on LUKS setup for disk encryption.
 
 Clickpad and DPI:
 #+name: machine-moxps
+#+begin_src nix
+{
+  services.xserver.libinput = {
+    enable = true;
+    accelSpeed = "0.7";
+  };
+  # displayManager.lightdm.greeters.gtk.cursorTheme = {  # TODO if home manager cursor doesnt work
+  #   name = "Vanilla-DMZ";
+  #   package = pkgs.vanilla-dmz;
+  #   size = 64;
+  # };
+}
+#+end_src
+*** mobook
+This is my late 2013 MBP.
+#+name: machine-mobook
+#+begin_src nix
+{
+  imports = [
+    (import "${inputs.nixos-hardware}/apple/macbook-pro")
+    (import "${inputs.nixos-hardware}/common/pc/laptop/ssd")
+    inputs.nixpkgs.modules.hardware.network.broadcom-43xx # <- using import vs not using import?
+   #  <nixpkgs/nixos/modules/hardware/network/broadcom-43xx.nix> <- this is when using channels instead of flakes?
+    inputs.nixpkgs.nixosModules.notDetected
+  ];
+
+  services.udev.extraRules =
+    # Disable XHC1 wakeup signal to avoid resume getting triggered some time
+    # after suspend. Reboot required for this to take effect.
+    lib.optionalString
+      (lib.versionAtLeast pkgs.kernelPackages.kernel.version "3.13")
+      ''SUBSYSTEM=="pci", KERNEL=="0000:00:14.0", ATTR{power/wakeup}="disabled"'';
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+      
+  # accelerateion
+  # nixpkgs.config.packageOverrides = pkgs: {
+  #   vaapiIntel = pkgs.vaapiIntel.override { enableHybridCodec = true; };
+  # };
+  # hardware.opengl = {
+  #   enable = true;
+  #   extraPackages = with pkgs; [
+  #     intel-media-driver # LIBVA_DRIVER_NAME=iHD
+  #     vaapiIntel         # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
+  #     vaapiVdpau
+  #     libvdpau-va-gl
+  #   ];
+  # };
+
+  # boot.kernelModules = [ "kvm-intel" ];
+
+  # powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
+}
+#+end_src
+
+LVM on LUKS setup for disk encryption.
+#+name: machine-mobook
+#+begin_src nix
+{
+  fileSystems."/" =
+    { device = "/dev/disk/by-uuid/8f0a4152-e9f1-4315-8c34-0402ff7efff4";
+      fsType = "btrfs";
+    };
+
+  fileSystems."/boot" =
+    { device = "/dev/disk/by-uuid/A227-1A0D";
+      fsType = "vfat";
+    };
+
+  swapDevices =
+    [ { device = "/dev/disk/by-uuid/9eca5b06-730e-439f-997b-512a614ccce0"; }
+    ];
+
+
+  boot.initrd.luks.devices = {
+    cryptkey.device = "/dev/disk/by-uuid/ccd19ab7-0e4d-4df4-8912-b87139de56af";
+    cryptroot = {
+      device="/dev/disk/by-uuid/88242cfe-48a1-44d2-a29b-b55e6f05d3d3";
+      keyFile="/dev/mapper/cryptkey";
+      };
+    cryptswap = {
+      device="/dev/disk/by-uuid/f6fa3573-44a9-41cc-bab7-da60d21e27b3";
+      keyFile="/dev/mapper/cryptkey";
+    };
+  };
+}
+#+end_src
+
+Clickpad and DPI:
+#+name: machine-mobook
 #+begin_src nix
 {
   services.xserver.libinput = {
