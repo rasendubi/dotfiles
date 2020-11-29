@@ -308,9 +308,60 @@ in
         support32Bit = true;
         zeroconf.discovery.enable = true;
         systemWide = false;
+        package = pkgs.pulseaudioFull; # .override { jackaudioSupport = true; };  # need "full" for bluetooth
       };
     
-      environment.systemPackages = [ pkgs.pavucontrol ];
+      environment.systemPackages = with pkgs; [ pavucontrol libjack2 jack2 qjackctl jack2Full jack_capture ];
+    
+      # services.jack = {
+      #   jackd.enable = true;
+      #   # support ALSA only programs via ALSA JACK PCM plugin
+      #   alsa.enable = false;
+      #   # support ALSA only programs via loopback device (supports programs like Steam)
+      #   loopback = {
+      #     enable = true;
+      #     # buffering parameters for dmix device to work with ALSA only semi-professional sound programs
+      #     #dmixConfig = ''
+      #     #  period_size 2048
+      #     #'';
+      #   };
+      # };
+      # boot.kernelModules = [ "snd-seq" "snd-rawmidi" ];
+    
+      users.extraUsers.moritz.extraGroups = [ "audio" ];  # "jackaudio" 
+    
+      # from https://github.com/JeffreyBenjaminBrown/nixos-experiments/blob/6c4be545e2ec18c6d9b32ec9b66d37c59d9ebc1f/audio.nix
+      security.sudo.extraConfig = ''
+        moritz  ALL=(ALL) NOPASSWD: ${pkgs.systemd}/bin/systemctl
+        '';
+      musnix = {
+        enable = true;
+        alsaSeq.enable = false;
+    
+        # Find this value with `lspci | grep -i audio` (per the musnix readme).
+        # PITFALL: This is the id of the built-in soundcard.
+        #   When I start using the external one, change it.
+        soundcardPciId = "00:1f.3";
+    
+        # If I build with either of these, I get a PREEMPT error, much like
+        #   https://github.com/musnix/musnix/issues/100
+        # kernel.realtime = true;
+        # kernel.optimize = true;
+    
+        # das_watchdog.enable = true;
+          # I don't think this does anything without the realtime kernel.
+    
+        # magic to me
+        rtirq = {
+          # highList = "snd_hrtimer";
+          resetAll = 1;
+          prioLow = 0;
+          enable = true;
+          nameList = "rtc0 snd";
+        };
+      };
+        
+    
     }
     {
       services.printing.enable = true;

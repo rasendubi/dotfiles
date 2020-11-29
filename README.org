@@ -38,6 +38,7 @@ let
 in
 {
   imports = [
+    (import "${inputs.musnix}")
     {
       nixpkgs.config.allowUnfree = true;
 
@@ -102,9 +103,15 @@ Make this repository flake-compatible:
       ref = "bqv-flakes";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    musnix = {
+      type = "github";
+      owner = "musnix";
+      repo = "musnix";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, nixos-hardware, home-manager, nur }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-unstable, nixos-hardware, home-manager, nur, musnix }@inputs:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
@@ -1122,7 +1129,8 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
 #+begin_src nix
 {
   fonts = {
-    fontDir.enable = true;
+    # fontDir.enable = true; # 21.03 rename
+    enableFontDir = true;
     enableGhostscriptFonts = false;
 
     fonts = with pkgs; [
