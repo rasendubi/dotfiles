@@ -21,6 +21,22 @@
         "type": "github"
       }
     },
+    "musnix": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1596489680,
+        "narHash": "sha256-eX+8CQk9Zbt3Fmd22Jr1Y+1icFB5AgUkiF1IGllXnB8=",
+        "owner": "musnix",
+        "repo": "musnix",
+        "rev": "6c3f31772c639f50f893c25fb4ee75bb0cd92c98",
+        "type": "github"
+      },
+      "original": {
+        "owner": "musnix",
+        "repo": "musnix",
+        "type": "github"
+      }
+    },
     "nixos-hardware": {
       "flake": false,
       "locked": {
@@ -39,6 +55,22 @@
     },
     "nixpkgs": {
       "locked": {
+        "lastModified": 1606344557,
+        "narHash": "sha256-IVIMVKWNNt6VODiLfINaW6sfrWPw5ZT91GQMgLUl7ZA=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "ffb3aab257e8851b558cdc6079241a7eb0c7239e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-20.09",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs-moritz": {
+      "locked": {
         "lastModified": 1603622018,
         "narHash": "sha256-50LysAMQYXNrG3V0QiZ1uxd/bvIuzDKxFj6/BJPm/gU=",
         "owner": "moritzschaefer",
@@ -51,6 +83,22 @@
         "ref": "master",
         "repo": "nixpkgs",
         "rev": "246294708d4b4d0f7a9b63fb3b6866860ed78704",
+        "type": "github"
+      }
+    },
+    "nixpkgs-unstable": {
+      "locked": {
+        "lastModified": 1606520424,
+        "narHash": "sha256-gvVuQ+5mfycp5R5efAPG4kp+fIJUUGH/8Qsii1qhYRM=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "a005d724d052601a76373a43a9a1b5dde9a614e9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "master",
+        "repo": "nixpkgs",
         "type": "github"
       }
     },
@@ -72,8 +120,11 @@
     "root": {
       "inputs": {
         "home-manager": "home-manager",
+        "musnix": "musnix",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs",
+        "nixpkgs-moritz": "nixpkgs-moritz",
+        "nixpkgs-unstable": "nixpkgs-unstable",
         "nur": "nur"
       }
     }

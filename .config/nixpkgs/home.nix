@@ -13,7 +13,8 @@ allow-moves=yes
 
   # autostart
   xdg.configFile."autostart/nm-applet.desktop".source = "/run/current-system/sw/share/applications/nm-applet.desktop";
-  xdg.configFile."autostart/firefox.desktop".source = "/run/current-system/sw/share/applications/firefox.desktop";
+  # xdg.configFile."autostart/firefox.desktop".source = "/run/current-system/sw/share/applications/firefox.desktop";
+  xdg.configFile."autostart/qutebrowser.desktop".source = "/nix/store/gd9x4sc0bwxvihzcyx3iji560av13bhb-qutebrowser-1.14.0/share/applications/org.qutebrowser.qutebrowser.desktop";
   xdg.configFile."autostart/rxvt-unicode.desktop".source = "/run/current-system/sw/share/applications/rxvt-unicode.desktop";
 #   xdg.configFile."autostart/clipit.desktop".text = ''[Desktop Entry]  <- I use clipmon now..
 # Icon=clipit-trayicon
@@ -125,6 +126,7 @@ home.packages =   with pkgs; [
     };
     shellInit = ''
       set -gx PATH $HOME/bin $PATH
+      set EDITOR vim
 
       if [ "$TERM" = rxvt-unicode-256color ]
         set -x TERM xterm-256color
@@ -136,6 +138,7 @@ home.packages =   with pkgs; [
       end
 
       eval (direnv hook fish)
+
     '';
   };
   # programs.bash = {

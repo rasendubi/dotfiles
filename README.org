@@ -188,7 +188,7 @@ Make this repository flake-compatible:
 #+name: nixos-section
 #+begin_src nix
 {
-  nix.nixPath = [
+nix.nixPath = [
     "nixpkgs=${inputs.nixpkgs}"
   ];
 }
@@ -1129,6 +1129,7 @@ I use EXWM:
       enableXfwm = true;
     };
   };
+  services.picom.enable = true;
 }
 #+end_src
 
@@ -1474,6 +1475,8 @@ Don't require additional setup.
 #+begin_src nix
 {
   environment.systemPackages = with pkgs; [
+    dmenu
+    soulseekqt
     gnome3.cheese
     gnome3.gnome-screenshot
     pandoc   # TODO make a latex section
@@ -1498,6 +1501,8 @@ Don't require additional setup.
 
     mplayer
     smplayer
+    lm_sensors
+    tcl
 
     # Used by naga setup
     xdotool
@@ -2327,6 +2332,7 @@ set-window-option -g automatic-rename
     imagemagick
     gdb
     ncdu
+    mesa-demos
 
 
     patchelf
@@ -2353,7 +2359,7 @@ This install a number of default man pages for the linux/posix system.
     pkgs.stdman
     pkgs.posix_man_pages
     pkgs.stdmanpages
-  ];
+    ];
 }
 #+end_src
 * Meta

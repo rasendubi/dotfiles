@@ -6,6 +6,18 @@
   inputs = {
     nixpkgs = {
       type = "github";
+      owner = "NixOS";
+      repo = "nixpkgs";
+      ref = "nixos-20.09";
+    };
+    nixpkgs-unstable = {
+      type = "github";
+      owner = "NixOS";
+      repo = "nixpkgs";
+      ref = "master";
+    };
+    nixpkgs-moritz = {
+      type = "github";
       # owner = "rasendubi";
       # repo = "nixpkgs";
       # ref = "melpa-2020-04-27";
@@ -32,9 +44,15 @@
       ref = "bqv-flakes";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    musnix = {
+      type = "github";
+      owner = "musnix";
+      repo = "musnix";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, nixos-hardware, home-manager, nur }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-unstable, nixos-hardware, home-manager, nur, musnix }@inputs:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
@@ -45,7 +63,7 @@
     in {
       nixosConfigurations =
         let
-          hosts = ["moxps"];
+          hosts = ["moxps" "mobook"];
           mkHost = name:
             nixpkgs.lib.nixosSystem {
               system = "x86_64-linux";
@@ -79,6 +97,7 @@
       overlays = [
         (_self: _super: self.packages.x86_64-linux)
         (_self: _super: { conda = _super.conda.override { extraPkgs = [ _super.which ]; }; })  # this is an overlay
+        # TODO override R package  (openssl)
         ( let
             myOverride = {
               packageOverrides = _self: _super: {
@@ -125,6 +144,271 @@
                     sha256 = "b90e275a95b4d980cbbac7967914b8d66477c09bc346a0b3c9e2125bba664b06";
                   };
                 };
+                matplotlib-venn = _super.buildPythonPackage rec {
+                  version = "0.11.5";
+                  pname = "matplotlib-venn";
+        
+                  src = builtins.fetchGit {
+                    url = "git://github.com/konstantint/matplotlib-venn";
+                    rev = "c26796c9925bdac512edf48387452fbd1848c791";
+                  };
+        
+                  checkInputs = [ _super.pytest ];
+                  propagatedBuildInputs = [ _super.matplotlib _super.numpy _super.scipy ];
+        
+                  checkPhase = ''
+                    pytest
+                  '';
+        
+                  # Tests require extra dependencies
+                  doCheck = false;
+        
+                  # meta = with stdenv.lib; {
+                  #   homepage = "https://github.com/konstantint/matplotlib-venn";
+                  #   description = "Area-weighted venn-diagrams for Python/matplotlib";
+                  #   license = licenses.mit;
+                  # };
+                };
+                swifter = _super.buildPythonPackage rec {
+                  version = "0.304";
+                  pname = "swifter";
+        
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "5fe99d18e8716e82bce5a76322437d180c25ef1e29f1e4c5d5dd007928a316e9";
+                  };
+        
+                  checkInputs = [ _super.nose ];
+                  propagatedBuildInputs = [ _super.pandas _super.psutil _super.dask _super.tqdm
+                                            _super.ipywidgets _super.numba _super.bleach
+                                            _super.parso _super.distributed ];
+        
+                  disabled = _super.pythonOlder "3.7";
+        
+                  pythonImportsCheck = [ "swifter" ];
+                  checkPhase = ''
+                    nosetests
+                  '';
+        
+                  # Tests require extra dependencies
+                  doCheck = true;
+        
+                  # meta = with stdenv.lib; {
+                  #   homepage = "https://github.com/jmcarpenter2/swifter";
+                  #   description = "A package which efficiently applies any function to a pandas dataframe or series in the fastest available manner";
+                  #   license = licenses.mit;
+                  #   maintainers = [ maintainers.moritzs ];
+                  # };
+                };
+                pyensembl = _super. buildPythonPackage rec {
+                  version = "1.8.5";
+                  pname = "pyensembl";
+        
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "13dd05aba296e4acadb14de5a974e6f73834452851a36b9237917ae85b3e060f";
+                  };
+        
+                  propagatedBuildInputs = [ _super.numpy _super.pandas _self.datacache _super.six _self.memoized-property
+                                            _self.gtfparse _self.tinytimer _self.serializable ];
+        
+                  # pythonImportsCheck = [ "pyensembl" ];
+                  doCheck = false;  # import fails (only) in build environment because pyensembl creates a file in root directory
+        
+                  # meta = with stdenv.lib; {
+                  #   homepage = "https://github.com/openvax/pyensembl";
+                  #   description = " Python interface to access reference genome features (such as genes, transcripts, and exons) from Ensembl ";
+                  #   license = licenses.asl20;
+                  #   maintainers = [ maintainers.moritzs ];
+                  # };
+                };
+                gffutils = _super.buildPythonPackage rec {
+                  version = "0.10.1";
+                  pname = "gffutils";
+        
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "a8fc39006d7aa353147238160640e2210b168f7849cb99896be3fc9441e351cb";
+                  };
+        
+        
+                  checkInputs = [ _super.nose _super.wget ];
+                  propagatedBuildInputs = [ _super.pyfaidx _super.six _super.argh _super.argcomplete _super.simplejson ];
+                  doCheck = false;
+        
+                  # checkPhase = ''  # unfortunately fails
+                  #   # sh gffutils/test/data/download-large-annotation-files.sh
+                  #   # nosetests
+                  # '';
+                  pythonImportsCheck = [ "gffutils" ];
+        
+                  # meta = with stdenv.lib; {
+                  #   homepage = "https://github.com/daler/gffutils";
+                  #   description = "GFF and GTF file manipulation and interconversion http://daler.github.io/gffutils";
+                  #   license = licenses.mit;
+                  #   maintainers = [ maintainers.moritzs ];
+                  # };
+                };
+                gtfparse = _super.buildPythonPackage rec {
+                  version = "1.2.0";
+                  pname = "gtfparse";
+        
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "2f27aa2b87eb43d613edabf27f9c11147dc595c8683b440ac1d88e9acdb85873";
+                  };
+        
+                  checkInputs = [ _super.nose _super.six ];
+                  propagatedBuildInputs = [ _super.numpy _super.pandas ];
+                  doCheck = false;
+        
+                  pythonImportsCheck = [ "gtfparse" ];
+                  # checkPhase = ''
+                  #   # PYTHONPATH='test' nosetests # fails because six is not found
+                  # '';
+        
+                  # meta = with stdenv.lib; {
+                  #   homepage = "https://github.com/openvax/gtfparse";
+                  #   description = " Parsing tools for GTF (gene transfer format) files ";
+                  #   license = licenses.asl20;
+                  #   maintainers = [ maintainers.moritzs ];
+                  # };
+                };
+                memoized-property = _super.buildPythonPackage rec {
+                  version = "1.0.3";
+                  pname = "memoized-property";
+        
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "4be4d0209944b9b9b678dae9d7e312249fe2e6fb8bdc9bdaa1da4de324f0fcf5";
+                  };
+        
+        
+                  pythonImportsCheck = [ "memoized_property" ];
+                  doCheck = false;
+        
+                  # meta = with stdenv.lib; {
+                  #   homepage = "https://github.com/estebistec/python-memoized-property";
+                  #   description = "A simple python decorator for defining properties that only run their fget function once ";
+                  #   license = licenses.bsd3;
+                  #   maintainers = [ maintainers.moritzs ];
+                  # };
+                };
+                pybedtools = _super.buildPythonPackage rec {
+                  version = "0.8.1";
+                  pname = "pybedtools";
+        
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "c035e078617f94720eb627e20c91f2377a7bd9158a137872a6ac88f800898593";
+                  };
+        
+                  checkInputs = [ _super.pytest _super.numpydoc _super.psutil _super.pyyaml _super.sphinx ];
+                  # propagatedBuildInputs = [ _super.numpy _super.pandas _super.pysam _super.six _super.zlib _super.bash _super.bedtools ];
+        
+                  checkPhase = ''
+                    # pytest -v --doctest-modules
+                    # ${_super.python.interpreter} -c 'import pybedtools'  # test and import do not work in checkPhase, because the built pyx file cannot be included
+                  '';
+        
+                  # Tests require extra dependencies
+                  doCheck = false;
+        
+                  # meta = with stdenv.lib; {
+                  #   homepage = "https://github.com/daler/pybedtools";
+                  #   description = "Python wrapper -- and more -- for Aaron Quinlan's BEDTools (bioinformatics tools) http://daler.github.io/pybedtools";
+                  #   license = licenses.gpl2;
+                  # };
+                };
+                scikit-plot = _super.buildPythonPackage rec {
+                  version = "0.3.7";
+                  pname = "scikit-plot";
+        
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "2c7948817fd2dc06879cfe3c1fdde56a8e71fa5ac626ffbe79f043650baa6242";
+                  };
+        
+                  checkInputs = [ _super.nose ];
+                  propagatedBuildInputs = [ _super.matplotlib _super.scikitlearn _super.scipy _super.joblib ];
+        
+                  checkPhase = ''
+                    nosetests
+                  '';
+                };
+                datacache = _super.buildPythonPackage rec {
+                  version = "1.1.5";
+                  pname = "datacache";
+        
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "b2ca31b2b9d3803a49645ab4f5b30fdd0820e833a81a6952b4ec3a68c8ee24a7";
+                  };
+        
+                  propagatedBuildInputs = [ _super.pandas _super.appdirs _super.progressbar33 _super.requests _self.typechecks _super.mock ];
+        
+                  pythonImportsCheck = [ "datacache" ];
+                };
+                serializable = _super.buildPythonPackage rec {
+                  version = "0.2.1";
+                  pname = "serializable";
+        
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "ec604e5df0c1236c06d190043a407495c4412dd6b6fd3b45a8514518173ed961";
+                  };
+        
+                  checkInputs = [ _super.nose ];
+                  propagatedBuildInputs = [ _self.typechecks _super.six _super.simplejson ];
+        
+                  checkPhase = ''
+                    nosetests
+                  '';
+        
+                  # meta = with stdenv.lib; {
+                  #   homepage = "https://github.com/iskandr/serializable";
+                  #   description = "Base class with serialization methods for user-defined Python objects";
+                  #   license = licenses.asl20;
+                  #   maintainers = [ maintainers.moritzs ];
+                  # };
+                };
+                tinytimer = _super.buildPythonPackage rec {
+                  version = "0.0.0";
+                  pname = "tinytimer";
+        
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "6ad13c8f01ab6094e58081a5367ffc4c5831f2d6b29034d2434d8ae106308fa5";
+                  };
+        
+                  pythonImportsCheck = [ "tinytimer" ];
+        
+                  # meta = with stdenv.lib; {
+                  #   homepage = "https://github.com/iskandr/tinytimer";
+                  #   description = "Tiny Python benchmarking library";
+                  #   license = licenses.asl20;
+                  #   maintainers = [ maintainers.moritzs ];
+                  # };
+                };
+                typechecks = _super.buildPythonPackage rec {
+                  version = "0.1.0";
+                  pname = "typechecks";
+        
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "7d801a6018f60d2a10aa3debc3af65f590c96c455de67159f39b9b183107c83b";
+                  };
+        
+                  pythonImportsCheck = [ "typechecks" ];
+        
+                  # meta = with stdenv.lib; {
+                  #   homepage = "https://github.com/openvax/typechecks";
+                  #   description = "Helper functions for runtime type checking";
+                  #   license = licenses.asl20;
+                  #   maintainers = [ maintainers.moritzs ];
+                  # };
+                };
+        
               };
             };
           in _self: _super: rec {
