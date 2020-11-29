@@ -156,11 +156,6 @@ let
         boot.loader.systemd-boot.enable = true;
         boot.loader.efi.canTouchEfiVariables = true;
             
-        # # USB subsystem wakes up MBP right after suspend unless we disable it.  # alternative to the above
-        # services.udev.extraRules = lib.mkDefault ''
-        #   SUBSYSTEM=="pci", KERNEL=="0000:00:14.0", ATTR{power/wakeup}="disabled"
-        # '';
-            
         # accelerateion
         # nixpkgs.config.packageOverrides = pkgs: {
         #   vaapiIntel = pkgs.vaapiIntel.override { enableHybridCodec = true; };
@@ -949,7 +944,7 @@ in
         # swifter
         gffutils
         pyensembl
-        # pybedtools
+        pybedtools
         pybigwig
         xdg
         epc
