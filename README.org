@@ -197,6 +197,18 @@ Make this repository flake-compatible:
     };
 }
 #+end_src
+
+#+name: flake-overlays
+#+begin_src nix
+  (final: prev: {
+    unstable = import inputs.nixpkgs-unstable {
+      inherit system;
+      overlays = self.overlays; # .${system};
+      config = { allowUnfree = true; };
+    };
+  })
+#+end_src
+
 ** Make nixpkgs available in NIX_PATH
 #+name: nixos-section
 #+begin_src nix
@@ -859,6 +871,7 @@ I use Syncthing to sync my org-mode files to my phone.
 {
   services.syncthing = {
     enable = true;
+    package = pkgs.unstable.syncthing;
     user = "moritz";
     dataDir = "/home/moritz/.config/syncthing";
     configDir = "/home/moritz/.config/syncthing";
@@ -1948,8 +1961,6 @@ set-window-option -g automatic-rename
 #+name: nixos-section
 #+begin_src nix
 {
-
-
   environment.systemPackages = let R-with-my-packages = pkgs.rWrapper.override{ packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra INSPEcT XVector S4Vectors]; };
   in [ R-with-my-packages ];
 }

@@ -96,6 +96,13 @@
 
       overlays = [
         (_self: _super: self.packages.x86_64-linux)
+        (final: prev: {
+          unstable = import inputs.nixpkgs-unstable {
+            inherit system;
+            overlays = self.overlays; # .${system};
+            config = { allowUnfree = true; };
+          };
+        })
         (_self: _super: { conda = _super.conda.override { extraPkgs = [ _super.which ]; }; })  # this is an overlay
         # TODO override R package  (openssl)
         ( let

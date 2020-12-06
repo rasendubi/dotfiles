@@ -558,6 +558,7 @@ in
     {
       services.syncthing = {
         enable = true;
+        package = pkgs.unstable.syncthing;
         user = "moritz";
         dataDir = "/home/moritz/.config/syncthing";
         configDir = "/home/moritz/.config/syncthing";
@@ -982,8 +983,6 @@ in
       ];
     }
     {
-    
-    
       environment.systemPackages = let R-with-my-packages = pkgs.rWrapper.override{ packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra INSPEcT XVector S4Vectors]; };
       in [ R-with-my-packages ];
     }
