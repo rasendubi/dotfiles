@@ -63,7 +63,7 @@
     in {
       nixosConfigurations =
         let
-          hosts = ["mobook"];
+          hosts = ["moxps" "mobook"];
           mkHost = name:
             nixpkgs.lib.nixosSystem {
               system = "x86_64-linux";
@@ -304,7 +304,7 @@
                   };
         
                   checkInputs = [ _super.pytest _super.numpydoc _super.psutil _super.pyyaml _super.sphinx ];
-                  propagatedBuildInputs = [ _super.numpy _super.pandas _super.pysam _super.six pkgs.zlib pkgs.bash pkgs.bedtools ];
+                  propagatedBuildInputs = [ _super.numpy _super.pandas _super.pysam _super.six pkgs.zlib pkgs.bash pkgs.bedtools ];  # Is it OK to use pkgs here?
         
                   checkPhase = ''
                     # pytest -v --doctest-modules

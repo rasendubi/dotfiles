@@ -371,12 +371,16 @@ This is my late 2013 MBP.
 #+begin_src nix
 {
   imports = [
-    (import "${inputs.nixos-hardware}/apple/macbook-pro")
+    # (import "${inputs.nixos-hardware}/apple/macbook-pro") # messes up the keyboard...
     (import "${inputs.nixos-hardware}/common/pc/laptop/ssd")
+    (import "${inputs.nixos-hardware}/common/pc/laptop")
+    (import "${inputs.nixos-hardware}/common/cpu/intel")
     #inputs.nixpkgs.modules.hardware.network.broadcom-43xx # <- using import vs not using import?
    #  <nixpkgs/nixos/modules/hardware/network/broadcom-43xx.nix> <- this is when using channels instead of flakes?
     inputs.nixpkgs.nixosModules.notDetected
   ];
+  
+  hardware.facetimehd.enable = true;
 
   services.udev.extraRules =
     # Disable XHC1 wakeup signal to avoid resume getting triggered some time
@@ -412,11 +416,21 @@ This is my late 2013 MBP.
   #   ];
   # };
 
-  boot.kernelModules = [ "kvm-intel" ];
+
+  boot.kernelModules = [ "kvm-intel" "wl" ];
+  boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "usb_storage" "sd_mod" "usbhid" ];
   boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
 
   hardware.video.hidpi.enable = lib.mkDefault true;
+  powerManagement.enable = true;
   powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
+
+  services.mbpfan = {
+    enable = true;
+    lowTemp = 61;
+    highTemp = 64;
+    maxTemp = 84;
+  };
 }
 #+end_src
 
@@ -1178,31 +1192,20 @@ https://github.com/bsag/nixos-config/blob/330e34c40aba37664bbc20550bf4dd427f0e47
 }
 #+end_src
 
-** Keyboard
+** Keyboard & Touchpad
 *** Layouts
-I use English and Ukrainian layouts. I also use Russian symbols, but they are on the third level.
 #+name: nixos-section
 #+begin_src nix
 {
   services.xserver.layout = "de,de,us";
   services.xserver.xkbVariant = "bone,,";
-  services.xserver.xkbOptions= "terminate:ctrl_alt_bksp";
+  services.xserver.xkbOptions= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp";
 
   # Use same config for linux console
   console.useXkbConfig = true;
 }
 #+end_src
 
-# TODO do I need this?
-Map left Caps Lock to Ctrl, and left Ctrl to switch between layout. (Shift-Ctrl triggers Caps Lock function.)
-
-I toggle between them with either Caps Lock, or Menu key---I have two different keyboards, and one doesn't have Menu when Caps Lock is too far on the second. I never use Caps Lock--the feature, so it's nice to have Caps LED indicate alternate layouts.
-#+name: nixos-section-unused
-#+begin_src nix
-{
-  services.xserver.xkbOptions = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
-}
-#+end_src
 *** Speed
 #+name: nixos-section
 #+begin_src nix
@@ -1216,6 +1219,26 @@ I toggle between them with either Caps Lock, or Menu key---I have two different 
 #+end_src
 *** Layout indicator
 # I use built-in awesome layout indicator. See [[.config/awesome/rc.lu]] for more details.
+*** Touchpad
+#+name: nixos-section
+#+begin_src nix
+{
+  # services.xserver.synaptics.enable = true;
+  # services.xserver.synaptics.dev = "/dev/input/event7";
+  # services.xserver.synaptics.tapButtons = false;
+  # services.xserver.synaptics.buttonsMap = [ 1 3 2 ];
+  # services.xserver.synaptics.twoFingerScroll = true;
+  # services.xserver.synaptics.palmDetect = false;
+  # services.xserver.synaptics.accelFactor = "0.001";
+  # services.xserver.synaptics.additionalOptions = ''
+  #   Option "SHMConfig" "on"
+  #   Option "VertScrollDelta" "-100"
+  #   Option "HorizScrollDelta" "-100"
+  #   Option "Resolution" "370"
+  # '';
+}
+#+end_src
+
 ** Redshift
 Redshift adjusts the color temperature of the screen according to the position of the sun.
 
@@ -1265,14 +1288,13 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
       unifont
 
       # Used by Emacs
-      input-mono
+      # input-mono
       libertine
     ];
   };
 }
 #+end_src
 ** Hi-DPI
-These are for moxps-only.
 
 #+begin_src fundamental :tangle .Xresources
 Xft.dpi: 120
@@ -1286,13 +1308,18 @@ Xcursor.size: 32
     pkgs.terminus_font
   ];
   console.font = "ter-132n";
+  services.xserver.dpi = 120;
 }
 #+end_src
 
-#+name: machine-moxps
+#+name: machine-mobook
 #+begin_src nix
 {
-  services.xserver.dpi = 120;
+  console.packages = [
+    pkgs.terminus_font
+  ];
+  console.font = "ter-132n";
+  services.xserver.dpi = 220;
 }
 #+end_src
 * Applications
