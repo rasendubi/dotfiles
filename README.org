@@ -371,19 +371,34 @@ This is my late 2013 MBP.
 #+begin_src nix
 {
   imports = [
-    (import "${inputs.nixos-hardware}/apple/macbook-pro")
+    # (import "${inputs.nixos-hardware}/apple/macbook-pro") # messes up the keyboard...
     (import "${inputs.nixos-hardware}/common/pc/laptop/ssd")
-    inputs.nixpkgs.modules.hardware.network.broadcom-43xx # <- using import vs not using import?
+    (import "${inputs.nixos-hardware}/common/pc/laptop")
+    (import "${inputs.nixos-hardware}/common/cpu/intel")
+    #inputs.nixpkgs.modules.hardware.network.broadcom-43xx # <- using import vs not using import?
    #  <nixpkgs/nixos/modules/hardware/network/broadcom-43xx.nix> <- this is when using channels instead of flakes?
     inputs.nixpkgs.nixosModules.notDetected
   ];
+  
+  hardware.facetimehd.enable = true;
 
   services.udev.extraRules =
     # Disable XHC1 wakeup signal to avoid resume getting triggered some time
     # after suspend. Reboot required for this to take effect.
-    lib.optionalString
-      (lib.versionAtLeast pkgs.kernelPackages.kernel.version "3.13")
+    # lib.optionalString
+      #(lib.versionAtLeast pkgs.kernelPackages.kernel.version "3.13")
       ''SUBSYSTEM=="pci", KERNEL=="0000:00:14.0", ATTR{power/wakeup}="disabled"'';
+
+  systemd.services.disable-gpe06 = {
+    description = "Disable GPE06 interrupt leading to high kworker";
+    wantedBy = [ "multi-user.target" ];
+    script = ''
+      /run/current-system/sw/bin/bash -c 'echo "disable" > /sys/firmware/acpi/interrupts/gpe06'
+    '';
+    serviceConfig.Type = "oneshot";
+  };
+
+
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
       
@@ -401,9 +416,21 @@ This is my late 2013 MBP.
   #   ];
   # };
 
-  # boot.kernelModules = [ "kvm-intel" ];
 
-  # powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
+  boot.kernelModules = [ "kvm-intel" "wl" ];
+  boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "usb_storage" "sd_mod" "usbhid" ];
+  boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
+
+  hardware.video.hidpi.enable = lib.mkDefault true;
+  powerManagement.enable = true;
+  powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
+
+  services.mbpfan = {
+    enable = true;
+    lowTemp = 61;
+    highTemp = 64;
+    maxTemp = 84;
+  };
 }
 #+end_src
 
@@ -411,30 +438,31 @@ LVM on LUKS setup for disk encryption.
 #+name: machine-mobook
 #+begin_src nix
 {
-  fileSystems."/" =
-    { device = "/dev/disk/by-uuid/8f0a4152-e9f1-4315-8c34-0402ff7efff4";
-      fsType = "btrfs";
-    };
-
   fileSystems."/boot" =
-    { device = "/dev/disk/by-uuid/A227-1A0D";
+    { device = "/dev/disk/by-uuid/E64F-3226";
       fsType = "vfat";
     };
 
   swapDevices =
-    [ { device = "/dev/disk/by-uuid/9eca5b06-730e-439f-997b-512a614ccce0"; }
+    [ { device = "/dev/disk/by-uuid/912c5850-5f71-4d15-8b69-1e0dad5718b0"; }
     ];
 
+  fileSystems."/" =
+    { device = "/dev/disk/by-uuid/73edc386-3f1a-46ff-9ae1-76a4fd6c0ea4";
+      fsType = "btrfs";
+    };
 
   boot.initrd.luks.devices = {
-    cryptkey.device = "/dev/disk/by-uuid/ccd19ab7-0e4d-4df4-8912-b87139de56af";
+    cryptkey = {
+      device = "/dev/disk/by-uuid/179ecdea-edd4-4dc5-b8c3-5ed760bc2a0d";
+    };
     cryptroot = {
-      device="/dev/disk/by-uuid/88242cfe-48a1-44d2-a29b-b55e6f05d3d3";
-      keyFile="/dev/mapper/cryptkey";
-      };
+      device = "/dev/disk/by-uuid/623db0a5-d0e0-405a-88ae-b83a3d321656";
+      keyFile = "/dev/mapper/cryptkey";
+    };
     cryptswap = {
-      device="/dev/disk/by-uuid/f6fa3573-44a9-41cc-bab7-da60d21e27b3";
-      keyFile="/dev/mapper/cryptkey";
+      device = "/dev/disk/by-uuid/da63991e-8edd-48db-bc4b-66fbc96917eb";
+      keyFile = "/dev/mapper/cryptkey";
     };
   };
 }
@@ -1164,31 +1192,20 @@ https://github.com/bsag/nixos-config/blob/330e34c40aba37664bbc20550bf4dd427f0e47
 }
 #+end_src
 
-** Keyboard
+** Keyboard & Touchpad
 *** Layouts
-I use English and Ukrainian layouts. I also use Russian symbols, but they are on the third level.
 #+name: nixos-section
 #+begin_src nix
 {
   services.xserver.layout = "de,de,us";
   services.xserver.xkbVariant = "bone,,";
-  services.xserver.xkbOptions= "terminate:ctrl_alt_bksp";
+  services.xserver.xkbOptions= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp";
 
   # Use same config for linux console
   console.useXkbConfig = true;
 }
 #+end_src
 
-# TODO do I need this?
-Map left Caps Lock to Ctrl, and left Ctrl to switch between layout. (Shift-Ctrl triggers Caps Lock function.)
-
-I toggle between them with either Caps Lock, or Menu key---I have two different keyboards, and one doesn't have Menu when Caps Lock is too far on the second. I never use Caps Lock--the feature, so it's nice to have Caps LED indicate alternate layouts.
-#+name: nixos-section-unused
-#+begin_src nix
-{
-  services.xserver.xkbOptions = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
-}
-#+end_src
 *** Speed
 #+name: nixos-section
 #+begin_src nix
@@ -1202,6 +1219,26 @@ I toggle between them with either Caps Lock, or Menu key---I have two different 
 #+end_src
 *** Layout indicator
 # I use built-in awesome layout indicator. See [[.config/awesome/rc.lu]] for more details.
+*** Touchpad
+#+name: nixos-section
+#+begin_src nix
+{
+  # services.xserver.synaptics.enable = true;
+  # services.xserver.synaptics.dev = "/dev/input/event7";
+  # services.xserver.synaptics.tapButtons = false;
+  # services.xserver.synaptics.buttonsMap = [ 1 3 2 ];
+  # services.xserver.synaptics.twoFingerScroll = true;
+  # services.xserver.synaptics.palmDetect = false;
+  # services.xserver.synaptics.accelFactor = "0.001";
+  # services.xserver.synaptics.additionalOptions = ''
+  #   Option "SHMConfig" "on"
+  #   Option "VertScrollDelta" "-100"
+  #   Option "HorizScrollDelta" "-100"
+  #   Option "Resolution" "370"
+  # '';
+}
+#+end_src
+
 ** Redshift
 Redshift adjusts the color temperature of the screen according to the position of the sun.
 
@@ -1251,14 +1288,13 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
       unifont
 
       # Used by Emacs
-      input-mono
+      # input-mono
       libertine
     ];
   };
 }
 #+end_src
 ** Hi-DPI
-These are for moxps-only.
 
 #+begin_src fundamental :tangle .Xresources
 Xft.dpi: 120
@@ -1272,13 +1308,18 @@ Xcursor.size: 32
     pkgs.terminus_font
   ];
   console.font = "ter-132n";
+  services.xserver.dpi = 120;
 }
 #+end_src
 
-#+name: machine-moxps
+#+name: machine-mobook
 #+begin_src nix
 {
-  services.xserver.dpi = 120;
+  console.packages = [
+    pkgs.terminus_font
+  ];
+  console.font = "ter-132n";
+  services.xserver.dpi = 220;
 }
 #+end_src
 * Applications
