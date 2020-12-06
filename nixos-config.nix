@@ -194,8 +194,8 @@ let
       
         services.mbpfan = {
           enable = true;
-          lowTemp = 61;
-          highTemp = 64;
+          lowTemp = 60;
+          highTemp = 67;
           maxTemp = 84;
         };
       }
@@ -244,7 +244,7 @@ let
           pkgs.terminus_font
         ];
         console.font = "ter-132n";
-        services.xserver.dpi = 240;
+        services.xserver.dpi = 200;
       }
     ];
   };
@@ -428,6 +428,7 @@ in
       nix.gc.options = "--delete-older-than 12d";
     }
     {
+      
       networking = {
         hostName = name;
     
@@ -865,6 +866,8 @@ in
     }
     {
       environment.systemPackages = with pkgs; [
+        inkscape
+        arandr
         dmenu
         soulseekqt
         gnome3.cheese
@@ -914,6 +917,34 @@ in
         (pkgs.vim_configurable.override { python3 = true; })
         pkgs.neovim
       ];
+    }
+    {
+      # leads to trouble only..
+      systemd.services.modem-manager.enable = false;
+      systemd.services."dbus-org.freedesktop.ModemManager1".enable = false;
+      
+      services.udev.extraRules = ''
+        # Atmel DFU
+        ### ATmega16U2
+        SUBSYSTEMS=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2fef", TAG+="uaccess"
+        ### ATmega32U2
+        SUBSYSTEMS=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2ff0", TAG+="uaccess"
+        ### ATmega16U4
+        SUBSYSTEMS=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2ff3", TAG+="uaccess"
+        ### ATmega32U4
+        SUBSYSTEMS=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2ff4", TAG+="uaccess"
+        ### AT90USB64
+        SUBSYSTEMS=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2ff9", TAG+="uaccess"
+        ### AT90USB128
+        SUBSYSTEMS=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2ffb", TAG+="uaccess"
+        ### Pro Micro 5V/16MHz
+        SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b4f", ATTRS{idProduct}=="9205", TAG+="uaccess", ENV{ID_MM_DEVICE_IGNORE}="1"
+        ## dog hunter AG
+        ### Leonardo
+        SUBSYSTEMS=="usb", ATTRS{idVendor}=="2a03", ATTRS{idProduct}=="0036", TAG+="uaccess", ENV{ID_MM_DEVICE_IGNORE}="1"
+        ### Micro
+        SUBSYSTEMS=="usb", ATTRS{idVendor}=="2a03", ATTRS{idProduct}=="0037", TAG+="uaccess", ENV{ID_MM_DEVICE_IGNORE}="1"
+      '';
     }
     {
       environment.systemPackages = [

@@ -14,8 +14,7 @@ allow-moves=yes
   # autostart
   xdg.configFile."autostart/nm-applet.desktop".source = "/run/current-system/sw/share/applications/nm-applet.desktop";
   # xdg.configFile."autostart/firefox.desktop".source = "/run/current-system/sw/share/applications/firefox.desktop";
-  xdg.configFile."autostart/qutebrowser.desktop".source = "/nix/store/gd9x4sc0bwxvihzcyx3iji560av13bhb-qutebrowser-1.14.0/share/applications/org.qutebrowser.qutebrowser.desktop";
-  xdg.configFile."autostart/rxvt-unicode.desktop".source = "/run/current-system/sw/share/applications/rxvt-unicode.desktop";
+  # xdg.configFile."autostart/rxvt-unicode.desktop".source = "/run/current-system/sw/share/applications/rxvt-unicode.desktop";
 #   xdg.configFile."autostart/clipit.desktop".text = ''[Desktop Entry]  <- I use clipmon now..
 # Icon=clipit-trayicon
 # Exec=clipit
@@ -23,6 +22,14 @@ allow-moves=yes
 # Type=Application
 # Categories=GTK;GNOME;Application;Utility;
 # Name=ClipIt'';
+
+  xdg.configFile."autostart/qutebrowser.desktop".text = ''[Desktop Entry]
+Name=Qutebrowser
+Type=Application
+Categories=Network;WebBrowser;
+Exec=qutebrowser
+  '';
+
   xdg.configFile."autostart/blueman-applet.desktop".text = ''[Desktop Entry]
 Name=Blueman Applet
 Comment=Manage your Bluetooth connections
@@ -139,6 +146,8 @@ home.packages =   with pkgs; [
 
       eval (direnv hook fish)
 
+      alias l 'ls -lhtra'
+      alias clip 'xclip -selection clipboard'
     '';
   };
   # programs.bash = {
@@ -148,11 +157,11 @@ home.packages =   with pkgs; [
   #   };
   # };
 
-
-  home.keyboard = {
-    layout = "de,us,ua";
-    variant = "bone,workman,";
-  };
+  # controlled by nixos-config/README.org
+  # home.keyboard = {
+  #   layout = "de,us,ua";
+  #   variant = "bone,workman,";
+  # };
 
   # xsession.enable = true;
 
