@@ -906,6 +906,7 @@
                     spaceline
                     terraform-mode
                     tide
+                    toc-org
                     typescript-mode
                     use-package
                     visual-fill-column
