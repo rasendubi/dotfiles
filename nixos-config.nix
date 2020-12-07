@@ -355,7 +355,7 @@ in
     }
     {
       environment.systemPackages = [
-        (pkgs.vim_configurable.override { python3 = true; })
+        pkgs.vim_configurable
       ];
     }
     {
@@ -376,7 +376,7 @@ in
         pkgs.bind
         pkgs.file
         pkgs.which
-        pkgs.utillinuxCurses
+        # pkgs.utillinuxCurses
         pkgs.ripgrep
         pkgs.xclip
     

@@ -505,7 +505,7 @@
             }
             {
               home.packages = [
-                (pkgs.vim_configurable.override { python3 = true; })
+                pkgs.vim_configurable
               ];
             }
             {
@@ -875,8 +875,7 @@
                     lua-mode
                     magit
                     markdown-mode
-                    modus-operandi-theme
-                    monokai-theme
+                    modus-themes
                     nix-mode
                     nix-sandbox
                     notmuch

@@ -52,6 +52,7 @@
 
 (add-hook 'after-make-frame-functions #'rasen/font-hook)
 
+(require 'modus-themes-core)
 (require 'modus-operandi-theme)
 
 (setq modus-operandi-theme-slanted-constructs t)
@@ -60,9 +61,23 @@
 ;; Use proportional fonts only when I explicitly configure them.
 (setq modus-operandi-theme-proportional-fonts nil)
 
+(defmacro with-modus-colors (name &rest cmds)
+  "Bind NAME's color palette around face specifications.
+
+NAME should be the proper name of a Modus theme, either
+'modus-operandi or 'modus-vivendi."
+  (declare (indent defun))
+  (let ((faces modus-themes-faces)
+        (cus modus-themes-custom-variables))
+    `(let ((class '((class color) (min-colors 89)))
+           ,@(mapcar (lambda (cons)
+                       `(,(car cons) ,(cdr cons)))
+                     (modus-themes-core-theme-variables name)))
+       ,@cmds)))
+
 (load-theme 'modus-operandi t)
 
-(modus-operandi-theme-with-color-variables
+(with-modus-colors 'modus-operandi
   (let ((custom--inhibit-theme-enable nil))
     (custom-theme-set-faces
      'modus-operandi

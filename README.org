@@ -557,8 +557,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       lua-mode
       magit
       markdown-mode
-      modus-operandi-theme
-      monokai-theme
+      modus-themes
       nix-mode
       nix-sandbox
       notmuch
@@ -2507,6 +2506,8 @@ Override Firefox to use websigner. (~<<flake-overlays>>~)
   :init
   (setq evil-want-integration t
         evil-want-keybinding nil)
+  :custom
+  (evil-undo-system 'undo-redo)
   :config
   <<evil-config>>
   (evil-mode 1))
@@ -2652,7 +2653,7 @@ evil-collection is a collection of evil bindings for different modes.
 (add-to-list 'warning-suppress-types '(evil-collection))
 
 (use-package evil-collection
-  :after (evil evil-magit)
+  :after (evil)
   :config
   (defun rasen/rotate-keys (_mode mode-keymaps &rest _rest)
     (evil-collection-translate-key 'normal mode-keymaps
@@ -2674,7 +2675,6 @@ evil-collection is a collection of evil bindings for different modes.
           flycheck
           help
           js2-mode
-          magit
           ;; notmuch bindings aren't that cool and are less efficient than native
           ;; keymap
           ;; notmuch
@@ -4848,7 +4848,7 @@ Install Vim as my backup editor. (~<<nixos-section>>~)
 #+begin_src nix
 {
   environment.systemPackages = [
-    (pkgs.vim_configurable.override { python3 = true; })
+    pkgs.vim_configurable
   ];
 }
 #+end_src
@@ -4858,7 +4858,7 @@ For Home Manager–managed hosts.
 #+begin_src nix
 {
   home.packages = [
-    (pkgs.vim_configurable.override { python3 = true; })
+    pkgs.vim_configurable
   ];
 }
 #+end_src
@@ -5194,7 +5194,7 @@ For home-manager. (~<<home-manager-section>>~)
     pkgs.bind
     pkgs.file
     pkgs.which
-    pkgs.utillinuxCurses
+    # pkgs.utillinuxCurses
     pkgs.ripgrep
     pkgs.xclip
 
@@ -6281,7 +6281,7 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
   :general
   ;; K is used for avy
   ('normal
-   'tide-normal-map
+   'tide-mode-map
    "K" nil)
   :init
   (defun rasen/setup-tide-mode ()
@@ -6804,6 +6804,7 @@ These are for omicron-only.
 ** Color theme
 I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Goes to early-init to avoid flash of unstyled emacs.)
 #+begin_src emacs-lisp :tangle .emacs.d/early-init.el
+(require 'modus-themes-core)
 (require 'modus-operandi-theme)
 
 (setq modus-operandi-theme-slanted-constructs t)
@@ -6812,9 +6813,23 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Go
 ;; Use proportional fonts only when I explicitly configure them.
 (setq modus-operandi-theme-proportional-fonts nil)
 
+(defmacro with-modus-colors (name &rest cmds)
+  "Bind NAME's color palette around face specifications.
+
+NAME should be the proper name of a Modus theme, either
+'modus-operandi or 'modus-vivendi."
+  (declare (indent defun))
+  (let ((faces modus-themes-faces)
+        (cus modus-themes-custom-variables))
+    `(let ((class '((class color) (min-colors 89)))
+           ,@(mapcar (lambda (cons)
+                       `(,(car cons) ,(cdr cons)))
+                     (modus-themes-core-theme-variables name)))
+       ,@cmds)))
+
 (load-theme 'modus-operandi t)
 
-(modus-operandi-theme-with-color-variables
+(with-modus-colors 'modus-operandi
   (let ((custom--inhibit-theme-enable nil))
     (custom-theme-set-faces
      'modus-operandi
