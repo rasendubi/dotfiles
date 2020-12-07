@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: useCallback
+# key: uc
+# --
+const $1 = React.useCallback(($2) => {
+  $0
+}, [$3]);

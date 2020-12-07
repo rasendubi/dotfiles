@@ -1,0 +1,13 @@
+# -*- mode: snippet -*-
+# name: Basic React component
+# key: comp
+# --
+import React from 'react';
+
+interface $1Props {}
+
+const ${1:`(file-name-base)`} = ({}: $1Props) => {
+  return null$0;
+};
+
+export default $1;

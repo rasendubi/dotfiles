@@ -1,0 +1,20 @@
+# -*- mode: snippet -*-
+# name: Storybook story
+# key: story
+# expand-env: ((yas-indent-line 'fixed))
+# --
+import React from 'react';
+
+import { action } from '@storybook/addon-actions';
+import { storiesOf } from '@storybook/react';
+import { withScreenshot } from 'storybook-chrome-screenshot';
+
+import ${1:`(file-name-sans-extension (file-name-base (buffer-file-name)))`} from '${2:./}';
+
+storiesOf('${3:$1}', module)
+  .addDecorator(
+    withScreenshot()
+  )
+  .add('default', () => (
+    ${0:<$1 />}
+  ));

@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: useState
+# key: us
+# --
+const [$1, set${1:$(if (> (length yas-text) 0) (concat (upcase (substring yas-text 0 1)) (substring yas-text 1)))}] = React.useState$3($2);

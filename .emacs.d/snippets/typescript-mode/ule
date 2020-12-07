@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: React.useLayoutEffect
+# key: ule
+# --
+React.useLayoutEffect(() => {
+  $0
+}, [$1]);

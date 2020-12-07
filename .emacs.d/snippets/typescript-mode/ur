@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: React.useRef
+# key: ur
+# --
+const $1 = React.useRef($2);$0
