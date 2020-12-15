@@ -149,12 +149,26 @@ let
         
         hardware.facetimehd.enable = true;
       
-        services.udev.extraRules =
+        # from https://wiki.archlinux.org/index.php/MacBookPro11,x#Powersave
+        services.udev.extraRules = let
+          remove_script = pkgs.requireFile {
+            name = "remove_ignore_usb_devices.sh";
+            url = "https://gist.githubusercontent.com/anonymous/9c9d45c4818e3086ceca/raw/2aa42b5b7d564868ff089dc72445f24586b6c55e/gistfile1.sh";
+            sha256 = "b2e1d250b1722ec7d3a381790175b1fdd3344e638882ac00f83913e2f9d27603";
+          };
+          remove_script_local = pkgs.writeShellScript "remove_ignore_usb-devices_local.sh" (builtins.readFile remove_script);
+        in
+          ''
+          # /etc/udev/rules.d/99-apple_cardreader.rules
+          SUBSYSTEMS=="usb", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="8406", RUN+="${remove_script_local} 05ac 8406"
+          # /etc/udev/rules.d/99-apple_broadcom_bcm2046_bluetooth.rules
+          SUBSYSTEMS=="usb", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="8289", RUN+="${remove_script_local} 05ac 8289"
+          SUBSYSTEMS=="usb", ATTRS{idVendor}=="0a5c", ATTRS{idProduct}=="4500", RUN+="${remove_script_local} 0a5c 4500"
+      
           # Disable XHC1 wakeup signal to avoid resume getting triggered some time
           # after suspend. Reboot required for this to take effect.
-          # lib.optionalString
-            #(lib.versionAtLeast pkgs.kernelPackages.kernel.version "3.13")
-            ''SUBSYSTEM=="pci", KERNEL=="0000:00:14.0", ATTR{power/wakeup}="disabled"'';
+          SUBSYSTEM=="pci", KERNEL=="0000:00:14.0", ATTR{power/wakeup}="disabled"
+          '';
       
         systemd.services.disable-gpe06 = {
           description = "Disable GPE06 interrupt leading to high kworker";
@@ -191,6 +205,8 @@ let
         hardware.video.hidpi.enable = lib.mkDefault true;
         powerManagement.enable = true;
         powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
+        
+        services.tlp.enable = true;
       
         services.mbpfan = {
           enable = true;
