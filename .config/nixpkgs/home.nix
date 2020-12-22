@@ -145,6 +145,7 @@ home.packages =   with pkgs; [
       end
 
       eval (direnv hook fish)
+      fish_vi_key_bindings
 
       alias l 'ls -lhtra'
       alias clip 'xclip -selection clipboard'

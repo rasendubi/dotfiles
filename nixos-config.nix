@@ -128,6 +128,14 @@ let
         # };
       }
       {
+        musnix = {
+          # Find this value with `lspci | grep -i audio` (per the musnix readme).
+          # PITFALL: This is the id of the built-in soundcard.
+          #   When I start using the external one, change it.
+          soundcardPciId = "00:1f.3";
+        };
+      }
+      {
         console.packages = [
           pkgs.terminus_font
         ];
@@ -140,7 +148,7 @@ let
         imports = [
           # (import "${inputs.nixos-hardware}/apple/macbook-pro") # messes up the keyboard...
           (import "${inputs.nixos-hardware}/common/pc/laptop/ssd")
-          (import "${inputs.nixos-hardware}/common/pc/laptop")
+          (import "${inputs.nixos-hardware}/common/pc/laptop")  # tlp.enable = true
           (import "${inputs.nixos-hardware}/common/cpu/intel")
           #inputs.nixpkgs.modules.hardware.network.broadcom-43xx # <- using import vs not using import?
          #  <nixpkgs/nixos/modules/hardware/network/broadcom-43xx.nix> <- this is when using channels instead of flakes?
@@ -151,12 +159,41 @@ let
       
         # from https://wiki.archlinux.org/index.php/MacBookPro11,x#Powersave
         services.udev.extraRules = let
-          remove_script = pkgs.requireFile {
-            name = "remove_ignore_usb_devices.sh";
-            url = "https://gist.githubusercontent.com/anonymous/9c9d45c4818e3086ceca/raw/2aa42b5b7d564868ff089dc72445f24586b6c55e/gistfile1.sh";
-            sha256 = "b2e1d250b1722ec7d3a381790175b1fdd3344e638882ac00f83913e2f9d27603";
-          };
-          remove_script_local = pkgs.writeShellScript "remove_ignore_usb-devices_local.sh" (builtins.readFile remove_script);
+          # remove_script = pkgs.requireFile {
+          #   name = "remove_ignore_usb_devices.sh";
+          #   url = "https://gist.githubusercontent.com/anonymous/9c9d45c4818e3086ceca/raw/2aa42b5b7d564868ff089dc72445f24586b6c55e/gistfile1.sh";
+          #   sha256 = "b2e1d250b1722ec7d3a381790175b1fdd3344e638882ac00f83913e2f9d27603";
+          # };
+          remove_script = ''
+          # from https://gist.github.com/anonymous/9c9d45c4818e3086ceca
+          logger -p info "$0 executed."
+          if [ "$#" -eq 2 ];then
+              removevendorid=$1
+              removeproductid=$2
+              usbpath="/sys/bus/usb/devices/"
+              devicerootdirs=`ls -1 $usbpath`
+              for devicedir in $devicerootdirs; do
+                  if [ -f "$usbpath$devicedir/product" ]; then
+                      product=`cat "$usbpath$devicedir/product"`
+                      productid=`cat "$usbpath$devicedir/idProduct"`
+                      vendorid=`cat "$usbpath$devicedir/idVendor"`
+                      if [ "$removevendorid" == "$vendorid" ] && [ "$removeproductid" == "$productid" ];    then
+                          if [ -f "$usbpath$devicedir/remove" ]; then
+                              logger -p info "$0 removing $product ($vendorid:$productid)"
+                          echo 1 > "$usbpath$devicedir/remove"
+                              exit 0
+                else
+                              logger -p info "$0 already removed $product ($vendorid:$productid)"
+                              exit 0
+                fi
+                      fi
+                  fi
+              done
+          else
+              logger -p err "$0 needs 2 args vendorid and productid"
+              exit 1
+          fi'';
+          remove_script_local = pkgs.writeShellScript "remove_ignore_usb-devices_local.sh" remove_script; #(import ./remove_ignore_usb_devices.sh.nix); # (builtins.readFile remove_script)
         in
           ''
           # /etc/udev/rules.d/99-apple_cardreader.rules
@@ -206,8 +243,6 @@ let
         powerManagement.enable = true;
         powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
         
-        services.tlp.enable = true;
-      
         services.mbpfan = {
           enable = true;
           lowTemp = 60;
@@ -254,6 +289,14 @@ let
         #   package = pkgs.vanilla-dmz;
         #   size = 64;
         # };
+      }
+      {
+        musnix = {
+          # Find this value with `lspci | grep -i audio` (per the musnix readme).
+          # PITFALL: This is the id of the built-in soundcard.
+          #   When I start using the external one, change it.
+          soundcardPciId = "00:1b.0";  # 00:1b.0 or 00:03.0
+        };
       }
       {
         console.packages = [
@@ -500,13 +543,9 @@ in
         moritz  ALL=(ALL) NOPASSWD: ${pkgs.systemd}/bin/systemctl
         '';
       musnix = {
-        enable = true;
+        enable = false;
         alsaSeq.enable = false;
     
-        # Find this value with `lspci | grep -i audio` (per the musnix readme).
-        # PITFALL: This is the id of the built-in soundcard.
-        #   When I start using the external one, change it.
-        soundcardPciId = "00:1f.3";
     
         # If I build with either of these, I get a PREEMPT error, much like
         #   https://github.com/musnix/musnix/issues/100
@@ -670,6 +709,7 @@ in
         exwm = {
           enable = true;
           extraPackages = epkgs: with epkgs; [ emacsql-sqlite pkgs.imagemagick ];  # unfortunately, adding zmq and jupyter here, didn't work so I had to install them manually (i.e. compiling emacs-zmq)
+          # I only managed to compile emacs-zmq once (~/emacs.d/elpa/27.1/develop/zmq-.../emacs-zmq.so). I just copied it from there to mobook
           enableDefaultConfig = false;  # todo disable and enable loadScript
           # careful, 'loadScript option' was merged from Vizaxo into my personal nixpkgs repo.
           loadScript = ''
@@ -883,16 +923,24 @@ in
     }
     {
       environment.systemPackages = with pkgs; [
+        pandoc   # TODO make a latex section
+        # haskellPackages.pandoc-crossref  # broken...
+        haskellPackages.pandoc-citeproc
+        texlive.combined.scheme-full
+      ];
+    }
+    {
+      environment.systemPackages = [ pkgs.supercollider ];
+    }
+    {
+      environment.systemPackages = with pkgs; [
+        qbittorrent
         inkscape
         arandr
         dmenu
         soulseekqt
         gnome3.cheese
         gnome3.gnome-screenshot
-        pandoc   # TODO make a latex section
-        # haskellPackages.pandoc-crossref  # broken...
-        haskellPackages.pandoc-citeproc
-        # texlive.combined.scheme-full
         sparkleshare
         gnome3.gpaste
         autorandr
@@ -1073,6 +1121,11 @@ in
     {
       environment.systemPackages = with pkgs; [
         libGL
+        zlib
+        zstd
+        gcc
+        pkg-config
+        autoconf
       ];
     }
     {
