@@ -4190,7 +4190,27 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
         (rasen/org-copy-log-entry t)
         (org-roam-find-file "(life) My Weight" nil nil t)
         (goto-char (point-max))
-        (yank)))))
+        (yank))))
+
+  (defun rasen/refile-gratitude ()
+    (interactive)
+    (save-excursion
+      (save-window-excursion
+        (let* ((element (org-element-at-point))
+               (created (org-element-property :CREATED element))
+               (cbeg (org-element-property :contents-begin element))
+               (cend (org-element-property :contents-end element))
+               (contents (buffer-substring cbeg cend)))
+          (org-cut-subtree)
+          (current-kill 1)
+
+          (org-roam-find-file "(life) My Gratitude Journal" nil nil t)
+          (org-datetree-find-date-create
+           (calendar-gregorian-from-absolute
+            (time-to-days (org-read-date nil t created))))
+
+          (next-line)
+          (insert contents))))))
 #+end_src
 
 Enable auto-completion for notes.
