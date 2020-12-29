@@ -3,31 +3,29 @@ let
   machine-config = lib.getAttr name {
     moxps = [
       {
-        environment.systemPackages = with pkgs; let
-          nvidia-offload = pkgs.writeShellScriptBin "nvidia-offload" ''
-            export __NV_PRIME_RENDER_OFFLOAD=1
-            export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
-            export __GLX_VENDOR_LIBRARY_NAME=nvidia
-            export __VK_LAYER_NV_optimus=NVIDIA_only
-            exec -a "$0" "$@"
-          '';
-        in [nvidia-offload];
         imports = [
-          (import "${inputs.nixos-hardware}/dell/xps/15-9560/xps-common.nix")  # instead of default
+          # (import "${inputs.nixos-hardware}/dell/xps/15-9560/xps-common.nix")  # instead of default
           (import "${inputs.nixos-hardware}/common/cpu/intel")
+          (import "${inputs.nixos-hardware}/common/cpu/intel/kaby-lake")
+          # (import "${inputs.nixos-hardware}/common/gpu/nvidia")
           (import "${inputs.nixos-hardware}/common/pc/laptop")  # tlp.enable = true
-          (import "${inputs.nixos-hardware}/common/pc/laptop/acpi_call.nix")  # tlp.enable = true
+          # (import "${inputs.nixos-hardware}/common/pc/laptop/acpi_call.nix")  # tlp.enable = true
           (import "${inputs.nixos-hardware}/common/pc/laptop/ssd")
           inputs.nixpkgs.nixosModules.notDetected
         ];
+        boot.loader.systemd-boot.enable = true;
+        # boot.loader.efi.canTouchEfiVariables = true;  # TODO disable after a boot or two to prevent usage on that kind of ram
+        services.thermald.enable = true; 
+        
         # accelerateion
-        nixpkgs.config.packageOverrides = pkgs: {
-          vaapiIntel = pkgs.vaapiIntel.override { enableHybridCodec = true; };
-        };
+        # nixpkgs.config.packageOverrides = pkgs: {
+        #   vaapiIntel = pkgs.vaapiIntel.override { enableHybridCodec = true; };
+        # };
         hardware.opengl = {
           enable = true;
+          driSupport = true;
           extraPackages = with pkgs; [
-            intel-media-driver # LIBVA_DRIVER_NAME=iHD
+            intel-media-driver # LIBVA_DRIVER_NAME=iHD <- works for VLC
             vaapiIntel         # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
             vaapiVdpau
             libvdpau-va-gl
@@ -36,57 +34,74 @@ let
       
         boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
         boot.kernelModules = [ "kvm-intel" ];
-        boot.kernelParams = [ "acpi_rev_override=5" "pcie_aspm=off" "nouveau.modeset=0" ];  # 5,6,1 doesn't seem to make a difference
+        boot.kernelParams = [ "acpi_rev_override=5" "i915.enable_guc=2" "pcie_aspm=off" ];  # "nouveau.modeset=0" ];  # 5,6,1 doesn't seem to make a difference. pcie_aspm=off might be required to avoid freezes
       
         # from nixos-hardware
-        boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11 ];
-        boot.blacklistedKernelModules = [ "bbswitch" "nouveau" ];
-        services.xserver.videoDrivers = [ "intel" "nvidia" ];
+        # boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11 ];
+        hardware.nvidiaOptimus.disable = true;
+        boot.blacklistedKernelModules = [ "nouveau" "nvidia" ];  # bbswitch
+        # services.xserver.videoDrivers = [ "intel" "nvidia" ];
+        services.xserver.videoDrivers = [ "intel" ];  # modesetting didn't help
+        
+        # experiment here to get better blender performance:
+        services.xserver.config = ''
+        Section "Device"
+          Identifier "Intel Graphics"
+          Driver "intel"
+          Option "DRI" "2"
+        EndSection
+        '';
+        #   Option "NoAccel" "True"  
+        #   Option "DRI" "False"
+        # Option "AccelMethod"  "uxa" # makes it horribly slow
+        # Option "TearFree" "true"  # doesn't work with uxa
       
         nix.maxJobs = lib.mkDefault 8;
       
         services.undervolt = {
           enable = true;
-          coreOffset = -125;
-          gpuOffset = -75;
+          coreOffset = 0;
+          gpuOffset = 0;
+          # coreOffset = -125;
+          # gpuOffset = -75;
         };
         powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
-      
+        powerManagement.enable = true;
       
         # Nvidia stuff (https://discourse.nixos.org/t/how-to-use-nvidia-prime-offload-to-run-the-x-server-on-the-integrated-board/9091/13)
-        boot.extraModprobeConfig = "options nvidia \"NVreg_DynamicPowerManagement=0x02\"\n";
-        services.udev.extraRules = ''
-          # Remove NVIDIA USB xHCI Host Controller devices, if present
-          ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{remove}="1"
+        # boot.extraModprobeConfig = "options nvidia \"NVreg_DynamicPowerManagement=0x02\"\n";
+        # services.udev.extraRules = ''
+        #   # Remove NVIDIA USB xHCI Host Controller devices, if present
+        #   ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{remove}="1"
       
-          # Remove NVIDIA USB Type-C UCSI devices, if present
-          ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c8000", ATTR{remove}="1"
+        #   # Remove NVIDIA USB Type-C UCSI devices, if present
+        #   ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c8000", ATTR{remove}="1"
       
-          # Remove NVIDIA Audio devices, if present
-          ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{remove}="1"
+        #   # Remove NVIDIA Audio devices, if present
+        #   ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{remove}="1"
       
-          # Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
-          ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
-          ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
+        #   # Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
+        #   ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
+        #   ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
       
-          # Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
-          ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
-          ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
-          '';
-        hardware.nvidia = {
-          # nvidiaPersistenced = true;
-          powerManagement.enable = true;
-          modesetting.enable = true;
-          prime = {
-            offload.enable = true;
-            # Bus ID of the Intel GPU. You can find it using lspci, either under 3D or VGA
-            intelBusId = "PCI:0:2:0";
-            # Bus ID of the NVIDIA GPU. You can find it using lspci, either under 3D or VGA
-            nvidiaBusId = "PCI:1:0:0";
-          };
-        };
-        hardware.bumblebee.enable = false;
-        hardware.bumblebee.pmMethod = "none";
+        #   # Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
+        #   ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
+        #   ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
+        #   '';
+        # hardware.nvidia = {
+        #   # nvidiaPersistenced = true;
+        #   powerManagement.enable = true;
+        #   modesetting.enable = true;
+        #   prime = {
+        #     offload.enable = true;
+        #     # Bus ID of the Intel GPU. You can find it using lspci, either under 3D or VGA
+        #     intelBusId = "PCI:0:2:0";
+        #     # Bus ID of the NVIDIA GPU. You can find it using lspci, either under 3D or VGA
+        #     nvidiaBusId = "PCI:1:0:0";
+        #   };
+        # };
+        # hardware.bumblebee.enable = false;
+        # hardware.bumblebee.pmMethod = "none";
       }
       {
         fileSystems."/" =
@@ -140,7 +155,7 @@ let
           pkgs.terminus_font
         ];
         console.font = "ter-132n";
-        services.xserver.dpi = 120;
+        services.xserver.dpi = 220;
       }
     ];
     mobook = [
@@ -218,7 +233,7 @@ let
       
       
         boot.loader.systemd-boot.enable = true;
-        boot.loader.efi.canTouchEfiVariables = true;
+        # boot.loader.efi.canTouchEfiVariables = true;
             
         # accelerateion
         # nixpkgs.config.packageOverrides = pkgs: {
@@ -543,7 +558,7 @@ in
         moritz  ALL=(ALL) NOPASSWD: ${pkgs.systemd}/bin/systemctl
         '';
       musnix = {
-        enable = false;
+        enable = true;
         alsaSeq.enable = false;
     
     
@@ -637,7 +652,7 @@ in
         pkgs.qemu
       ];
     
-      users.users.moritz.extraGroups = ["libvirtd"];  # required for qemu I think 
+      users.users.moritz.extraGroups = ["libvirtd" "docker"];  # the former is required for qemu I think 
     }
     {
       environment.systemPackages = [ pkgs.borgbackup ];
@@ -916,12 +931,6 @@ in
       services.tor.client.enable = false;
     }
     {
-      environment.systemPackages = [ pkgs.steam ];
-      hardware.opengl.driSupport32Bit = true;
-      hardware.opengl.extraPackages32 = with pkgs.pkgsi686Linux; [ libva vaapiIntel];
-      hardware.pulseaudio.support32Bit = true;
-    }
-    {
       environment.systemPackages = with pkgs; [
         pandoc   # TODO make a latex section
         # haskellPackages.pandoc-crossref  # broken...
@@ -935,6 +944,8 @@ in
     {
       environment.systemPackages = with pkgs; [
         qbittorrent
+        blender
+        teams
         inkscape
         arandr
         dmenu
@@ -1047,13 +1058,14 @@ in
       ];
     }
     {
-      environment.systemPackages = let R-with-my-packages = pkgs.rWrapper.override{ packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra INSPEcT XVector S4Vectors]; };
+      environment.systemPackages = let R-with-my-packages = pkgs.rWrapper.override{ packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra INSPEcT XVector S4Vectors MAGeCKFlute]; };
       in [ R-with-my-packages ];
     }
     {
-      environment.systemPackages = let python = (with pkgs; python3.withPackages (python-packages: with python-packages; [
+      environment.systemPackages = let python = (with pkgs; python3.withPackages (python-packages: with python-packages; let opencvGtk = opencv4.override (old : { enableGtk2 = true; enableGStreamer = true; }); in [
         python3
         pandas
+        opencvGtk
         openpyxl
         biopython
         scikitlearn
