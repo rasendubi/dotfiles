@@ -21,16 +21,16 @@ let
         # nixpkgs.config.packageOverrides = pkgs: {
         #   vaapiIntel = pkgs.vaapiIntel.override { enableHybridCodec = true; };
         # };
-        hardware.opengl = {
-          enable = true;
-          driSupport = true;
-          extraPackages = with pkgs; [
-            intel-media-driver # LIBVA_DRIVER_NAME=iHD <- works for VLC
-            vaapiIntel         # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
-            vaapiVdpau
-            libvdpau-va-gl
-          ];
-        };
+        # hardware.opengl = {
+        #   enable = true;
+        #   driSupport = true;
+        #   extraPackages = with pkgs; [
+        #     intel-media-driver # LIBVA_DRIVER_NAME=iHD <- works for VLC
+        #     vaapiIntel         # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
+        #     vaapiVdpau
+        #     libvdpau-va-gl
+        #   ];
+        # };
       
         boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
         boot.kernelModules = [ "kvm-intel" ];
@@ -44,13 +44,6 @@ let
         services.xserver.videoDrivers = [ "intel" ];  # modesetting didn't help
         
         # experiment here to get better blender performance:
-        services.xserver.config = ''
-        Section "Device"
-          Identifier "Intel Graphics"
-          Driver "intel"
-          Option "DRI" "2"
-        EndSection
-        '';
         #   Option "NoAccel" "True"  
         #   Option "DRI" "False"
         # Option "AccelMethod"  "uxa" # makes it horribly slow
@@ -58,15 +51,15 @@ let
       
         nix.maxJobs = lib.mkDefault 8;
       
-        services.undervolt = {
-          enable = true;
-          coreOffset = 0;
-          gpuOffset = 0;
-          # coreOffset = -125;
-          # gpuOffset = -75;
-        };
-        powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
-        powerManagement.enable = true;
+        # services.undervolt = {
+        #   enable = true;
+        #   coreOffset = 0;
+        #   gpuOffset = 0;
+        #   # coreOffset = -125;
+        #   # gpuOffset = -75;
+        # };
+        # powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
+        # powerManagement.enable = true;
       
         # Nvidia stuff (https://discourse.nixos.org/t/how-to-use-nvidia-prime-offload-to-run-the-x-server-on-the-integrated-board/9091/13)
         # boot.extraModprobeConfig = "options nvidia \"NVreg_DynamicPowerManagement=0x02\"\n";
@@ -645,6 +638,7 @@ in
       };
     }
     {
+      virtualisation.virtualbox.host.enable = true;
       virtualisation.docker.enable = true;
       environment.systemPackages = [
         pkgs.docker-compose
@@ -709,14 +703,19 @@ in
       time.timeZone = "Europe/Berlin";
     }
     {
-      services.xserver.displayManager = {
-        autoLogin = {
-          user = "moritz";
-          enable = true;
+      services.xserver = {
+        # desktopManager.gnome3.enable = true;
+        displayManager = {
+          gdm.enable = true;
+          autoLogin = {  # if errors, then disable again
+            user = "moritz";
+            enable = true;
+          }; 
+          lightdm = {
+            enable = false;
+          };
         };
-        lightdm = {
-          enable = true;
-        };
+        enable = true;
       };
     }
     {
@@ -739,19 +738,19 @@ in
             (exwm-enable)
           '';
         };
-        stumpwm.enable = true;
+        stumpwm.enable = false;
       };
-      services.xserver.displayManager.defaultSession = "none+exwm";  # Firefox works more fluently with plasma5+exwm instead of "none+exwm". or does it??
-      services.xserver.desktopManager = {
-        xterm.enable = false;
-        plasma5.enable = true;
-        xfce = {
-          enable = true;
-          noDesktop= true;
-          enableXfwm = true;
-        };
-      };
-      services.picom.enable = true;
+      # services.xserver.displayManager.defaultSession = "none+exwm";  # Firefox works more fluently with plasma5+exwm instead of "none+exwm". or does it??
+      # services.xserver.desktopManager = {
+      #   xterm.enable = false;
+      #   plasma5.enable = true;
+      #   xfce = {
+      #     enable = true;
+      #     noDesktop= true;
+      #     enableXfwm = true;
+      #   };
+      # };
+      # services.picom.enable = true;
     }
     {
       environment.systemPackages = [
