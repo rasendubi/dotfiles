@@ -6423,6 +6423,8 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 #+begin_src emacs-lisp
 (use-package typescript-mode
   :commands (typescript-mode)
+  :gfhook
+  #'rasen/setup-tide-mode
   :init
   (el-patch-feature typescript-mode)
   (add-hook 'web-mode-hook
@@ -6528,11 +6530,6 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
              tide-format-before-save)
   :hook
   (typescript-mode . rasen/setup-tide-mode)
-  :general
-  ;; K is used for avy
-  ('normal
-   'tide-mode-map
-   "K" nil)
   :init
   (defun rasen/setup-tide-mode ()
     (interactive)
@@ -6542,7 +6539,11 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
     (setq flycheck-check-syntax-automatically '(save mode-enabled))
     (eldoc-mode +1)
     (tide-hl-identifier-mode +1)
-    (company-mode +1)))
+    (company-mode +1))
+  :config
+  ;; K is used for avy
+  (general-def 'normal 'tide-mode-map
+    "K" nil))
 #+end_src
 
 #+begin_src emacs-lisp
