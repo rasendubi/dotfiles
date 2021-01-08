@@ -926,7 +926,7 @@ The following snippet is an adaptation of that idea and goes to my ~.emacs.d/ini
    (expand-file-name ".." (file-name-directory (file-truename user-init-file))))
   "The path to the dotfiles directory.")
 
-(require 'org-install)
+(require 'org)
 (require 'ob-tangle)
 
 <<ob-tangle-patch>>

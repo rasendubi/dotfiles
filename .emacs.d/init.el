@@ -7,7 +7,7 @@
    (expand-file-name ".." (file-name-directory (file-truename user-init-file))))
   "The path to the dotfiles directory.")
 
-(require 'org-install)
+(require 'org)
 (require 'ob-tangle)
 
 (require 'el-patch)
