@@ -4318,7 +4318,7 @@ Citations and bibliography tools for org-mode.
   :diminish
   :hook (org-roam-mode . org-roam-bibtex-mode)
   :config
-  (setq org-roam-bibtex-templates
+  (setq orb-templates
         `(("r" "ref" plain #'org-roam-capture--get-point ""
            :file-name "biblio/${slug}"
            :head
