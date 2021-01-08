@@ -3933,6 +3933,12 @@ Do not confirm evaluation for emacs-lisp.
 
 ;; Enable latex preview by default
 (setq org-startup-with-latex-preview t)
+
+;; The latest imagemagick incorrectly trims images when density is
+;; odd. My density is 277. Hard-code -density option to the closest
+;; even number, so latex images are properly trimmed.
+(plist-put (alist-get 'imagemagick org-preview-latex-process-alist)
+           :image-converter '("convert -density 278 -trim -antialias %f -quality 100 %O"))
 #+end_src
 ** Image preview
 #+name: org-config
