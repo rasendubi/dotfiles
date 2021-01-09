@@ -997,7 +997,19 @@ I use borg for backups.
 #+name: nixos-section
 #+begin_src nix
 {
-  environment.systemPackages = [ pkgs.borgbackup ];
+  environment.systemPackages =
+    let mount_external = pkgs.writeScriptBin "mount-external" ''
+      #!${pkgs.stdenv.shell}
+      sudo ${pkgs.cryptsetup}/bin/cryptsetup luksOpen /dev/sda2 sda2
+      sudo mount /dev/mapper/sda2 /mnt/encrypted
+      '';
+    umount_external = pkgs.writeScriptBin "umount-external" ''
+      #!${pkgs.stdenv.shell}
+      sudo umount /mnt/encrypted
+      sudo ${pkgs.cryptsetup}/bin/cryptsetup luksClose sda2
+      '';
+  in
+     [ mount_external umount_external pkgs.borgbackup ];
 }
 #+end_src
 ** ADB
