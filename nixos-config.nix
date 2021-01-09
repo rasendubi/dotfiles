@@ -4,20 +4,25 @@ let
     moxps = [
       {
         imports = [
-          # (import "${inputs.nixos-hardware}/dell/xps/15-9560/xps-common.nix")  # instead of default
           (import "${inputs.nixos-hardware}/common/cpu/intel")
           (import "${inputs.nixos-hardware}/common/cpu/intel/kaby-lake")
-          # (import "${inputs.nixos-hardware}/common/gpu/nvidia")
           (import "${inputs.nixos-hardware}/common/pc/laptop")  # tlp.enable = true
           # (import "${inputs.nixos-hardware}/common/pc/laptop/acpi_call.nix")  # tlp.enable = true
           (import "${inputs.nixos-hardware}/common/pc/laptop/ssd")
           inputs.nixpkgs.nixosModules.notDetected
         ];
+      
+        # from nixos-hardware
         boot.loader.systemd-boot.enable = true;
-        # boot.loader.efi.canTouchEfiVariables = true;  # TODO disable after a boot or two to prevent usage on that kind of ram
+        boot.loader.efi.canTouchEfiVariables = false;  # disabled after a boot or two to prevent usage on that kind of ram
         services.thermald.enable = true; 
+      
+        # from initial config and other webresources
+        boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
+        boot.kernelModules = [ "kvm-intel" ];
+        boot.kernelParams = [ "acpi_rev_override=5" "i915.enable_guc=2" "pcie_aspm=off" ];  # "nouveau.modeset=0" ];  # 5,6,1 doesn't seem to make a difference. pcie_aspm=off might be required to avoid freezes
         
-        # accelerateion
+        # OpenGL accelerateion
         # nixpkgs.config.packageOverrides = pkgs: {
         #   vaapiIntel = pkgs.vaapiIntel.override { enableHybridCodec = true; };
         # };
@@ -32,25 +37,9 @@ let
         #   ];
         # };
       
-        boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
-        boot.kernelModules = [ "kvm-intel" ];
-        boot.kernelParams = [ "acpi_rev_override=5" "i915.enable_guc=2" "pcie_aspm=off" ];  # "nouveau.modeset=0" ];  # 5,6,1 doesn't seem to make a difference. pcie_aspm=off might be required to avoid freezes
-      
-        # from nixos-hardware
-        # boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11 ];
-        hardware.nvidiaOptimus.disable = true;
-        boot.blacklistedKernelModules = [ "nouveau" "nvidia" ];  # bbswitch
-        # services.xserver.videoDrivers = [ "intel" "nvidia" ];
-        services.xserver.videoDrivers = [ "intel" ];  # modesetting didn't help
-        
-        # experiment here to get better blender performance:
-        #   Option "NoAccel" "True"  
-        #   Option "DRI" "False"
-        # Option "AccelMethod"  "uxa" # makes it horribly slow
-        # Option "TearFree" "true"  # doesn't work with uxa
-      
         nix.maxJobs = lib.mkDefault 8;
       
+        # TODO enable and check
         # services.undervolt = {
         #   enable = true;
         #   coreOffset = 0;
@@ -58,43 +47,9 @@ let
         #   # coreOffset = -125;
         #   # gpuOffset = -75;
         # };
-        # powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
-        # powerManagement.enable = true;
+        powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
+        powerManagement.enable = true;
       
-        # Nvidia stuff (https://discourse.nixos.org/t/how-to-use-nvidia-prime-offload-to-run-the-x-server-on-the-integrated-board/9091/13)
-        # boot.extraModprobeConfig = "options nvidia \"NVreg_DynamicPowerManagement=0x02\"\n";
-        # services.udev.extraRules = ''
-        #   # Remove NVIDIA USB xHCI Host Controller devices, if present
-        #   ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{remove}="1"
-      
-        #   # Remove NVIDIA USB Type-C UCSI devices, if present
-        #   ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c8000", ATTR{remove}="1"
-      
-        #   # Remove NVIDIA Audio devices, if present
-        #   ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{remove}="1"
-      
-        #   # Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
-        #   ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
-        #   ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
-      
-        #   # Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
-        #   ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
-        #   ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
-        #   '';
-        # hardware.nvidia = {
-        #   # nvidiaPersistenced = true;
-        #   powerManagement.enable = true;
-        #   modesetting.enable = true;
-        #   prime = {
-        #     offload.enable = true;
-        #     # Bus ID of the Intel GPU. You can find it using lspci, either under 3D or VGA
-        #     intelBusId = "PCI:0:2:0";
-        #     # Bus ID of the NVIDIA GPU. You can find it using lspci, either under 3D or VGA
-        #     nvidiaBusId = "PCI:1:0:0";
-        #   };
-        # };
-        # hardware.bumblebee.enable = false;
-        # hardware.bumblebee.pmMethod = "none";
       }
       {
         fileSystems."/" =
@@ -364,6 +319,11 @@ in
       environment.systemPackages = [
         pkgs.home-manager
       ];
+    }
+    {
+      services.xserver.videoDrivers = [ "intel" ];  # modesetting didn't help
+      hardware.nvidiaOptimus.disable = true;
+      boot.blacklistedKernelModules = [ "nouveau" "nvidia" ];  # bbswitch
     }
     {
       hardware.bluetooth.enable = true;
@@ -649,7 +609,19 @@ in
       users.users.moritz.extraGroups = ["libvirtd" "docker"];  # the former is required for qemu I think 
     }
     {
-      environment.systemPackages = [ pkgs.borgbackup ];
+      environment.systemPackages =
+        let mount_external = pkgs.writeScriptBin "mount-external" ''
+          #!${pkgs.stdenv.shell}
+          sudo ${pkgs.cryptsetup}/bin/cryptsetup luksOpen /dev/sda2 sda2
+          sudo mount /dev/mapper/sda2 /mnt/encrypted
+          '';
+        umount_external = pkgs.writeScriptBin "umount-external" ''
+          #!${pkgs.stdenv.shell}
+          sudo umount /mnt/encrypted
+          sudo ${pkgs.cryptsetup}/bin/cryptsetup luksClose sda2
+          '';
+      in
+         [ mount_external umount_external pkgs.borgbackup ];
     }
     {
       services.udev.packages = [ pkgs.android-udev-rules ];
@@ -706,14 +678,13 @@ in
       services.xserver = {
         # desktopManager.gnome3.enable = true;
         displayManager = {
-          gdm.enable = true;
+          gdm.enable = false;
+          lightdm.enable = true;
+          startx.enable = false;
           autoLogin = {  # if errors, then disable again
             user = "moritz";
             enable = true;
           }; 
-          lightdm = {
-            enable = false;
-          };
         };
         enable = true;
       };
@@ -729,12 +700,12 @@ in
           loadScript = ''
             (require 'exwm)
             ;; most of it is now in .spacemacs.d/lisp/exwm.el
-            ;; (require 'exwm-systemtray)
+            (require 'exwm-systemtray)
             (require 'exwm-randr)
             ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "HDMI1" 2 "DP2" 3 "eDP1" 4 "HDMI1" 5 "DP2"))
             ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "eDP1" 2 "HDMI1" 3 "eDP1" 4 "eDP1" 5 "eDP1"))
             ;; (exwm-randr-enable)
-            ;; (exwm-systemtray-enable)
+            (exwm-systemtray-enable)
             (exwm-enable)
           '';
         };
@@ -941,7 +912,40 @@ in
       environment.systemPackages = [ pkgs.supercollider ];
     }
     {
-      environment.systemPackages = with pkgs; [
+      environment.systemPackages =
+        with pkgs;
+        let sparkleshare_fixed = sparkleshare.overrideAttrs ( oldAttrs: {
+          postInstall = ''
+            wrapProgram $out/bin/sparkleshare \
+                --set PATH ${symlinkJoin {
+                  name = "mono-path";
+                  paths = [
+                    coreutils
+                    bash
+                    git
+                    git-lfs
+                    glib
+                    mono
+                    openssh
+                    openssl
+                    xdg_utils
+                  ];
+                }}/bin \
+                --set MONO_GAC_PREFIX ${lib.concatStringsSep ":" [
+                  appindicator-sharp
+                  gtk-sharp-3_0
+                  webkit2-sharp
+                ]} \
+                --set LD_LIBRARY_PATH ${lib.makeLibraryPath [
+                  appindicator-sharp
+                  gtk-sharp-3_0.gtk3
+                  webkit2-sharp
+                  webkit2-sharp.webkitgtk
+                ]}
+          '';
+          } ); in
+        [
+        jmtpfs
         qbittorrent
         blender
         teams
@@ -951,7 +955,7 @@ in
         soulseekqt
         gnome3.cheese
         gnome3.gnome-screenshot
-        sparkleshare
+        sparkleshare_fixed 
         gnome3.gpaste
         autorandr
         
@@ -985,6 +989,9 @@ in
           image/svg+xml=inkscape.desktop;
         '';
       };
+    }
+    {
+      environment.systemPackages = [ pkgs.niv ];
     }
     {
       environment.variables.EDITOR = "vim";
@@ -1048,6 +1055,7 @@ in
       environment.systemPackages = [
         pkgs.gitFull
         pkgs.gitg
+        pkgs.git-lfs
       ];
     }
     {
@@ -1061,59 +1069,63 @@ in
       in [ R-with-my-packages ];
     }
     {
-      environment.systemPackages = let python = (with pkgs; python3.withPackages (python-packages: with python-packages; let opencvGtk = opencv4.override (old : { enableGtk2 = true; enableGStreamer = true; }); in [
-        python3
-        pandas
-        opencvGtk
-        openpyxl
-        biopython
-        scikitlearn
-        matplotlib
-        pyproj
-        seaborn
-        requests
-        ipdb
-        isort
-        tox
-        tqdm
-        xlrd
-        pyyaml
-        matplotlib-venn
-        networkx
-        statsmodels
-        up-set-plot
-        # jedi
-        # json-rpc
-        # service-factory
+      environment.systemPackages =
+        let python = (with pkgs; python3.withPackages (python-packages: with python-packages;
+          let opencvGtk = opencv4.override (old : { enableGtk2 = true; enableGStreamer = true; });
+          in [
+          pytorch
+          python3
+          pandas
+          opencvGtk
+          openpyxl
+          biopython
+          scikitlearn
+          matplotlib
+          pyproj
+          seaborn
+          requests
+          ipdb
+          isort
+          tox
+          tqdm
+          xlrd
+          pyyaml
+          matplotlib-venn
+          networkx
+          statsmodels
+          up-set-plot
+          # jedi
+          # json-rpc
+          # service-factory
     
-        fritzconnection
-        # jupyter
-        # jupyter_core
-        powerline
-        adjust-text
-        # up-set-plot
-        # moritzsphd
-        tabulate
-        # swifter
-        gffutils
-        pyensembl
-        pybedtools
-        pybigwig
-        xdg
-        epc
-        importmagic
-        jupyterlab
-        jupyter_console
-        ipykernel
-        pyperclip
-        scikit-plot
-        scikit-bio
-        powerline
-        python-language-server
-        pyls-isort
-        pyls-mypy
-        # ptvsd
-      ])); in with pkgs.python3Packages; [
+          fritzconnection
+          # jupyter
+          # jupyter_core
+          powerline
+          adjust-text
+          # up-set-plot
+          # moritzsphd
+          tabulate
+          # swifter
+          gffutils
+          pyensembl
+          pybedtools
+          pybigwig
+          xdg
+          epc
+          importmagic
+          jupyterlab
+          jupyter_console
+          ipykernel
+          pyperclip
+          scikit-plot
+          scikit-bio
+          powerline
+          python-language-server
+          pyls-isort
+          pyls-mypy
+          # ptvsd
+          ])); in with pkgs.python3Packages; [
         python  # let is stronger than with, which is why this installs the correct python (the one defined above)
         pkgs.pipenv
         pip
