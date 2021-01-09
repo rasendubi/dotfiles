@@ -1659,7 +1659,40 @@ Don't require additional setup.
 #+name: nixos-section
 #+begin_src nix
 {
-  environment.systemPackages = with pkgs; [
+  environment.systemPackages =
+    with pkgs;
+    let sparkleshare_fixed = sparkleshare.overrideAttrs ( oldAttrs: {
+      postInstall = ''
+        wrapProgram $out/bin/sparkleshare \
+            --set PATH ${symlinkJoin {
+              name = "mono-path";
+              paths = [
+                coreutils
+                bash
+                git
+                git-lfs
+                glib
+                mono
+                openssh
+                openssl
+                xdg_utils
+              ];
+            }}/bin \
+            --set MONO_GAC_PREFIX ${lib.concatStringsSep ":" [
+              appindicator-sharp
+              gtk-sharp-3_0
+              webkit2-sharp
+            ]} \
+            --set LD_LIBRARY_PATH ${lib.makeLibraryPath [
+              appindicator-sharp
+              gtk-sharp-3_0.gtk3
+              webkit2-sharp
+              webkit2-sharp.webkitgtk
+            ]}
+      '';
+      } ); in
+    [
+    jmtpfs
     qbittorrent
     blender
     teams
@@ -1669,7 +1702,7 @@ Don't require additional setup.
     soulseekqt
     gnome3.cheese
     gnome3.gnome-screenshot
-    sparkleshare
+    sparkleshare_fixed 
     gnome3.gpaste
     autorandr
     
