@@ -251,25 +251,31 @@ I thought it wouldn't be required to install it (see flakes section), but it see
 #+name: Machines section
 I currently have only one machine.
 *** moxps
-This is my Dell XPS 15.
+This is my Dell XPS 15. Only use Intel OR Nvidia
+**** Hardware 
 #+name: machine-moxps
 #+begin_src nix
 {
   imports = [
-    # (import "${inputs.nixos-hardware}/dell/xps/15-9560/xps-common.nix")  # instead of default
     (import "${inputs.nixos-hardware}/common/cpu/intel")
     (import "${inputs.nixos-hardware}/common/cpu/intel/kaby-lake")
-    # (import "${inputs.nixos-hardware}/common/gpu/nvidia")
     (import "${inputs.nixos-hardware}/common/pc/laptop")  # tlp.enable = true
     # (import "${inputs.nixos-hardware}/common/pc/laptop/acpi_call.nix")  # tlp.enable = true
     (import "${inputs.nixos-hardware}/common/pc/laptop/ssd")
     inputs.nixpkgs.nixosModules.notDetected
   ];
+
+  # from nixos-hardware
   boot.loader.systemd-boot.enable = true;
-  # boot.loader.efi.canTouchEfiVariables = true;  # TODO disable after a boot or two to prevent usage on that kind of ram
+  boot.loader.efi.canTouchEfiVariables = false;  # disabled after a boot or two to prevent usage on that kind of ram
   services.thermald.enable = true; 
+
+  # from initial config and other webresources
+  boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
+  boot.kernelModules = [ "kvm-intel" ];
+  boot.kernelParams = [ "acpi_rev_override=5" "i915.enable_guc=2" "pcie_aspm=off" ];  # "nouveau.modeset=0" ];  # 5,6,1 doesn't seem to make a difference. pcie_aspm=off might be required to avoid freezes
   
-  # accelerateion
+  # OpenGL accelerateion
   # nixpkgs.config.packageOverrides = pkgs: {
   #   vaapiIntel = pkgs.vaapiIntel.override { enableHybridCodec = true; };
   # };
@@ -284,25 +290,9 @@ This is my Dell XPS 15.
   #   ];
   # };
 
-  boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
-  boot.kernelModules = [ "kvm-intel" ];
-  boot.kernelParams = [ "acpi_rev_override=5" "i915.enable_guc=2" "pcie_aspm=off" ];  # "nouveau.modeset=0" ];  # 5,6,1 doesn't seem to make a difference. pcie_aspm=off might be required to avoid freezes
-
-  # from nixos-hardware
-  # boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11 ];
-  hardware.nvidiaOptimus.disable = true;
-  boot.blacklistedKernelModules = [ "nouveau" "nvidia" ];  # bbswitch
-  # services.xserver.videoDrivers = [ "intel" "nvidia" ];
-  services.xserver.videoDrivers = [ "intel" ];  # modesetting didn't help
-  
-  # experiment here to get better blender performance:
-  #   Option "NoAccel" "True"  
-  #   Option "DRI" "False"
-  # Option "AccelMethod"  "uxa" # makes it horribly slow
-  # Option "TearFree" "true"  # doesn't work with uxa
-
   nix.maxJobs = lib.mkDefault 8;
 
+  # TODO enable and check
   # services.undervolt = {
   #   enable = true;
   #   coreOffset = 0;
@@ -310,10 +300,36 @@ This is my Dell XPS 15.
   #   # coreOffset = -125;
   #   # gpuOffset = -75;
   # };
-  # powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
-  # powerManagement.enable = true;
+  powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
+  powerManagement.enable = true;
 
-  # Nvidia stuff (https://discourse.nixos.org/t/how-to-use-nvidia-prime-offload-to-run-the-x-server-on-the-integrated-board/9091/13)
+}
+#+end_src
+***** Intel only
+
+#+name: nixos-section
+#+begin_src nix
+{
+  services.xserver.videoDrivers = [ "intel" ];  # modesetting didn't help
+  hardware.nvidiaOptimus.disable = true;
+  boot.blacklistedKernelModules = [ "nouveau" "nvidia" ];  # bbswitch
+}
+#+end_src
+***** Nvidia PRIME
+#+name: nixos-section-unused
+#+begin_src nix
+{
+  # environment.systemPackages = let
+  #   nvidia-offload = pkgs.writeShellScriptBin "nvidia-offload" ''
+  #     export __NV_PRIME_RENDER_OFFLOAD=1
+  #     export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
+  #     export __GLX_VENDOR_LIBRARY_NAME=nvidia
+  #     export __VK_LAYER_NV_optimus=NVIDIA_only
+  #     exec -a "$0" "$@"
+  #   '';
+  # in [ nvidia-offload ]; 
+  # boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11 ];
+  # # Nvidia stuff (https://discourse.nixos.org/t/how-to-use-nvidia-prime-offload-to-run-the-x-server-on-the-integrated-board/9091/13)
   # boot.extraModprobeConfig = "options nvidia \"NVreg_DynamicPowerManagement=0x02\"\n";
   # services.udev.extraRules = ''
   #   # Remove NVIDIA USB xHCI Host Controller devices, if present
@@ -333,24 +349,19 @@ This is my Dell XPS 15.
   #   ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
   #   ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
   #   '';
-  # hardware.nvidia = {
-  #   # nvidiaPersistenced = true;
-  #   powerManagement.enable = true;
-  #   modesetting.enable = true;
-  #   prime = {
-  #     offload.enable = true;
-  #     # Bus ID of the Intel GPU. You can find it using lspci, either under 3D or VGA
-  #     intelBusId = "PCI:0:2:0";
-  #     # Bus ID of the NVIDIA GPU. You can find it using lspci, either under 3D or VGA
-  #     nvidiaBusId = "PCI:1:0:0";
-  #   };
-  # };
+  services.xserver.videoDrivers = [ "nvidia" ];
+  
+  hardware.nvidia.modesetting.enable = lib.mkDefault true;
+  hardware.nvidia.optimus_prime.enable = lib.mkDefault true;
+  hardware.nvidia.optimus_prime.nvidiaBusId = lib.mkDefault "PCI:1:0:0";
+  hardware.nvidia.optimus_prime.intelBusId = lib.mkDefault "PCI:0:2:0";
+
   # hardware.bumblebee.enable = false;
   # hardware.bumblebee.pmMethod = "none";
 }
 #+end_src
 
-LVM on LUKS setup for disk encryption.
+**** LVM on LUKS setup for disk encryption.
 #+name: machine-moxps
 #+begin_src nix
 {
@@ -382,8 +393,8 @@ LVM on LUKS setup for disk encryption.
   };
 }
 #+end_src
+**** Clickpad and DPI:
 
-Clickpad and DPI:
 #+name: machine-moxps
 #+begin_src nix
 {
@@ -1212,14 +1223,13 @@ Setup timezone:
   services.xserver = {
     # desktopManager.gnome3.enable = true;
     displayManager = {
-      gdm.enable = true;
+      gdm.enable = false;
+      lightdm.enable = true;
+      startx.enable = false;
       autoLogin = {  # if errors, then disable again
         user = "moritz";
         enable = true;
       }; 
-      lightdm = {
-        enable = false;
-      };
     };
     enable = true;
   };
