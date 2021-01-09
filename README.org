@@ -1263,12 +1263,12 @@ I use EXWM:
       loadScript = ''
         (require 'exwm)
         ;; most of it is now in .spacemacs.d/lisp/exwm.el
-        ;; (require 'exwm-systemtray)
+        (require 'exwm-systemtray)
         (require 'exwm-randr)
         ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "HDMI1" 2 "DP2" 3 "eDP1" 4 "HDMI1" 5 "DP2"))
         ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "eDP1" 2 "HDMI1" 3 "eDP1" 4 "eDP1" 5 "eDP1"))
         ;; (exwm-randr-enable)
-        ;; (exwm-systemtray-enable)
+        (exwm-systemtray-enable)
         (exwm-enable)
       '';
     };
@@ -1918,6 +1918,7 @@ end
   environment.systemPackages = [
     pkgs.gitFull
     pkgs.gitg
+    pkgs.git-lfs
   ];
 }
 #+end_src
