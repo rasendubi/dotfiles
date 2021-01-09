@@ -1746,6 +1746,14 @@ Don't require additional setup.
 
 
 * Development
+** Nix 
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [ pkgs.niv ];
+}
+#+end_src
+
 ** Editors
 I'm a seasoned Vim user, but I've switched to emacs.
 #+name: nixos-section
@@ -2119,59 +2127,63 @@ set-window-option -g automatic-rename
 #+name: nixos-section
 #+begin_src nix
 {
-  environment.systemPackages = let python = (with pkgs; python3.withPackages (python-packages: with python-packages; let opencvGtk = opencv4.override (old : { enableGtk2 = true; enableGStreamer = true; }); in [
-    python3
-    pandas
-    opencvGtk
-    openpyxl
-    biopython
-    scikitlearn
-    matplotlib
-    pyproj
-    seaborn
-    requests
-    ipdb
-    isort
-    tox
-    tqdm
-    xlrd
-    pyyaml
-    matplotlib-venn
-    networkx
-    statsmodels
-    up-set-plot
-    # jedi
-    # json-rpc
-    # service-factory
+  environment.systemPackages =
+    let python = (with pkgs; python3.withPackages (python-packages: with python-packages;
+      let opencvGtk = opencv4.override (old : { enableGtk2 = true; enableGStreamer = true; });
+      in [
+      pytorch
+      python3
+      pandas
+      opencvGtk
+      openpyxl
+      biopython
+      scikitlearn
+      matplotlib
+      pyproj
+      seaborn
+      requests
+      ipdb
+      isort
+      tox
+      tqdm
+      xlrd
+      pyyaml
+      matplotlib-venn
+      networkx
+      statsmodels
+      up-set-plot
+      # jedi
+      # json-rpc
+      # service-factory
 
-    fritzconnection
-    # jupyter
-    # jupyter_core
-    powerline
-    adjust-text
-    # up-set-plot
-    # moritzsphd
-    tabulate
-    # swifter
-    gffutils
-    pyensembl
-    pybedtools
-    pybigwig
-    xdg
-    epc
-    importmagic
-    jupyterlab
-    jupyter_console
-    ipykernel
-    pyperclip
-    scikit-plot
-    scikit-bio
-    powerline
-    python-language-server
-    pyls-isort
-    pyls-mypy
-    # ptvsd
-  ])); in with pkgs.python3Packages; [
+      fritzconnection
+      # jupyter
+      # jupyter_core
+      powerline
+      adjust-text
+      # up-set-plot
+      # moritzsphd
+      tabulate
+      # swifter
+      gffutils
+      pyensembl
+      pybedtools
+      pybigwig
+      xdg
+      epc
+      importmagic
+      jupyterlab
+      jupyter_console
+      ipykernel
+      pyperclip
+      scikit-plot
+      scikit-bio
+      powerline
+      python-language-server
+      pyls-isort
+      pyls-mypy
+      # ptvsd
+      ])); in with pkgs.python3Packages; [
     python  # let is stronger than with, which is why this installs the correct python (the one defined above)
     pkgs.pipenv
     pip
