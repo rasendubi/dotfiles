@@ -4150,6 +4150,7 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
                     `(,key ,name plain (function org-roam--capture-get-point) "%?"
                            :file-name ,(concat dir "%(rasen/tsid)")
                            :head "#+TITLE: ${title}\n"
+                           :immediate-finish t
                            :unnarrowed t)))
                 rasen/slip-boxes))
 
@@ -4335,6 +4336,7 @@ Citations and bibliography tools for org-mode.
            :head
            ,(concat "#+TITLE: ${title}\n"
                     "#+ROAM_KEY: ${ref}\n")
+           :immediate-finish t
            :unnarrowed t))))
 #+end_src
 ** toc-org
