@@ -172,9 +172,6 @@
               ];
             }
             {
-              services.picom.enable = true;
-            }
-            {
               home.packages = [
                 pkgs.xss-lock
               ];

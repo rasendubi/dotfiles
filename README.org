@@ -676,6 +676,22 @@ Clickpad:
   };
 }
 #+end_src
+
+Fix screen tearing ([[https://wiki.archlinux.org/index.php/intel_graphics#Tearing][ArchWiki]]):
+#+name: machine-omicron
+#+begin_src nix
+{
+  services.xserver.config = ''
+    Section "Device"
+      Identifier "Intel Graphics"
+      Driver "intel"
+
+      Option "TearFree" "true"
+      Option "TripleBuffer" "true"
+    EndSection
+  '';
+}
+#+end_src
 * Emacs
 ** Install Emacs
 #+name: install-emacs
@@ -1557,14 +1573,6 @@ NixOS has an EXWM module, but my feeling is that it's too limiting. (~<<nixos-se
   };
   services.xserver.displayManager.lightdm.enable = true;
   services.xserver.displayManager.defaultSession = "none+exwm";
-}
-#+end_src
-
-Without a window compositor, I have experienced window tearing (especially in Firefox)—with picom everything runs smoothly. (~<<home-manager-section>>~)
-#+name: home-manager-section
-#+begin_src nix
-{
-  services.picom.enable = true;
 }
 #+end_src
 

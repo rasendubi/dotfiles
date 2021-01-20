@@ -53,6 +53,17 @@ let
           accelSpeed = "0.7";
         };
       }
+      {
+        services.xserver.config = ''
+          Section "Device"
+            Identifier "Intel Graphics"
+            Driver "intel"
+      
+            Option "TearFree" "true"
+            Option "TripleBuffer" "true"
+          EndSection
+        '';
+      }
       (let
         commonOptions = {
           repo = "borg@10.13.0.3:.";
