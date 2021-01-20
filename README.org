@@ -4228,7 +4228,12 @@ Enable auto-completion for notes.
 #+end_src
 ** org-ref
 #+begin_src emacs-lisp
-(use-package ivy-bibtex)
+(use-package ivy-bibtex
+  :config
+  (defun rasen/ivy-cite ()
+    (interactive)
+    (let ((ivy-bibtex-default-action #'ivy-bibtex-insert-citation))
+      (call-interactively #'ivy-bibtex))))
 (use-package org-ref
   :after org-roam
   :config
