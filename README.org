@@ -1712,7 +1712,7 @@ Don't require additional setup.
     tdesktop # Telegram
     signal-cli # Signal
     signal-desktop # Signal
-    zoom-us
+    unstable.zoom-us
     libreoffice
     wineWowPackages.stable
     # winetricks  # requires p7zip (which is unsafe...)
