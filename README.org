@@ -1235,8 +1235,8 @@ Setup timezone:
   services.xserver = {
     # desktopManager.gnome3.enable = true;
     displayManager = {
-      gdm.enable = false;
-      lightdm.enable = true;
+      gdm.enable = true;
+      lightdm.enable = false;
       startx.enable = false;
       autoLogin = {  # if errors, then disable again
         user = "moritz";
