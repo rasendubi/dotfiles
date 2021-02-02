@@ -2339,6 +2339,16 @@ Enable Emacs integration. (emacs-lisp)
   (direnv-mode))
 #+end_src
 * Hardware
+** Do not suspend on AC
+#+name: nixos-section
+#+begin_src nix
+{
+  services.logind = {
+    lidSwitchDocked = "ignore";
+    lidSwitchExternalPower = "ignore";
+  };
+}
+#+end_src
 ** Autorandr
 Configure EXWM to use autorandr. (emacs-lisp)
 #+begin_src emacs-lisp

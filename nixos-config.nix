@@ -292,6 +292,12 @@ in
       };
     }
     {
+      services.logind = {
+        lidSwitchDocked = "ignore";
+        lidSwitchExternalPower = "ignore";
+      };
+    }
+    {
       hardware.acpilight.enable = true;
       environment.systemPackages = [ pkgs.acpilight ];
       users.extraUsers.rasen.extraGroups = [ "video" ];
