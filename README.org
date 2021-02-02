@@ -7088,6 +7088,14 @@ These are for omicron-only.
 }
 #+end_src
 
+Load console configuration early at initrd. This ensures the proper font (sizes) are loaded when asking for disk encryption passphrase.
+#+name: nixos-section
+#+begin_src nix
+{
+  console.earlySetup = true;
+}
+#+end_src
+
 #+name: machine-omicron
 #+begin_src nix
 {

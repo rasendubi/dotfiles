@@ -449,5 +449,8 @@ in
         ];
       };
     }
+    {
+      console.earlySetup = true;
+    }
   ] ++ machine-config;
 }
