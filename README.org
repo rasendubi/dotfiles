@@ -4691,12 +4691,14 @@ rating the card."
       (progn
         (remove-from-invisibility-spec '(org-link))
         (setq-local org-hide-emphasis-markers nil)
+        (setq-local org-pretty-entities nil)
         (org-clear-latex-preview (point-min) (point-max))
         (org-remove-inline-images)
         (message "org-view-mode disabled"))
 
     (add-to-invisibility-spec '(org-link))
     (setq org-hide-emphasis-markers t)
+    (setq-local org-pretty-entities t)
     (org--latex-preview-region (point-min) (point-max))
     (org-display-inline-images)
     (message "org-view-mode enabled"))
