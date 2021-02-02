@@ -1227,6 +1227,16 @@ Timestamp-ids are used to uniquely identify things.
   (insert (rasen/tsid)))
 #+end_src
 
+Insert current date in =yyyy-mm-dd= format. Useful when creating dated notes or dumb commits.
+#+begin_src emacs-lisp
+(defun rasen/insert-date ()
+  (interactive)
+  (insert (format-time-string "%Y-%m-%d")))
+
+(general-def 'insert '(git-commit-mode-map ivy-minibuffer-map)
+  "C-c ." #'rasen/insert-date)
+#+end_src
+
 #+begin_src emacs-lisp
 (defun rasen/copy-file-path ()
   "Copy the current buffer's path to kill ring."
