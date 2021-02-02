@@ -835,6 +835,7 @@
                     eglot
                     el-patch
                     elpy
+                    emojify
                     epresent
                     evil
                     evil-collection
