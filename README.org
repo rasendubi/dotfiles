@@ -1555,6 +1555,11 @@ Use single-key =y/n= instead of a more verbose =yes/no=.
 #+begin_src emacs-lisp
 (fset 'yes-or-no-p 'y-or-n-p)
 #+end_src
+
+Automatically add a final newline in files.
+#+begin_src emacs-lisp
+(setq-default require-final-newline t)
+#+end_src
 * Environment
 ** EXWM
 Emacs is my Window Manager, thanks to [[https://github.com/ch11ng/exwm][EXWM]].
