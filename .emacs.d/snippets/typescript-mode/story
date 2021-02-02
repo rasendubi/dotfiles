@@ -3,18 +3,17 @@
 # key: story
 # expand-env: ((yas-indent-line 'fixed))
 # --
-import React from 'react';
+import { Story } from '@storybook/react';
 
-import { action } from '@storybook/addon-actions';
-import { storiesOf } from '@storybook/react';
-import { withScreenshot } from 'storybook-chrome-screenshot';
+import ${1:`(file-name-sans-extension (file-name-base (buffer-file-name)))`}, { $1Props } from '${2:./}';
 
-import ${1:`(file-name-sans-extension (file-name-base (buffer-file-name)))`} from '${2:./}';
+export default {
+  title: '$1',
+  component: $1,
+};
 
-storiesOf('${3:$1}', module)
-  .addDecorator(
-    withScreenshot()
-  )
-  .add('default', () => (
-    ${0:<$1 />}
-  ));
+const Template: Story<$1Props> = (props) => <$1 {...props} />;
+$0
+export const Story1 = Template.bind({});
+Story1.args = {
+};
