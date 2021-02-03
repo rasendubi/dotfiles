@@ -59,7 +59,7 @@ let
       {
         services.xserver.libinput = {
           enable = true;
-          accelSpeed = "0.7";
+          touchpad.accelSpeed = "0.7";
         };
       }
       {

@@ -472,7 +472,7 @@
               home.packages = [
                 pkgs.gwenview
                 pkgs.dolphin
-                pkgs.kdeFrameworks.kfilemetadata
+                # pkgs.kdeFrameworks.kfilemetadata
                 pkgs.filelight
                 pkgs.shared_mime_info
               ];
@@ -822,7 +822,6 @@
                     company
                     company-box
                     company-lsp
-                    company-org-roam
                     counsel
                     counsel-projectile
                     diff-hl
@@ -839,7 +838,6 @@
                     epresent
                     evil
                     evil-collection
-                    evil-magit
                     evil-numbers
                     evil-org
                     evil-surround

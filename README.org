@@ -107,6 +107,7 @@ Pieces not (yet) covered in org files are:
   - [[#backup][Backup]]
   - [[#direnv--lorri][direnv + lorri]]
 - [[#hardware][Hardware]]
+  - [[#do-not-suspend-on-ac][Do not suspend on AC]]
   - [[#autorandr][Autorandr]]
   - [[#screen-brightness][Screen brightness]]
   - [[#redshift][Redshift]]
@@ -166,6 +167,7 @@ Pieces not (yet) covered in org files are:
   - [[#emacs-1][Emacs]]
 - [[#applications-1][Applications]]
   - [[#gpg][GPG]]
+    - [[#fix-epg--filter-revoked-keys-wrongly-filtering-out-my-keys][Fix epg--filter-revoked-keys wrongly filtering out my keys]]
   - [[#yubikey][Yubikey]]
   - [[#password-store][password-store]]
   - [[#kde-apps][KDE apps]]
@@ -233,7 +235,6 @@ Pieces not (yet) covered in org files are:
     - [[#protobuf][protobuf]]
     - [[#sql][SQL]]
     - [[#plantuml][PlantUML]]
-  - [[#android][Android]]
 - [[#look-and-feel][Look and Feel]]
   - [[#remove-the-clutter][Remove the clutter]]
   - [[#beacon-mode][beacon-mode]]
@@ -681,7 +682,7 @@ Clickpad:
 {
   services.xserver.libinput = {
     enable = true;
-    accelSpeed = "0.7";
+    touchpad.accelSpeed = "0.7";
   };
 }
 #+end_src
@@ -748,7 +749,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       company
       company-box
       company-lsp
-      company-org-roam
       counsel
       counsel-projectile
       diff-hl
@@ -765,7 +765,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       epresent
       evil
       evil-collection
-      evil-magit
       evil-numbers
       evil-org
       evil-surround
@@ -2938,6 +2937,7 @@ evil-collection is a collection of evil bindings for different modes.
           ;; notmuch bindings aren't that cool and are less efficient than native
           ;; keymap
           ;; notmuch
+          magit
           python
           racer
           restclient
@@ -2946,6 +2946,29 @@ evil-collection is a collection of evil bindings for different modes.
           vterm
           which-key
           xref))
+
+  (setq evil-collection-magit-use-y-for-yank t)
+
+  ;; Evilify magit-blame.
+  (general-def 'normal magit-blame-read-only-mode-map
+    "k"    #'evil-next-visual-line
+    "j"    #'evil-previous-visual-line
+    "C-k"  #'magit-blame-next-chunk
+    "C-j"  #'magit-blame-previous-chunk
+    "gk"   #'magit-blame-next-chunk-same-commit
+    "gj"   #'magit-blame-previous-chunk-same-commit)
+
+  (general-def magit-blame-read-only-mode-map "SPC" nil) ;; expose my leader
+
+  (general-def
+    :states `(,evil-collection-magit-state visual)
+    :keymaps 'magit-mode-map
+    "j"    #'evil-previous-visual-line
+    "k"    #'evil-next-visual-line
+    "C-j"  #'magit-section-backward
+    "C-k"  #'magit-section-forward
+    "gj"   #'magit-section-backward-sibling
+    "gk"   #'magit-section-forward-sibling)
 
   (evil-collection-init))
 #+end_src
@@ -4262,14 +4285,6 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
           (next-line)
           (insert contents))))))
 #+end_src
-
-Enable auto-completion for notes.
-#+begin_src emacs-lisp
-(use-package company-org-roam
-  :after org org-roam company
-  :config
-  (push #'company-org-roam company-backends))
-#+end_src
 ** org-ref
 #+begin_src emacs-lisp
 (use-package ivy-bibtex
@@ -5043,6 +5058,15 @@ Request passwords in Emacs minibuffer. (emacs-lisp)
 #+begin_src emacs-lisp
 (setq epa-pinentry-mode 'loopback)
 #+end_src
+
+*** Fix epg--filter-revoked-keys wrongly filtering out my keys
+Reported as: bug#46138: 28.0.50; epg--filter-revoked-keys filters out valid keys
+
+Temporary workaround:
+#+begin_src emacs-lisp
+(defun epg--filter-revoked-keys (keys)
+  keys)
+#+end_src
 ** Yubikey
 #+name: nixos-section
 #+begin_src nix
@@ -5097,7 +5121,7 @@ I don't use full KDE but some apps are definitely nice.
   home.packages = [
     pkgs.gwenview
     pkgs.dolphin
-    pkgs.kdeFrameworks.kfilemetadata
+    # pkgs.kdeFrameworks.kfilemetadata
     pkgs.filelight
     pkgs.shared_mime_info
   ];
@@ -5641,43 +5665,6 @@ Use =q= to quit transient buffers.
   :defer t
   :config
   (transient-bind-q-to-quit))
-#+end_src
-**** Evil
-Evilify magit-mode. (emacs-lisp)
-#+begin_src emacs-lisp
-(use-package evil-magit
-  :config
-  <<evil-magit-config>>
-  )
-#+end_src
-
-(emacs-lisp)
-#+begin_src emacs-lisp
-(setq evil-magit-use-y-for-yank t)
-#+end_src
-
-Evilify magit-blame. (~<<evil-magit-config>>~)
-#+name: evil-magit-config
-#+begin_src emacs-lisp
-(general-def 'normal magit-blame-read-only-mode-map
-  "k"    #'evil-next-visual-line
-  "j"    #'evil-previous-visual-line
-  "C-k"  #'magit-blame-next-chunk
-  "C-j"  #'magit-blame-previous-chunk
-  "gk"   #'magit-blame-next-chunk-same-commit
-  "gj"   #'magit-blame-previous-chunk-same-commit)
-
-(general-def magit-blame-read-only-mode-map "SPC" nil) ;; expose my leader
-
-(general-def
-  :states `(,evil-magit-state visual)
-  :keymaps 'magit-mode-map
-  "j"    #'evil-previous-visual-line
-  "k"    #'evil-next-visual-line
-  "C-j"  #'magit-section-backward
-  "C-k"  #'magit-section-forward
-  "gj"   #'magit-section-backward-sibling
-  "gk"   #'magit-section-forward-sibling)
 #+end_src
 **** Custom commands
 ***** git push HEAD ...
