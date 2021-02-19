@@ -187,7 +187,7 @@ in
         name = "exwm";
         start = ''
           xhost +SI:localuser:$USER
-          exec emacs -f server-start
+          exec dbus-launch --exit-with-session emacs
         '';
           # exec ${pkgs.my-emacs}/bin/emacsclient -a "" -c
       };
@@ -262,6 +262,8 @@ in
         ];
     
         extraConfig = ''
+          interface=lo
+          bind-interfaces
           listen-address=127.0.0.1
           cache-size=1000
     

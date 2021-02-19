@@ -118,7 +118,6 @@ Pieces not (yet) covered in org files are:
 - [[#browsers][Browsers]]
   - [[#tridactyl][Tridactyl]]
   - [[#edit-text-in-browser][Edit text in browser]]
-  - [[#online-banking][Online banking]]
 - [[#evil-mode][Evil-mode]]
   - [[#general-1][General]]
   - [[#swap-k-and-j][Swap k and j]]
@@ -852,12 +851,16 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
 
       (epkgs.melpaBuild rec {
         pname = "org-fc";
-        version = "20201002";
+        version = "20201121";
         src = pkgs.fetchFromGitHub {
-          owner = "l3kn";
+          owner = "rasendubi";
           repo = "org-fc";
-          rev = "0fd72b4d9dcf82584b784bb7cf76d94109ee9bab";
-          sha256 = "sha256-X01yELYog1bRJb1jAk77jbjDBvJxMVLoDsw+7S4lLec=";
+          rev = "35ec13fd0412cd17cbf0adba7533ddf0998d1a90";
+          sha256 = "sha256-2h1dIR7WHYFsLZ/0D4HgkoNDxKQy+v3OaiiCwToynvU=";
+          # owner = "l3kn";
+          # repo = "org-fc";
+          # rev = "f1a872b53b173b3c319e982084f333987ba81261";
+          # sha256 = "sha256-s2Buyv4YVrgyxWDkbz9xA8LoBNr+BPttUUGTV5m8cpM=";
         };
         packageRequires = [ epkgs.orgPackages.org-plus-contrib ];
         propagatedUserEnvPkgs = [ pkgs.findutils pkgs.gawk ];
@@ -925,7 +928,7 @@ Install Emacs with Home manager (~<<home-manager-section>>~)
     package = pkgs.my-emacs.base;
     extraPackages = pkgs.my-emacs.packages;
   };
-  services.emacs.enable = true;
+  # services.emacs.enable = true;
 
   # fonts used by emacs
   home.packages = [
@@ -1234,6 +1237,8 @@ Insert current date in =yyyy-mm-dd= format. Useful when creating dated notes or 
 
 (general-def 'insert '(git-commit-mode-map ivy-minibuffer-map)
   "C-c ." #'rasen/insert-date)
+(general-def 'ivy-minibuffer-map
+  "C-c ." #'rasen/insert-date)
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1526,7 +1531,7 @@ New in Emacs 27.
   (setq tab-bar-tab-hints t)
 
   ;; Show tab bar only if there are >1 tab
-  (setq tab-bar-show nil)
+  (setq tab-bar-show 1)
   ;; Do not show buttons
   (setq tab-bar-close-button-show nil
         tab-bar-new-button-show nil)
@@ -1591,7 +1596,7 @@ NixOS has an EXWM module, but my feeling is that it's too limiting. (~<<nixos-se
     name = "exwm";
     start = ''
       xhost +SI:localuser:$USER
-      exec emacs -f server-start
+      exec dbus-launch --exit-with-session emacs
     '';
       # exec ${pkgs.my-emacs}/bin/emacsclient -a "" -c
   };
@@ -1624,8 +1629,7 @@ Initialize EXWM configuration (emacs-lisp)
   ;; `exwm-input-set-key' and `exwm-mode-map'
   (setq exwm-input-prefix-keys '())
 
-  ;; Enable EXWM after all configs are loaded
-  (add-hook 'emacs-startup-hook #'exwm-enable))
+  (exwm-enable))
 #+end_src
 
 Add a couple of helpers functions. (emacs-lisp)
@@ -2231,6 +2235,8 @@ Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
     ];
 
     extraConfig = ''
+      interface=lo
+      bind-interfaces
       listen-address=127.0.0.1
       cache-size=1000
 
@@ -2694,71 +2700,6 @@ I use [[https://github.com/GhostText/GhostText][GhostText]] firefox extension.
   (setq atomic-chrome-buffer-open-style 'frame)
   (atomic-chrome-start-server))
 #+end_src
-** Online banking
-My bank uses a two-part websigner. The first part is a browser extension (does not require additional setup) and the second part is a native host application companion (it is installed here).
-
-Pack native messaging host. (~<<flake-packages>>~)
-#+name: flake-packages
-#+begin_src nix
-(let
-  websigner =
-    { stdenv
-    , fetchurl
-    , autoPatchelfHook
-    , gtk2
-    , glib
-    , pcsclite
-    }:
-    stdenv.mkDerivation {
-      pname = "procreditbank-websigner";
-      version = "2020-01-20";
-
-      src = fetchurl {
-        url = "https://ibank.procreditbank.com.ua/websigner-linux.bin";
-        sha256 = "1bm88jg7nhgrmc0q5hv35hgv4nc0d15ihl0acrhf6x5f7wv4pszv";
-      };
-
-      nativeBuildInputs = [ autoPatchelfHook ];
-
-      buildInputs = [ gtk2 glib pcsclite ];
-
-      unpackCmd = ''
-        sh $src --extract
-      '';
-
-      dontConfigure = true;
-
-      dontBuild = true;
-
-      installPhase = ''
-        mkdir -p $out/bin
-        mkdir -p $out/lib/websigner/hosts/firefox
-        mkdir -p $out/lib/websigner/hosts/chromium
-
-        install -m 555 x86_64-linux/npwebsigner.so $out/lib/websigner
-        install -m 777 x86_64-linux/nmwebsigner $out/lib/websigner
-
-        sed "s|PLUGIN_PATH|$out/lib/websigner/nmwebsigner|" com.bifit.websigner-mozilla.json > $out/lib/websigner/hosts/firefox/com.bifit.websigner.json
-        sed "s|PLUGIN_PATH|$out/lib/websigner/nmwebsigner|" com.bifit.websigner-chrome.json > $out/lib/websigner/hosts/chromium/com.bifit.websigner.json
-
-        mkdir -p $out/lib/mozilla/native-messaging-hosts
-        ln -s $out/lib/websigner/hosts/firefox/*.json $out/lib/mozilla/native-messaging-hosts
-      '';
-    };
-in {
-  procreditbank-websigner = pkgs.callPackage websigner { };
-})
-#+end_src
-
-Override Firefox to use websigner. (~<<flake-overlays>>~)
-#+name: flake-overlays
-#+begin_src nix
-(final: prev: {
-  firefox = prev.firefox.override {
-    extraNativeMessagingHosts = [ final.procreditbank-websigner ];
-  };
-})
-#+end_src
 * Evil-mode
 ** General
 #+begin_src emacs-lisp
@@ -2961,6 +2902,7 @@ evil-collection is a collection of evil bindings for different modes.
 
   (general-def magit-blame-read-only-mode-map "SPC" nil) ;; expose my leader
 
+  (require 'evil-collection-magit)
   (general-def
     :states `(,evil-collection-magit-state visual)
     :keymaps 'magit-mode-map
@@ -3528,19 +3470,7 @@ Actual configuration.
 
 (rasen/make-refile-hydra rasen/org-refile-hydra-resources "Resources"
   ("w" "Work"                   "~/org/ring.org.gpg" "Resources")
-  ("p" "Productivity"           "~/org/plan.org"     "Resources" "Productivity")
-  ("s" "Software development"   "~/org/plan.org"     "Resources" "Software development, programming, architecture")
-  ("f" "Future of Software"     "~/org/plan.org"     "Resources" "Future of Software")
-  ("M" "Management"             "~/org/plan.org"     "Resources" "Management")
-  ("a" "Martial Arts"           "~/org/plan.org"     "Resources" "Martial Arts")
-  ("n" "Natural sciences"       "~/org/plan.org"     "Resources" "Natural sciences")
-  ("d" "Design"                 "~/org/plan.org"     "Resources" "Design")
-  ("l" "Programming languages"  "~/org/plan.org"     "Resources" "Programming languages")
-  ("W" "Writing"                "~/org/plan.org"     "Resources" "Writing")
-  ("c" "Communication"          "~/org/plan.org"     "Resources" "Communication")
-  ("b" "Business"               "~/org/plan.org"     "Resources" "Business")
-  ("g" "Gamedev"                "~/org/plan.org"     "Resources" "Gamedev")
-  ("m" "Misc"                   "~/org/plan.org"     "Resources" "Misc"))
+  ("r" "Resources"              "~/org/plan.org"     "Resources"))
 
 (defhydra rasen/org-refile-hydra (:foreign-keys run :exit t)
   "Refile"
@@ -4502,7 +4432,7 @@ element."
     "'"   #'org-fc-review-resume)
 
   (general-def 'normal 'org-fc-dashboard-mode-map
-    "r"   #'org-fc-review-dashboard-context
+    "r"   #'org-fc-dashboard-review
     "g"   (defun rasen/org-fc-dashboard ()
             (interactive)
             (org-fc-dashboard org-fc-context-all))
@@ -5680,11 +5610,8 @@ Add a magit command to push =HEAD= into a specified ref. Bound to ~p h~.
          (magit-push-arguments)))
   (magit-git-push "HEAD" target args))
 
-(if (fboundp 'transient-insert-suffix)
-    (transient-insert-suffix 'magit-push 'magit-push-other
-      '(1 "h" "HEAD" rasen/magit-push-head))
-  (magit-define-popup-action 'magit-push-popup
-                             ?h "HEAD" 'rasen/magit-push-head))
+(transient-insert-suffix 'magit-push 'magit-push-other
+  '(1 "h" "HEAD" rasen/magit-push-head))
 #+end_src
 
 ***** git fetch origin/master && git checkout origin/master
@@ -5712,7 +5639,7 @@ Add a magit command to push =HEAD= into a specified ref. Bound to ~p h~.
   (magit-git-fetch "origin" "master")
   (magit-checkout "origin/master"))
 
-(evil-magit-define-key evil-magit-state 'magit-mode-map
+(evil-collection-define-key evil-collection-magit-state 'magit-mode-map
                        "g m" 'rasen/magit-fco-master)
 #+end_src
 ***** TODO add a detach head command (git checkout HEAD)
@@ -7103,7 +7030,7 @@ Load console configuration early at initrd. This ensures the proper font (sizes)
 ** Color theme
 I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Goes to early-init to avoid flash of unstyled emacs.)
 #+begin_src emacs-lisp :tangle .emacs.d/early-init.el
-(require 'modus-themes-core)
+(require 'modus-themes)
 (require 'modus-operandi-theme)
 
 (setq modus-operandi-theme-slanted-constructs t)
@@ -7112,23 +7039,9 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Go
 ;; Use proportional fonts only when I explicitly configure them.
 (setq modus-operandi-theme-proportional-fonts nil)
 
-(defmacro with-modus-colors (name &rest cmds)
-  "Bind NAME's color palette around face specifications.
-
-NAME should be the proper name of a Modus theme, either
-'modus-operandi or 'modus-vivendi."
-  (declare (indent defun))
-  (let ((faces modus-themes-faces)
-        (cus modus-themes-custom-variables))
-    `(let ((class '((class color) (min-colors 89)))
-           ,@(mapcar (lambda (cons)
-                       `(,(car cons) ,(cdr cons)))
-                     (modus-themes-core-theme-variables name)))
-       ,@cmds)))
-
 (load-theme 'modus-operandi t)
 
-(with-modus-colors 'modus-operandi
+(modus-themes-with-colors
   (let ((custom--inhibit-theme-enable nil))
     (custom-theme-set-faces
      'modus-operandi

@@ -163,7 +163,7 @@
                 package = pkgs.my-emacs.base;
                 extraPackages = pkgs.my-emacs.packages;
               };
-              services.emacs.enable = true;
+              # services.emacs.enable = true;
             
               # fonts used by emacs
               home.packages = [
@@ -926,12 +926,16 @@
               
                     (epkgs.melpaBuild rec {
                       pname = "org-fc";
-                      version = "20201002";
+                      version = "20201121";
                       src = pkgs.fetchFromGitHub {
-                        owner = "l3kn";
+                        owner = "rasendubi";
                         repo = "org-fc";
-                        rev = "0fd72b4d9dcf82584b784bb7cf76d94109ee9bab";
-                        sha256 = "sha256-X01yELYog1bRJb1jAk77jbjDBvJxMVLoDsw+7S4lLec=";
+                        rev = "35ec13fd0412cd17cbf0adba7533ddf0998d1a90";
+                        sha256 = "sha256-2h1dIR7WHYFsLZ/0D4HgkoNDxKQy+v3OaiiCwToynvU=";
+                        # owner = "l3kn";
+                        # repo = "org-fc";
+                        # rev = "f1a872b53b173b3c319e982084f333987ba81261";
+                        # sha256 = "sha256-s2Buyv4YVrgyxWDkbz9xA8LoBNr+BPttUUGTV5m8cpM=";
                       };
                       packageRequires = [ epkgs.orgPackages.org-plus-contrib ];
                       propagatedUserEnvPkgs = [ pkgs.findutils pkgs.gawk ];
@@ -991,54 +995,6 @@
               {
                 naga = pkgs.callPackage ./naga { };
               }
-              (let
-                websigner =
-                  { stdenv
-                  , fetchurl
-                  , autoPatchelfHook
-                  , gtk2
-                  , glib
-                  , pcsclite
-                  }:
-                  stdenv.mkDerivation {
-                    pname = "procreditbank-websigner";
-                    version = "2020-01-20";
-              
-                    src = fetchurl {
-                      url = "https://ibank.procreditbank.com.ua/websigner-linux.bin";
-                      sha256 = "1bm88jg7nhgrmc0q5hv35hgv4nc0d15ihl0acrhf6x5f7wv4pszv";
-                    };
-              
-                    nativeBuildInputs = [ autoPatchelfHook ];
-              
-                    buildInputs = [ gtk2 glib pcsclite ];
-              
-                    unpackCmd = ''
-                      sh $src --extract
-                    '';
-              
-                    dontConfigure = true;
-              
-                    dontBuild = true;
-              
-                    installPhase = ''
-                      mkdir -p $out/bin
-                      mkdir -p $out/lib/websigner/hosts/firefox
-                      mkdir -p $out/lib/websigner/hosts/chromium
-              
-                      install -m 555 x86_64-linux/npwebsigner.so $out/lib/websigner
-                      install -m 777 x86_64-linux/nmwebsigner $out/lib/websigner
-              
-                      sed "s|PLUGIN_PATH|$out/lib/websigner/nmwebsigner|" com.bifit.websigner-mozilla.json > $out/lib/websigner/hosts/firefox/com.bifit.websigner.json
-                      sed "s|PLUGIN_PATH|$out/lib/websigner/nmwebsigner|" com.bifit.websigner-chrome.json > $out/lib/websigner/hosts/chromium/com.bifit.websigner.json
-              
-                      mkdir -p $out/lib/mozilla/native-messaging-hosts
-                      ln -s $out/lib/websigner/hosts/firefox/*.json $out/lib/mozilla/native-messaging-hosts
-                    '';
-                  };
-              in {
-                procreditbank-websigner = pkgs.callPackage websigner { };
-              })
               {
                 # note it's a new attribute and does not override old one
                 input-mono = (pkgs.input-fonts.overrideAttrs (old: {
@@ -1068,11 +1024,6 @@
             };
           })
           inputs.emacs-overlay.overlay
-          (final: prev: {
-            firefox = prev.firefox.override {
-              extraNativeMessagingHosts = [ final.procreditbank-websigner ];
-            };
-          })
         ];
       in {
         overlays = genAttrs systems mkOverlays;
