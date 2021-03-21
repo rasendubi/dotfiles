@@ -749,7 +749,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       color-identifiers-mode
       company
       company-box
-      company-lsp
       counsel
       counsel-projectile
       diff-hl
@@ -5893,10 +5892,6 @@ LSP is Language Server Protocol. Some languages support it usually provide bette
 (use-package lsp-ui
   :disabled t
   :commands lsp-ui-mode)
-
-(use-package company-lsp
-  :disabled t
-  :commands company-lsp)
 
 (use-package eglot
   :hook ((rust-mode) . eglot-ensure))

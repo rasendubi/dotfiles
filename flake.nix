@@ -830,7 +830,6 @@
                     color-identifiers-mode
                     company
                     company-box
-                    company-lsp
                     counsel
                     counsel-projectile
                     diff-hl
