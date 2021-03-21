@@ -3020,9 +3020,8 @@ Default bindings for ~RET~ prevent many of my commands from working. Remap ~RET~
     "T"  #'rasen/org-do-today
 
     "w"  #'org-refile
-    "r"  #'org-archive-subtree-default
-
-    "n s" #'org-narrow-to-subtree)
+    "r"  #'org-archive-subtree-default)
+  ('normal 'org-mode-map "RET n s" #'org-narrow-to-subtree)
   ('(insert normal) 'org-mode-map
    "C-c ,"  #'org-time-stamp-inactive)
   ('org-mode-map
