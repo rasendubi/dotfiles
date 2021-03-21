@@ -164,10 +164,7 @@ in
       nix.registry = {
         self.flake = inputs.self;
     
-        nixpkgs = {
-          from = { id = "nixpkgs"; type = "indirect"; };
-          flake = inputs.nixpkgs;
-        };
+        nixpkgs.flake = inputs.nixpkgs;
       };
     }
     {

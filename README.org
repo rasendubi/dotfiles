@@ -343,7 +343,7 @@ nixpkgs-stable = {
   type = "github";
   owner = "NixOS";
   repo = "nixpkgs";
-  ref = "nixos-20.03";
+  ref = "nixos-20.09";
 };
 #+end_src
 
@@ -535,10 +535,7 @@ This =<<nixos-section>>= is replaced by other parts of this doc.
   nix.registry = {
     self.flake = inputs.self;
 
-    nixpkgs = {
-      from = { id = "nixpkgs"; type = "indirect"; };
-      flake = inputs.nixpkgs;
-    };
+    nixpkgs.flake = inputs.nixpkgs;
   };
 }
 #+end_src
@@ -4851,6 +4848,16 @@ Applications are configured with Home Manager, and notmuch frontend is configure
         '';
       };
     in map mkGmailBox emails;
+}
+#+end_src
+** Older mbsync
+The latest mbsync has changed Master/Slave to Far/Near and that seems to have broken file formats. It can no longer sync my mail and I've had to restore from backup.
+
+Pin old version of mbsync until the bug is fixed.
+#+name: home-manager-section
+#+begin_src nix
+{
+  programs.mbsync.package = pkgs.stable.isync;
 }
 #+end_src
 ** Interface
