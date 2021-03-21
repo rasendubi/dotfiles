@@ -183,15 +183,17 @@ in
       nix.trustedUsers = ["rasen"];
     }
     {
+      environment.systemPackages = [ pkgs.xorg.xhost ];
       services.xserver.windowManager.session = lib.singleton {
         name = "exwm";
         start = ''
           xhost +SI:localuser:$USER
-          exec dbus-launch --exit-with-session emacs
+          exec emacs
         '';
           # exec ${pkgs.my-emacs}/bin/emacsclient -a "" -c
       };
       services.xserver.displayManager.lightdm.enable = true;
+      # services.xserver.displayManager.startx.enable = true;
       services.xserver.displayManager.defaultSession = "none+exwm";
     }
     {

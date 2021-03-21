@@ -800,7 +800,12 @@
           in
             mergeSections [
               (let
-                emacs-base = pkgs.emacsGit;
+                emacs-base = pkgs.emacsUnstable.override {
+                  withX = true;
+                  # select lucid toolkit
+                  toolkit = "lucid";
+                  withGTK2 = false; withGTK3 = false;
+                };
                 # emacs = pkgs.emacsUnstable;
                 # emacs = pkgs.emacs.override {
                 #   # Build emacs with proper imagemagick support.
@@ -905,6 +910,7 @@
                     tide
                     toc-org
                     typescript-mode
+                    undo-fu
                     use-package
                     visual-fill-column
                     vterm

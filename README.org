@@ -725,7 +725,12 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
 #+name: flake-packages
 #+begin_src nix
 (let
-  emacs-base = pkgs.emacsGit;
+  emacs-base = pkgs.emacsUnstable.override {
+    withX = true;
+    # select lucid toolkit
+    toolkit = "lucid";
+    withGTK2 = false; withGTK3 = false;
+  };
   # emacs = pkgs.emacsUnstable;
   # emacs = pkgs.emacs.override {
   #   # Build emacs with proper imagemagick support.
@@ -830,6 +835,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       tide
       toc-org
       typescript-mode
+      undo-fu
       use-package
       visual-fill-column
       vterm
@@ -1592,15 +1598,17 @@ NixOS has an EXWM module, but my feeling is that it's too limiting. (~<<nixos-se
 #+name: nixos-section
 #+begin_src nix
 {
+  environment.systemPackages = [ pkgs.xorg.xhost ];
   services.xserver.windowManager.session = lib.singleton {
     name = "exwm";
     start = ''
       xhost +SI:localuser:$USER
-      exec dbus-launch --exit-with-session emacs
+      exec emacs
     '';
       # exec ${pkgs.my-emacs}/bin/emacsclient -a "" -c
   };
   services.xserver.displayManager.lightdm.enable = true;
+  # services.xserver.displayManager.startx.enable = true;
   services.xserver.displayManager.defaultSession = "none+exwm";
 }
 #+end_src
@@ -2703,12 +2711,19 @@ I use [[https://github.com/GhostText/GhostText][GhostText]] firefox extension.
 * Evil-mode
 ** General
 #+begin_src emacs-lisp
+(use-package undo-fu
+  :commands
+  (undo-fu-only-undo
+   undo-fu-only-redo))
+
 (use-package evil
   :init
   (setq evil-want-integration t
         evil-want-keybinding nil)
   :custom
-  (evil-undo-system 'undo-redo)
+  (evil-undo-system 'undo-fu)
+  ;; revert to undo-redo when switching back to emacs-28
+  ;; (evil-undo-system 'undo-redo)
   :config
   <<evil-config>>
   (evil-mode 1))
