@@ -310,15 +310,23 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
 #+name: nixos-section
 #+begin_src nix
 {
+  system.nixos.tags = [ "with-intel" ];
   services.xserver.videoDrivers = [ "intel" ];  # modesetting didn't help
   hardware.nvidiaOptimus.disable = true;
   boot.blacklistedKernelModules = [ "nouveau" "nvidia" ];  # bbswitch
+  services.xserver = {
+    displayManager = {
+      lightdm.enable = false;
+      gdm.enable = true;
+    };
+  };
 }
 #+end_src
 ***** Nvidia PRIME
 #+name: nixos-section-unused
 #+begin_src nix
 {
+  system.nixos.tags = [ "with-nvidia" ];
   # environment.systemPackages = let
   #   nvidia-offload = pkgs.writeShellScriptBin "nvidia-offload" ''
   #     export __NV_PRIME_RENDER_OFFLOAD=1
@@ -358,6 +366,12 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
 
   # hardware.bumblebee.enable = false;
   # hardware.bumblebee.pmMethod = "none";
+  services.xserver = {
+    displayManager = {
+      lightdm.enable = true;
+      gdm.enable = false;
+    };
+  };
 }
 #+end_src
 
@@ -752,7 +766,6 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
   nix.gc.options = "--delete-older-than 12d";
 }
 #+end_src
-
 
 * Services
 ** NetworkManager
@@ -1235,8 +1248,6 @@ Setup timezone:
   services.xserver = {
     # desktopManager.gnome3.enable = true;
     displayManager = {
-      gdm.enable = true;
-      lightdm.enable = false;
       startx.enable = false;
       autoLogin = {  # if errors, then disable again
         user = "moritz";
@@ -1256,7 +1267,7 @@ I use EXWM:
   services.xserver.windowManager = {
     exwm = {
       enable = true;
-      extraPackages = epkgs: with epkgs; [ emacsql-sqlite pkgs.imagemagick ];  # unfortunately, adding zmq and jupyter here, didn't work so I had to install them manually (i.e. compiling emacs-zmq)
+      extraPackages = epkgs: with epkgs; [ emacsql-sqlite pkgs.imagemagick pkgs.escrotum epkgs.vterm ];  # unfortunately, adding zmq and jupyter here, didn't work so I had to install them manually (i.e. compiling emacs-zmq)
       # I only managed to compile emacs-zmq once (~/emacs.d/elpa/27.1/develop/zmq-.../emacs-zmq.so). I just copied it from there to mobook
       enableDefaultConfig = false;  # todo disable and enable loadScript
       # careful, 'loadScript option' was merged from Vizaxo into my personal nixpkgs repo.
@@ -1477,6 +1488,17 @@ Here go applications (almost) every normal user needs.
   services.pcscd.enable = true;
 }
 #+end_src
+** Matrix Chat
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = with pkgs; [
+    mirage-im
+    element-desktop
+  ];
+}
+#+end_src
+
 ** password-store
 Install [[https://www.passwordstore.org/][password-store]] along with [[https://github.com/tadfisher/pass-otp][one-time password extension]].
 #+name: nixos-section
@@ -1638,7 +1660,8 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 #+begin_src nix
 {
   environment.systemPackages = with pkgs; [
-    pandoc   # TODO make a latex section
+    #haskellPackages.pandoc
+    pandoc
     # haskellPackages.pandoc-crossref  # broken...
     haskellPackages.pandoc-citeproc
     texlive.combined.scheme-full
@@ -1705,6 +1728,8 @@ Don't require additional setup.
     sparkleshare_fixed 
     gnome3.gpaste
     autorandr
+    teams
+    libnotify
     
     # kdenlive  # fails in current unstable
     audacity
@@ -1729,7 +1754,7 @@ Don't require additional setup.
 }
 #+end_src
 ** Default applications
-
+# WARNING: This is also defined in my home.nix
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1738,12 +1763,12 @@ Don't require additional setup.
     text = ''
       [Default Applications]
       image/png=inkscape.desktop;
-      image/svg+xml=inkscape.desktop;
+      application/pdf=emacsclient.desktop;
+      x-scheme-handler/org-protocol=org-protocol.desktop;
     '';
   };
 }
 #+end_src
-
 
 * Development
 ** Nix 
@@ -2131,7 +2156,10 @@ set-window-option -g automatic-rename
     let python = (with pkgs; python3.withPackages (python-packages: with python-packages;
       let opencvGtk = opencv4.override (old : { enableGtk2 = true; enableGStreamer = true; });
       in [
+      plotly
       pytorch
+      ignite
+      pytorch-lightning
       python3
       pandas
       opencvGtk
@@ -2182,9 +2210,11 @@ set-window-option -g automatic-rename
       python-language-server
       pyls-isort
       pyls-mypy
+      smogn
       # ptvsd
       ])); in with pkgs.python3Packages; [
     python  # let is stronger than with, which is why this installs the correct python (the one defined above)
+    pkgs.rPackages.orca  # required for plotly
     pkgs.pipenv
     pip
     pkgs.nodePackages.pyright
@@ -2201,7 +2231,7 @@ set-window-option -g automatic-rename
 #+name: flake-overlays
 #+begin_src nix
 ( let
-    myOverride = {
+    myOverride = rec {
       packageOverrides = _self: _super: {
         service-factory =_super.buildPythonPackage rec {
           pname = "service_factory";
@@ -2426,13 +2456,19 @@ set-window-option -g automatic-rename
           version = "0.3.7";
           pname = "scikit-plot";
 
-          src = _super.fetchPypi {
-            inherit pname version;
-            sha256 = "2c7948817fd2dc06879cfe3c1fdde56a8e71fa5ac626ffbe79f043650baa6242";
+          src = builtins.fetchGit {
+            url = "https://github.com/moritzschaefer/scikit-plot";
+            ref = "feature/label-dots";
+            rev = "da4029703ab8bf45f9e417854d75727471ff8596";
           };
+          
+          # src = _super.fetchPypi {
+          #   inherit pname version;
+          #   sha256 = "2c7948817fd2dc06879cfe3c1fdde56a8e71fa5ac626ffbe79f043650baa6242";
+          # };
 
           checkInputs = [ _super.nose ];
-          propagatedBuildInputs = [ _super.matplotlib _super.scikitlearn _super.scipy _super.joblib ];
+          propagatedBuildInputs = [ _super.matplotlib _self.scikitlearn _super.scipy _super.joblib ];
 
           checkPhase = ''
             nosetests
@@ -2510,7 +2546,87 @@ set-window-option -g automatic-rename
           #   maintainers = [ maintainers.moritzs ];
           # };
         };
+        # gseapy = _super.buildPythonPackage rec {
+        #   version = "0.10.4";
+        #   pname = "gseapy";
 
+        #   propagatedBuildInputs = [
+        #       _super.scipy
+        #       _super.matplotlib
+        #       _super.requests
+        #       _super.joblib
+        #       _super.bioservices  # fuucccckkk
+        #       _self.numpy
+        #       _super.pandas ];
+        #   src = _super.fetchPypi {
+        #     inherit pname version;
+        #     sha256 = "6404b79a3b5dc07ed39f6a4f67b3c662df5bd8b0d50829c2819d8921a768dffb";
+        #   };
+        #   checkPhase = ''
+            
+        #   '';
+        #   # pythonImportsCheck = [ "smogn" ];
+        # };
+        smogn = _super.buildPythonPackage rec {
+          version = "0.1.2";
+          pname = "smogn";
+
+          propagatedBuildInputs = [ _self.numpy _super.pandas _super.tqdm ];
+          src = _super.fetchPypi {
+            inherit pname version;
+            sha256 = "6555b907f2c9df223eae8813abd09054ad6491fc8509a23fccc9d578b3e76d89";
+          };
+          checkPhase = ''
+            
+          '';
+          # pythonImportsCheck = [ "smogn" ];
+        };
+        # I don't know how to overwrite seaborn from unstable. That's why I overwrite it manually..
+        seaborn = _super.buildPythonPackage rec {
+          pname = "seaborn";
+          version = "0.11.1";
+          disabled = _super.pythonOlder "3.6";
+          doCheck = false;
+
+          src = _super.fetchPypi {
+            inherit pname version;
+            sha256 = "44e78eaed937c5a87fc7a892c329a7cc091060b67ebd1d0d306b446a74ba01ad";
+          };
+
+          checkInputs = [ _super.nose ];
+          propagatedBuildInputs = [ _super.pandas _super.matplotlib ];
+        };
+        scikitlearn = _super.buildPythonPackage rec {
+          pname = "scikit-learn";
+          version = "0.24.1";
+          doCheck = false;
+
+          src = _super.fetchPypi {
+            inherit pname version;
+            sha256 = "oDNKGALmTWVgIsO/q1anP71r9LEpg0PzaIryFRgQu98=";
+          };
+
+          buildInputs = [
+            _super.pillow
+            pkgs.gfortran
+            pkgs.glibcLocales
+          ] ++ pkgs.lib.optionals pkgs.stdenv.cc.isClang [
+            pkgs.llvmPackages.openmp
+          ];
+
+          nativeBuildInputs = [
+            _super.cython
+          ];
+
+          propagatedBuildInputs = [
+            _super.numpy
+            _super.scipy
+            _super.numpy.blas
+            _super.joblib
+            _super.threadpoolctl
+          ];
+          LC_ALL="en_US.UTF-8";
+        };
       };
     };
   in _self: _super: rec {
@@ -2612,6 +2728,15 @@ set-window-option -g automatic-rename
     #GD32V DFU Bootloader
     ATTRS{idVendor}=="28e9", ATTRS{idProduct}=="0189", MODE="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
     '';
+}
+#+end_src
+
+** Arduino
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [ pkgs.arduino ];
+  users.extraUsers.moritz.extraGroups = [ "dialout" ];
 }
 #+end_src
 

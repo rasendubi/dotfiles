@@ -106,7 +106,7 @@
         (_self: _super: { conda = _super.conda.override { extraPkgs = [ _super.which ]; }; })  # this is an overlay
         # TODO override R package  (openssl)
         ( let
-            myOverride = {
+            myOverride = rec {
               packageOverrides = _self: _super: {
                 service-factory =_super.buildPythonPackage rec {
                   pname = "service_factory";
@@ -331,13 +331,19 @@
                   version = "0.3.7";
                   pname = "scikit-plot";
         
-                  src = _super.fetchPypi {
-                    inherit pname version;
-                    sha256 = "2c7948817fd2dc06879cfe3c1fdde56a8e71fa5ac626ffbe79f043650baa6242";
+                  src = builtins.fetchGit {
+                    url = "https://github.com/moritzschaefer/scikit-plot";
+                    ref = "feature/label-dots";
+                    rev = "da4029703ab8bf45f9e417854d75727471ff8596";
                   };
+                  
+                  # src = _super.fetchPypi {
+                  #   inherit pname version;
+                  #   sha256 = "2c7948817fd2dc06879cfe3c1fdde56a8e71fa5ac626ffbe79f043650baa6242";
+                  # };
         
                   checkInputs = [ _super.nose ];
-                  propagatedBuildInputs = [ _super.matplotlib _super.scikitlearn _super.scipy _super.joblib ];
+                  propagatedBuildInputs = [ _super.matplotlib _self.scikitlearn _super.scipy _super.joblib ];
         
                   checkPhase = ''
                     nosetests
@@ -415,7 +421,87 @@
                   #   maintainers = [ maintainers.moritzs ];
                   # };
                 };
+                # gseapy = _super.buildPythonPackage rec {
+                #   version = "0.10.4";
+                #   pname = "gseapy";
         
+                #   propagatedBuildInputs = [
+                #       _super.scipy
+                #       _super.matplotlib
+                #       _super.requests
+                #       _super.joblib
+                #       _super.bioservices  # fuucccckkk
+                #       _self.numpy
+                #       _super.pandas ];
+                #   src = _super.fetchPypi {
+                #     inherit pname version;
+                #     sha256 = "6404b79a3b5dc07ed39f6a4f67b3c662df5bd8b0d50829c2819d8921a768dffb";
+                #   };
+                #   checkPhase = ''
+                    
+                #   '';
+                #   # pythonImportsCheck = [ "smogn" ];
+                # };
+                smogn = _super.buildPythonPackage rec {
+                  version = "0.1.2";
+                  pname = "smogn";
+        
+                  propagatedBuildInputs = [ _self.numpy _super.pandas _super.tqdm ];
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "6555b907f2c9df223eae8813abd09054ad6491fc8509a23fccc9d578b3e76d89";
+                  };
+                  checkPhase = ''
+                    
+                  '';
+                  # pythonImportsCheck = [ "smogn" ];
+                };
+                # I don't know how to overwrite seaborn from unstable. That's why I overwrite it manually..
+                seaborn = _super.buildPythonPackage rec {
+                  pname = "seaborn";
+                  version = "0.11.1";
+                  disabled = _super.pythonOlder "3.6";
+                  doCheck = false;
+        
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "44e78eaed937c5a87fc7a892c329a7cc091060b67ebd1d0d306b446a74ba01ad";
+                  };
+        
+                  checkInputs = [ _super.nose ];
+                  propagatedBuildInputs = [ _super.pandas _super.matplotlib ];
+                };
+                scikitlearn = _super.buildPythonPackage rec {
+                  pname = "scikit-learn";
+                  version = "0.24.1";
+                  doCheck = false;
+        
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "oDNKGALmTWVgIsO/q1anP71r9LEpg0PzaIryFRgQu98=";
+                  };
+        
+                  buildInputs = [
+                    _super.pillow
+                    pkgs.gfortran
+                    pkgs.glibcLocales
+                  ] ++ pkgs.lib.optionals pkgs.stdenv.cc.isClang [
+                    pkgs.llvmPackages.openmp
+                  ];
+        
+                  nativeBuildInputs = [
+                    _super.cython
+                  ];
+        
+                  propagatedBuildInputs = [
+                    _super.numpy
+                    _super.scipy
+                    _super.numpy.blas
+                    _super.joblib
+                    _super.threadpoolctl
+                  ];
+                  LC_ALL="en_US.UTF-8";
+                };
               };
             };
           in _self: _super: rec {

@@ -321,9 +321,16 @@ in
       ];
     }
     {
+      system.nixos.tags = [ "with-intel" ];
       services.xserver.videoDrivers = [ "intel" ];  # modesetting didn't help
       hardware.nvidiaOptimus.disable = true;
       boot.blacklistedKernelModules = [ "nouveau" "nvidia" ];  # bbswitch
+      services.xserver = {
+        displayManager = {
+          lightdm.enable = false;
+          gdm.enable = true;
+        };
+      };
     }
     {
       hardware.bluetooth.enable = true;
@@ -678,12 +685,10 @@ in
       services.xserver = {
         # desktopManager.gnome3.enable = true;
         displayManager = {
-          gdm.enable = true;
-          lightdm.enable = false;
           startx.enable = false;
           autoLogin = {  # if errors, then disable again
             user = "moritz";
-            enable = false;
+            enable = true;
           }; 
         };
         enable = true;
@@ -693,7 +698,7 @@ in
       services.xserver.windowManager = {
         exwm = {
           enable = true;
-          extraPackages = epkgs: with epkgs; [ emacsql-sqlite pkgs.imagemagick ];  # unfortunately, adding zmq and jupyter here, didn't work so I had to install them manually (i.e. compiling emacs-zmq)
+          extraPackages = epkgs: with epkgs; [ emacsql-sqlite pkgs.imagemagick pkgs.escrotum epkgs.vterm ];  # unfortunately, adding zmq and jupyter here, didn't work so I had to install them manually (i.e. compiling emacs-zmq)
           # I only managed to compile emacs-zmq once (~/emacs.d/elpa/27.1/develop/zmq-.../emacs-zmq.so). I just copied it from there to mobook
           enableDefaultConfig = false;  # todo disable and enable loadScript
           # careful, 'loadScript option' was merged from Vizaxo into my personal nixpkgs repo.
@@ -834,6 +839,12 @@ in
     }
     {
       environment.systemPackages = with pkgs; [
+        mirage-im
+        element-desktop
+      ];
+    }
+    {
+      environment.systemPackages = with pkgs; [
         (pass.withExtensions (exts: [ exts.pass-otp ]))
         pinentry-curses
         pinentry-qt
@@ -902,7 +913,8 @@ in
     }
     {
       environment.systemPackages = with pkgs; [
-        pandoc   # TODO make a latex section
+        #haskellPackages.pandoc
+        pandoc
         # haskellPackages.pandoc-crossref  # broken...
         haskellPackages.pandoc-citeproc
         texlive.combined.scheme-full
@@ -958,6 +970,8 @@ in
         sparkleshare_fixed 
         gnome3.gpaste
         autorandr
+        teams
+        libnotify
         
         # kdenlive  # fails in current unstable
         audacity
@@ -986,7 +1000,8 @@ in
         text = ''
           [Default Applications]
           image/png=inkscape.desktop;
-          image/svg+xml=inkscape.desktop;
+          application/pdf=emacsclient.desktop;
+          x-scheme-handler/org-protocol=org-protocol.desktop;
         '';
       };
     }
@@ -1073,7 +1088,10 @@ in
         let python = (with pkgs; python3.withPackages (python-packages: with python-packages;
           let opencvGtk = opencv4.override (old : { enableGtk2 = true; enableGStreamer = true; });
           in [
+          plotly
           pytorch
+          ignite
+          pytorch-lightning
           python3
           pandas
           opencvGtk
@@ -1124,9 +1142,11 @@ in
           python-language-server
           pyls-isort
           pyls-mypy
+          smogn
           # ptvsd
           ])); in with pkgs.python3Packages; [
         python  # let is stronger than with, which is why this installs the correct python (the one defined above)
+        pkgs.rPackages.orca  # required for plotly
         pkgs.pipenv
         pip
         pkgs.nodePackages.pyright
@@ -1208,6 +1228,10 @@ in
         #GD32V DFU Bootloader
         ATTRS{idVendor}=="28e9", ATTRS{idProduct}=="0189", MODE="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
         '';
+    }
+    {
+      environment.systemPackages = [ pkgs.arduino ];
+      users.extraUsers.moritz.extraGroups = [ "dialout" ];
     }
     {
       environment.systemPackages = with pkgs; [
