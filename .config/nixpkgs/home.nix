@@ -1,5 +1,16 @@
 { pkgs, config, ... }:
 {
+  xdg.mimeApps = {
+    enable = true;
+    associations.added = {
+      "application/pdf" = "emacsclient.desktop";
+      "x-scheme-handler/org-protocol" = "org-protocol.desktop";
+    };
+    defaultApplications = {
+      "application/pdf" = [ "emacsclient.desktop" ];
+      "x-scheme-handler/org-protocol" = [ "org-protocol.desktop" ];
+    };
+  };
   # targets.genericLinux.enable = true;
   xdg.configFile."tridactyl/tridactylrc".text = "bind ;r js javascript:location.href = 'org-protocol:/roam-ref?template=r&ref=' + encodeURIComponent(location.href) + '&title=' + encodeURIComponent(document.title)
 ";
