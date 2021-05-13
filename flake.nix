@@ -249,6 +249,20 @@
                       };
                     };
                   };
+                  "omicron-home-monitor" = {
+                    fingerprint = {
+                      DP-1 = home-monitor;
+                    };
+                    config = {
+                      DP-1 = {
+                        enable = true;
+                        primary = true;
+                        position = "0x0";
+                        mode = "3840x2160";
+                        rate = "60.00";
+                      };
+                    };
+                  };
             
                   "work" = {
                     fingerprint = {
