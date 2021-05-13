@@ -4131,6 +4131,9 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
       ;; Work notes
       ("r" "ring"        "ring/")
 
+      ;; Posts
+      ("p" "posts"       "posts/")
+
       ;; Literature notes
       ("" "literature"   "biblio/"))
     "My Zettelkasten slip boxes. Format is a list of (capture-key name directory).")
