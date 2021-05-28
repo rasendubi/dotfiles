@@ -291,7 +291,7 @@ The following goes to ~flake.nix~ file.
         let mkPkgs = system: import inputs.nixpkgs {
               inherit system;
               overlays = self.overlays.${system};
-              config = { allowUnfree = true; };
+              config = { allowUnfree = true; input-fonts.acceptLicense = true; };
             };
         in genAttrs systems mkPkgs;
 
@@ -6975,10 +6975,12 @@ Apply my font settings when new frame is created (useful when emacs is started i
 (add-hook 'after-make-frame-functions #'rasen/font-hook)
 #+end_src
 ** Custom Input font
-I like the following settings more than defaults. I also need a custom four-style family because Emacs confuses regular/medium weight otherwise. Use link specified in ~requireFile~ to download the font.
-#+DOWNLOADED: screenshot @ 2020-04-09 22:27:21
+
+I like [[https://input.djr.com/download/?customize&fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&email=][the following settings]] more than defaults. I also need a custom four-style family because Emacs confuses regular/medium weights otherwise.
+
+#+DOWNLOADED: screenshot @ 2021-05-28 13:36:42
 #+ATTR_ORG: :width 360
-[[file:./images/20200409192721-screenshot.png]]
+[[file:images/input-mono.png]]
 
 (~<<flake-packages>>~)
 #+name: flake-packages
@@ -6986,12 +6988,14 @@ I like the following settings more than defaults. I also need a custom four-styl
 {
   # note it's a new attribute and does not override old one
   input-mono = (pkgs.input-fonts.overrideAttrs (old: {
-    src = pkgs.requireFile {
-      name = "Input-Font.zip";
-      url = "https://input.fontbureau.com/download/index.html?customize&fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&email=";
-      sha256 = "0nn41w2b6jvsbr3r4lfy4p8w2ssjmgdjzd1pbj7p0vmawjpvx2w8";
+    pname = "input-mono";
+    src = pkgs.fetchurl {
+      name = "input-mono-${old.version}.zip";
+      url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=&.zip";
+      sha256 = "sha256-VfyVJxh0RY9AXdfE7Xij+ZklGxUvMFfEV1jWoH1h/Q8=";
     };
-    outputHash = "1w2i660dg04nyc6fc6r6sd3pw53h8dh8yx4iy6ccpii9gwjl9val";
+    sourceRoot = ".";
+    nativeBuildInputs = [ pkgs.unzip ];
   }));
 }
 #+end_src
