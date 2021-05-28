@@ -1233,14 +1233,23 @@ Timestamp-ids are used to uniquely identify things.
 
 Insert current date in =yyyy-mm-dd= format. Useful when creating dated notes or dumb commits.
 #+begin_src emacs-lisp
-(defun rasen/insert-date ()
-  (interactive)
-  (insert (format-time-string "%Y-%m-%d")))
+(defun rasen/insert-date (arg)
+  "Insert current date. With prefix ARG, insert time in ISO 8601 format as well. With double-prefix, insert time in UTC timezone."
+  (interactive "p")
+  (insert (format-time-string
+           (if (> arg 1)
+               "%FT%T%z"
+             "%F")
+           nil
+           (if (equal arg 16) t nil))))
 
 (general-def 'insert '(git-commit-mode-map ivy-minibuffer-map)
   "C-c ." #'rasen/insert-date)
 (general-def 'ivy-minibuffer-map
   "C-c ." #'rasen/insert-date)
+
+(general-def 'normal 'org-mode-map
+  "RET ." #'rasen/insert-date)
 #+end_src
 
 #+begin_src emacs-lisp
@@ -4758,6 +4767,16 @@ Use emacs-state in org-lint buffers.
 #+begin_src emacs-lisp
 (evil-set-initial-state 'org-lint--report-mode 'emacs)
 (evil-set-initial-state 'epa-key-list-mode 'emacs)
+#+end_src
+** Timestamps
+Configure time-stamp for org-mode, so ~time-stamp~ function would update =#+LAST_MODIFIED:= keyword value (using ISO8601 format).
+#+begin_src emacs-lisp
+(use-package time-stamp
+  :config
+  (add-hook 'org-mode-hook
+            (defun rasen/set-time-stamp ()
+              (setq-local time-stamp-pattern "^#\\+LAST_MODIFIED: %%$")
+              (setq-local time-stamp-format "%Y-%02m-%02dT%02H:%02M:%02S%5z"))))
 #+end_src
 * Mail setup
 My email load is handled by mbsync (to download email), msmtp (to send mail), and notmuch (to tag and browse it).
