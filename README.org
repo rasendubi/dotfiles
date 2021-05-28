@@ -2363,7 +2363,21 @@ in {
   };
 })
 #+end_src
-** direnv + lorri
+** direnv
+*** flake
+#+name: home-manager-section
+#+begin_src nix
+{
+  xdg.configFile."direnv/lib/use_flake.sh".text = ''
+    use_flake() {
+      watch_file flake.nix
+      watch_file flake.lock
+      eval "$(nix print-dev-env --profile "$(direnv_layout_dir)/flake-profile")"
+    }
+  '';
+}
+#+end_src
+*** direnv + lorri
 direnv allows having per-directory environment configuration. You can think of automatic virtualenv, but it's more general and supports unloading.
 
 (~<<home-manager-section>>~)
