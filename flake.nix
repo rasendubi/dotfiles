@@ -954,6 +954,8 @@
                     epkgs.orgPackages.org-plus-contrib
                     epkgs.elpaPackages.adaptive-wrap
                     epkgs.exwm
+                    # not available in melpa
+                    epkgs.elpaPackages.valign
               
                     (epkgs.melpaBuild rec {
                       pname = "org-fc";

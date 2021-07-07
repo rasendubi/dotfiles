@@ -55,11 +55,11 @@
 (require 'modus-themes)
 (require 'modus-operandi-theme)
 
-(setq modus-operandi-theme-slanted-constructs t)
-(setq modus-operandi-theme-bold-constructs t)
+(setq modus-themes-slanted-constructs t)
+(setq modus-themes-bold-constructs t)
 
 ;; Use proportional fonts only when I explicitly configure them.
-(setq modus-operandi-theme-proportional-fonts nil)
+(setq modus-themes-no-mixed-fonts t)
 
 (load-theme 'modus-operandi t)
 

@@ -850,6 +850,8 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       epkgs.orgPackages.org-plus-contrib
       epkgs.elpaPackages.adaptive-wrap
       epkgs.exwm
+      # not available in melpa
+      epkgs.elpaPackages.valign
 
       (epkgs.melpaBuild rec {
         pname = "org-fc";
@@ -7015,6 +7017,9 @@ Use variable-pitch fonts in org-mode. (~<<org-config>>~)
 ;; leading asterisks with fixed pitch face instead.
 (setq org-variable-pitch-fontify-headline-prefix t)
 
+;; remove org-table because valign-mode handles that
+(delete 'org-table org-variable-pitch-fixed-faces)
+
 (add-hook 'org-mode-hook #'org-variable-pitch-minor-mode)
 #+end_src
 
@@ -7060,6 +7065,14 @@ Patch adaptive-wrap, so it work better with org-variable-pitch-mode (i.e., make 
          pfx))))
   `(jit-lock-bounds ,beg . ,end))
 #+end_src
+*** Align org-mode tables with variable-pitch fonts
+#+begin_src emacs-lisp
+(use-package valign
+  :hook
+  (org-mode . valign-mode)
+  :config
+  (setq valign-fancy-bar t))
+#+end_src
 ** Hi-DPI
 These are for omicron-only.
 
@@ -7103,11 +7116,11 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Go
 (require 'modus-themes)
 (require 'modus-operandi-theme)
 
-(setq modus-operandi-theme-slanted-constructs t)
-(setq modus-operandi-theme-bold-constructs t)
+(setq modus-themes-slanted-constructs t)
+(setq modus-themes-bold-constructs t)
 
 ;; Use proportional fonts only when I explicitly configure them.
-(setq modus-operandi-theme-proportional-fonts nil)
+(setq modus-themes-no-mixed-fonts t)
 
 (load-theme 'modus-operandi t)
 
