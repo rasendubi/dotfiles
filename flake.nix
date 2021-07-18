@@ -917,7 +917,6 @@
                     org-drill
                     org-ref
                     org-roam
-                    org-roam-bibtex
                     org-super-agenda
                     paren-face
                     pass
@@ -962,6 +961,30 @@
                     epkgs.exwm
                     # not available in melpa
                     epkgs.elpaPackages.valign
+              
+                    (epkgs.melpaBuild rec {
+                      pname = "org-roam-bibtex";
+                      version = "20210714";
+                      src = pkgs.fetchFromGitHub {
+                        owner = "org-roam";
+                        repo = "org-roam-bibtex";
+                        rev = "c7f7cb0dc24d11b00ab5ce4de9705461fb1c5581";
+                        sha256 = "sha256-iy+TH23BeIPpVOOpmyTX5OA4lix51xqkYc2Tob3cBhk=";
+                      };
+                      packageRequires = [ epkgs.melpaPackages.org-roam epkgs.melpaPackages.bibtex-completion epkgs.melpaPackages.org-ref ];
+              
+                      recipe = pkgs.writeText "recipe" ''
+                       (org-roam-bibtex
+                        :repo "org-roam/org-roam-bibtex"
+                        :fetcher github
+                        :files ("*.el"))
+                      '';
+              
+                      meta = {
+                        description = "Connector between Org-roam, BibTeX-completion, and Org-ref";
+                        license = pkgs.lib.licenses.gpl3;
+                      };
+                    })
               
                     (epkgs.melpaBuild rec {
                       pname = "org-fc";
