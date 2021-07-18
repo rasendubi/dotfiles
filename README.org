@@ -3285,7 +3285,6 @@ My capture templates.
         ("j" "Journal entry" plain
          (file+datetree+prompt "~/org/journal.org")
          ,(concat
-           "TIL:\n- %?\n\n"
            ;; %U does not work here because timestamp is hijacked by
            ;; %file+datetime+prompt
            "%(format-time-string (org-time-stamp-format t t))"
@@ -4376,7 +4375,9 @@ Citations and bibliography tools for org-mode.
            :file-name "biblio/${slug}"
            :head
            ,(concat "#+TITLE: ${title}\n"
-                    "#+ROAM_KEY: ${ref}\n")
+                    "#+ROAM_KEY: ${ref}\n"
+                    "#+LAST_MODIFIED: \n"
+                    "#+DATE: %<%Y-%m-%dT%H:%M:%S>\n")
            :immediate-finish t
            :unnarrowed t))))
 #+end_src
@@ -4693,8 +4694,8 @@ rating the card."
 #+end_src
 ** toggle markup/view
 #+begin_src emacs-lisp
-(defun rasen/toggle-org-view-mode ()
-  (interactive)
+(defun rasen/toggle-org-view-mode (arg)
+  (interactive "P")
   ;; partially stolen from `org-toggle-link-display'
   (if org-link-descriptive
       (progn
@@ -4703,6 +4704,10 @@ rating the card."
         (setq-local org-pretty-entities nil)
         (org-clear-latex-preview (point-min) (point-max))
         (org-remove-inline-images)
+        (valign-mode -1)
+        (when arg
+          (org-variable-pitch-minor-mode -1)
+          (valign-mode -1))
         (message "org-view-mode disabled"))
 
     (add-to-invisibility-spec '(org-link))
@@ -4710,6 +4715,8 @@ rating the card."
     (setq-local org-pretty-entities t)
     (org--latex-preview-region (point-min) (point-max))
     (org-display-inline-images)
+    (org-variable-pitch-minor-mode t)
+    (valign-mode t)
     (message "org-view-mode enabled"))
   (setq-local org-link-descriptive (not org-link-descriptive))
   (font-lock-fontify-buffer))
@@ -4791,7 +4798,9 @@ Configure time-stamp for org-mode, so ~time-stamp~ function would update =#+LAST
   :config
   (add-hook 'org-mode-hook
             (defun rasen/set-time-stamp ()
-              (setq-local time-stamp-pattern "^#\\+LAST_MODIFIED: %%$")
+              (interactive)
+              ;; Either DATE or LAST_MODIFIED—whichever comes first, wins.
+              (setq-local time-stamp-pattern "^#\\+\\(DATE\\|LAST_MODIFIED\\): %%$")
               (setq-local time-stamp-format "%Y-%02m-%02dT%02H:%02M:%02S%5z"))))
 #+end_src
 * Mail setup
