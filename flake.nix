@@ -485,6 +485,12 @@
               programs.mbsync.package = pkgs.stable.isync;
             }
             {
+              home.file.".mailcap".text = ''
+                text/html; firefox %s
+                application/pdf; zathura %s
+              '';
+            }
+            {
               home.packages = [
                 (pkgs.pass.withExtensions (exts: [ exts.pass-otp ]))
               ];

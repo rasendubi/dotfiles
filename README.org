@@ -5006,6 +5006,17 @@ Pin old version of mbsync until the bug is fixed.
   ;; support for linking notmuch mails in org-mode
   (require 'ol-notmuch))
 #+end_src
+
+Open html links in browser:
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.file.".mailcap".text = ''
+    text/html; firefox %s
+    application/pdf; zathura %s
+  '';
+}
+#+end_src
 ** Emacs
 #+begin_src emacs-lisp
 (setq user-full-name "Alexey Shmalko"
