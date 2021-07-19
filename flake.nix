@@ -968,8 +968,10 @@
                       src = pkgs.fetchFromGitHub {
                         owner = "org-roam";
                         repo = "org-roam-bibtex";
-                        rev = "c7f7cb0dc24d11b00ab5ce4de9705461fb1c5581";
-                        sha256 = "sha256-iy+TH23BeIPpVOOpmyTX5OA4lix51xqkYc2Tob3cBhk=";
+                        # rev = "c7f7cb0dc24d11b00ab5ce4de9705461fb1c5581";
+                        # sha256 = "sha256-iy+TH23BeIPpVOOpmyTX5OA4lix51xqkYc2Tob3cBhk=";
+                        rev = "5344331ff828729a815e8bb36bd46bcbd444ee9e";
+                        sha256 = "sha256-kJKrC/pNtV5ITWuLajTHWyGCSclKavjq9/98UK0UVW4=";
                       };
                       packageRequires = [ epkgs.melpaPackages.org-roam epkgs.melpaPackages.bibtex-completion epkgs.melpaPackages.org-ref ];
               

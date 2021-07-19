@@ -858,8 +858,10 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
         src = pkgs.fetchFromGitHub {
           owner = "org-roam";
           repo = "org-roam-bibtex";
-          rev = "c7f7cb0dc24d11b00ab5ce4de9705461fb1c5581";
-          sha256 = "sha256-iy+TH23BeIPpVOOpmyTX5OA4lix51xqkYc2Tob3cBhk=";
+          # rev = "c7f7cb0dc24d11b00ab5ce4de9705461fb1c5581";
+          # sha256 = "sha256-iy+TH23BeIPpVOOpmyTX5OA4lix51xqkYc2Tob3cBhk=";
+          rev = "5344331ff828729a815e8bb36bd46bcbd444ee9e";
+          sha256 = "sha256-kJKrC/pNtV5ITWuLajTHWyGCSclKavjq9/98UK0UVW4=";
         };
         packageRequires = [ epkgs.melpaPackages.org-roam epkgs.melpaPackages.bibtex-completion epkgs.melpaPackages.org-ref ];
 
@@ -3456,7 +3458,7 @@ Adapted from [[https://mollermara.com/blog/Fast-refiling-in-org-mode-with-hydras
   "Refile to a specific location.
 
 With a `C-u' ARG argument, jump to that location."
-  (let* ((pos (org-find-olp (cons file path)))
+  (let* ((pos (and path (org-find-olp (cons file path))))
          (rfloc (list (rasen/concat path "/") file nil pos)))
 
     (if (and (eq major-mode 'org-agenda-mode)
@@ -3516,45 +3518,22 @@ With a `C-u` ARG, just jump to the headline."
                    `(,key (rasen/refile ,file ',path current-prefix-arg) ,name)))
                options)
 
+     ("w"
+      (if (eq major-mode 'org-agenda-mode)
+          (org-agenda-refile current-prefix-arg)
+        (org-refile current-prefix-arg))
+      "select")
+
      ("q" nil "cancel")))
-#+end_src
 
-Actual configuration.
-#+begin_src emacs-lisp
-(rasen/make-refile-hydra rasen/org-refile-hydra-projects "Projects"
-  ("w" "Work"                   "~/org/ring.org.gpg" "Projects")
-  ("p" "Personal"               "~/org/plan.org"     "Projects"))
-
-(rasen/make-refile-hydra rasen/org-refile-hydra-areas "Areas"
-  ("w" "Work"                   "~/org/ring.org.gpg" "Work")
-  ("h" "Home"                   "~/org/plan.org"     "Areas" "Home")
-  ("p" "People"                 "~/org/plan.org"     "Areas" "People")
-  ("c" "Computers"              "~/org/plan.org"     "Areas" "Computers")
-  ("o" "Open-source"            "~/org/plan.org"     "Areas" "Open-source")
-  ("P" "Planning"               "~/org/plan.org"     "Areas" "Planning")
-  ("s" "Self-development"       "~/org/plan.org"     "Areas" "Self-development")
-  ("H" "Health"                 "~/org/plan.org"     "Areas" "Health")
-  ("C" "Cats"                   "~/org/plan.org"     "Areas" "Cats")
-  ("e" "egoless.tech"           "~/org/plan.org"     "Areas" "egoless.tech")
-  ("a" "alexeyshmalko.com"      "~/org/plan.org"     "Areas" "alexeyshmalko.com")
-  ("m" "Misc"                   "~/org/plan.org"     "Areas" "Misc"))
-
-(rasen/make-refile-hydra rasen/org-refile-hydra-resources "Resources"
-  ("w" "Work"                   "~/org/ring.org.gpg" "Resources")
-  ("r" "Resources"              "~/org/plan.org"     "Resources"))
-
-(defhydra rasen/org-refile-hydra (:foreign-keys run :exit t)
-  "Refile"
-  ("p" rasen/org-refile-hydra-projects/body "Projects")
-  ("a" rasen/org-refile-hydra-areas/body "Areas")
-  ("r" rasen/org-refile-hydra-resources/body "Resources")
-
-  ("w" (if (eq major-mode 'org-agenda-mode)
-           (org-agenda-refile current-prefix-arg)
-         (org-refile current-prefix-arg))
-   "select")
-
-  ("q" nil "cancel"))
+(rasen/make-refile-hydra rasen/org-refile-hydra "Refile"
+  ("p"  "Projects"   "~/org/plan.org"       "Projects")
+  ("t"  "To do"      "~/org/plan.org"       "To do")
+  ("d"  "To don’t"   "~/org/plan.org"       "To don't")
+  ("P"  "Periodic"   "~/org/plan.org"       "Periodic")
+  ("T"  "Tracking"   "~/org/plan.org"       "Tracking")
+  ("r"  "Resources"  "~/org/resources.org")
+  ("b"  "Books"      "~/org/books.org"))
 
 (leader-def 'normal 'org-mode-map         "w" #'rasen/org-refile-hydra/body)
 (leader-def 'motion 'org-agenda-mode-map  "w" #'rasen/org-refile-hydra/body)
@@ -4138,7 +4117,15 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
   :general
   (s-leader-def
     "n r" #'org-roam-buffer-toggle
-    "n f" #'org-roam-node-find)
+    "n f" #'org-roam-node-find
+    "n j" #'org-roam-dailies-goto-date
+    "n t" #'org-roam-dailies-goto-today
+    "n ." #'org-roam-dailies-goto-today
+    "n ," #'org-roam-dailies-goto-yesterday)
+  (:keymaps 'org-mode-map
+   :states 'normal
+   "SPC ," #'org-roam-dailies-goto-previous-note
+   "SPC ." #'org-roam-dailies-goto-next-note)
   (:keymaps 'org-mode-map
    :states '(insert visual)
    "C-c i" #'org-roam-node-insert
@@ -4204,7 +4191,32 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
                            :unnarrowed t)))
                 rasen/slip-boxes))
 
+  (setq org-roam-dailies-directory "life/journal/")
+  (setq org-roam-dailies-capture-templates
+        '(("j" "journal" plain "%U\n%?"
+           :if-new (file+head "%<%Y-%m-%d>.org"
+                              ;; Adding day of week to title makes
+                              ;; unlinked references search weaker, so
+                              ;; store it in metadata.
+                              "#+TITLE: %<%Y-%m-%d>\n- day of week :: %<%A>\n\n"))))
+
+  (add-hook 'org-roam-mode-hook #'visual-line-mode)
   (org-roam-setup)
+
+  ;; https://github.com/org-roam/org-roam/pull/1616
+  (el-patch-defun org-roam-unlinked-references-preview-line (file row)
+    "Return the preview line from FILE.
+This is the ROW within FILE."
+    (with-temp-buffer
+      ((el-patch-swap insert-file-contents-literally insert-file-contents) file)
+      (forward-line (1- row))
+      (buffer-substring-no-properties
+       (save-excursion
+         (beginning-of-line)
+         (point))
+       (save-excursion
+         (end-of-line)
+         (point)))))
 
   (defun rasen/roam-rename (new-name)
     "Move file to NEW-NAME. `org-roam' takes care of adjusting all links."
@@ -4444,18 +4456,20 @@ Citations and bibliography tools for org-mode.
 #+begin_src emacs-lisp
 (use-package org-roam-bibtex
   :diminish
-  :hook (org-roam-mode . org-roam-bibtex-mode)
+  :after org-roam
   :config
+  (require 'org-ref)
+  (org-roam-bibtex-mode)
   ;; https://github.com/org-roam/org-roam-bibtex/pull/194
-  (el-patch-defun orb--add-ref ()
-    "Add citeky as Org-roam ref to the current buffer.
-To be used in `org-roam-capture-new-node-hook'."
-    (save-excursion
-      (el-patch-let (($do (org-roam-add-property orb--current-citekey "ROAM_REFS")))
-        (el-patch-swap
-          $do
-          (if orb--current-citekey
-              $do))))))
+  ;; (el-patch-defun orb--add-ref ()
+  ;;   "Add citeky as Org-roam ref to the current buffer. To be used in `org-roam-capture-new-node-hook'."
+  ;;   (save-excursion
+  ;;     (el-patch-let (($do (org-roam-add-property orb--current-citekey "ROAM_REFS")))
+  ;;       (el-patch-swap
+  ;;         $do
+  ;;         (if orb--current-citekey
+  ;;             $do)))))
+  )
 #+end_src
 ** toc-org
 Generate Table of Contents for this file.
@@ -4575,7 +4589,7 @@ element."
 My modifications to support reviewing arbitrary todo lists with spaced repetition.
 #+name: org-fc-review-todos
 #+begin_src emacs-lisp
-(defcustom rasen/org-fc-todos-context `(:paths (,(expand-file-name "plan.org" rasen/org-directory))
+(defcustom rasen/org-fc-todos-context `(:paths (,(expand-file-name "resources.org" rasen/org-directory))
                                         :filter (type "nocard"))
   "Context in which to search for todo cards.")
 
