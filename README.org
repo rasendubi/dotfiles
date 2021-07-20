@@ -5959,6 +5959,7 @@ Company mode provides autocomplete features.
   :config
   (setq-default company-dabbrev-downcase nil)
   (setq-default company-search-filtering t)
+  (setq-default company-global-modes '(not org-mode))
   (global-company-mode))
 #+end_src
 
