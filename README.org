@@ -4193,14 +4193,20 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
 
   (setq org-roam-dailies-directory "life/journal/")
   (setq org-roam-dailies-capture-templates
-        '(("j" "journal" plain "%U\n%?"
+        `(("j" "journal" plain "%U\n%?"
            :if-new (file+head "%<%Y-%m-%d>.org"
                               ;; Adding day of week to title makes
                               ;; unlinked references search weaker, so
                               ;; store it in metadata.
-                              "#+TITLE: %<%Y-%m-%d>\n- day of week :: %<%A>\n\n"))))
+                              ,(concat
+                                "#+TITLE: %<%Y-%m-%d>\n"
+                                "- day of week :: %<%A>\n"
+                                "\n"
+                                "* Events\n"
+                                "* Tomorrow\n")))))
 
   (add-hook 'org-roam-mode-hook #'visual-line-mode)
+  (add-hook 'org-roam-mode-hook #'variable-pitch-mode)
   (org-roam-setup)
 
   ;; https://github.com/org-roam/org-roam/pull/1616
