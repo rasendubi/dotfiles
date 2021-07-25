@@ -105,7 +105,9 @@ Pieces not (yet) covered in org files are:
   - [[#syncthing][Syncthing]]
   - [[#docker][Docker]]
   - [[#backup][Backup]]
-  - [[#direnv--lorri][direnv + lorri]]
+  - [[#direnv][direnv]]
+    - [[#flake-1][flake]]
+    - [[#direnv--lorri][direnv + lorri]]
 - [[#hardware][Hardware]]
   - [[#do-not-suspend-on-ac][Do not suspend on AC]]
   - [[#autorandr][Autorandr]]
@@ -153,6 +155,14 @@ Pieces not (yet) covered in org files are:
   - [[#habits][Habits]]
   - [[#adaptive-wrap][adaptive-wrap]]
   - [[#org-roam][org-roam]]
+    - [[#org-roam-exclude-org-fc][org-roam-exclude-org-fc]]
+    - [[#org-roam-slip-boxes][org-roam-slip-boxes]]
+    - [[#org-roam-node-display][org-roam-node-display]]
+    - [[#org-roam-buffer][org-roam-buffer]]
+    - [[#org-roam-dailies][org-roam-dailies]]
+    - [[#org-roam-protocol][org-roam-protocol]]
+    - [[#org-roam-graph][org-roam-graph]]
+    - [[#org-roam-kebab-slugs][org-roam-kebab-slugs]]
   - [[#org-ref][org-ref]]
   - [[#org-roam-bibtex][org-roam-bibtex]]
   - [[#toc-org][toc-org]]
@@ -160,8 +170,10 @@ Pieces not (yet) covered in org files are:
   - [[#org-fc-review-todos][org-fc review todos]]
   - [[#toggle-markupview][toggle markup/view]]
   - [[#evilify-org-mode][Evilify org-mode]]
+  - [[#timestamps][Timestamps]]
 - [[#mail-setup][Mail setup]]
   - [[#applications][Applications]]
+  - [[#older-mbsync][Older mbsync]]
   - [[#interface][Interface]]
   - [[#emacs-1][Emacs]]
 - [[#applications-1][Applications]]
@@ -240,6 +252,7 @@ Pieces not (yet) covered in org files are:
   - [[#fonts][Fonts]]
   - [[#custom-input-font][Custom Input font]]
   - [[#variable-pitch-fonts-in-org-mode][Variable-pitch fonts in org-mode]]
+    - [[#align-org-mode-tables-with-variable-pitch-fonts][Align org-mode tables with variable-pitch fonts]]
   - [[#hi-dpi][Hi-DPI]]
   - [[#color-theme][Color theme]]
   - [[#emacs-modeline][Emacs modeline]]
@@ -4133,233 +4146,363 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
    "C-c TAB" #'org-roam-node-insert)
 
   :init
+  ;; yes, I have migrated to v2
   (setq org-roam-v2-ack t)
 
   :config
-  (require 'org-roam-protocol)
 
   (setq org-roam-directory (concat rasen/org-directory "/roam")
         ;; move `org-roam-db-location' off roam directory, so syncthing does not sync it
         org-roam-db-location (expand-file-name "cache/org-roam.db" user-emacs-directory))
 
-  (setq org-roam-db-node-include-function
-        (defun rasen/org-roam-include ()
-          ;; exclude org-fc headlines from org-roam
-          (not (member "fc" (org-get-tags)))))
+  <<org-roam-exclude-org-fc>>
 
-  (setq org-roam-mode-section-functions
-        (list #'org-roam-backlinks-section
-              #'org-roam-reflinks-section
-              #'org-roam-unlinked-references-section))
+  <<org-roam-node-display>>
 
-  (defun rasen/capture-tsid (node)
-    "A hack definition to workaround that org-roam passes a node argument."
-    (rasen/tsid))
-  (defconst rasen/slip-boxes
-    '(;; Default slip-box with permanent notes
-      ("d" "default"     ""         "${rasen/capture-tsid}")
+  <<org-roam-slip-boxes>>
 
-      ;; "Life project"—everything that doesn't fit in other slip
-      ;; boxes. Examples are: my gratitude journal, small projects,
-      ;; article drafts, idea list.
-      ("l" "life"        "life/"    "${rasen/capture-tsid}")
+  <<org-roam-dailies>>
 
-      ;; Work notes
-      ("r" "ring"        "ring/"    "${rasen/capture-tsid}")
+  <<org-roam-protocol>>
 
-      ;; Posts
-      ("p" "posts"       "posts/"   "${slug}"    "#+DATE: %<%Y-%m-%d>\n#+LAST_MODIFIED: \n#+PUBLISHED: false")
+  <<org-roam-graph>>
 
-      ;; Literature notes
-      ("b" "bibliograpic" "biblio/" "${citekey}" "#+LAST_MODIFIED: \n#+DATE: %<%Y-%m-%d>\n"))
-    "My slip boxes. Format is a list of (capture-key name directory filename extra-template).")
+  <<org-roam-buffer>>
 
-  ;; one capture template per slip-box
-  (setq org-roam-capture-templates
-        (mapcar (lambda (x)
-                  (let ((key  (nth 0 x))
-                        (name (nth 1 x))
-                        (dir  (nth 2 x))
-                        (filename (nth 3 x))
-                        (extra-template (nth 4 x)))
-                    `(,key ,name plain "%?"
-                           :if-new (file+head
-                                    ,(concat dir filename ".org")
-                                    ,(concat "#+TITLE: ${title}\n"
-                                             extra-template))
-                           :immediate-finish t
-                           :unnarrowed t)))
-                rasen/slip-boxes))
+  <<org-roam-kebab-slugs>>
 
-  (setq org-roam-dailies-directory "life/journal/")
-  (setq org-roam-dailies-capture-templates
-        `(("j" "journal" plain "%U\n%?"
-           :if-new (file+head "%<%Y-%m-%d>.org"
-                              ;; Adding day of week to title makes
-                              ;; unlinked references search weaker, so
-                              ;; store it in metadata.
-                              ,(concat
-                                "#+TITLE: %<%Y-%m-%d>\n"
-                                "- day of week :: %<%A>\n"
-                                "\n"
-                                "* Events\n"
-                                "* Tomorrow\n")))))
+  (org-roam-setup))
+#+end_src
+*** org-roam-exclude-org-fc
+Do not treat [[*org-fc][org-fc]] cards as nodes.
+#+begin_src emacs-lisp
+(setq org-roam-db-node-include-function
+      (defun rasen/org-roam-include ()
+        ;; exclude org-fc headlines from org-roam
+        (not (member "fc" (org-get-tags)))))
+#+end_src
+*** org-roam-slip-boxes
+Slip boxes are basically different directories that I split notes into.
+#+name: org-roam-slip-boxes
+#+begin_src emacs-lisp
+(defconst rasen/slip-boxes
+  '(;; Default slip-box with permanent notes
+    ("d" "default"     ""         "${rasen/capture-tsid}")
 
-  (add-hook 'org-roam-mode-hook #'visual-line-mode)
-  (add-hook 'org-roam-mode-hook #'variable-pitch-mode)
-  (org-roam-setup)
+    ;; "Life project"—everything that doesn't fit in other slip
+    ;; boxes. Examples are: my gratitude journal, small projects,
+    ;; article drafts, idea list.
+    ("l" "life"        "life/"    "${rasen/capture-tsid}")
 
-  ;; https://github.com/org-roam/org-roam/pull/1616
-  (el-patch-defun org-roam-unlinked-references-preview-line (file row)
-    "Return the preview line from FILE.
+    ;; Work notes
+    ("r" "ring"        "ring/"    "${rasen/capture-tsid}")
+
+    ;; Posts
+    ("p" "posts"       "posts/"   "${slug}"    "#+DATE: %<%Y-%m-%d>\n#+LAST_MODIFIED: \n#+PUBLISHED: false")
+
+    ;; Literature notes
+    ("b" "bibliograpic" "biblio/" "${citekey}" "#+LAST_MODIFIED: \n#+DATE: %<%Y-%m-%d>\n"))
+  "My slip boxes. Format is a list of (capture-key name directory filename extra-template).")
+
+;; one capture template per slip-box
+(setq org-roam-capture-templates
+      (mapcar (lambda (x)
+                (let ((key  (nth 0 x))
+                      (name (nth 1 x))
+                      (dir  (nth 2 x))
+                      (filename (nth 3 x))
+                      (extra-template (nth 4 x)))
+                  `(,key ,name plain "%?"
+                         :if-new (file+head
+                                  ,(concat dir filename ".org")
+                                  ,(concat "#+TITLE: ${title}\n"
+                                           extra-template))
+                         :immediate-finish t
+                         :unnarrowed t)))
+              rasen/slip-boxes))
+
+(defun rasen/capture-tsid (node)
+  "A hack definition to workaround that org-roam passes a node argument."
+  (rasen/tsid))
+#+end_src
+
+And a helper command to move notes between slip boxes.
+#+name: org-roam-slip-boxes
+#+begin_src emacs-lisp
+(defun rasen/move-to-slip-box (slip-box)
+  "Move file to specified SLIP-BOX."
+  (interactive (list (completing-read "Move to slip-box: "
+                                      (mapcar (lambda (x) (nth 2 x)) rasen/slip-boxes))))
+  (let* ((filename (buffer-file-name))
+         (directory (file-name-directory filename))
+         (name (file-name-nondirectory filename))
+         (new-name (f-join org-roam-directory slip-box name)))
+    (rasen/roam-rename new-name)))
+
+;; TODO: with org-roam-v2 this probably can be simplified
+(defun rasen/roam-rename (new-name)
+  "Move file to NEW-NAME. `org-roam' takes care of adjusting all links."
+  (let ((filename (buffer-file-name)))
+    (unless filename
+      (error "Buffer '%s' is not visiting file!" (buffer-name)))
+    (rename-file filename new-name)
+    (set-visited-file-name new-name t)
+    (revert-buffer t t t)
+    ;; trigger save-buffer for org-roam to regenerate `org-roam-buffer'.
+    (set-buffer-modified-p t)
+    (save-buffer)))
+#+end_src
+
+And some extra refile helpers for dealing with inbox.
+#+name: org-roam-slip-boxes
+#+begin_src emacs-lisp
+;; TODO: replace hard-coded paths with querying org-roam by title.
+
+(defun rasen/refile-weight ()
+  "Refile current item as weight log."
+  (interactive)
+  (save-excursion
+    (save-window-excursion
+      (rasen/org-copy-log-entry t)
+      (find-file (concat org-roam-directory "/life/20200620011908.org"))
+      (goto-char (point-max))
+      (yank))))
+
+(defun rasen/refile-gratitude ()
+  (interactive)
+  (save-excursion
+    (save-window-excursion
+      (let* ((element (org-element-at-point))
+             (created (org-element-property :CREATED element))
+             (cbeg (org-element-property :contents-begin element))
+             (cend (org-element-property :contents-end element))
+             (contents (buffer-substring cbeg cend)))
+        (org-cut-subtree)
+        (current-kill 1)
+
+        (find-file (concat org-roam-directory "/life/20200620010632.org"))
+        (org-datetree-find-date-create
+         (calendar-gregorian-from-absolute
+          (time-to-days (org-read-date nil t created))))
+
+        (next-line)
+        (insert contents)))))
+#+end_src
+*** org-roam-node-display
+Configure how nodes are shown in the prompt (when searching, creating new, inserting link).
+
+Show slip box and path within file. e.g., =(life) My file > sub-note=.
+#+name: org-roam-node-display
+#+begin_src emacs-lisp
+(setq org-roam-node-display-template "${hierarchy:*} ${tags:10}")
+
+(cl-defmethod org-roam-node-filetitle ((node org-roam-node))
+  "Return the file TITLE for the node."
+  (org-roam-get-keyword "TITLE" (org-roam-node-file node)))
+
+(cl-defmethod org-roam-node-hierarchy ((node org-roam-node))
+  "Return the hierarchy for the node."
+  (let ((title (org-roam-node-title node))
+        (olp (org-roam-node-olp node))
+        (level (org-roam-node-level node))
+        (directories (org-roam-node-directories node))
+        (filetitle (org-roam-node-filetitle node)))
+    (concat
+     (if directories (format "(%s) " directories))
+     (if (> level 0) (concat filetitle " > "))
+     (if (> level 1) (concat (string-join olp " > ") " > "))
+     title)))
+
+(cl-defmethod org-roam-node-directories ((node org-roam-node))
+  (if-let ((dirs (file-name-directory (file-relative-name (org-roam-node-file node) org-roam-directory))))
+      (string-join (f-split dirs) "/")
+    nil))
+#+end_src
+*** org-roam-buffer
+Configure org-roam-buffer (buffer with backlinks).
+
+Show all sections:
+#+name: org-roam-buffer
+#+begin_src emacs-lisp
+(setq org-roam-mode-section-functions
+      (list #'org-roam-backlinks-section
+            #'org-roam-reflinks-section
+            #'org-roam-unlinked-references-section))
+#+end_src
+
+Make it prettier—enable word-wrap and variable pitch font.
+#+name: org-roam-buffer
+#+begin_src emacs-lisp
+(add-hook 'org-roam-mode-hook #'visual-line-mode)
+(add-hook 'org-roam-mode-hook #'variable-pitch-mode)
+#+end_src
+
+Fix unreferenced backlinks for non-ASCII files. Submitted at [[https://github.com/org-roam/org-roam/pull/1616][org-roam/org-roam#1616 fix(#1575): fix display of non-ASCII in unlinked references section by rasendubi]].
+#+name: org-roam-buffer
+#+begin_src emacs-lisp
+(el-patch-defun org-roam-unlinked-references-preview-line (file row)
+  "Return the preview line from FILE.
 This is the ROW within FILE."
-    (with-temp-buffer
-      ((el-patch-swap insert-file-contents-literally insert-file-contents) file)
-      (forward-line (1- row))
-      (buffer-substring-no-properties
-       (save-excursion
-         (beginning-of-line)
-         (point))
-       (save-excursion
-         (end-of-line)
-         (point)))))
+  (with-temp-buffer
+    ((el-patch-swap insert-file-contents-literally insert-file-contents) file)
+    (forward-line (1- row))
+    (buffer-substring-no-properties
+     (save-excursion
+       (beginning-of-line)
+       (point))
+     (save-excursion
+       (end-of-line)
+       (point)))))
+#+end_src
+*** org-roam-dailies
 
-  (defun rasen/roam-rename (new-name)
-    "Move file to NEW-NAME. `org-roam' takes care of adjusting all links."
-    (let ((filename (buffer-file-name)))
-      (unless filename
-        (error "Buffer '%s' is not visiting file!" (buffer-name)))
-      (rename-file filename new-name)
-      (set-visited-file-name new-name t)
-      (revert-buffer t t t)
-      ;; trigger save-buffer for org-roam to regenerate `org-roam-buffer'.
-      (set-buffer-modified-p t)
-      (save-buffer)))
+I moved my journaling into org-roam and this provides more context when reviewing my notes (unlinked references show where that date was mentioned).
 
-  (defun rasen/move-to-slip-box (slip-box)
-    "Move file to specified SLIP-BOX."
-    (interactive (list (completing-read "Move to slip-box: "
-                                        (mapcar (lambda (x) (nth 2 x)) rasen/slip-boxes))))
-    (let* ((filename (buffer-file-name))
-           (directory (file-name-directory filename))
-           (name (file-name-nondirectory filename))
-           (new-name (f-join org-roam-directory slip-box name)))
-      (rasen/roam-rename new-name)))
+All daily notes are stored in a separate directory so they do not mix up with normal notes. Nothing fancy here.
+#+name: org-roam-dailies
+#+begin_src emacs-lisp
+(setq org-roam-dailies-directory "life/journal/")
+(setq org-roam-dailies-capture-templates
+      `(("j" "journal" plain "%U\n%?"
+         :if-new (file+head "%<%Y-%m-%d>.org"
+                            ;; Adding day of week to title makes
+                            ;; unlinked references search weaker, so
+                            ;; store it in metadata.
+                            ,(concat
+                              "#+TITLE: %<%Y-%m-%d>\n"
+                              "- day of week :: %<%A>\n"
+                              "\n"
+                              "* Events\n"
+                              "* Tomorrow\n")))))
+#+end_src
+*** org-roam-protocol
+org-roam-protocol allows opening a note corresponding to the current URL directly from the browser (as well as capturing selection into it).
 
-  ;; exclude non-default slip-boxes from graph
-  (setq org-roam-graph-exclude-matcher
-        (seq-filter (lambda (x) (not (string-empty-p x)))
-                    (mapcar (lambda (x) (nth 2 x)) rasen/slip-boxes)))
+First, add the following snippet as a bookmarklet:
+#+begin_src js
+javascript:location.href = 'org-protocol://roam-ref?template=r&ref='
+  + encodeURIComponent(location.href)
+  + '&title='
+  + encodeURIComponent(document.title)
+  + '&body='
+  + encodeURIComponent(window.getSelection())
+#+end_src
 
-  (cl-defmethod org-roam-node-filetitle ((node org-roam-node))
-    "Return the file TITLE for the node."
-    (org-roam-get-keyword "TITLE" (org-roam-node-file node)))
-  (cl-defmethod org-roam-node-hierarchy ((node org-roam-node))
-    "Return the hierarchy for the node."
-    (let ((title (org-roam-node-title node))
-          (olp (org-roam-node-olp node))
-          (level (org-roam-node-level node))
-          (directories (org-roam-node-directories node))
-          (filetitle (org-roam-node-filetitle node)))
-      (concat
-       (if directories (format "(%s) " directories))
-       (if (> level 0) (concat filetitle " > "))
-       (if (> level 1) (concat (string-join olp " > ") " > "))
-       title)))
-  (cl-defmethod org-roam-node-directories ((node org-roam-node))
-    (if-let ((dirs (file-name-directory (file-relative-name (org-roam-node-file node) org-roam-directory))))
-        (string-join (f-split dirs) "/")
-      nil))
-  (setq org-roam-node-display-template "${hierarchy:*} ${tags:10}")
+Firefox is annoying with asking permissions to allow =org-protocol= urls, but you can disable that if you go to [[about:config]] and toggle =security.external_protocol_requires_permission= off (only if you know what you’re doing).
 
-  ;; better defaults for graph view
-  ;; (setq org-roam-graph-executable (executable-find "dot"))
-  ;; (setq org-roam-graph-executable (executable-find "neato"))
-  ;; (setq org-roam-graph-executable (executable-find "fdp"))
-  (setq org-roam-graph-executable (executable-find "sfdp"))
-  (setq org-roam-graph-extra-config '(;; ("concentrate" . "true")
-                                      ("overlap" . "prism")
-                                      ;; ("pack" . "false")
-                                      ("sep" . "20.0")
-                                      ("esep" . "0.01")
-                                      ("splines" . "true")))
-  (setq org-roam-graph-node-extra-config '(("shape" . "rectangle")))
-  (setq org-roam-graph-edge-extra-config '(("dir" . "back")))
+Configure template. ~rasen/capture-quote-body~ bit inserts the selection as a quote if something is selected and does nothing otherwise.
+#+name: org-roam-protocol
+#+begin_src emacs-lisp
+(require 'org-roam-protocol)
 
-  ;; patch function to use kebab-case in slug
-  (el-patch-defun org-roam-node-slug (node)
-    "Return the slug of NODE."
-    (let ((title (org-roam-node-title node))
-          (slug-trim-chars '(;; Combining Diacritical Marks https://www.unicode.org/charts/PDF/U0300.pdf
-                             768 ; U+0300 COMBINING GRAVE ACCENT
-                             769 ; U+0301 COMBINING ACUTE ACCENT
-                             770 ; U+0302 COMBINING CIRCUMFLEX ACCENT
-                             771 ; U+0303 COMBINING TILDE
-                             772 ; U+0304 COMBINING MACRON
-                             774 ; U+0306 COMBINING BREVE
-                             775 ; U+0307 COMBINING DOT ABOVE
-                             776 ; U+0308 COMBINING DIAERESIS
-                             777 ; U+0309 COMBINING HOOK ABOVE
-                             778 ; U+030A COMBINING RING ABOVE
-                             780 ; U+030C COMBINING CARON
-                             795 ; U+031B COMBINING HORN
-                             803 ; U+0323 COMBINING DOT BELOW
-                             804 ; U+0324 COMBINING DIAERESIS BELOW
-                             805 ; U+0325 COMBINING RING BELOW
-                             807 ; U+0327 COMBINING CEDILLA
-                             813 ; U+032D COMBINING CIRCUMFLEX ACCENT BELOW
-                             814 ; U+032E COMBINING BREVE BELOW
-                             816 ; U+0330 COMBINING TILDE BELOW
-                             817 ; U+0331 COMBINING MACRON BELOW
-                             )))
-      (cl-flet* ((nonspacing-mark-p (char)
-                                    (memq char slug-trim-chars))
-                 (strip-nonspacing-marks (s)
-                                         (ucs-normalize-NFC-string
-                                          (apply #'string (seq-remove #'nonspacing-mark-p
-                                                                      (ucs-normalize-NFD-string s)))))
-                 (cl-replace (title pair)
-                             (replace-regexp-in-string (car pair) (cdr pair) title)))
-        (let* ((pairs `(el-patch-swap (("[^[:alnum:][:digit:]]" . "_") ;; convert anything not alphanumeric
-                                       ("__*" . "_") ;; remove sequential underscores
-                                       ("^_" . "") ;; remove starting underscore
-                                       ("_$" . "")) ;; remove ending underscore
-                                      (("[^[:alnum:][:digit:]]" . "-") ;; convert anything not alphanumeric
-                                       ("--*" . "-") ;; remove sequential dashes
-                                       ("^-" . "") ;; remove starting dash
-                                       ("-$" . "")))) ;; remove ending dash
-               (slug (-reduce-from #'cl-replace (strip-nonspacing-marks title) pairs)))
-          (downcase slug)))))
+(setq org-roam-capture-ref-templates
+      `(("r" "ref" plain "%(rasen/capture-quote-body)%?"
+         :if-new (file+head "biblio/${rasen/capture-tsid}.org"
+                            ,(concat "#+TITLE: ${title}\n"
+                                     "#+DATE: %<%Y-%m-%d>\n"))
+         :empty-lines 1
+         :immediate-finish t
+         :jump-to-captured t
+         :unnarrowed t)))
 
-  (defun rasen/refile-weight ()
-    "Refile current item as weight log."
-    (interactive)
-    (save-excursion
-      (save-window-excursion
-        (rasen/org-copy-log-entry t)
-        (find-file (concat org-roam-directory "/life/20200620011908.org"))
-        (goto-char (point-max))
-        (yank))))
+(defun rasen/capture-quote-body ()
+  "Quote selection only if it is present."
+  (let ((body (plist-get org-roam-capture--info :body)))
+    (when (not (string-empty-p body))
+      (concat "#+begin_quote\n" body "\n#+end_quote"))))
+#+end_src
 
-  (defun rasen/refile-gratitude ()
-    (interactive)
-    (save-excursion
-      (save-window-excursion
-        (let* ((element (org-element-at-point))
-               (created (org-element-property :CREATED element))
-               (cbeg (org-element-property :contents-begin element))
-               (cend (org-element-property :contents-end element))
-               (contents (buffer-substring cbeg cend)))
-          (org-cut-subtree)
-          (current-kill 1)
+When I take notes on the page, I want the note to be open in a split window. I also don’t want to be in the capture process, because you quickly get into recursive capture and it just takes extra time to quit them. ~:immediate-finish~ and ~:jump-to-captured~ do that. However, because I’m on EXWM, the default behavior for ~:jump-to-capture~ is to open the note in the /current/ window, which is my browser.
 
-          (find-file (concat org-roam-directory "/life/20200620010632.org"))
-          (org-datetree-find-date-create
-           (calendar-gregorian-from-absolute
-            (time-to-days (org-read-date nil t created))))
+I patch ~org-goto-marker-or-bmk~ so that it does not necessarily use the same window. This is used for
+org-roam-capture-ref to open the new note in a split window instead of reusing the browser window.
+(This might cause some other parts of org-mode to behave weirdly, but I have to see.)
+#+name: org-roam-protocol
+#+begin_src emacs-lisp
+(el-patch-defun org-goto-marker-or-bmk (marker &optional bookmark)
+  "Go to MARKER, widen if necessary.  When marker is not live, try BOOKMARK."
+  (if (and marker (marker-buffer marker)
+	   (buffer-live-p (marker-buffer marker)))
+      (progn
+	((el-patch-swap pop-to-buffer-same-window pop-to-buffer) (marker-buffer marker))
+	(when (or (> marker (point-max)) (< marker (point-min)))
+	  (widen))
+	(goto-char marker)
+	(org-show-context 'org-goto))
+    (if bookmark
+	(bookmark-jump bookmark)
+      (error "Cannot find location"))))
+#+end_src
+*** org-roam-graph
+(Rarely used. Might be outdated with org-roam-v2.)
+#+name: org-roam-graph
+#+begin_src emacs-lisp
+;; exclude non-default slip-boxes from graph
+(setq org-roam-graph-exclude-matcher
+      (seq-filter (lambda (x) (not (string-empty-p x)))
+                  (mapcar (lambda (x) (nth 2 x)) rasen/slip-boxes)))
 
-          (next-line)
-          (insert contents))))))
+;; better defaults for graph view
+;; (setq org-roam-graph-executable (executable-find "dot"))
+;; (setq org-roam-graph-executable (executable-find "neato"))
+;; (setq org-roam-graph-executable (executable-find "fdp"))
+(setq org-roam-graph-executable (executable-find "sfdp"))
+(setq org-roam-graph-extra-config '(;; ("concentrate" . "true")
+                                    ("overlap" . "prism")
+                                    ;; ("pack" . "false")
+                                    ("sep" . "20.0")
+                                    ("esep" . "0.01")
+                                    ("splines" . "true")))
+(setq org-roam-graph-node-extra-config '(("shape" . "rectangle")))
+(setq org-roam-graph-edge-extra-config '(("dir" . "back")))
+#+end_src
+*** org-roam-kebab-slugs
+Patch slug function so it uses kebab-case instead of snake-case.
+#+name: org-roam-kebab-slugs
+#+begin_src emacs-lisp
+(el-patch-defun org-roam-node-slug (node)
+  "Return the slug of NODE."
+  (let ((title (org-roam-node-title node))
+        (slug-trim-chars '(;; Combining Diacritical Marks https://www.unicode.org/charts/PDF/U0300.pdf
+                           768 ; U+0300 COMBINING GRAVE ACCENT
+                           769 ; U+0301 COMBINING ACUTE ACCENT
+                           770 ; U+0302 COMBINING CIRCUMFLEX ACCENT
+                           771 ; U+0303 COMBINING TILDE
+                           772 ; U+0304 COMBINING MACRON
+                           774 ; U+0306 COMBINING BREVE
+                           775 ; U+0307 COMBINING DOT ABOVE
+                           776 ; U+0308 COMBINING DIAERESIS
+                           777 ; U+0309 COMBINING HOOK ABOVE
+                           778 ; U+030A COMBINING RING ABOVE
+                           780 ; U+030C COMBINING CARON
+                           795 ; U+031B COMBINING HORN
+                           803 ; U+0323 COMBINING DOT BELOW
+                           804 ; U+0324 COMBINING DIAERESIS BELOW
+                           805 ; U+0325 COMBINING RING BELOW
+                           807 ; U+0327 COMBINING CEDILLA
+                           813 ; U+032D COMBINING CIRCUMFLEX ACCENT BELOW
+                           814 ; U+032E COMBINING BREVE BELOW
+                           816 ; U+0330 COMBINING TILDE BELOW
+                           817 ; U+0331 COMBINING MACRON BELOW
+                           )))
+    (cl-flet* ((nonspacing-mark-p (char)
+                                  (memq char slug-trim-chars))
+               (strip-nonspacing-marks (s)
+                                       (ucs-normalize-NFC-string
+                                        (apply #'string (seq-remove #'nonspacing-mark-p
+                                                                    (ucs-normalize-NFD-string s)))))
+               (cl-replace (title pair)
+                           (replace-regexp-in-string (car pair) (cdr pair) title)))
+      (let* ((pairs `(el-patch-swap (("[^[:alnum:][:digit:]]" . "_") ;; convert anything not alphanumeric
+                                     ("__*" . "_") ;; remove sequential underscores
+                                     ("^_" . "") ;; remove starting underscore
+                                     ("_$" . "")) ;; remove ending underscore
+                                    (("[^[:alnum:][:digit:]]" . "-") ;; convert anything not alphanumeric
+                                     ("--*" . "-") ;; remove sequential dashes
+                                     ("^-" . "") ;; remove starting dash
+                                     ("-$" . "")))) ;; remove ending dash
+             (slug (-reduce-from #'cl-replace (strip-nonspacing-marks title) pairs)))
+        (downcase slug)))))
 #+end_src
 ** org-ref
 #+begin_src emacs-lisp
