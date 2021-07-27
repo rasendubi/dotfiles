@@ -171,6 +171,7 @@ Pieces not (yet) covered in org files are:
   - [[#toggle-markupview][toggle markup/view]]
   - [[#evilify-org-mode][Evilify org-mode]]
   - [[#timestamps][Timestamps]]
+  - [[#fix-focus-steal-when-inserting--in-date-field][Fix focus steal when inserting “.” in date field]]
 - [[#mail-setup][Mail setup]]
   - [[#applications][Applications]]
   - [[#older-mbsync][Older mbsync]]
@@ -5042,6 +5043,30 @@ Configure time-stamp for org-mode, so ~time-stamp~ function would update =#+LAST
               (setq-local time-stamp-pattern "^#\\+\\(DATE\\|LAST_MODIFIED\\): %%$")
               (setq-local time-stamp-format "%Y-%02m-%02dT%02H:%02M:%02S%5z"))))
 #+end_src
+** Fix focus steal when inserting “.” in date field
+I have an issue with EXWM and org-mode: whenever I am asked to input a date (schedule, deadline) and I put dot (“.”) as a first character, it is not inserted and the focus is stolen to the tray icons and I have to manually refocus minibuffer to continue input.
+
+I have debugged the issue to be caused by ~org-read-date-minibuffer-local-map~ binding for =.=, which is defined as:
+#+begin_src emacs-lisp :tangle no
+(org-defkey map (kbd ".")
+            (lambda () (interactive)
+              ;; Are we at the beginning of the prompt?
+              (if (looking-back "^[^:]+: "
+                                (let ((inhibit-field-text-motion t))
+                                  (line-beginning-position)))
+                  (org-eval-in-calendar '(calendar-goto-today))
+                (insert "."))))
+#+end_src
+
+I am not sure how but the if-branch causes the issue. (Somehow, it causes mouse cursor to jump.) So… just redefine the binding:
+
+#+name: org-config
+#+begin_src emacs-lisp
+(org-defkey org-read-date-minibuffer-local-map (kbd ".") #'self-insert-command)
+#+end_src
+
+With ~self-insert-command~, it works just fine. Well, the calendar doesn’t jump to today but who cares.
+
 * Mail setup
 My email load is handled by mbsync (to download email), msmtp (to send mail), and notmuch (to tag and browse it).
 
