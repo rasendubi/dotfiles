@@ -135,6 +135,7 @@ Pieces not (yet) covered in org files are:
   - [[#general-2][General]]
   - [[#drill][Drill]]
   - [[#todo][Todo]]
+  - [[#highlight-projects][Highlight projects]]
   - [[#clocking][Clocking]]
   - [[#capture][Capture]]
     - [[#org-capture-keybindings][org-capture keybindings]]
@@ -3266,6 +3267,21 @@ If prefix is supplied, select different scheduled time."
   (org-schedule nil (unless arg "."))
   (org-todo "NEXT"))
 #+end_src
+** Highlight projects
+Fontify all headlines with the =:PROJECT:= tag.
+#+name: org-config
+#+begin_src emacs-lisp
+(defface rasen/org-project-face
+  '((t :weight bold))
+  "Face for org-mode projects.")
+
+(font-lock-add-keywords 'org-mode
+                        `((,(concat "^\\*+ \\(.*\\) :\\(" org-tag-re ":\\)*PROJECT:.*$")
+                           (0 'rasen/org-project-face prepend)))
+                        t)
+#+end_src
+
+Note that the face is overridden in [[*Color theme][Color theme]] section.
 ** Clocking
 Remove clocks with 0 duration.
 #+name: org-config
@@ -7404,13 +7420,6 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Go
 (setq modus-themes-slanted-constructs t)
 (setq modus-themes-bold-constructs t)
 
-(setq modus-themes-scale-headings t
-      modus-themes-scale-1 1.0
-      modus-themes-scale-2 1.0
-      modus-themes-scale-3 1.1
-      modus-themes-scale-4 1.1
-      modus-themes-scale-title 1.0)
-
 ;; Use proportional fonts only when I explicitly configure them.
 (setq modus-themes-no-mixed-fonts t)
 
@@ -7420,6 +7429,8 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Go
   (let ((custom--inhibit-theme-enable nil))
     (custom-theme-set-faces
      'modus-operandi
+
+     `(rasen/org-project-face ((t :weight bold :background ,bg-alt)))
 
      `(vterm-color-default ((,class (:background ,bg-main :foreground ,fg-main))))
      `(vterm-color-black ((,class (:background "#000" :foreground "#000"))))
