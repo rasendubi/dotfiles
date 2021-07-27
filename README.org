@@ -7379,6 +7379,13 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Go
 (setq modus-themes-slanted-constructs t)
 (setq modus-themes-bold-constructs t)
 
+(setq modus-themes-scale-headings t
+      modus-themes-scale-1 1.0
+      modus-themes-scale-2 1.0
+      modus-themes-scale-3 1.1
+      modus-themes-scale-4 1.1
+      modus-themes-scale-title 1.0)
+
 ;; Use proportional fonts only when I explicitly configure them.
 (setq modus-themes-no-mixed-fonts t)
 
