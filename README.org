@@ -4196,7 +4196,7 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
 #+end_src
 *** org-roam-exclude-org-fc
 Do not treat [[*org-fc][org-fc]] cards as nodes.
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (setq org-roam-db-node-include-function
       (defun rasen/org-roam-include ()
         ;; exclude org-fc headlines from org-roam
@@ -4205,7 +4205,7 @@ Do not treat [[*org-fc][org-fc]] cards as nodes.
 *** org-roam-slip-boxes
 Slip boxes are basically different directories that I split notes into.
 #+name: org-roam-slip-boxes
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (defconst rasen/slip-boxes
   '(;; Default slip-box with permanent notes
     ("d" "default"     ""         "${rasen/capture-tsid}")
@@ -4249,7 +4249,7 @@ Slip boxes are basically different directories that I split notes into.
 
 And a helper command to move notes between slip boxes.
 #+name: org-roam-slip-boxes
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (defun rasen/move-to-slip-box (slip-box)
   "Move file to specified SLIP-BOX."
   (interactive (list (completing-read "Move to slip-box: "
@@ -4276,7 +4276,7 @@ And a helper command to move notes between slip boxes.
 
 And some extra refile helpers for dealing with inbox.
 #+name: org-roam-slip-boxes
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 ;; TODO: replace hard-coded paths with querying org-roam by title.
 
 (defun rasen/refile-weight ()
@@ -4314,7 +4314,7 @@ Configure how nodes are shown in the prompt (when searching, creating new, inser
 
 Show slip box and path within file. e.g., =(life) My file > sub-note=.
 #+name: org-roam-node-display
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (setq org-roam-node-display-template "${hierarchy:*} ${tags:10}")
 
 (cl-defmethod org-roam-node-filetitle ((node org-roam-node))
@@ -4344,7 +4344,7 @@ Configure org-roam-buffer (buffer with backlinks).
 
 Show all sections:
 #+name: org-roam-buffer
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (setq org-roam-mode-section-functions
       (list #'org-roam-backlinks-section
             #'org-roam-reflinks-section
@@ -4353,14 +4353,14 @@ Show all sections:
 
 Make it prettier—enable word-wrap and variable pitch font.
 #+name: org-roam-buffer
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (add-hook 'org-roam-mode-hook #'visual-line-mode)
 (add-hook 'org-roam-mode-hook #'variable-pitch-mode)
 #+end_src
 
 Fix unreferenced backlinks for non-ASCII files. Submitted at [[https://github.com/org-roam/org-roam/pull/1616][org-roam/org-roam#1616 fix(#1575): fix display of non-ASCII in unlinked references section by rasendubi]].
 #+name: org-roam-buffer
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (el-patch-defun org-roam-unlinked-references-preview-line (file row)
   "Return the preview line from FILE.
 This is the ROW within FILE."
@@ -4381,7 +4381,7 @@ I moved my journaling into org-roam and this provides more context when reviewin
 
 All daily notes are stored in a separate directory so they do not mix up with normal notes. Nothing fancy here.
 #+name: org-roam-dailies
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (setq org-roam-dailies-directory "life/journal/")
 (setq org-roam-dailies-capture-templates
       `(("j" "journal" plain "%U\n%?"
@@ -4413,7 +4413,7 @@ Firefox is annoying with asking permissions to allow =org-protocol= urls, but yo
 
 Configure template. ~rasen/capture-quote-body~ bit inserts the selection as a quote if something is selected and does nothing otherwise.
 #+name: org-roam-protocol
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (require 'org-roam-protocol)
 
 (setq org-roam-capture-ref-templates
@@ -4439,7 +4439,7 @@ I patch ~org-goto-marker-or-bmk~ so that it does not necessarily use the same wi
 org-roam-capture-ref to open the new note in a split window instead of reusing the browser window.
 (This might cause some other parts of org-mode to behave weirdly, but I have to see.)
 #+name: org-roam-protocol
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (el-patch-defun org-goto-marker-or-bmk (marker &optional bookmark)
   "Go to MARKER, widen if necessary.  When marker is not live, try BOOKMARK."
   (if (and marker (marker-buffer marker)
@@ -4457,7 +4457,7 @@ org-roam-capture-ref to open the new note in a split window instead of reusing t
 *** org-roam-graph
 (Rarely used. Might be outdated with org-roam-v2.)
 #+name: org-roam-graph
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 ;; exclude non-default slip-boxes from graph
 (setq org-roam-graph-exclude-matcher
       (seq-filter (lambda (x) (not (string-empty-p x)))
@@ -4480,7 +4480,7 @@ org-roam-capture-ref to open the new note in a split window instead of reusing t
 *** org-roam-kebab-slugs
 Patch slug function so it uses kebab-case instead of snake-case.
 #+name: org-roam-kebab-slugs
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (el-patch-defun org-roam-node-slug (node)
   "Return the slug of NODE."
   (let ((title (org-roam-node-title node))
