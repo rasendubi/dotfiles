@@ -3833,7 +3833,8 @@ Configure stuck projects.
                                                     org-agenda-files))
   (setq org-agenda-custom-commands
         '(("o" "Overview"
-           ((agenda "" ((org-agenda-span 6)
+           ((agenda "" ((org-agenda-start-day "-1d")
+                        (org-agenda-span 6)
                         (org-agenda-files rasen/org-agenda-personal-files)
                         (org-super-agenda-groups
                          '((:habit t
@@ -3876,7 +3877,8 @@ Configure stuck projects.
                                         :auto-category t
                                         :anything t)))))))
           ("w" "Work"
-           ((agenda "" ((org-agenda-span 6)
+           ((agenda "" ((org-agenda-start-day "-1d")
+                        (org-agenda-span 6)
                         (org-agenda-files rasen/org-agenda-work-files)
                         ;; (org-super-agenda-groups
                         ;;  '((:name none
