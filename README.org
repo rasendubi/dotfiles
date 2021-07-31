@@ -4402,7 +4402,7 @@ org-roam-protocol allows opening a note corresponding to the current URL directl
 First, add the following snippet as a bookmarklet:
 #+begin_src js
 javascript:location.href = 'org-protocol://roam-ref?template=r&ref='
-  + encodeURIComponent(location.href)
+  + encodeURIComponent(location.href.split('#')[0])
   + '&title='
   + encodeURIComponent(document.title)
   + '&body='
