@@ -4198,6 +4198,7 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
 #+end_src
 *** org-roam-exclude-org-fc
 Do not treat [[*org-fc][org-fc]] cards as nodes.
+#+name: org-roam-exclude-org-fc
 #+begin_src emacs-lisp :tangle no
 (setq org-roam-db-node-include-function
       (defun rasen/org-roam-include ()
@@ -4457,27 +4458,127 @@ org-roam-capture-ref to open the new note in a split window instead of reusing t
       (error "Cannot find location"))))
 #+end_src
 *** org-roam-graph
-(Rarely used. Might be outdated with org-roam-v2.)
+Install graphviz globally:
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.packages = [ pkgs.graphviz ];
+}
+#+end_src
+
+Emacs configuration:
 #+name: org-roam-graph
 #+begin_src emacs-lisp :tangle no
-;; exclude non-default slip-boxes from graph
-(setq org-roam-graph-exclude-matcher
-      (seq-filter (lambda (x) (not (string-empty-p x)))
-                  (mapcar (lambda (x) (nth 2 x)) rasen/slip-boxes)))
+(require 'org-roam-graph)
 
 ;; better defaults for graph view
 ;; (setq org-roam-graph-executable (executable-find "dot"))
 ;; (setq org-roam-graph-executable (executable-find "neato"))
 ;; (setq org-roam-graph-executable (executable-find "fdp"))
 (setq org-roam-graph-executable (executable-find "sfdp"))
-(setq org-roam-graph-extra-config '(;; ("concentrate" . "true")
-                                    ("overlap" . "prism")
-                                    ;; ("pack" . "false")
+(setq org-roam-graph-extra-config '(("concentrate" . "true")
+                                    ("overlap" . "prism100")
+                                    ("overlap_scaling" . "-8")
+                                    ;; ("pack" . "true")
                                     ("sep" . "20.0")
-                                    ("esep" . "0.01")
-                                    ("splines" . "true")))
-(setq org-roam-graph-node-extra-config '(("shape" . "rectangle")))
-(setq org-roam-graph-edge-extra-config '(("dir" . "back")))
+                                    ("esep" . "0.0")
+                                    ;; ("esep" . "0.01")
+                                    ;; ("splines" . "true")
+                                    ("splines" . "polyline")
+                                    ))
+
+(setq org-roam-graph-node-extra-config
+      '(("id"
+         ("shape" . "rectangle")
+         ("style" . "bold,rounded,filled")
+         ("fillcolor" . "#EEEEEE")
+         ("color" . "#C9C9C9")
+         ("fontcolor" . "#111111"))
+        ("http"
+         ("style" . "rounded,filled")
+         ("fillcolor" . "#EEEEEE")
+         ("color" . "#C9C9C9")
+         ("fontcolor" . "#0A97A6"))
+        ("https"
+         ("shape" . "rounded,filled")
+         ("fillcolor" . "#EEEEEE")
+         ("color" . "#C9C9C9")
+         ("fontcolor" . "#0A97A6"))))
+(setq org-roam-graph-edge-extra-config nil)
+
+<<org-roam-graph-exclude-node>>
+#+end_src
+**** org-roam-graph-exclude-node
+Patch org-roam to allow a custom function to exclude nodes.
+#+name: org-roam-graph-exclude-node
+#+begin_src emacs-lisp :tangle no
+(require 'cl)
+(require 'el-patch)
+
+(defvar rasen/org-roam-graph-exclude-node (lambda (id node type) nil)
+  "Function to exclude nodes from org-roam-graph.")
+
+(defun rasen/org-roam-graph--filter-edges (edges &optional nodes-table)
+  (let ((nodes-table (or nodes-table (org-roam--nodes-table))))
+    (seq-filter (pcase-lambda (`(,source ,dest ,type))
+                  (let ((source-node (gethash source nodes-table))
+                        (dest-node (gethash dest nodes-table)))
+                    (not (or (funcall rasen/org-roam-graph-exclude-node source source-node "id")
+                             (funcall rasen/org-roam-graph-exclude-node dest dest-node type)))))
+                edges)))
+
+(el-patch-defun org-roam-graph--dot (&optional edges all-nodes)
+  "Build the graphviz given the EDGES of the graph.
+If ALL-NODES, include also nodes without edges."
+  (let ((org-roam-directory-temp org-roam-directory)
+        (nodes-table (org-roam--nodes-table))
+        (seen-nodes (list))
+        (edges (el-patch-let (($orig (or edges (org-roam-db-query [:select :distinct [source dest type] :from links]))))
+                 (el-patch-swap
+                   $orig
+                   (rasen/org-roam-graph--filter-edges $orig)))))
+    (with-temp-buffer
+      (setq-local org-roam-directory org-roam-directory-temp)
+      (insert "digraph \"org-roam\" {\n")
+      (dolist (option org-roam-graph-extra-config)
+        (insert (org-roam-graph--dot-option option) ";\n"))
+      (insert (format " edge [%s];\n"
+                      (mapconcat (lambda (var)
+                                   (org-roam-graph--dot-option var nil "\""))
+                                 org-roam-graph-edge-extra-config
+                                 ",")))
+      (pcase-dolist (`(,source ,dest ,type) edges)
+        (unless (member type org-roam-graph-link-hidden-types)
+          (pcase-dolist (`(,node ,node-type) `((,source "id")
+                                               (,dest ,type)))
+            (unless (member node seen-nodes)
+              (insert (org-roam-graph--format-node
+                       (or (gethash node nodes-table) node) node-type))
+              (push node seen-nodes)))
+          (insert (format "  \"%s\" -> \"%s\";\n"
+                          (xml-escape-string source)
+                          (xml-escape-string dest)))))
+      (when all-nodes
+        (maphash (lambda (id node)
+                   (unless (el-patch-let (($orig (member id seen-nodes)))
+                             (el-patch-swap
+                               $orig
+                               (or $orig
+                                   (funcall rasen/org-roam-graph-exclude-node id node "id"))))
+                     (insert (org-roam-graph--format-node node "id"))))
+                 nodes-table))
+      (insert "}")
+      (buffer-string))))
+#+end_src
+
+Exclude all links that are not nodes (non-id) as well as links from non-permanent directories.
+#+name: org-roam-graph-exclude-node
+#+begin_src emacs-lisp :tangle no
+(setq rasen/org-roam-graph-exclude-node
+      (defun rasen/org-roam-graph-exclude-node (id node type)
+        (or (not (string-equal type "id"))
+            (and node
+                 (string-match "/\\(life\\|ring\\|biblio\\)/" (org-roam-node-file node))))))
 #+end_src
 *** org-roam-kebab-slugs
 Patch slug function so it uses kebab-case instead of snake-case.

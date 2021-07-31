@@ -68,6 +68,8 @@
     (custom-theme-set-faces
      'modus-operandi
 
+     `(rasen/org-project-face ((t :weight bold :background ,bg-alt)))
+
      `(vterm-color-default ((,class (:background ,bg-main :foreground ,fg-main))))
      `(vterm-color-black ((,class (:background "#000" :foreground "#000"))))
      `(vterm-color-white ((,class (:background "#fff" :foreground "#fff"))))

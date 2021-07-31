@@ -384,6 +384,9 @@
               '';
             }
             {
+              home.packages = [ pkgs.graphviz ];
+            }
+            {
               # Store mails in ~/Mail
               accounts.email.maildirBasePath = "Mail";
             
