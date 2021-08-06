@@ -3835,6 +3835,9 @@ Configure stuck projects.
         '(("o" "Overview"
            ((agenda "" ((org-agenda-start-day "-1d")
                         (org-agenda-span 6)
+                        (org-agenda-show-log t)
+                        ;; (org-agenda-start-with-log-mode '(closed))
+                        (org-agenda-log-mode-items '(closed))
                         (org-agenda-files rasen/org-agenda-personal-files)
                         (org-super-agenda-groups
                          '((:habit t
@@ -3879,6 +3882,9 @@ Configure stuck projects.
           ("w" "Work"
            ((agenda "" ((org-agenda-start-day "-1d")
                         (org-agenda-span 6)
+                        (org-agenda-show-log t)
+                        ;; (org-agenda-start-with-log-mode '(closed))
+                        (org-agenda-log-mode-items '(closed))
                         (org-agenda-files rasen/org-agenda-work-files)
                         ;; (org-super-agenda-groups
                         ;;  '((:name none
@@ -4397,6 +4403,7 @@ All daily notes are stored in a separate directory so they do not mix up with no
                               "- day of week :: %<%A>\n"
                               "\n"
                               "* Events\n"
+                              "* Mood\n"
                               "* Tomorrow\n")))))
 #+end_src
 *** org-roam-protocol
