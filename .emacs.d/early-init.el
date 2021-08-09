@@ -61,6 +61,11 @@
 ;; Use proportional fonts only when I explicitly configure them.
 (setq modus-themes-no-mixed-fonts t)
 
+(setq modus-themes-links '(faint background no-underline))
+(setq modus-themes-org-agenda
+      '((header-date . (workaholic bold-all))
+        (scheduled . uniform)))
+
 (load-theme 'modus-operandi t)
 
 (modus-themes-with-colors
@@ -70,6 +75,7 @@
 
      `(rasen/org-project-face ((t :weight bold :background ,bg-alt)))
 
+     ;; custom colors for vterm
      `(vterm-color-default ((,class (:background ,bg-main :foreground ,fg-main))))
      `(vterm-color-black ((,class (:background "#000" :foreground "#000"))))
      `(vterm-color-white ((,class (:background "#fff" :foreground "#fff"))))
@@ -80,35 +86,29 @@
      `(vterm-color-magenta ((,class (:background ,magenta-intense-bg :foreground ,magenta))))
      `(vterm-color-cyan ((,class (:background ,cyan-intense-bg :foreground ,cyan))))
 
-     ;; do not bold matches (this makes text jiggle with variable-pitch fonts
-     `(isearch ((,class (:inherit modus-theme-intense-green))))
+     ;; do not bold matches (this makes text jiggle with variable-pitch fonts)
+     `(isearch ((,class (:inherit modus-themes-search-success))))
      `(query-replace ((,class :inherit modus-theme-intense-yellow)))
-     ;; `(show-paren-match ((,class (:background ,bg-paren-match :foreground ,fg-main))))
-
-     ;; do not change background/foreground — just add wiggly line
-     `(flyspell-duplicate
-       ((,(append '((supports :underline (:style wave))) class)
-         (:underline (:style wave :color ,yellow)))
-        (,class (:underline ,yellow))))
-     `(flyspell-incorrect
-       ((,(append '((supports :underline (:style wave))) class)
-         (:underline (:style wave :color ,red)))
-        (,class (:underline ,red))))
-
-     ;; do not change foreground for italics
-     `(italic ((,class :slant italic)))
 
      ;; Make TODOs bold
      `(org-todo ((,class :foreground ,magenta-alt-other
                          :weight bold)))
-     `(org-archived ((,class (:foreground ,fg-alt))))
+
+     ;; dim done items
      `(org-done ((,class :foreground ,fg-alt)))
      `(org-headline-done ((,class :foreground ,fg-alt)))
      `(org-agenda-done ((,class :foreground ,fg-alt)))
-     `(org-date ((,class :foreground ,cyan-alt :underline nil)))
+     ;; remove special background from archived items
+     `(org-archived ((,class (:foreground ,fg-alt))))
+
+     ;; make calendar events more prominent
+     `(org-agenda-calendar-event ((,class :foreground ,fg-special-warm)))
+
+     ;; `(org-date ((,class :foreground ,cyan-faint :underline nil)))
 
      `(org-link ((,class :foreground ,blue-alt :background ,bg-alt :underline nil :inherit link)))
-     `(org-roam-link ((,class :foreground ,green-alt :inherit org-link)))))
+     ;; `(org-roam-link ((,class :foreground ,green-alt :inherit org-link)))
+     ))
 
   (setq org-todo-keyword-faces
         `(("TODO"     . (:foreground ,blue-intense :inherit fixed-pitch))
