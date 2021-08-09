@@ -3016,6 +3016,9 @@ evil-collection is a collection of evil bindings for different modes.
 #+begin_src emacs-lisp
 (use-package calc ; built-in
   :general
+  (leader-def 'motion
+    "="  #'quick-calc
+    "+"  #'calc)
   ('motion
    "g ="  #'quick-calc
    "g +"  #'calc))
