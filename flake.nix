@@ -5,11 +5,15 @@
   description = "rasendubi's packages and NixOS/home-manager configurations";
 
   inputs = {
+    # Temporary override before
+    # https://github.com/NixOS/nixpkgs/pull/133350 is merged.
     nixpkgs = {
       type = "github";
-      owner = "NixOS";
+      # owner = "NixOS";
+      owner = "rasendubi";
       repo = "nixpkgs";
-      ref = "nixpkgs-unstable";
+      # ref = "nixpkgs-unstable";
+      ref = "fetchzip-downloadname";
     };
 
     nixpkgs-stable = {
@@ -920,6 +924,7 @@
                     org-drill
                     org-ref
                     org-roam
+                    org-roam-bibtex
                     org-super-agenda
                     paren-face
                     pass
@@ -965,33 +970,35 @@
                     # not available in melpa
                     epkgs.elpaPackages.valign
               
-                    (epkgs.melpaBuild rec {
-                      pname = "org-roam-bibtex";
-                      version = "20210714";
-                      src = pkgs.fetchFromGitHub {
-                        owner = "org-roam";
-                        repo = "org-roam-bibtex";
-                        # rev = "c7f7cb0dc24d11b00ab5ce4de9705461fb1c5581";
-                        # sha256 = "sha256-iy+TH23BeIPpVOOpmyTX5OA4lix51xqkYc2Tob3cBhk=";
-                        rev = "5344331ff828729a815e8bb36bd46bcbd444ee9e";
-                        sha256 = "sha256-kJKrC/pNtV5ITWuLajTHWyGCSclKavjq9/98UK0UVW4=";
-                      };
-                      packageRequires = [ epkgs.melpaPackages.org-roam epkgs.melpaPackages.bibtex-completion epkgs.melpaPackages.org-ref ];
+                    # Was too quick to add org-ref-cite---org-cite itself is not
+                    # released yet ;P
+                    #
+                    # (epkgs.trivialBuild rec {
+                    #   pname = "org-ref-cite";
+                    #   version = "20210810";
+                    #   src = pkgs.fetchFromGitHub {
+                    #     owner = "jkitchin";
+                    #     repo = "org-ref-cite";
+                    #     rev = "7cc320676bfff9094e96b638c4f22ea4134edab1";
+                    #     sha256 = "sha256-kbc6EswdtGo6pIyP5o/rGOPBzsUDWh2R3z6hWeI0cuc=";
+                    #   };
+                    #
+                    #   packageRequires = [
+                    #     epkgs.orgPackages.org-plus-contrib
+                    #     epkgs.melpaPackages.ivy
+                    #     epkgs.melpaPackages.hydra
+                    #     epkgs.melpaPackages.bibtex-completion
+                    #     epkgs.melpaPackages.avy
+                    #     epkgs.melpaPackages.ivy-bibtex
+                    #   ];
+                    #
+                    #   meta = {
+                    #     description = "An org-cite processor that is like org-ref.";
+                    #     license = pkgs.lib.licenses.gpl2Plus;
+                    #   };
+                    # })
               
-                      recipe = pkgs.writeText "recipe" ''
-                       (org-roam-bibtex
-                        :repo "org-roam/org-roam-bibtex"
-                        :fetcher github
-                        :files ("*.el"))
-                      '';
-              
-                      meta = {
-                        description = "Connector between Org-roam, BibTeX-completion, and Org-ref";
-                        license = pkgs.lib.licenses.gpl3;
-                      };
-                    })
-              
-                    (epkgs.melpaBuild rec {
+                    (epkgs.trivialBuild rec {
                       pname = "org-fc";
                       version = "20201121";
                       src = pkgs.fetchFromGitHub {
@@ -1004,15 +1011,11 @@
                         # rev = "f1a872b53b173b3c319e982084f333987ba81261";
                         # sha256 = "sha256-s2Buyv4YVrgyxWDkbz9xA8LoBNr+BPttUUGTV5m8cpM=";
                       };
-                      packageRequires = [ epkgs.orgPackages.org-plus-contrib ];
+                      packageRequires = [
+                        epkgs.orgPackages.org-plus-contrib
+                        epkgs.melpaPackages.hydra
+                      ];
                       propagatedUserEnvPkgs = [ pkgs.findutils pkgs.gawk ];
-              
-                      recipe = pkgs.writeText "recipe" ''
-                       (org-fc
-                        :repo "l3kn/org-fc"
-                        :fetcher github
-                        :files ("*.el" "demo.org" "awk"))
-                      '';
               
                       meta = {
                         description = "Spaced Repetition System for Emacs org-mode";
@@ -1066,13 +1069,27 @@
                 # note it's a new attribute and does not override old one
                 input-mono = (pkgs.input-fonts.overrideAttrs (old: {
                   pname = "input-mono";
-                  src = pkgs.fetchurl {
+                  src = pkgs.fetchzip {
                     name = "input-mono-${old.version}.zip";
+                    downloadName = "input-mono-${old.version}.zip";
                     url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=&.zip";
-                    sha256 = "sha256-VfyVJxh0RY9AXdfE7Xij+ZklGxUvMFfEV1jWoH1h/Q8=";
+                    sha256 = "sha256-hOWgCMlaR3CVeTeNjQN8QS1lL1Qj33baZWmrAz/AXGk=";
+              
+                    stripRoot = false;
+              
+                    extraPostFetch = ''
+                      # Reset the timestamp to release date for determinism.
+                      PATH=${pkgs.lib.makeBinPath [ pkgs.python3.pkgs.fonttools ]}:$PATH
+                      for ttf_file in $out/Input_Fonts/*/*/*.ttf; do
+                        ttx_file=$(dirname "$ttf_file")/$(basename "$ttf_file" .ttf).ttx
+                        ttx "$ttf_file"
+                        rm "$ttf_file"
+                        touch -m -t 201506240000 "$ttx_file"
+                        ttx --recalc-timestamp "$ttx_file"
+                        rm "$ttx_file"
+                      done
+                    '';
                   };
-                  sourceRoot = ".";
-                  nativeBuildInputs = [ pkgs.unzip ];
                 }));
               }
             ];
