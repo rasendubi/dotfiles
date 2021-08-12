@@ -3353,13 +3353,13 @@ My capture templates.
            "\n"))
 
         ("t" "todo" entry (file rasen/org-refile-file)
-         "* TODO %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t)
+         "* TODO %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in nil :clock-resume t)
 
         ("T" "today" entry (file rasen/org-refile-file)
-         "* NEXT %?\nSCHEDULED: %t\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t)
+         "* NEXT %?\nSCHEDULED: %t\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in nil :clock-resume t)
 
         ("m" "meeting" entry (file rasen/org-refile-file)
-         "* %?   :Meeting:\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t)
+         "* %?   :meeting:\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t)
 
         ("n" "note" entry (file rasen/org-refile-file)
          "* %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n")
