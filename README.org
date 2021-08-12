@@ -4206,6 +4206,8 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
 
   <<org-roam-kebab-slugs>>
 
+  <<org-roam-update-ids>>
+
   (org-roam-setup))
 #+end_src
 *** org-roam-exclude-org-fc
@@ -4640,6 +4642,16 @@ Patch slug function so it uses kebab-case instead of snake-case.
                                      ("-$" . "")))) ;; remove ending dash
              (slug (-reduce-from #'cl-replace (strip-nonspacing-marks title) pairs)))
         (downcase slug)))))
+#+end_src
+*** org-roam-update-ids
+A helper function for the next time org-id fucks up its database.
+#+name: org-roam-update-ids
+#+begin_src emacs-lisp :tangle no
+(defun rasen/org-roam-update-ids ()
+  "Update all org-ids in org-roam-directory."
+  (interactive)
+  (org-id-update-id-locations
+   (directory-files-recursively org-roam-directory "\\.org$")))
 #+end_src
 ** org-ref
 #+begin_src emacs-lisp
