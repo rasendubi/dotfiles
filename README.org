@@ -4404,6 +4404,7 @@ I moved my journaling into org-roam and this provides more context when reviewin
 All daily notes are stored in a separate directory so they do not mix up with normal notes. Nothing fancy here.
 #+name: org-roam-dailies
 #+begin_src emacs-lisp :tangle no
+(require 'org-roam-dailies)
 (setq org-roam-dailies-directory "life/journal/")
 (setq org-roam-dailies-capture-templates
       `(("j" "journal" plain "%U\n%?"
