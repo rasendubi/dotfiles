@@ -1,4 +1,5 @@
 #+PROPERTY: header-args :tangle yes :noweb yes :results silent
+#+STARTUP: overview
 
 * Introduction
 Hi there! That's my dotfiles.
@@ -3230,8 +3231,8 @@ Use the following states: =TODO= =NEXT= =DONE= =CANCELED= =WAIT=.
 (setq-default org-todo-keywords
               '((sequence "TODO(t)" "NEXT(n!)" "|" "DONE(d!)")
                 (sequence "BUILD(b!)" "|")
-                (sequence "|" "CANCELED(c@)")
-                (sequence "WAIT(w@)" "|")))
+                (sequence "|" "CANCELED(c!)")
+                (sequence "WAIT(w!)" "|")))
 (setq-default org-use-fast-todo-selection t)
 #+end_src
 
@@ -3244,7 +3245,7 @@ When repeated task is finished, go back to =TODO= state.
 Log state changes to "LOGBOOK" drawer.
 #+name: org-config
 #+begin_src emacs-lisp
-(setq-default org-log-into-drawer 't)
+(setq-default org-log-into-drawer t)
 #+end_src
 
 Save =CLOSED= timestamp when task is done.
