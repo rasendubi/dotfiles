@@ -1017,6 +1017,10 @@
                       ];
                       propagatedUserEnvPkgs = [ pkgs.findutils pkgs.gawk ];
               
+                      postInstall = ''
+                        cp -r ./awk/ $LISPDIR/
+                      '';
+              
                       meta = {
                         description = "Spaced Repetition System for Emacs org-mode";
                         license = pkgs.lib.licenses.gpl3;
