@@ -3109,7 +3109,7 @@ Default bindings for ~RET~ prevent many of my commands from working. Remap ~RET~
 
     "T"  #'rasen/org-do-today
 
-    "w"  #'org-refile
+    "w"  #'rasen/org-refile-hydra/body
     "r"  #'org-archive-subtree-default)
   (leader-def 'motion 'org-agenda-map
     "t"  #'rasen/org-agenda-todo)
@@ -3879,16 +3879,22 @@ Configure stuck projects.
                         (org-agenda-log-mode-items '(closed))
                         (org-agenda-files rasen/org-agenda-personal-files)
                         (org-super-agenda-groups
-                         '((:habit t
-                            :order 10)
-                           (:name "Work"
-                            :category "work"
-                            :tag "work"
-                            :order 2)
+                         '(;; 1. habits
+                           ;; 2. scheduled without time
+                           ;; 3. time-grid
+                           ;; 4. rest (anniversaries, etc.)
+                           (:name none
+                            :habit t
+                            :order 1)
                            (:name none
                             :time-grid t
-                            :anything t)
-                           ))))
+                            :order 3)
+                           (:name none
+                            :scheduled t
+                            :order 2)
+                           (:name none
+                            :anything t
+                            :order 4)))))
             (alltodo "" ((org-agenda-overriding-header "")
                          (org-agenda-files rasen/org-agenda-personal-files)
                          (org-super-agenda-groups
