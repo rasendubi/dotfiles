@@ -3274,6 +3274,12 @@ Save =CLOSED= timestamp when task is done.
 (setq org-log-done t)
 #+end_src
 
+Disable force-logging repeated tasks because otherwise you’ll get duplicated log lines.
+#+name: org-config
+#+begin_src emacs-lisp
+(setq org-log-repeat nil)
+#+end_src
+
 Fontify the whole line for done tasks.
 #+begin_src emacs-lisp
 (setq org-fontify-done-headline t)
