@@ -3102,7 +3102,7 @@ Default bindings for ~RET~ prevent many of my commands from working. Remap ~RET~
     "l"  #'org-clock-in-last
     "j"  #'org-clock-goto)
   (leader-def 'normal 'org-mode-map
-    "t"  #'org-todo
+    "t"  #'rasen/org-todo
     "s"  #'org-schedule
     "d"  #'org-deadline
     "i"  #'org-clock-in
@@ -3111,6 +3111,8 @@ Default bindings for ~RET~ prevent many of my commands from working. Remap ~RET~
 
     "w"  #'org-refile
     "r"  #'org-archive-subtree-default)
+  (leader-def 'motion 'org-agenda-map
+    "t"  #'rasen/org-agenda-todo)
   ('normal 'org-mode-map "RET n s" #'org-narrow-to-subtree)
   ('(insert normal) 'org-mode-map
    "C-c ,"  #'org-time-stamp-inactive)
@@ -3225,6 +3227,24 @@ Package for =f-files= and =f-ext?= functions.
         org-drill-leech-method 'warn))
 #+end_src
 ** Todo
+A special function that marks the task as done yesterday if prefix is supplied (useful for habits).
+#+name: org-config
+#+begin_src emacs-lisp
+(defun rasen/org-todo (&optional arg)
+  "As `org-todo' but calls `org-todo-yesterday' when ARG is non-nil."
+  (interactive "P")
+  (if arg
+      (org-todo-yesterday)
+    (org-todo)))
+
+(defun rasen/org-agenda-todo (&optional arg)
+  "As `org-agenda-todo' but calls `org-agenda-todo-yesterday' when ARG is non-nil."
+  (interactive "P")
+  (if arg
+      (org-agenda-todo-yesterday)
+    (org-agenda-todo)))
+#+end_src
+
 Use the following states: =TODO= =NEXT= =DONE= =CANCELED= =WAIT=.
 #+name: org-config
 #+begin_src emacs-lisp
@@ -3490,6 +3510,7 @@ Instanly go into insert mode on capture.
 #+end_src
 *** Refiling with hydras
 Adapted from [[https://mollermara.com/blog/Fast-refiling-in-org-mode-with-hydras/][Fast refiling in org-mode with hydras | Josh Moller-Mara]]. Extended to support refiling by outline path.
+#+name: org-config
 #+begin_src emacs-lisp
 (require 'hydra)
 
@@ -5177,8 +5198,8 @@ rating the card."
     "SPC"  #'org-save-all-org-buffers
     "s"    #'org-agenda-schedule
     "d"    #'org-agenda-deadline
-    "w"    #'org-agenda-refile
-    "t"    #'org-agenda-todo))
+    "w"    #'rasen/org-refile-hydra/body
+    "t"    #'rasen/org-agenda-todo))
 #+end_src
 Use emacs-state in org-lint buffers.
 #+name: org-config
