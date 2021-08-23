@@ -1349,7 +1349,7 @@ Shamelessly stolen from https://github.com/purcell/emacs.d.
     (if (get-buffer new-name)
         (message "A buffer named '%s' already exists!" new-name)
       (progn
-        (make-directory (file-name-directory new-name))
+        (make-directory (file-name-directory new-name) t)
         (when (file-exists-p filename)
           (rename-file filename new-name 1))
         (rename-buffer new-name)
