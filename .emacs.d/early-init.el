@@ -101,11 +101,6 @@
      ;; remove special background from archived items
      `(org-archived ((,class (:foreground ,fg-alt))))
 
-     ;; make calendar events more prominent
-     `(org-agenda-calendar-event ((,class :foreground ,fg-special-warm)))
-
-     ;; `(org-date ((,class :foreground ,cyan-faint :underline nil)))
-
      `(org-link ((,class :foreground ,blue-alt :background ,bg-alt :underline nil :inherit link)))
      ;; `(org-roam-link ((,class :foreground ,green-alt :inherit org-link)))
      ))

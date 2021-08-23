@@ -3350,6 +3350,7 @@ Disable force-logging repeated tasks because otherwise you’ll get duplicated l
 #+end_src
 
 Fontify the whole line for done tasks.
+#+name: org-config
 #+begin_src emacs-lisp
 (setq org-fontify-done-headline t)
 #+end_src
@@ -3373,6 +3374,18 @@ If prefix is supplied, select different scheduled time."
   (interactive "P")
   (org-schedule nil (unless arg "."))
   (org-todo "NEXT"))
+#+end_src
+
+A command to fold everything except =NEXT= items.
+#+name: org-config
+#+begin_src emacs-lisp
+(defun rasen/org-occur-next ()
+  (interactive)
+  (let ((org-highlight-sparse-tree-matches nil))
+    (org-occur (concat "^" org-outline-regexp " *" "NEXT" "\\>"))))
+
+(general-def '(motion normal) 'org-mode-map
+  "z n" #'rasen/org-occur-next)
 #+end_src
 ** Highlight projects
 Fontify all headlines with the =:PROJECT:= tag.
@@ -3667,7 +3680,7 @@ With a `C-u` ARG, just jump to the headline."
 (rasen/make-refile-hydra rasen/org-refile-hydra "Refile"
   ("p"  "Projects"   "~/org/plan.org"       "Projects")
   ("t"  "To do"      "~/org/plan.org"       "To do")
-  ("d"  "To don’t"   "~/org/plan.org"       "To don't")
+  ("s"  "Someday"    "~/org/plan.org"       "Someday/Maybe")
   ("P"  "Periodic"   "~/org/plan.org"       "Periodic")
   ("T"  "Tracking"   "~/org/plan.org"       "Tracking")
   ("r"  "Resources"  "~/org/resources.org")
@@ -3946,6 +3959,7 @@ Configure stuck projects.
                         (org-agenda-show-log t)
                         ;; (org-agenda-start-with-log-mode '(closed))
                         (org-agenda-log-mode-items '(closed))
+                        (org-habit-show-habits-only-for-today nil)
                         (org-agenda-files rasen/org-agenda-personal-files)
                         (org-super-agenda-groups
                          '(;; 1. habits
@@ -7717,11 +7731,6 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Go
      `(org-agenda-done ((,class :foreground ,fg-alt)))
      ;; remove special background from archived items
      `(org-archived ((,class (:foreground ,fg-alt))))
-
-     ;; make calendar events more prominent
-     `(org-agenda-calendar-event ((,class :foreground ,fg-special-warm)))
-
-     ;; `(org-date ((,class :foreground ,cyan-faint :underline nil)))
 
      `(org-link ((,class :foreground ,blue-alt :background ,bg-alt :underline nil :inherit link)))
      ;; `(org-roam-link ((,class :foreground ,green-alt :inherit org-link)))
