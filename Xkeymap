@@ -1177,7 +1177,7 @@ xkb_compatibility "complete+ledcaps(group_lock)" {
     };
 };
 
-xkb_symbols "pc+us(workman)+ua:2+us:3+inet(evdev)+group(lctrl_toggle)+ctrl(nocaps)" {
+xkb_symbols "pc+us(workman)+ua:2+us:3+inet(evdev)+group(lctrl_toggle)+ctrl(nocaps)+compose(menu)" {
 
     name[group1]="English (Workman)";
     name[group2]="Ukrainian";
@@ -1464,10 +1464,10 @@ xkb_symbols "pc+us(workman)+ua:2+us:3+inet(evdev)+group(lctrl_toggle)+ctrl(nocap
         symbols[Group3]= [               x,               X ]
     };
     key <AB03> {
-        type[group1]= "ALPHABETIC",
+        type[group1]= "FOUR_LEVEL_SEMIALPHABETIC",
         type[group2]= "FOUR_LEVEL_SEMIALPHABETIC",
         type[group3]= "ALPHABETIC",
-        symbols[Group1]= [               m,               M ],
+        symbols[Group1]= [               m,               M, mu, NoSymbol ],
         symbols[Group2]= [     Cyrillic_es,     Cyrillic_ES,       copyright,        NoSymbol ],
         symbols[Group3]= [               c,               C ]
     };
@@ -1514,8 +1514,9 @@ xkb_symbols "pc+us(workman)+ua:2+us:3+inet(evdev)+group(lctrl_toggle)+ctrl(nocap
         symbols[Group3]= [          period,         greater ]
     };
     key <AB10> {
+        type[group1]= "FOUR_LEVEL",
         type[group2]= "FOUR_LEVEL",
-        symbols[Group1]= [           slash,        question ],
+        symbols[Group1]= [           slash,        question,        division,        NoSymbol ],
         symbols[Group2]= [          period,           comma,           slash,        ellipsis ],
         symbols[Group3]= [           slash,        question ]
     };
@@ -1674,7 +1675,10 @@ xkb_symbols "pc+us(workman)+ua:2+us:3+inet(evdev)+group(lctrl_toggle)+ctrl(nocap
     key <HJCV> {         [    Hangul_Hanja ] };
     key <LWIN> {         [         Super_L ] };
     key <RWIN> {         [         Super_R ] };
-    key <COMP> {         [            Menu ] };
+    key <COMP> {
+        type= "TWO_LEVEL",
+        symbols[Group1]= [       Multi_key,       Multi_key ]
+    };
     key <STOP> {         [          Cancel ] };
     key <AGAI> {         [            Redo ] };
     key <PROP> {         [        SunProps ] };

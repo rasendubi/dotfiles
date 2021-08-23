@@ -198,6 +198,69 @@
               home.packages = [ pkgs.xorg.xkbcomp ];
             }
             {
+              home.file.".XCompose".text = ''
+                include "%L"
+            
+                <Multi_key> <less> <equal>           : "⇐" U21D0 # Leftwards Double Arrow
+                <Multi_key> <equal> <greater>        : "⇒" U21D2 # RIGHTWARDS DOUBLE ARROW
+                <Multi_key> <less> <greater> <equal> : "⇔" U21D4 # LEFT RIGHT DOUBLE ARROW
+                <Multi_key> <equal> <less> <greater> : "⇔" U21D4 # LEFT RIGHT DOUBLE ARROW
+                <Multi_key> <minus> <less> <greater> : "↔" U2194 # LEFT RIGHT ARROW
+            
+                <Multi_key> <s> <u> <m> : "∑"
+                <Multi_key> <f> <a> : "∀"                 # for all
+                <Multi_key> <t> <e> : "∃"                 # there exists
+                <Multi_key> <slash> <t> <e> : "∄"
+                <Multi_key> <asciitilde> <equal> : "≅"    # approximately equal
+                <Multi_key> <asciitilde> <asciitilde> : "≈"   U2248   # ~ ~ ALMOST EQUAL TO
+                <Multi_key> <i> <n> : "∈" U2208
+                <Multi_key> <n> <i> <n> : "∉" U2209
+            
+                # White Right Pointing Index
+                <Multi_key> <rght> : "☞" U261E
+            
+                <Multi_key> <o> <c> : "℃"
+                <Multi_key> <o> <f> : "℉"
+            
+                <Multi_key> <x> <x> : "❌"  # Cross Mark
+            
+                <Multi_key> <apostrophe> <apostrophe> : "́" # stress
+            
+                <Multi_key> <O> <slash> : "⌀" U2300 # DIAMETER SIGN
+                <Multi_key> <slash> <O> : "⌀" U2300 # DIAMETER SIGN
+                <Multi_key> <r> <r> : "√" U221A # SQUARE ROOT
+                <Multi_key> <r> <3> : "∛" U221B # CUBE ROOT
+                <Multi_key> <m> <A> : "∀" U2200 # FOR ALL
+                <Multi_key> <m> <E> : "∃" U2203 # THERE EXISTS
+                <Multi_key> <m> <i> : "∊" U220A # SMALL ELEMENT OF
+                <Multi_key> <m> <d> : "∂" U2202 # PARTIAL DIFFERENTIAL
+                <Multi_key> <m> <D> : "∆" U2206 # INCREMENT, Laplace operator
+                <Multi_key> <m> <S> : "∑" U2211 # N-ARY SUMMATION, Sigma
+                <Multi_key> <m> <I> : "∫" U222B # INTEGRAL
+                <Multi_key> <m> <minus> : "−" U2212 # MINUS SIGN
+                <Multi_key> <equal> <asciitilde> : "≈" U2248 # ALMOST EQUAL TO
+                <Multi_key> <asciitilde> <equal> : "≈" U2248 # ALMOST EQUAL TO
+                <Multi_key> <underscore> <underscore> : "‾" U023E # OVERLINE
+                <Multi_key> <equal> <slash>  	: "≠"   U2260 # NOT EQUAL TO
+                <Multi_key> <slash> <equal>  	: "≠"   U2260 # NOT EQUAL TO
+                <Multi_key> <minus> <equal> 	: "≡"   U2261 # IDENTICAL TO
+                <Multi_key> <equal> <minus> 	: "≡"   U2261 # IDENTICAL TO
+                <Multi_key> <m> <less> <equal> : "≤" U2264 # LESS-THAN OR EQUAL TO
+                <Multi_key> <m> <greater> <equal> : "≥" U2265 # GREATER-THAN OR EQUAL TO
+                <Multi_key> <m> <o> <o> : "∞" # infty
+                <Multi_key> <m> <_> <i> : "ᵢ" # subscript i
+                <Multi_key> <m> <^> <i> : "ⁱ" # superscript i
+                <Multi_key> <m> <_> <minus> : "₋" # subscript minus
+                <Multi_key> <m> <^> <minus> : "⁻" # superscript minus
+                <Multi_key> <m> <_> <plus> : "₊" # subscript plus
+                <Multi_key> <m> <^> <plus> : "⁺" # superscript plus
+                <Multi_key> <m> <asterisk> : "∘" # ring (function compose) operator
+                <Multi_key> <m> <period> : "∙" # dot operator
+                <Multi_key> <m> <asciitilde> : "∝" # proportional to
+                <Multi_key> <q> <e> <d> : "∎" # q.e.d.
+              '';
+            }
+            {
               home.packages = [ pkgs.naga ];
             }
             {
