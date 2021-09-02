@@ -104,12 +104,6 @@
       })
       (let
         homeManagerHosts = {
-          AlexeyShmalko = {
-            system = "x86_64-linux";
-            config = ./work.nix;
-            username = "rasen";
-            homeDirectory = "/home/rasen";
-          };
         };
       
         mkHomeManagerConfiguration = { system, name, config, username, homeDirectory }:
@@ -336,91 +330,6 @@
                         position = "0x0";
                         mode = "3840x2160";
                         rate = "60.00";
-                      };
-                    };
-                  };
-            
-                  "work" = {
-                    fingerprint = {
-                      eDP-1 = work;
-                    };
-                    config = {
-                      eDP-1 = {
-                        enable = true;
-                        primary = true;
-                        position = "0x0";
-                        mode = "3840x2160";
-                        rate = "60.00";
-                        dpi = 284;
-                      };
-                    };
-                  };
-                  "work-home" = {
-                    fingerprint = {
-                      eDP-1 = work;
-                      DP-3 = home-monitor;
-                    };
-                    config = {
-                      eDP-1 = {
-                        enable = true;
-                        primary = true;
-                        position = "0x2160";
-                        mode = "3840x2160";
-                        rate = "60.00";
-                        dpi = 284;
-                      };
-                      DP-3 = {
-                        enable = true;
-                        position = "0x0";
-                        mode = "3840x2160";
-                        rate = "29.98";
-                        dpi = 183;
-                      };
-                    };
-                  };
-                  "work-home-usbc" = {
-                    fingerprint = {
-                      eDP-1 = work;
-                      DP-1 = home-monitor;
-                    };
-                    config = {
-                      eDP-1 = {
-                        enable = true;
-                        primary = true;
-                        position = "0x2160";
-                        mode = "3840x2160";
-                        rate = "60.00";
-                        dpi = 284;
-                      };
-                      DP-1 = {
-                        enable = true;
-                        position = "0x0";
-                        mode = "3840x2160";
-                        rate = "29.98";
-                        dpi = 183;
-                      };
-                    };
-                  };
-                  "work-work" = {
-                    fingerprint = {
-                      eDP-1 = work;
-                      DP-3 = work-monitor;
-                    };
-                    config = {
-                      eDP-1 = {
-                        enable = true;
-                        primary = true;
-                        position = "0x1440";
-                        mode = "3840x2160";
-                        rate = "60.00";
-                        dpi = 284;
-                      };
-                      DP-3 = {
-                        enable = true;
-                        position = "640x0";
-                        mode = "2560x1440";
-                        rate = "59.95";
-                        dpi = 124;
                       };
                     };
                   };
