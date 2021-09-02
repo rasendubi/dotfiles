@@ -255,6 +255,14 @@
               '';
             }
             {
+              services.xcape = {
+                enable = true;
+                mapExpression = {
+                  Control_L = "Escape";
+                };
+              };
+            }
+            {
               home.packages = [ pkgs.naga ];
             }
             {

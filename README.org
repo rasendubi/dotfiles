@@ -2117,6 +2117,19 @@ Add some custom compose keys (~<<home-manager-section>>~):
 }
 #+end_src
 
+*** xcape
+Make short press on left control behave as Escape (=<<home-manager-section>>=):
+#+name: home-manager-section
+#+begin_src nix
+{
+  services.xcape = {
+    enable = true;
+    mapExpression = {
+      Control_L = "Escape";
+    };
+  };
+}
+#+end_src
 *** Emacs quail
 Emacs has built-in capability to change keyboard layout (for insert state only), which is triggered by =C-\=. In order to work properly, Emacs needs to know my keyboard layout.
 #+begin_src emacs-lisp
