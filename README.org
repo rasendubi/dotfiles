@@ -893,6 +893,32 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       # })
 
       (epkgs.trivialBuild rec {
+        pname = "org-roam-ui";
+        version = "20210830";
+        src = pkgs.fetchFromGitHub {
+          owner = "org-roam";
+          repo = "org-roam-ui";
+          rev = "9ad111d2102c24593f6ac012206bb4b2c9c6c4e1";
+          sha256 = "sha256-x6notv/U+y9Es8m58R/Qh7GEAtRqXqXvr7gy5OiDDUM=";
+        };
+        packageRequires = [
+          epkgs.melpaPackages.f
+          epkgs.melpaPackages.org-roam
+          epkgs.melpaPackages.websocket
+          epkgs.melpaPackages.simple-httpd
+        ];
+
+        postInstall = ''
+          cp -r ./out/ $LISPDIR/
+        '';
+
+        meta = {
+          description = "A graphical frontend for exploring your org-roam Zettelkasten";
+          license = pkgs.lib.licenses.gpl3;
+        };
+      })
+
+      (epkgs.trivialBuild rec {
         pname = "org-fc";
         version = "20201121";
         src = pkgs.fetchFromGitHub {
@@ -4668,6 +4694,16 @@ A helper function for the next time org-id fucks up its database.
   (interactive)
   (org-id-update-id-locations
    (directory-files-recursively org-roam-directory "\\.org$")))
+#+end_src
+** org-roam-ui
+#+begin_src emacs-lisp
+(use-package org-roam-ui
+  :after org-roam
+  :commands (org-roam-ui-mode)
+  :config
+  (setq org-roam-ui-update-on-save t
+        org-roam-ui-sync-theme nil
+        org-roam-ui-open-on-start t))
 #+end_src
 ** org-ref
 #+begin_src emacs-lisp

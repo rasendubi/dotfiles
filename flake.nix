@@ -979,6 +979,32 @@
                     # })
               
                     (epkgs.trivialBuild rec {
+                      pname = "org-roam-ui";
+                      version = "20210830";
+                      src = pkgs.fetchFromGitHub {
+                        owner = "org-roam";
+                        repo = "org-roam-ui";
+                        rev = "9ad111d2102c24593f6ac012206bb4b2c9c6c4e1";
+                        sha256 = "sha256-x6notv/U+y9Es8m58R/Qh7GEAtRqXqXvr7gy5OiDDUM=";
+                      };
+                      packageRequires = [
+                        epkgs.melpaPackages.f
+                        epkgs.melpaPackages.org-roam
+                        epkgs.melpaPackages.websocket
+                        epkgs.melpaPackages.simple-httpd
+                      ];
+              
+                      postInstall = ''
+                        cp -r ./out/ $LISPDIR/
+                      '';
+              
+                      meta = {
+                        description = "A graphical frontend for exploring your org-roam Zettelkasten";
+                        license = pkgs.lib.licenses.gpl3;
+                      };
+                    })
+              
+                    (epkgs.trivialBuild rec {
                       pname = "org-fc";
                       version = "20201121";
                       src = pkgs.fetchFromGitHub {
