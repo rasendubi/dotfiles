@@ -3161,6 +3161,12 @@ Do not indent tags.
 (setq org-tags-column 0)
 #+end_src
 
+When entering tags, offer tags from all agenda files. (This is the closes to global tag tracking I could find.))
+#+name: org-config
+#+begin_src emacs-lisp
+(setq org-complete-tags-always-offer-all-agenda-tags t)
+#+end_src
+
 #+name: org-config
 #+begin_src emacs-lisp
 (setq org-ellipsis "…")
@@ -3178,14 +3184,25 @@ Make the table header float if scrolled out of view.
 (setq org-table-header-line-p t)
 #+end_src
 
+Hide emphasis markers (asterisks and slashes).
 #+name: org-config
 #+begin_src emacs-lisp
 (setq org-hide-emphasis-markers t)
+#+end_src
 
-;; allow ndash/mdash before/after emphasis markers.
+Allow emphasis marks to follow ndash/mdash, and proper quotes.
+#+name: org-config
+#+begin_src emacs-lisp
+;; allow ndash/mdash (–, —), and proper quotes (’, “, ”) before/after
+;; emphasis markers.
+;;
 ;; (copy-modified from original `org-emphasis-regexp-components' definition)
 (org-set-emph-re 'org-emphasis-regexp-components
-                 '("-–—[:space:]('\"{" "-–—[:space:].,:!?;'\")}\\[" "[:space:]" "." 1))
+                 '("-–—[:space:]('\"’“”{"
+                   "-–—[:space:].,:!?;'\"’“”)}\\["
+                   "[:space:]"
+                   "."
+                   1))
 #+end_src
 
 Open pdfs in external viewer:
@@ -3227,18 +3244,6 @@ Package for =f-files= and =f-ext?= functions.
 #+begin_src emacs-lisp
 (use-package f
   :commands (f-files f-ext? f-no-ext))
-#+end_src
-** Drill
-#+name: org-config
-#+begin_src emacs-lisp
-(use-package org-drill
-  :commands (org-drill)
-  :config
-  (setq org-drill-scope (rasen/org-files-in-dir "~/org/drill"))
-  (add-to-list 'org-modules 'org-drill)
-
-  (setq org-drill-leech-failure-threshold 10
-        org-drill-leech-method 'warn))
 #+end_src
 ** Todo
 A special function that marks the task as done yesterday if prefix is supplied (useful for habits).
@@ -3331,6 +3336,12 @@ A command to fold everything except =NEXT= items.
 
 (general-def '(motion normal) 'org-mode-map
   "z n" #'rasen/org-occur-next)
+#+end_src
+
+Disable highlighting for org-occur.
+#+name: org-config
+#+begin_src emacs-lisp
+(setq org-highlight-sparse-tree-matches nil)
 #+end_src
 ** Highlight projects
 Fontify all headlines with the =:PROJECT:= tag.
@@ -3462,8 +3473,6 @@ Instanly go into insert mode on capture.
 ** Capturing images
 #+begin_src emacs-lisp
 (use-package org-download
-  :init
-  (el-patch-feature org-download)
   :config
   (setq org-download-method 'directory)
   ;; Do not prepend heading name to the file path
@@ -3471,17 +3480,13 @@ Instanly go into insert mode on capture.
   ;; "download" screenshots from clipboard
   (setq org-download-screenshot-method "xclip -selection clipboard -t image/png -o > %s")
 
-  ;; Use timestamp-ids
-  (el-patch-defun org-download-file-format-default (filename)
-    "It's affected by `org-download-timestamp'."
-    (concat
-     (el-patch-swap
-       (format-time-string org-download-timestamp)
-       (rasen/tsid))
-     (el-patch-add "-")
-     filename)))
+  ;; Prefix downloaded files with tsid.
+  (setq org-download-file-format-function
+        (defun rasen/org-download-file-format (filename)
+          (concat (rasen/tsid) "-" filename))))
 #+end_src
 ** datetree
+An interactive command to jump to a specific datetree entry in the current buffer. I used this as a lightweight way to keep a journal.
 #+begin_src emacs-lisp
 ;; adapted from org-capture module
 
@@ -3914,18 +3919,24 @@ Configure stuck projects.
                         (org-habit-show-habits-only-for-today nil)
 
                         (org-super-agenda-groups
-                         '(;; 1. habits
-                           ;; 2. scheduled without time
-                           ;; 3. time-grid
+                         '(;; 1. time-grid
+                           ;; 2. scheduled|deadline without time
+                           ;; 3. habits
                            ;; 4. rest (anniversaries, etc.)
+                           ;; 5. future scheduled|deadline (reminders)
                            (:name none
                             :habit t
-                            :order 1)
-                           (:name none
-                            :time-grid t
                             :order 3)
                            (:name none
+                            :time-grid t
+                            :order 1)
+                           (:name none
+                            :scheduled future
+                            :deadline future
+                            :order 5)
+                           (:name none
                             :scheduled t
+                            :deadline t
                             :order 2)
                            (:name none
                             :anything t
@@ -4040,8 +4051,7 @@ of what a project is and how to check if it stuck, customize the variable
          `(org-redo-cmd ,org-agenda-redo-command))))))
 #+end_src
 ** Babel
-Code-hightlight (fontify) org-babel (=#+begin_src=) blocks.
-
+Code-highlight (fontify) org-babel (=#+begin_src=) blocks.
 #+name: org-config
 #+begin_src emacs-lisp
 (setq org-src-fontify-natively t)
@@ -4083,7 +4093,7 @@ Do not confirm evaluation for emacs-lisp.
 #+name: org-config
 #+begin_src emacs-lisp
 ;; Scale inline images by default
-(setq org-image-actual-width '(1024))
+(setq org-image-actual-width '(800))
 ;; Show inline images by default
 (setq org-startup-with-inline-images t)
 #+end_src
@@ -4260,8 +4270,11 @@ Do not treat [[*org-fc][org-fc]] cards as nodes.
 #+begin_src emacs-lisp :tangle no
 (setq org-roam-db-node-include-function
       (defun rasen/org-roam-include ()
-        ;; exclude org-fc headlines from org-roam
-        (not (member "fc" (org-get-tags)))))
+        (or
+         ;; exclude org-fc headlines from org-roam
+         (not (member "fc" (org-get-tags)))
+         ;; but include infant notes
+         (member "infant" (org-get-tags)))))
 #+end_src
 *** org-roam-slip-boxes
 Slip boxes are basically different directories that I split notes into.
@@ -4809,17 +4822,7 @@ Citations and bibliography tools for org-mode.
   :after org-roam
   :config
   (require 'org-ref)
-  (org-roam-bibtex-mode)
-  ;; https://github.com/org-roam/org-roam-bibtex/pull/194
-  ;; (el-patch-defun orb--add-ref ()
-  ;;   "Add citeky as Org-roam ref to the current buffer. To be used in `org-roam-capture-new-node-hook'."
-  ;;   (save-excursion
-  ;;     (el-patch-let (($do (org-roam-add-property orb--current-citekey "ROAM_REFS")))
-  ;;       (el-patch-swap
-  ;;         $do
-  ;;         (if orb--current-citekey
-  ;;             $do)))))
-  )
+  (org-roam-bibtex-mode))
 #+end_src
 ** toc-org
 Generate Table of Contents for this file.
@@ -5232,7 +5235,7 @@ Use emacs-state in org-lint buffers.
 (evil-set-initial-state 'epa-key-list-mode 'emacs)
 #+end_src
 ** Timestamps
-Configure time-stamp for org-mode, so ~time-stamp~ function would update =#+LAST_MODIFIED:= keyword value (using ISO8601 format).
+Configure time-stamp for org-mode, so ~time-stamp~ command would update =#+LAST_MODIFIED:= or =#+DATE:= keyword value (whichever is found first) using ISO8601 format.
 #+begin_src emacs-lisp
 (use-package time-stamp
   :config
@@ -6340,6 +6343,7 @@ Company mode provides autocomplete features.
 Company-box frontend works better with variable-pitch fonts.
 #+begin_src emacs-lisp
 (use-package company-box
+  :disabled t
   :diminish
   :hook (company-mode . company-box-mode))
 #+end_src
@@ -7657,6 +7661,7 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Go
      ;; dim done items
      `(org-done ((,class :foreground ,fg-alt)))
      `(org-headline-done ((,class :foreground ,fg-alt)))
+     `(org-agenda-calendar-event ((,class))) ;; plain black is fine
      `(org-agenda-done ((,class :foreground ,fg-alt)))
      ;; remove special background from archived items
      `(org-archived ((,class (:foreground ,fg-alt))))

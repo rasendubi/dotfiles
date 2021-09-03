@@ -97,6 +97,7 @@
      ;; dim done items
      `(org-done ((,class :foreground ,fg-alt)))
      `(org-headline-done ((,class :foreground ,fg-alt)))
+     `(org-agenda-calendar-event ((,class))) ;; plain black is fine
      `(org-agenda-done ((,class :foreground ,fg-alt)))
      ;; remove special background from archived items
      `(org-archived ((,class (:foreground ,fg-alt))))
