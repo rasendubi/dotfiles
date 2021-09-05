@@ -4311,6 +4311,12 @@ Allow encrypted entries in org files.
 (setq org-crypt-key "rasen.dubi@gmail.com")
 (add-hook 'org-babel-pre-tangle-hook 'org-decrypt-entries t)
 #+end_src
+** org-checklist
+Setting property =RESET_CHECK_BOXES= on a periodic task to =t= will clear all checkboxes when the task is closed.
+#+name: org-config
+#+begin_src emacs-lisp
+(require 'org-checklist)
+#+end_src
 ** Habits
 #+name: org-config
 #+begin_src emacs-lisp
