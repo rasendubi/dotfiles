@@ -4556,24 +4556,6 @@ Make it prettier—enable word-wrap and variable pitch font.
 (add-hook 'org-roam-mode-hook #'visual-line-mode)
 (add-hook 'org-roam-mode-hook #'variable-pitch-mode)
 #+end_src
-
-Fix unreferenced backlinks for non-ASCII files. Submitted at [[https://github.com/org-roam/org-roam/pull/1616][org-roam/org-roam#1616 fix(#1575): fix display of non-ASCII in unlinked references section by rasendubi]].
-#+name: org-roam-buffer
-#+begin_src emacs-lisp :tangle no
-(el-patch-defun org-roam-unlinked-references-preview-line (file row)
-  "Return the preview line from FILE.
-This is the ROW within FILE."
-  (with-temp-buffer
-    ((el-patch-swap insert-file-contents-literally insert-file-contents) file)
-    (forward-line (1- row))
-    (buffer-substring-no-properties
-     (save-excursion
-       (beginning-of-line)
-       (point))
-     (save-excursion
-       (end-of-line)
-       (point)))))
-#+end_src
 *** org-roam-dailies
 
 I moved my journaling into org-roam and this provides more context when reviewing my notes (unlinked references show where that date was mentioned).
