@@ -4180,6 +4180,13 @@ Do not confirm evaluation for emacs-lisp.
 
 (setq org-confirm-babel-evaluate 'rasen/org-confirm-babel-evaluate)
 #+end_src
+
+Load more languages:
+#+name: org-config
+#+begin_src emacs-lisp
+(org-babel-do-load-languages 'org-babel-load-languages
+                             '((shell . t)))
+#+end_src
 ** Latex preview
 #+name: org-config
 #+begin_src emacs-lisp
