@@ -2545,6 +2545,14 @@ Enable Emacs integration. (emacs-lisp)
   :config
   (direnv-mode))
 #+end_src
+** VirtualBox
+#+name: nixos-section
+#+begin_src nix
+{
+  virtualisation.virtualbox.host.enable = true;
+  users.extraGroups.vboxusers.members = ["rasen"];
+}
+#+end_src
 * Hardware
 ** Do not suspend on AC
 #+name: nixos-section

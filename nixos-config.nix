@@ -302,6 +302,10 @@ in
       };
     }
     {
+      virtualisation.virtualbox.host.enable = true;
+      users.extraGroups.vboxusers.members = ["rasen"];
+    }
+    {
       services.logind = {
         lidSwitchDocked = "ignore";
         lidSwitchExternalPower = "ignore";
