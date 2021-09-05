@@ -3547,12 +3547,119 @@ An interactive command to jump to a specific datetree entry in the current buffe
 (setq-default org-refile-use-outline-path 'file)
 (setq-default org-outline-path-complete-in-steps nil)
 
+;; Allow refiling to projects and honeypots only. The rest of refiling
+;; is handled by hydra.
 (setq org-refile-targets
-      '(;(nil :maxlevel . 3)
-        (org-agenda-files :tag . "honeypot")
-        (org-agenda-files :tag . "PROJECT")
-        (org-agenda-files :maxlevel . 2)
-        (rasen/org-refile-files :maxlevel . 1)))
+      '((org-agenda-files . (:tag . "honeypot"))
+        (org-agenda-files . (:tag . "PROJECT"))))
+#+end_src
+
+Setting ~org-refile-use-outline-path~ to ~'file~ prepends the file names to refile targets but also has a side effect of allowing refiling to the top level of these files. Patch ~org-refile-get-targets~ to disable that.
+#+name: org-config
+#+begin_src emacs-lisp
+(el-patch-defun org-refile-get-targets (&optional default-buffer)
+  "Produce a table with refile targets."
+  (let ((case-fold-search nil)
+        ;; otherwise org confuses "TODO" as a kw and "Todo" as a word
+        (entries (or org-refile-targets '((nil . (:level . 1)))))
+        targets tgs files desc descre)
+    (message "Getting targets...")
+    (with-current-buffer (or default-buffer (current-buffer))
+      (dolist (entry entries)
+        (setq files (car entry) desc (cdr entry))
+        (cond
+         ((null files) (setq files (list (current-buffer))))
+         ((eq files 'org-agenda-files)
+          (setq files (org-agenda-files 'unrestricted)))
+         ((and (symbolp files) (fboundp files))
+          (setq files (funcall files)))
+         ((and (symbolp files) (boundp files))
+          (setq files (symbol-value files))))
+        (when (stringp files) (setq files (list files)))
+        (cond
+         ((eq (car desc) :tag)
+          (setq descre (concat "^\\*+[ \t]+.*?:" (regexp-quote (cdr desc)) ":")))
+         ((eq (car desc) :todo)
+          (setq descre (concat "^\\*+[ \t]+" (regexp-quote (cdr desc)) "[ \t]")))
+         ((eq (car desc) :regexp)
+          (setq descre (cdr desc)))
+         ((eq (car desc) :level)
+          (setq descre (concat "^\\*\\{" (number-to-string
+                                          (if org-odd-levels-only
+                                              (1- (* 2 (cdr desc)))
+                                            (cdr desc)))
+                               "\\}[ \t]")))
+         ((eq (car desc) :maxlevel)
+          (setq descre (concat "^\\*\\{1," (number-to-string
+                                            (if org-odd-levels-only
+                                                (1- (* 2 (cdr desc)))
+                                              (cdr desc)))
+                               "\\}[ \t]")))
+         (t (error "Bad refiling target description %s" desc)))
+        (dolist (f files)
+          (with-current-buffer (if (bufferp f) f (org-get-agenda-file-buffer f))
+            (or
+             (setq tgs (org-refile-cache-get (buffer-file-name) descre))
+             (progn
+               (when (bufferp f)
+                 (setq f (buffer-file-name (buffer-base-buffer f))))
+               (setq f (and f (expand-file-name f)))
+               (el-patch-remove
+                 (when (eq org-refile-use-outline-path 'file)
+                   (push (list (and f (file-name-nondirectory f)) f nil nil) tgs)))
+               (when (eq org-refile-use-outline-path 'buffer-name)
+                 (push (list (buffer-name (buffer-base-buffer)) f nil nil) tgs))
+               (when (eq org-refile-use-outline-path 'full-file-path)
+                 (push (list (and (buffer-file-name (buffer-base-buffer))
+                                  (file-truename (buffer-file-name (buffer-base-buffer))))
+                             f nil nil) tgs))
+               (org-with-wide-buffer
+                (goto-char (point-min))
+                (setq org-outline-path-cache nil)
+                (while (re-search-forward descre nil t)
+                  (beginning-of-line)
+                  (let ((case-fold-search nil))
+                    (looking-at org-complex-heading-regexp))
+                  (let ((begin (point))
+                        (heading (match-string-no-properties 4)))
+                    (unless (or (and
+                                 org-refile-target-verify-function
+                                 (not
+                                  (funcall org-refile-target-verify-function)))
+                                (not heading))
+                      (let ((re (format org-complex-heading-regexp-format
+                                        (regexp-quote heading)))
+                            (target
+                             (if (not org-refile-use-outline-path) heading
+                               (mapconcat
+                                #'identity
+                                (append
+                                 (pcase org-refile-use-outline-path
+                                   (`file (list
+                                           (and (buffer-file-name (buffer-base-buffer))
+                                                (file-name-nondirectory
+                                                 (buffer-file-name (buffer-base-buffer))))))
+                                   (`full-file-path
+                                    (list (buffer-file-name
+                                           (buffer-base-buffer))))
+                                   (`buffer-name
+                                    (list (buffer-name
+                                           (buffer-base-buffer))))
+                                   (_ nil))
+                                 (mapcar (lambda (s) (replace-regexp-in-string
+                                                      "/" "\\/" s nil t))
+                                         (org-get-outline-path t t)))
+                                "/"))))
+                        (push (list target f re (org-refile-marker (point)))
+                              tgs)))
+                    (when (= (point) begin)
+                      ;; Verification function has not moved point.
+                      (end-of-line)))))))
+            (when org-refile-use-cache
+              (org-refile-cache-put tgs (buffer-file-name) descre))
+            (setq targets (append tgs targets))))))
+    (message "Getting targets...done")
+    (delete-dups (nreverse targets))))
 #+end_src
 *** Refiling with hydras
 Adapted from [[https://mollermara.com/blog/Fast-refiling-in-org-mode-with-hydras/][Fast refiling in org-mode with hydras | Josh Moller-Mara]]. Extended to support refiling by outline path.
