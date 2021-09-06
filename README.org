@@ -4318,6 +4318,76 @@ Allow encrypted entries in org files.
 (setq org-crypt-key "rasen.dubi@gmail.com")
 (add-hook 'org-babel-pre-tangle-hook 'org-decrypt-entries t)
 #+end_src
+** org-list
+I always use either =-= or =1.= style for lists. Make ~org-cycle-list-bullet~ ignore the rest of styles (=*=, =+=, =1)=), so switching between ordered/unordered list is always one command away:
+#+name: org-config
+#+begin_src emacs-lisp
+(el-patch-defun org-cycle-list-bullet (&optional which)
+  "Cycle through the different itemize/enumerate bullets.
+This cycle the entire list level through the sequence:
+
+   `-'  ->  `+'  ->  `*'  ->  `1.'  ->  `1)'
+
+If WHICH is a valid string, use that as the new bullet.  If WHICH
+is an integer, 0 means `-', 1 means `+' etc.  If WHICH is
+`previous', cycle backwards."
+  (interactive "P")
+  (unless (org-at-item-p) (error "Not at an item"))
+  (save-excursion
+    (beginning-of-line)
+    (let* ((struct (org-list-struct))
+           (parents (org-list-parents-alist struct))
+           (prevs (org-list-prevs-alist struct))
+           (list-beg (org-list-get-first-item (point) struct prevs))
+           (bullet (org-list-get-bullet list-beg struct))
+           (alpha-p (org-list-use-alpha-bul-p list-beg struct prevs))
+           (case-fold-search nil)
+           (current (cond
+                     ((string-match "[a-z]\\." bullet) "a.")
+                     ((string-match "[a-z])" bullet) "a)")
+                     ((string-match "[A-Z]\\." bullet) "A.")
+                     ((string-match "[A-Z])" bullet) "A)")
+                     ((string-match "\\." bullet) "1.")
+                     ((string-match ")" bullet) "1)")
+                     (t (org-trim bullet))))
+           ;; Compute list of possible bullets, depending on context.
+           (bullet-list
+            (append '("-" (el-patch-remove "+"))
+                    (el-patch-remove
+                      ;; *-bullets are not allowed at column 0.
+                      (unless (looking-at "\\S-") '("*")))
+                    ;; Description items cannot be numbered.
+                    (unless (or (eq org-plain-list-ordered-item-terminator ?\))
+                                (org-at-item-description-p))
+                      '("1."))
+                    (el-patch-remove
+                      (unless (or (eq org-plain-list-ordered-item-terminator ?.)
+                                  (org-at-item-description-p))
+                        '("1)"))
+                      (unless (or (not alpha-p)
+                                  (eq org-plain-list-ordered-item-terminator ?\))
+                                  (org-at-item-description-p))
+                        '("a." "A."))
+                      (unless (or (not alpha-p)
+                                  (eq org-plain-list-ordered-item-terminator ?.)
+                                  (org-at-item-description-p))
+                        '("a)" "A)")))))
+           (len (length bullet-list))
+           (item-index (- len (length (member current bullet-list))))
+           (get-value (lambda (index) (nth (mod index len) bullet-list)))
+           (new (cond
+                 ((member which bullet-list) which)
+                 ((numberp which) (funcall get-value which))
+                 ((eq 'previous which) (funcall get-value (1- item-index)))
+                 (t (funcall get-value (1+ item-index))))))
+      ;; Use a short variation of `org-list-write-struct' as there's
+      ;; no need to go through all the steps.
+      (let ((old-struct (copy-tree struct)))
+        (org-list-set-bullet list-beg struct (org-list-bullet-string new))
+        (org-list-struct-fix-bul struct prevs)
+        (org-list-struct-fix-ind struct parents)
+        (org-list-struct-apply-struct struct old-struct)))))
+#+end_src
 ** org-checklist
 Setting property =RESET_CHECK_BOXES= on a periodic task to =t= will clear all checkboxes when the task is closed.
 #+name: org-config
