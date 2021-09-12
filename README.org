@@ -4405,6 +4405,62 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
   :config
   (add-hook 'org-mode-hook #'adaptive-wrap-prefix-mode))
 #+end_src
+** org-id
+Use timestamps as ids.
+#+name: org-config
+#+begin_src emacs-lisp
+(setq org-id-method 'ts)
+#+end_src
+
+Configure ~org-store-link~ to prefer ids for headlines.
+#+name: org-config
+#+begin_src emacs-lisp
+(setq org-id-link-to-org-use-id 'create-if-interactive)
+#+end_src
+
+Override ~org-id-new~ to use ~rasen/tsid~ as ids. (They have less precision but that's enough for me.) By using tsid, I can easily switch headline-nodes to file-nodes—id becomes the filename.
+#+name: org-config
+#+begin_src emacs-lisp
+(el-patch-defun org-id-new (&optional prefix)
+  "Create a new globally unique ID.
+
+An ID consists of two parts separated by a colon:
+- a prefix
+- a unique part that will be created according to `org-id-method'.
+
+PREFIX can specify the prefix, the default is given by the variable
+`org-id-prefix'.  However, if PREFIX is the symbol `none', don't use any
+prefix even if `org-id-prefix' specifies one.
+
+So a typical ID could look like \"Org:4nd91V40HI\"."
+  (let* ((prefix (if (eq prefix 'none)
+		     ""
+		   (concat (or prefix org-id-prefix) ":")))
+	 unique)
+    (if (equal prefix ":") (setq prefix ""))
+    (cond
+     ((memq org-id-method '(uuidgen uuid))
+      (setq unique (org-trim (shell-command-to-string org-id-uuid-program)))
+      (unless (org-uuidgen-p unique)
+	(setq unique (org-id-uuid))))
+     ((eq org-id-method 'org)
+      (let* ((etime (org-reverse-string (org-id-time-to-b36)))
+	     (postfix (if org-id-include-domain
+			  (progn
+			    (require 'message)
+			    (concat "@" (message-make-fqdn))))))
+	(setq unique (concat etime postfix))))
+     ((eq org-id-method 'ts)
+      (let ((ts (el-patch-swap (format-time-string "%Y%m%dT%H%M%S.%6N")
+                               (rasen/tsid)))
+	    (postfix (if org-id-include-domain
+			 (progn
+			   (require 'message)
+			   (concat "@" (message-make-fqdn))))))
+	(setq unique (concat ts postfix))))
+     (t (error "Invalid `org-id-method'")))
+    (concat prefix unique)))
+#+end_src
 ** org-roam
 #+begin_src emacs-lisp
 (use-package org-roam
