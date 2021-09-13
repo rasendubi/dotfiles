@@ -4512,6 +4512,8 @@ So a typical ID could look like \"Org:4nd91V40HI\"."
 
   <<org-roam-update-ids>>
 
+  <<org-roam-new-node>>
+
   (org-roam-setup))
 #+end_src
 *** org-roam-exclude-org-fc
@@ -4939,6 +4941,18 @@ A helper function for the next time org-id fucks up its database.
   (interactive)
   (org-id-update-id-locations
    (directory-files-recursively org-roam-directory "\\.org$")))
+#+end_src
+*** org-roam-new-node
+A function to create a new node without prompting for a title. Sometimes I want to create a new node and I am not sure what the title will be—I discover it while I write the note.
+#+name: org-roam-new-node
+#+begin_src emacs-lisp
+(defun rasen/org-roam-new-node ()
+  (interactive)
+  (org-roam-capture-
+   :node (org-roam-node-create :title "")
+   :props '(:finalize find-file)))
+
+(s-leader-def "n n" #'rasen/org-roam-new-node)
 #+end_src
 ** org-roam-ui
 #+begin_src emacs-lisp
