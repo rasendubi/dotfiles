@@ -4946,13 +4946,24 @@ A helper function for the next time org-id fucks up its database.
 A function to create a new node without prompting for a title. Sometimes I want to create a new node and I am not sure what the title will be—I discover it while I write the note.
 #+name: org-roam-new-node
 #+begin_src emacs-lisp
-(defun rasen/org-roam-new-node ()
+(defun rasen/org-roam-new-node (&optional keys)
   (interactive)
   (org-roam-capture-
+   :keys keys
    :node (org-roam-node-create :title "")
    :props '(:finalize find-file)))
 
+(defun rasen/org-roam-new-node-default ()
+  (interactive)
+  (rasen/org-roam-new-node "d"))
+
+(defun rasen/org-roam-new-node-life ()
+  (interactive)
+  (rasen/org-roam-new-node "l"))
+
 (s-leader-def "n n" #'rasen/org-roam-new-node)
+(s-leader-def "n d" #'rasen/org-roam-new-node-default)
+(s-leader-def "n l" #'rasen/org-roam-new-node-life)
 #+end_src
 ** org-roam-ui
 #+begin_src emacs-lisp
