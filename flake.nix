@@ -511,6 +511,7 @@
               home.packages = [
                 pkgs.google-play-music-desktop-player
                 pkgs.tdesktop # Telegram
+                pkgs.feh
             
                 pkgs.mplayer
                 pkgs.smplayer
