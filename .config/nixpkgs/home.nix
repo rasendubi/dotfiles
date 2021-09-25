@@ -2,13 +2,15 @@
 {
   xdg.mimeApps = {
     enable = true;
-    associations.added = {
-      "application/pdf" = "emacsclient.desktop";
-      "x-scheme-handler/org-protocol" = "org-protocol.desktop";
-    };
+    # TODO this is simultaneously handled globally.. -.-
     defaultApplications = {
       "application/pdf" = [ "emacsclient.desktop" ];
       "x-scheme-handler/org-protocol" = [ "org-protocol.desktop" ];
+      "x-scheme-handler/msteams" = [ "teams.desktop" ];
+      "image/png" = [ "org.inkscape.Inkscape.desktop" ];  # annoyiiiing
+      "image/svg+xml" = [ "org.inkscape.Inkscape.desktop" ];
+      "x-scheme-handler/http" = [ "qutebrowser.desktop" ];
+      "x-scheme-handler/https" = [ "qutebrowser.desktop" ];
     };
   };
   # targets.genericLinux.enable = true;
@@ -107,7 +109,7 @@ home.packages =   with pkgs; [
 
     direnv
     clipit
-    vlc
+    # vlc
     betaflight-configurator
 
     ];

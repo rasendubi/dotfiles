@@ -37,6 +37,7 @@ let
         #   ];
         # };
       
+      
         nix.maxJobs = lib.mkDefault 8;
       
         # TODO enable and check
@@ -82,13 +83,14 @@ let
       {
         services.xserver.libinput = {
           enable = true;
-          accelSpeed = "0.7";
+          touchpad.accelSpeed = "0.7";
         };
-        # displayManager.lightdm.greeters.gtk.cursorTheme = {  # TODO if home manager cursor doesnt work
-        #   name = "Vanilla-DMZ";
-        #   package = pkgs.vanilla-dmz;
-        #   size = 64;
-        # };
+        services.xserver.displayManager.lightdm.greeters.gtk.cursorTheme = {
+          name = "Vanilla-DMZ";
+          package = pkgs.vanilla-dmz;
+          size = 64;
+        };
+        environment.variables.XCURSOR_SIZE = "64";
       }
       {
         musnix = {
@@ -245,7 +247,7 @@ let
       {
         services.xserver.libinput = {
           enable = true;
-          accelSpeed = "0.7";
+          touchpad.accelSpeed = "0.7";
         };
         # displayManager.lightdm.greeters.gtk.cursorTheme = {  # TODO if home manager cursor doesnt work
         #   name = "Vanilla-DMZ";
@@ -282,16 +284,17 @@ let
   #   };
 in
 {
-  disabledModules = [ "services/x11/window-managers/exwm.nix"  ]; 
+  # disabledModules = [ "services/x11/window-managers/exwm.nix"  ]; 
   imports = [
-    (import "${inputs.nixpkgs-moritz}/nixos/modules/services/x11/window-managers/exwm.nix")
+    # (import "${inputs.nixpkgs-moritz}/nixos/modules/services/x11/window-managers/exwm.nix")
     (import "${inputs.musnix}")
     {
     
       nixpkgs.config.allowUnfree = true;
+      nixpkgs.config.allowBroken = true;
 
       # The NixOS release to be compatible with for stateful data such as databases.
-      system.stateVersion = "20.09";
+      system.stateVersion = "20.03";
     }
 
     {
@@ -325,6 +328,9 @@ in
       services.xserver.videoDrivers = [ "intel" ];  # modesetting didn't help
       hardware.nvidiaOptimus.disable = true;
       boot.blacklistedKernelModules = [ "nouveau" "nvidia" ];  # bbswitch
+      
+      # https://github.com/NixOS/nixpkgs/issues/94315 <- from here. bugfix for this: https://discourse.nixos.org/t/update-to-21-05-breaks-opengl-because-of-dependency-on-glibc-2-31/14218 note, that there are multiple occurences of this
+      # hardware.opengl.package = pkgs.nixpkgs-2009.mesa_drivers;
       services.xserver = {
         displayManager = {
           lightdm.enable = false;
@@ -336,7 +342,7 @@ in
       hardware.bluetooth.enable = true;
       hardware.bluetooth.powerOnBoot = false;
       services.blueman.enable = true;
-      hardware.bluetooth.config.General.Enable = "Source,Sink,Media,Socket";
+      hardware.bluetooth.settings.General.Enable = "Source,Sink,Media,Socket";
       hardware.pulseaudio = {
         enable = true;
     
@@ -360,7 +366,7 @@ in
       fileSystems."/mnt/cclab_nas" = {
         device = "//nas22.ethz.ch/biol_imhs_ciaudo";
         fsType = "cifs";
-        options = [ "credentials=/home/moritz/.secret/cclab_nas.credentials" "workgroup=d.ethz.ch" "uid=moritz" "gid=users" "noauto"];
+        options = [ "credentials=/home/moritz/.secret/cclab_nas.credentials" "workgroup=d.ethz.ch" "uid=moritz" "gid=users" "noauto" "echo_interval=30" ];
       };
     
     # https://releases.nixos.org/nix-dev/2016-September/021763.html  TODO not working :/
@@ -459,7 +465,7 @@ in
     }
     {
       nix.gc.automatic = true;
-      nix.gc.options = "--delete-older-than 12d";
+      nix.gc.options = "--delete-generations +12";
     }
     {
       
@@ -560,9 +566,10 @@ in
     }
     {
       services.openssh = {
-        enable = false;
+        enable = true;
         passwordAuthentication = false;
       };
+      users.users.moritz.openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMc+scl71X7g21XFygTNB3onyGuION89iHSUw0eYcN2H mail+macbook@moritzs.de" ];
     }
     {
       programs.mosh.enable = true;
@@ -607,10 +614,16 @@ in
     {
       virtualisation.virtualbox.host.enable = true;
       virtualisation.docker.enable = true;
+      virtualisation.docker.enableNvidia = true;
+      
+      systemd.enableUnifiedCgroupHierarchy = false;  # workaround https://github.com/NixOS/nixpkgs/issues/127146
+      hardware.opengl.driSupport32Bit = true;
       environment.systemPackages = [
         pkgs.docker-compose
         pkgs.kvm
         pkgs.qemu
+        pkgs.nvtop # for nvidia
+        pkgs.usbtop
       ];
     
       users.users.moritz.extraGroups = ["libvirtd" "docker"];  # the former is required for qemu I think 
@@ -619,13 +632,13 @@ in
       environment.systemPackages =
         let mount_external = pkgs.writeScriptBin "mount-external" ''
           #!${pkgs.stdenv.shell}
-          sudo ${pkgs.cryptsetup}/bin/cryptsetup luksOpen /dev/sda2 sda2
-          sudo mount /dev/mapper/sda2 /mnt/encrypted
+          sudo ${pkgs.cryptsetup}/bin/cryptsetup luksOpen /dev/disk/by-uuid/aeebfb90-65b5-4515-bf6e-001d0cfc8a40 encrypted-2tb
+          sudo mount /dev/mapper/encrypted-2tb /mnt/encrypted
           '';
         umount_external = pkgs.writeScriptBin "umount-external" ''
           #!${pkgs.stdenv.shell}
           sudo umount /mnt/encrypted
-          sudo ${pkgs.cryptsetup}/bin/cryptsetup luksClose sda2
+          sudo ${pkgs.cryptsetup}/bin/cryptsetup luksClose encrypted-2tb
           '';
       in
          [ mount_external umount_external pkgs.borgbackup ];
@@ -688,7 +701,7 @@ in
           startx.enable = false;
           autoLogin = {  # if errors, then disable again
             user = "moritz";
-            enable = true;
+            enable = false;
           }; 
         };
         enable = true;
@@ -717,15 +730,15 @@ in
         stumpwm.enable = false;
       };
       # services.xserver.displayManager.defaultSession = "none+exwm";  # Firefox works more fluently with plasma5+exwm instead of "none+exwm". or does it??
-      # services.xserver.desktopManager = {
-      #   xterm.enable = false;
-      #   plasma5.enable = true;
-      #   xfce = {
-      #     enable = true;
-      #     noDesktop= true;
-      #     enableXfwm = true;
-      #   };
-      # };
+      services.xserver.desktopManager = {
+        xterm.enable = false;
+        plasma5.enable = true;
+        xfce = {
+          enable = true;
+          noDesktop= true;
+          enableXfwm = true;
+        };
+      };
       # services.picom.enable = true;
     }
     {
@@ -795,7 +808,7 @@ in
     {
       fonts = {
         # fontDir.enable = true; # 21.03 rename
-        enableFontDir = true;
+        fontDir.enable = true;
         enableGhostscriptFonts = false;
     
         fonts = with pkgs; [
@@ -856,7 +869,6 @@ in
       environment.systemPackages = [
         pkgs.gwenview
         pkgs.dolphin
-        pkgs.kdeFrameworks.kfilemetadata
         pkgs.filelight
         pkgs.shared_mime_info
       ];
@@ -905,7 +917,7 @@ in
           exec ${pkgs.spotify}/bin/spotify --force-device-scale-factor=2
           '';
       in
-         [ pkgs.spotify wrapper ];
+         [ pkgs.spotify wrapper pkgs.playerctl ];
     }
     {
       services.tor.enable = false;
@@ -914,14 +926,21 @@ in
     {
       environment.systemPackages = with pkgs; [
         #haskellPackages.pandoc
-        pandoc
-        # haskellPackages.pandoc-crossref  # broken...
-        haskellPackages.pandoc-citeproc
+        jabref
+        nixpkgs-2009.pandoc
+        nixpkgs-2009.haskellPackages.pandoc-crossref  # broken...
+        nixpkgs-2009.haskellPackages.pandoc-citeproc  # broken...
         texlive.combined.scheme-full
       ];
     }
     {
       environment.systemPackages = [ pkgs.supercollider ];
+    }
+    {
+       virtualisation.virtualbox.host.enable = true;
+       users.extraGroups.vboxusers.members = [ "moritz" ];
+       nixpkgs.config.allowUnfree = true;
+       virtualisation.virtualbox.host.enableExtensionPack = true;
     }
     {
       environment.systemPackages =
@@ -957,6 +976,11 @@ in
           '';
           } ); in
         [
+        xcolor
+        vlc
+        aria
+        jetbrains.pycharm-community
+        obs-studio
         jmtpfs
         qbittorrent
         blender
@@ -964,7 +988,7 @@ in
         inkscape
         arandr
         dmenu
-        soulseekqt
+        # soulseekqt
         gnome3.cheese
         gnome3.gnome-screenshot
         sparkleshare_fixed 
@@ -995,23 +1019,12 @@ in
       ];
     }
     {
-      environment.variables.XDG_CONFIG_DIRS = [ "/etc/xdg" ]; # we should probably have this in NixOS by default
-      environment.etc."xdg/mimeapps.list" = {
-        text = ''
-          [Default Applications]
-          image/png=inkscape.desktop;
-          application/pdf=emacsclient.desktop;
-          x-scheme-handler/org-protocol=org-protocol.desktop;
-        '';
-      };
-    }
-    {
       environment.systemPackages = [ pkgs.niv ];
     }
     {
       environment.variables.EDITOR = "vim";
       environment.systemPackages = [
-        (pkgs.vim_configurable.override { python3 = true; })
+        pkgs.vim_configurable # .override { python3 = true; })
         pkgs.neovim
       ];
     }
@@ -1042,6 +1055,7 @@ in
         ### Micro
         SUBSYSTEMS=="usb", ATTRS{idVendor}=="2a03", ATTRS{idProduct}=="0037", TAG+="uaccess", ENV{ID_MM_DEVICE_IGNORE}="1"
       '';
+      environment.systemPackages = [ pkgs.unstable.qmk ];
     }
     {
       environment.systemPackages = [
@@ -1088,16 +1102,21 @@ in
         let python = (with pkgs; python3.withPackages (python-packages: with python-packages;
           let opencvGtk = opencv4.override (old : { enableGtk2 = true; enableGStreamer = true; });
           in [
+          # gseapy
+          orger
+          hpi
+          icecream
           plotly
           pytorch
-          ignite
+          # ignite
           pytorch-lightning
           python3
           pandas
+          XlsxWriter
           opencvGtk
           openpyxl
           biopython
-          scikitlearn
+          # scikitlearn
           matplotlib
           pyproj
           seaborn
@@ -1143,6 +1162,10 @@ in
           pyls-isort
           pyls-mypy
           smogn
+          docker
+          absl-py
+          hjson
+          pygments
           # ptvsd
           ])); in with pkgs.python3Packages; [
         python  # let is stronger than with, which is why this installs the correct python (the one defined above)
@@ -1177,7 +1200,7 @@ in
       ];
     }
     {
-      environment.systemPackages = [ pkgs.unstable.esphome ];  # 1.15.0 fixes bug
+      # environment.systemPackages = [ pkgs.unstable.esphome ];  # 1.15.0 fixes bug
      
       # from https://raw.githubusercontent.com/platformio/platformio-core/master/scripts/99-platformio-udev.rules
       # QinHeng Electronics HL-340 USB-Serial adapter
@@ -1235,6 +1258,9 @@ in
     }
     {
       environment.systemPackages = with pkgs; [
+        tmux
+        unstable.gpu-burn
+        gdrive
         tldr
         nmap
         sqlite
@@ -1252,7 +1278,7 @@ in
         bind
         file
         which
-        utillinuxCurses
+        # utillinuxCurses
         powerstat
         pciutils
         ag
@@ -1267,7 +1293,7 @@ in
         tree
         gitAndTools.diff-so-fancy
         gitAndTools.git-hub
-        pypi2nix
+        # pypi2nix
         lsyncd
         gnupg
         imagemagick

@@ -8,6 +8,12 @@
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
+      ref = "nixos-21.05";
+    };
+    nixpkgs-2009 = {
+      type = "github";
+      owner = "NixOS";
+      repo = "nixpkgs";
       ref = "nixos-20.09";
     };
     nixpkgs-unstable = {
@@ -24,10 +30,14 @@
       owner = "moritzschaefer";
       # repo = "nixpkgs-channels";
       repo = "nixpkgs";
-      rev = "246294708d4b4d0f7a9b63fb3b6866860ed78704";
+      # rev = "246294708d4b4d0f7a9b63fb3b6866860ed78704";
       # ref = "nixpkgs-unstable";
-      ref = "master";
+      ref = "fix-libnvidia-container";
     };
+    nixpkgs-local = {
+      url = "/home/moritz/Projects/nixpkgs/";
+    };
+    
     nixos-hardware = {
       type = "github";
       owner = "NixOS";
@@ -52,13 +62,14 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-unstable, nixos-hardware, home-manager, nur, musnix }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-local, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, musnix }@inputs:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
         inherit system;
         overlays = self.overlays;
-        config = { allowUnfree = true; };
+        config = { allowUnfree = true;  
+                    allowBroken = true; };
       };
     in {
       nixosConfigurations =
@@ -102,12 +113,96 @@
             overlays = self.overlays; # .${system};
             config = { allowUnfree = true; };
           };
+          nixpkgs-2009 = import inputs.nixpkgs-2009 {
+            inherit system;
+            overlays = self.overlays; # .${system};
+            config = { allowUnfree = true; };
+          };
+        
+          mkNvidiaContainerPkg = { name, containerRuntimePath, configTemplate, additionalPaths ? [] }:
+            let
+              nvidia-container-runtime = pkgs.callPackage "${inputs.nixpkgs}/pkgs/applications/virtualization/nvidia-container-runtime" {
+                inherit containerRuntimePath configTemplate;
+              };
+            in pkgs.symlinkJoin {
+              inherit name;
+              paths = [
+                # (callPackage ../applications/virtualization/libnvidia-container { })
+                (pkgs.callPackage "${inputs.nixpkgs-moritz}/pkgs/applications/virtualization/libnvidia-container" { })
+                nvidia-container-runtime
+                (pkgs.callPackage "${inputs.nixpkgs}/pkgs/applications/virtualization/nvidia-container-toolkit" {
+                  inherit nvidia-container-runtime;
+                })
+              ] ++ additionalPaths;
+            };
+        
+          nvidia-docker = pkgs.mkNvidiaContainerPkg {
+            name = "nvidia-docker";
+            containerRuntimePath = "${pkgs.docker}/libexec/docker/runc";
+            # configTemplate = "${inputs.nixpkgs}/pkgs/applications/virtualization/nvidia-docker/config.toml";
+            configTemplate = builtins.toFile "config.toml" ''
+            disable-require = false
+            #swarm-resource = "DOCKER_RESOURCE_GPU"
+        
+            [nvidia-container-cli]
+            #root = "/run/nvidia/driver"
+            #path = "/usr/bin/nvidia-container-cli"
+            environment = []
+            debug = "/var/log/nvidia-container-runtime-hook.log"
+            ldcache = "/tmp/ld.so.cache"
+            load-kmods = true
+            #no-cgroups = false
+            #user = "root:video"
+            ldconfig = "@@glibcbin@/bin/ldconfig"
+            '';
+            additionalPaths = [ (pkgs.callPackage "${inputs.nixpkgs}/pkgs/applications/virtualization/nvidia-docker" { }) ];
+          };
+          # mesa-pin = import inputs.mesa-pin {
+          #   inherit system;
+          #   overlays = self.overlays; # .${system};
+          #   config = { allowUnfree = true; };
+          # };
         })
         (_self: _super: { conda = _super.conda.override { extraPkgs = [ _super.which ]; }; })  # this is an overlay
         # TODO override R package  (openssl)
         ( let
             myOverride = rec {
               packageOverrides = _self: _super: {
+                cachew = _super.buildPythonPackage rec {
+                  pname = "cachew";
+                  version = "0.9.0";
+                  propagatedBuildInputs = [ _super.setuptools-scm _super.appdirs _super.sqlalchemy ];
+                  nativeBuildInputes = [ _super.setuptools-scm ];
+                  doCheck = false;
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "8d2b82260e35c48e9c27efc8054c46ff3fe2c0a767e7534f1be2719541b5d8a7";
+                  };
+                };
+                hpi =_super.buildPythonPackage rec {
+                  pname = "HPI";
+                  version = "0.3.20210220";
+                  propagatedBuildInputs = [ _super.pytz _super.appdirs _super.more-itertools _super.decorator _super.click _super.setuptools-scm _super.logzero _self.cachew _super.mypy ];  # orjson
+                  nativeBuildInputes = [ _super.setuptools-scm ];
+                  doCheck = false;
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "96ee36d9d217330243ed0da436a97eb553a410df36d174417e8ff338e9802e44";
+                  };
+                };
+                orger =_super.buildPythonPackage rec {
+                  pname = "orger";
+                  version = "0.3.20210220";
+                  propagatedBuildInputs = [ _super.appdirs _super.atomicwrites _super.setuptools-scm ];
+                  nativeBuildInputes = [ _super.setuptools-scm ];
+                  doCheck = false;
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "cb6191e685c91f3bb760b2997c386e0f5e94562d13ab0dc69230c60ddbf52cf0";
+                  };
+                };
+        
+        
                 service-factory =_super.buildPythonPackage rec {
                   pname = "service_factory";
                   version = "0.1.6";
@@ -334,7 +429,7 @@
                   src = builtins.fetchGit {
                     url = "https://github.com/moritzschaefer/scikit-plot";
                     ref = "feature/label-dots";
-                    rev = "da4029703ab8bf45f9e417854d75727471ff8596";
+                    rev = "70ea50616366c87ef730f53efb192217b725a9f0";
                   };
                   
                   # src = _super.fetchPypi {
@@ -421,27 +516,113 @@
                   #   maintainers = [ maintainers.moritzs ];
                   # };
                 };
-                # gseapy = _super.buildPythonPackage rec {
-                #   version = "0.10.4";
-                #   pname = "gseapy";
+                easydev = _super.buildPythonPackage rec {
+                  version = "0.12.0";
+                  pname = "easydev";
         
-                #   propagatedBuildInputs = [
-                #       _super.scipy
-                #       _super.matplotlib
-                #       _super.requests
-                #       _super.joblib
-                #       _super.bioservices  # fuucccckkk
-                #       _self.numpy
-                #       _super.pandas ];
+                  propagatedBuildInputs = [
+                      _super.colorama
+                      _super.pexpect
+                      _super.colorlog
+                      ];
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "f4a340c5ffe193654c387d271bcd466d1fe56bf9850f2704122d3b52b1e6090d";
+                  };
+                  checkPhase = ''
+                    
+                  '';
+                };
+                # attrs = _super.buildPythonPackage rec {
+                #   pname = "attrs";
+                #   version = "21.2.0";
+        
                 #   src = _super.fetchPypi {
                 #     inherit pname version;
-                #     sha256 = "6404b79a3b5dc07ed39f6a4f67b3c662df5bd8b0d50829c2819d8921a768dffb";
+                #     sha256 = "ef6aaac3ca6cd92904cdd0d83f629a15f18053ec84e6432106f7a4d04ae4f5fb";
                 #   };
+        
+                #   # macOS needs clang for testing
+                #   checkInputs = [
+                #     _super.pytest _super.hypothesis _super.zope_interface _super.pympler _super.coverage _super.six
+                #   ];
+        
                 #   checkPhase = ''
-                    
+                #     py.test
                 #   '';
-                #   # pythonImportsCheck = [ "smogn" ];
+        
+                #   # To prevent infinite recursion with pytest
+                #   doCheck = false;
+        
                 # };
+                requests-cache = _super.buildPythonPackage rec {
+                  version = "0.8.0";
+                  pname = "requests-cache";
+        
+                  propagatedBuildInputs = [
+                      _super.requests
+                      _super.appdirs
+                      _super.attrs
+                      _super.cattrs
+                      _super.url-normalize
+                      ];
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "2f80b2a43d6bb886558181133d9b74db12f1eed42c190b53d8e98ab62a0d2231";
+                  };
+                  checkPhase = ''
+                    
+                  '';
+                };
+        
+                bioservices = _super.buildPythonPackage rec {
+                  version = "1.8.0";
+                  pname = "bioservices";
+        
+                  propagatedBuildInputs = [
+                      _super.grequests
+                      _super.requests
+                      _self.requests-cache
+                      _self.easydev
+                      _super.beautifulsoup4
+                      _super.xmltodict
+                      _super.lxml
+                      _super.suds-jurko
+                      _super.appdirs
+                      _super.wrapt
+                      _super.pandas
+                      _super.colorlog
+                      ];
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "e581f7096b0083afa1e9d5b075c46b5a8e042767ca0fedb617daa50d1e1a739f";
+                  };
+                  checkPhase = ''
+                    
+                  '';
+                  # pythonImportsCheck = [ "smogn" ];
+                };
+        
+                gseapy = _super.buildPythonPackage rec {
+                  version = "0.10.4";
+                  pname = "gseapy";
+        
+                  propagatedBuildInputs = [
+                      _super.scipy
+                      _super.matplotlib
+                      _super.requests
+                      _super.joblib
+                      _self.bioservices
+                      _self.numpy
+                      _super.pandas ];
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "6404b79a3b5dc07ed39f6a4f67b3c662df5bd8b0d50829c2819d8921a768dffb";
+                  };
+                  checkPhase = ''
+                    
+                  '';
+                };
                 smogn = _super.buildPythonPackage rec {
                   version = "0.1.2";
                   pname = "smogn";
@@ -471,7 +652,7 @@
                   checkInputs = [ _super.nose ];
                   propagatedBuildInputs = [ _super.pandas _super.matplotlib ];
                 };
-                scikitlearn = _super.buildPythonPackage rec {
+                scikitlearn_0241 = _super.buildPythonPackage rec {
                   pname = "scikit-learn";
                   version = "0.24.1";
                   doCheck = false;

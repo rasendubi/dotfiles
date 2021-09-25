@@ -24,11 +24,11 @@
     "musnix": {
       "flake": false,
       "locked": {
-        "lastModified": 1612749319,
-        "narHash": "sha256-O9lDPEom+i8sUX4PAvl70NNwpMyfGltIT4kqfeuuBeg=",
+        "lastModified": 1615589659,
+        "narHash": "sha256-hCfmP+aPD5XD6DkCsSrP9lpE/9uLZmGQZU9A79ow+xE=",
         "owner": "musnix",
         "repo": "musnix",
-        "rev": "06eaf399789af403133dc8e5ab370c8f2c51d4f5",
+        "rev": "f5053e85b0a578a335a78fa45517a8843154f46b",
         "type": "github"
       },
       "original": {
@@ -55,11 +55,27 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1613208951,
-        "narHash": "sha256-pxDu+9KZBnZkMcKBqSAqw1oQwTIbxTeIwcMtygLsWio=",
+        "lastModified": 1626834727,
+        "narHash": "sha256-ToGgus+UImnLNaLgv+xfo/cI3J/NQl2KB5kvyErXays=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "2118cf551b9944cfdb929b8ea03556f097dd0381",
+        "rev": "63ee5cd99a2e193d5e4c879feb9683ddec23fa03",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-21.05",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs-2009": {
+      "locked": {
+        "lastModified": 1625876282,
+        "narHash": "sha256-z/Gv+11Uzdv3HcQCY+xGi1+iuc3rmCaPzxxDSMnuRAI=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "068984c00e0d4e54b6684d98f6ac47c92dcb642e",
         "type": "github"
       },
       "original": {
@@ -69,30 +85,40 @@
         "type": "github"
       }
     },
+    "nixpkgs-local": {
+      "locked": {
+        "narHash": "sha256-bcz8+bysZR4UIRfi1vRaMLL1hCWD37L3rJqLupjOS04=",
+        "path": "/home/moritz/Projects/nixpkgs",
+        "type": "path"
+      },
+      "original": {
+        "path": "/home/moritz/Projects/nixpkgs",
+        "type": "path"
+      }
+    },
     "nixpkgs-moritz": {
       "locked": {
-        "lastModified": 1603622018,
-        "narHash": "sha256-50LysAMQYXNrG3V0QiZ1uxd/bvIuzDKxFj6/BJPm/gU=",
+        "lastModified": 1628076451,
+        "narHash": "sha256-C4tGyFdfhmbCgrSlr5kIG/YWAH/en/ijSal6xLt7dYs=",
         "owner": "moritzschaefer",
         "repo": "nixpkgs",
-        "rev": "246294708d4b4d0f7a9b63fb3b6866860ed78704",
+        "rev": "4cd6f52017be44ac89091b0ace423935b41ab80e",
         "type": "github"
       },
       "original": {
         "owner": "moritzschaefer",
-        "ref": "master",
+        "ref": "fix-libnvidia-container",
         "repo": "nixpkgs",
-        "rev": "246294708d4b4d0f7a9b63fb3b6866860ed78704",
         "type": "github"
       }
     },
     "nixpkgs-unstable": {
       "locked": {
-        "lastModified": 1613406671,
-        "narHash": "sha256-/dCTzV+BoRZNhH/TZhad7b8pKJruZEBB4+gXFdhXveU=",
+        "lastModified": 1627831632,
+        "narHash": "sha256-ikawu+BIxFS6ob1rTHPXvDVFrMr5/6XHr0JpvESN2LA=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "50dd350c4cdc007db52032fbff7c5bf13a11b8a9",
+        "rev": "3669b12f35aa4cce673191e061349e70bb3d4ddd",
         "type": "github"
       },
       "original": {
@@ -123,6 +149,8 @@
         "musnix": "musnix",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs",
+        "nixpkgs-2009": "nixpkgs-2009",
+        "nixpkgs-local": "nixpkgs-local",
         "nixpkgs-moritz": "nixpkgs-moritz",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nur": "nur"

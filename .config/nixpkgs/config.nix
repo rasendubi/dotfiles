@@ -2,7 +2,7 @@
   allowUnfree = true;
   pulseaudio = true;
   permittedInsecurePackages = [
-    "xpdf-4.02"
+    "xpdf-4.03"
   ];
   packageOverrides = pkgs: {
     nur = import (builtins.fetchTarball "https://github.com/nix-community/NUR/archive/master.tar.gz") {

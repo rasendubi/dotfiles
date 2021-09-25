@@ -53,16 +53,17 @@ let
   #   };
 in
 {
-  disabledModules = [ "services/x11/window-managers/exwm.nix"  ]; 
+  # disabledModules = [ "services/x11/window-managers/exwm.nix"  ]; 
   imports = [
-    (import "${inputs.nixpkgs-moritz}/nixos/modules/services/x11/window-managers/exwm.nix")
+    # (import "${inputs.nixpkgs-moritz}/nixos/modules/services/x11/window-managers/exwm.nix")
     (import "${inputs.musnix}")
     {
     
       nixpkgs.config.allowUnfree = true;
+      nixpkgs.config.allowBroken = true;
 
       # The NixOS release to be compatible with for stateful data such as databases.
-      system.stateVersion = "20.09";
+      system.stateVersion = "20.03";
     }
 
     <<nixos-section>>
@@ -98,6 +99,12 @@ Make this repository flake-compatible:
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
+      ref = "nixos-21.05";
+    };
+    nixpkgs-2009 = {
+      type = "github";
+      owner = "NixOS";
+      repo = "nixpkgs";
       ref = "nixos-20.09";
     };
     nixpkgs-unstable = {
@@ -114,10 +121,14 @@ Make this repository flake-compatible:
       owner = "moritzschaefer";
       # repo = "nixpkgs-channels";
       repo = "nixpkgs";
-      rev = "246294708d4b4d0f7a9b63fb3b6866860ed78704";
+      # rev = "246294708d4b4d0f7a9b63fb3b6866860ed78704";
       # ref = "nixpkgs-unstable";
-      ref = "master";
+      ref = "fix-libnvidia-container";
     };
+    nixpkgs-local = {
+      url = "/home/moritz/Projects/nixpkgs/";
+    };
+    
     nixos-hardware = {
       type = "github";
       owner = "NixOS";
@@ -142,13 +153,14 @@ Make this repository flake-compatible:
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-unstable, nixos-hardware, home-manager, nur, musnix }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-local, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, musnix }@inputs:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
         inherit system;
         overlays = self.overlays;
-        config = { allowUnfree = true; };
+        config = { allowUnfree = true;  
+                    allowBroken = true; };
       };
     in {
       nixosConfigurations =
@@ -206,6 +218,55 @@ Make this repository flake-compatible:
       overlays = self.overlays; # .${system};
       config = { allowUnfree = true; };
     };
+    nixpkgs-2009 = import inputs.nixpkgs-2009 {
+      inherit system;
+      overlays = self.overlays; # .${system};
+      config = { allowUnfree = true; };
+    };
+    
+    mkNvidiaContainerPkg = { name, containerRuntimePath, configTemplate, additionalPaths ? [] }:
+      let
+        nvidia-container-runtime = pkgs.callPackage "${inputs.nixpkgs}/pkgs/applications/virtualization/nvidia-container-runtime" {
+          inherit containerRuntimePath configTemplate;
+        };
+      in pkgs.symlinkJoin {
+        inherit name;
+        paths = [
+          # (callPackage ../applications/virtualization/libnvidia-container { })
+          (pkgs.callPackage "${inputs.nixpkgs-moritz}/pkgs/applications/virtualization/libnvidia-container" { })
+          nvidia-container-runtime
+          (pkgs.callPackage "${inputs.nixpkgs}/pkgs/applications/virtualization/nvidia-container-toolkit" {
+            inherit nvidia-container-runtime;
+          })
+        ] ++ additionalPaths;
+      };
+    
+    nvidia-docker = pkgs.mkNvidiaContainerPkg {
+      name = "nvidia-docker";
+      containerRuntimePath = "${pkgs.docker}/libexec/docker/runc";
+      # configTemplate = "${inputs.nixpkgs}/pkgs/applications/virtualization/nvidia-docker/config.toml";
+      configTemplate = builtins.toFile "config.toml" ''
+      disable-require = false
+      #swarm-resource = "DOCKER_RESOURCE_GPU"
+
+      [nvidia-container-cli]
+      #root = "/run/nvidia/driver"
+      #path = "/usr/bin/nvidia-container-cli"
+      environment = []
+      debug = "/var/log/nvidia-container-runtime-hook.log"
+      ldcache = "/tmp/ld.so.cache"
+      load-kmods = true
+      #no-cgroups = false
+      #user = "root:video"
+      ldconfig = "@@glibcbin@/bin/ldconfig"
+      '';
+      additionalPaths = [ (pkgs.callPackage "${inputs.nixpkgs}/pkgs/applications/virtualization/nvidia-docker" { }) ];
+    };
+    # mesa-pin = import inputs.mesa-pin {
+    #   inherit system;
+    #   overlays = self.overlays; # .${system};
+    #   config = { allowUnfree = true; };
+    # };
   })
 #+end_src
 
@@ -290,6 +351,7 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
   #   ];
   # };
 
+
   nix.maxJobs = lib.mkDefault 8;
 
   # TODO enable and check
@@ -314,6 +376,9 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
   services.xserver.videoDrivers = [ "intel" ];  # modesetting didn't help
   hardware.nvidiaOptimus.disable = true;
   boot.blacklistedKernelModules = [ "nouveau" "nvidia" ];  # bbswitch
+  
+  # https://github.com/NixOS/nixpkgs/issues/94315 <- from here. bugfix for this: https://discourse.nixos.org/t/update-to-21-05-breaks-opengl-because-of-dependency-on-glibc-2-31/14218 note, that there are multiple occurences of this
+  # hardware.opengl.package = pkgs.nixpkgs-2009.mesa_drivers;
   services.xserver = {
     displayManager = {
       lightdm.enable = false;
@@ -339,6 +404,7 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
   # boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11 ];
   # Nvidia stuff (https://discourse.nixos.org/t/how-to-use-nvidia-prime-offload-to-run-the-x-server-on-the-integrated-board/9091/13)
   boot.extraModprobeConfig = "options nvidia \"NVreg_DynamicPowerManagement=0x02\"\n";
+  services.hardware.bolt.enable = true;
   services.udev.extraRules = ''
     # Remove NVIDIA USB xHCI Host Controller devices, if present
     ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{remove}="1"
@@ -360,7 +426,7 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
   services.xserver.videoDrivers = [ "nvidia" ];
   
   hardware.nvidia.modesetting.enable = lib.mkDefault true;
-  hardware.nvidia.optimus_prime.enable = lib.mkDefault true;
+  hardware.nvidia.optimus_prime.enable = lib.mkDefault true;  # warning: The option `hardware.nvidia.optimus_prime.enable' defined in `<unknown-file>' has been renamed to `hardware.nvidia.prime.sync.enable'.
   hardware.nvidia.prime.nvidiaBusId = lib.mkDefault "PCI:1:0:0";
   hardware.nvidia.prime.intelBusId = lib.mkDefault "PCI:0:2:0";
 
@@ -372,6 +438,72 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
       gdm.enable = false;
     };
   };
+}
+#+end_src
+
+***** Nvidia eGPU
+#+name: nixos-section-unused
+#+begin_src nix
+{
+  system.nixos.tags = [ "with-nvidia-egpu" ];
+  # environment.systemPackages = let
+  #   nvidia-offload = pkgs.writeShellScriptBin "nvidia-offload" ''
+  #     export __NV_PRIME_RENDER_OFFLOAD=1
+  #     export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
+  #     export __GLX_VENDOR_LIBRARY_NAME=nvidia
+  #     export __VK_LAYER_NV_optimus=NVIDIA_only
+  #     exec -a "$0" "$@"
+  #   '';
+  # in [ nvidia-offload ]; 
+  # boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11 ];
+  # Nvidia stuff (https://discourse.nixos.org/t/how-to-use-nvidia-prime-offload-to-run-the-x-server-on-the-integrated-board/9091/13)
+  boot.extraModprobeConfig = "options nvidia \"NVreg_DynamicPowerManagement=0x02\"\n";
+  services.hardware.bolt.enable = true;
+  services.udev.extraRules = ''
+    # Remove NVIDIA USB xHCI Host Controller devices, if present
+    ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{remove}="1"
+
+    # Remove NVIDIA USB Type-C UCSI devices, if present
+    ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c8000", ATTR{remove}="1"
+
+    # Remove NVIDIA Audio devices, if present
+    ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{remove}="1"
+
+    # Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
+    ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
+    ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
+
+    # Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
+    ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
+    ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
+    '';
+  # hardware.opengl.package = pkgs.nixpkgs-2009.mesa_drivers;
+  services.xserver.videoDrivers = [ "intel" ];
+  boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11 ];
+  boot.blacklistedKernelModules = [ "nouveau" "nvidia_drm" "nvidia_modeset" "nvidia" ];
+  environment.systemPackages = [ pkgs.linuxPackages.nvidia_x11 ]; # packages
+  # hardware.nvidia.package = pkgs.os-specific.linux.nvidia_x11.generic 
+  # /home/moritz/Projects/nixpkgs/pkgs/os-specific/linux/nvidia-x11/default.nix <- add version 450
+  hardware.opengl = {
+    enable = true;
+    driSupport = true;
+    extraPackages = with pkgs; [
+      # intel-media-driver # LIBVA_DRIVER_NAME=iHD
+      # vaapiIntel         # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
+      # vaapiVdpau
+      # libvdpau-va-gl
+      pkgs.linuxPackages.nvidia_x11.out  # required for nvidia-docker
+    ];
+    extraPackages32 = [ pkgs.linuxPackages.nvidia_x11.lib32 ];
+  };
+  
+  services.xserver = {
+    displayManager = {
+      lightdm.enable = false;
+      gdm.enable = true;
+    };
+  };
+  
 }
 #+end_src
 
@@ -414,13 +546,14 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
 {
   services.xserver.libinput = {
     enable = true;
-    accelSpeed = "0.7";
+    touchpad.accelSpeed = "0.7";
   };
-  # displayManager.lightdm.greeters.gtk.cursorTheme = {  # TODO if home manager cursor doesnt work
-  #   name = "Vanilla-DMZ";
-  #   package = pkgs.vanilla-dmz;
-  #   size = 64;
-  # };
+  services.xserver.displayManager.lightdm.greeters.gtk.cursorTheme = {
+    name = "Vanilla-DMZ";
+    package = pkgs.vanilla-dmz;
+    size = 64;
+  };
+  environment.variables.XCURSOR_SIZE = "64";
 }
 #+end_src
 *** mobook
@@ -575,7 +708,7 @@ Clickpad and DPI:
 {
   services.xserver.libinput = {
     enable = true;
-    accelSpeed = "0.7";
+    touchpad.accelSpeed = "0.7";
   };
   # displayManager.lightdm.greeters.gtk.cursorTheme = {  # TODO if home manager cursor doesnt work
   #   name = "Vanilla-DMZ";
@@ -615,7 +748,7 @@ I have a bluetooth headset, so this enables bluetooth audio in NixOS.
   hardware.bluetooth.enable = true;
   hardware.bluetooth.powerOnBoot = false;
   services.blueman.enable = true;
-  hardware.bluetooth.config.General.Enable = "Source,Sink,Media,Socket";
+  hardware.bluetooth.settings.General.Enable = "Source,Sink,Media,Socket";
   hardware.pulseaudio = {
     enable = true;
 
@@ -649,7 +782,7 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
   fileSystems."/mnt/cclab_nas" = {
     device = "//nas22.ethz.ch/biol_imhs_ciaudo";
     fsType = "cifs";
-    options = [ "credentials=/home/moritz/.secret/cclab_nas.credentials" "workgroup=d.ethz.ch" "uid=moritz" "gid=users" "noauto"];
+    options = [ "credentials=/home/moritz/.secret/cclab_nas.credentials" "workgroup=d.ethz.ch" "uid=moritz" "gid=users" "noauto" "echo_interval=30" ];
   };
 
 # https://releases.nixos.org/nix-dev/2016-September/021763.html  TODO not working :/
@@ -763,7 +896,7 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
 #+begin_src nix
 {
   nix.gc.automatic = true;
-  nix.gc.options = "--delete-older-than 12d";
+  nix.gc.options = "--delete-generations +12";
 }
 #+end_src
 
@@ -921,9 +1054,10 @@ Update [[https://linux.die.net/man/1/locate][locate]] database daily.
 #+begin_src nix
 {
   services.openssh = {
-    enable = false;
+    enable = true;
     passwordAuthentication = false;
   };
+  users.users.moritz.openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMc+scl71X7g21XFygTNB3onyGuION89iHSUw0eYcN2H mail+macbook@moritzs.de" ];
 }
 #+end_src
 *** Mosh
@@ -995,10 +1129,16 @@ Enable firewall. This blocks all ports (for ingress traffic) and pings.
 {
   virtualisation.virtualbox.host.enable = true;
   virtualisation.docker.enable = true;
+  virtualisation.docker.enableNvidia = true;
+  
+  systemd.enableUnifiedCgroupHierarchy = false;  # workaround https://github.com/NixOS/nixpkgs/issues/127146
+  hardware.opengl.driSupport32Bit = true;
   environment.systemPackages = [
     pkgs.docker-compose
     pkgs.kvm
     pkgs.qemu
+    pkgs.nvtop # for nvidia
+    pkgs.usbtop
   ];
 
   users.users.moritz.extraGroups = ["libvirtd" "docker"];  # the former is required for qemu I think 
@@ -1013,13 +1153,13 @@ I use borg for backups.
   environment.systemPackages =
     let mount_external = pkgs.writeScriptBin "mount-external" ''
       #!${pkgs.stdenv.shell}
-      sudo ${pkgs.cryptsetup}/bin/cryptsetup luksOpen /dev/sda2 sda2
-      sudo mount /dev/mapper/sda2 /mnt/encrypted
+      sudo ${pkgs.cryptsetup}/bin/cryptsetup luksOpen /dev/disk/by-uuid/aeebfb90-65b5-4515-bf6e-001d0cfc8a40 encrypted-2tb
+      sudo mount /dev/mapper/encrypted-2tb /mnt/encrypted
       '';
     umount_external = pkgs.writeScriptBin "umount-external" ''
       #!${pkgs.stdenv.shell}
       sudo umount /mnt/encrypted
-      sudo ${pkgs.cryptsetup}/bin/cryptsetup luksClose sda2
+      sudo ${pkgs.cryptsetup}/bin/cryptsetup luksClose encrypted-2tb
       '';
   in
      [ mount_external umount_external pkgs.borgbackup ];
@@ -1251,7 +1391,7 @@ Setup timezone:
       startx.enable = false;
       autoLogin = {  # if errors, then disable again
         user = "moritz";
-        enable = true;
+        enable = false;
       }; 
     };
     enable = true;
@@ -1286,15 +1426,15 @@ I use EXWM:
     stumpwm.enable = false;
   };
   # services.xserver.displayManager.defaultSession = "none+exwm";  # Firefox works more fluently with plasma5+exwm instead of "none+exwm". or does it??
-  # services.xserver.desktopManager = {
-  #   xterm.enable = false;
-  #   plasma5.enable = true;
-  #   xfce = {
-  #     enable = true;
-  #     noDesktop= true;
-  #     enableXfwm = true;
-  #   };
-  # };
+  services.xserver.desktopManager = {
+    xterm.enable = false;
+    plasma5.enable = true;
+    xfce = {
+      enable = true;
+      noDesktop= true;
+      enableXfwm = true;
+    };
+  };
   # services.picom.enable = true;
 }
 #+end_src
@@ -1414,7 +1554,7 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
 {
   fonts = {
     # fontDir.enable = true; # 21.03 rename
-    enableFontDir = true;
+    fontDir.enable = true;
     enableGhostscriptFonts = false;
 
     fonts = with pkgs; [
@@ -1521,7 +1661,6 @@ I don't use full KDE but some apps are definitely nice.
   environment.systemPackages = [
     pkgs.gwenview
     pkgs.dolphin
-    pkgs.kdeFrameworks.kfilemetadata
     pkgs.filelight
     pkgs.shared_mime_info
   ];
@@ -1633,7 +1772,7 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
       exec ${pkgs.spotify}/bin/spotify --force-device-scale-factor=2
       '';
   in
-     [ pkgs.spotify wrapper ];
+     [ pkgs.spotify wrapper pkgs.playerctl ];
 }
 #+end_src
 ** TOR
@@ -1646,7 +1785,7 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 #+end_src
 
 ** Steam
-#+name: nixos-section-unused
+#+name: nixos-section-unusel
 #+begin_src nix
 {
   environment.systemPackages = [ pkgs.steam ];
@@ -1661,9 +1800,10 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 {
   environment.systemPackages = with pkgs; [
     #haskellPackages.pandoc
-    pandoc
-    # haskellPackages.pandoc-crossref  # broken...
-    haskellPackages.pandoc-citeproc
+    jabref
+    nixpkgs-2009.pandoc
+    nixpkgs-2009.haskellPackages.pandoc-crossref  # broken...
+    nixpkgs-2009.haskellPackages.pandoc-citeproc  # broken...
     texlive.combined.scheme-full
   ];
 }
@@ -1675,6 +1815,17 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
   environment.systemPackages = [ pkgs.supercollider ];
 }
 #+end_src
+
+** Virtualbox
+#+name: nixos-section
+#+begin_src nix
+{
+   virtualisation.virtualbox.host.enable = true;
+   users.extraGroups.vboxusers.members = [ "moritz" ];
+   nixpkgs.config.allowUnfree = true;
+   virtualisation.virtualbox.host.enableExtensionPack = true;
+}
+#+END_SRC
 
 ** Other applications
 Don't require additional setup.
@@ -1715,6 +1866,11 @@ Don't require additional setup.
       '';
       } ); in
     [
+    xcolor
+    vlc
+    aria
+    jetbrains.pycharm-community
+    obs-studio
     jmtpfs
     qbittorrent
     blender
@@ -1722,7 +1878,7 @@ Don't require additional setup.
     inkscape
     arandr
     dmenu
-    soulseekqt
+    # soulseekqt
     gnome3.cheese
     gnome3.gnome-screenshot
     sparkleshare_fixed 
@@ -1753,18 +1909,27 @@ Don't require additional setup.
   ];
 }
 #+end_src
-** Default applications
+** CANCELLED Default applications
+CLOSED: [2021-07-14 Wed 12:52]
+:LOGBOOK:
+- State "CANCELLED"  from              [2021-07-14 Wed 12:52] \\
+  this is done by home.nix
+:END:
 # WARNING: This is also defined in my home.nix
-#+name: nixos-section
+#+name: nixos-section-unused
 #+begin_src nix
 {
   environment.variables.XDG_CONFIG_DIRS = [ "/etc/xdg" ]; # we should probably have this in NixOS by default
   environment.etc."xdg/mimeapps.list" = {
     text = ''
       [Default Applications]
-      image/png=inkscape.desktop;
+      image/png=inkscape.desktop; # this is wrong anyways
+      image/svg+xml=inkscape.desktop; # this is wrong anyways
+      
       application/pdf=emacsclient.desktop;
       x-scheme-handler/org-protocol=org-protocol.desktop;
+      x-scheme-handler/http=qutebrowser.desktop;
+      x-scheme-handler/https=qutebrowser.desktop;
     '';
   };
 }
@@ -1786,7 +1951,7 @@ I'm a seasoned Vim user, but I've switched to emacs.
 {
   environment.variables.EDITOR = "vim";
   environment.systemPackages = [
-    (pkgs.vim_configurable.override { python3 = true; })
+    pkgs.vim_configurable # .override { python3 = true; })
     pkgs.neovim
   ];
 }
@@ -1847,6 +2012,7 @@ Start emacs as a daemon:
     ### Micro
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="2a03", ATTRS{idProduct}=="0037", TAG+="uaccess", ENV{ID_MM_DEVICE_IGNORE}="1"
   '';
+  environment.systemPackages = [ pkgs.unstable.qmk ];
 }
 #+end_src
 
@@ -2156,16 +2322,21 @@ set-window-option -g automatic-rename
     let python = (with pkgs; python3.withPackages (python-packages: with python-packages;
       let opencvGtk = opencv4.override (old : { enableGtk2 = true; enableGStreamer = true; });
       in [
+      # gseapy
+      orger
+      hpi
+      icecream
       plotly
       pytorch
-      ignite
+      # ignite
       pytorch-lightning
       python3
       pandas
+      XlsxWriter
       opencvGtk
       openpyxl
       biopython
-      scikitlearn
+      # scikitlearn
       matplotlib
       pyproj
       seaborn
@@ -2211,6 +2382,10 @@ set-window-option -g automatic-rename
       pyls-isort
       pyls-mypy
       smogn
+      docker
+      absl-py
+      hjson
+      pygments
       # ptvsd
       ])); in with pkgs.python3Packages; [
     python  # let is stronger than with, which is why this installs the correct python (the one defined above)
@@ -2233,6 +2408,41 @@ set-window-option -g automatic-rename
 ( let
     myOverride = rec {
       packageOverrides = _self: _super: {
+        cachew = _super.buildPythonPackage rec {
+          pname = "cachew";
+          version = "0.9.0";
+          propagatedBuildInputs = [ _super.setuptools-scm _super.appdirs _super.sqlalchemy ];
+          nativeBuildInputes = [ _super.setuptools-scm ];
+          doCheck = false;
+          src = _super.fetchPypi {
+            inherit pname version;
+            sha256 = "8d2b82260e35c48e9c27efc8054c46ff3fe2c0a767e7534f1be2719541b5d8a7";
+          };
+        };
+        hpi =_super.buildPythonPackage rec {
+          pname = "HPI";
+          version = "0.3.20210220";
+          propagatedBuildInputs = [ _super.pytz _super.appdirs _super.more-itertools _super.decorator _super.click _super.setuptools-scm _super.logzero _self.cachew _super.mypy ];  # orjson
+          nativeBuildInputes = [ _super.setuptools-scm ];
+          doCheck = false;
+          src = _super.fetchPypi {
+            inherit pname version;
+            sha256 = "96ee36d9d217330243ed0da436a97eb553a410df36d174417e8ff338e9802e44";
+          };
+        };
+        orger =_super.buildPythonPackage rec {
+          pname = "orger";
+          version = "0.3.20210220";
+          propagatedBuildInputs = [ _super.appdirs _super.atomicwrites _super.setuptools-scm ];
+          nativeBuildInputes = [ _super.setuptools-scm ];
+          doCheck = false;
+          src = _super.fetchPypi {
+            inherit pname version;
+            sha256 = "cb6191e685c91f3bb760b2997c386e0f5e94562d13ab0dc69230c60ddbf52cf0";
+          };
+        };
+
+
         service-factory =_super.buildPythonPackage rec {
           pname = "service_factory";
           version = "0.1.6";
@@ -2459,7 +2669,7 @@ set-window-option -g automatic-rename
           src = builtins.fetchGit {
             url = "https://github.com/moritzschaefer/scikit-plot";
             ref = "feature/label-dots";
-            rev = "da4029703ab8bf45f9e417854d75727471ff8596";
+            rev = "70ea50616366c87ef730f53efb192217b725a9f0";
           };
           
           # src = _super.fetchPypi {
@@ -2546,27 +2756,113 @@ set-window-option -g automatic-rename
           #   maintainers = [ maintainers.moritzs ];
           # };
         };
-        # gseapy = _super.buildPythonPackage rec {
-        #   version = "0.10.4";
-        #   pname = "gseapy";
+        easydev = _super.buildPythonPackage rec {
+          version = "0.12.0";
+          pname = "easydev";
 
-        #   propagatedBuildInputs = [
-        #       _super.scipy
-        #       _super.matplotlib
-        #       _super.requests
-        #       _super.joblib
-        #       _super.bioservices  # fuucccckkk
-        #       _self.numpy
-        #       _super.pandas ];
+          propagatedBuildInputs = [
+              _super.colorama
+              _super.pexpect
+              _super.colorlog
+              ];
+          src = _super.fetchPypi {
+            inherit pname version;
+            sha256 = "f4a340c5ffe193654c387d271bcd466d1fe56bf9850f2704122d3b52b1e6090d";
+          };
+          checkPhase = ''
+            
+          '';
+        };
+        # attrs = _super.buildPythonPackage rec {
+        #   pname = "attrs";
+        #   version = "21.2.0";
+
         #   src = _super.fetchPypi {
         #     inherit pname version;
-        #     sha256 = "6404b79a3b5dc07ed39f6a4f67b3c662df5bd8b0d50829c2819d8921a768dffb";
+        #     sha256 = "ef6aaac3ca6cd92904cdd0d83f629a15f18053ec84e6432106f7a4d04ae4f5fb";
         #   };
+
+        #   # macOS needs clang for testing
+        #   checkInputs = [
+        #     _super.pytest _super.hypothesis _super.zope_interface _super.pympler _super.coverage _super.six
+        #   ];
+
         #   checkPhase = ''
-            
+        #     py.test
         #   '';
-        #   # pythonImportsCheck = [ "smogn" ];
+
+        #   # To prevent infinite recursion with pytest
+        #   doCheck = false;
+
         # };
+        requests-cache = _super.buildPythonPackage rec {
+          version = "0.8.0";
+          pname = "requests-cache";
+
+          propagatedBuildInputs = [
+              _super.requests
+              _super.appdirs
+              _super.attrs
+              _super.cattrs
+              _super.url-normalize
+              ];
+          src = _super.fetchPypi {
+            inherit pname version;
+            sha256 = "2f80b2a43d6bb886558181133d9b74db12f1eed42c190b53d8e98ab62a0d2231";
+          };
+          checkPhase = ''
+            
+          '';
+        };
+
+        bioservices = _super.buildPythonPackage rec {
+          version = "1.8.0";
+          pname = "bioservices";
+
+          propagatedBuildInputs = [
+              _super.grequests
+              _super.requests
+              _self.requests-cache
+              _self.easydev
+              _super.beautifulsoup4
+              _super.xmltodict
+              _super.lxml
+              _super.suds-jurko
+              _super.appdirs
+              _super.wrapt
+              _super.pandas
+              _super.colorlog
+              ];
+          src = _super.fetchPypi {
+            inherit pname version;
+            sha256 = "e581f7096b0083afa1e9d5b075c46b5a8e042767ca0fedb617daa50d1e1a739f";
+          };
+          checkPhase = ''
+            
+          '';
+          # pythonImportsCheck = [ "smogn" ];
+        };
+
+        gseapy = _super.buildPythonPackage rec {
+          version = "0.10.4";
+          pname = "gseapy";
+
+          propagatedBuildInputs = [
+              _super.scipy
+              _super.matplotlib
+              _super.requests
+              _super.joblib
+              _self.bioservices
+              _self.numpy
+              _super.pandas ];
+          src = _super.fetchPypi {
+            inherit pname version;
+            sha256 = "6404b79a3b5dc07ed39f6a4f67b3c662df5bd8b0d50829c2819d8921a768dffb";
+          };
+          checkPhase = ''
+            
+          '';
+        };
         smogn = _super.buildPythonPackage rec {
           version = "0.1.2";
           pname = "smogn";
@@ -2596,7 +2892,7 @@ set-window-option -g automatic-rename
           checkInputs = [ _super.nose ];
           propagatedBuildInputs = [ _super.pandas _super.matplotlib ];
         };
-        scikitlearn = _super.buildPythonPackage rec {
+        scikitlearn_0241 = _super.buildPythonPackage rec {
           pname = "scikit-learn";
           version = "0.24.1";
           doCheck = false;
@@ -2677,7 +2973,7 @@ set-window-option -g automatic-rename
 #+name: nixos-section
 #+begin_src nix
 {
-  environment.systemPackages = [ pkgs.unstable.esphome ];  # 1.15.0 fixes bug
+  # environment.systemPackages = [ pkgs.unstable.esphome ];  # 1.15.0 fixes bug
  
   # from https://raw.githubusercontent.com/platformio/platformio-core/master/scripts/99-platformio-udev.rules
   # QinHeng Electronics HL-340 USB-Serial adapter
@@ -2745,6 +3041,9 @@ set-window-option -g automatic-rename
 #+begin_src nix
 {
   environment.systemPackages = with pkgs; [
+    tmux
+    unstable.gpu-burn
+    gdrive
     tldr
     nmap
     sqlite
@@ -2762,7 +3061,7 @@ set-window-option -g automatic-rename
     bind
     file
     which
-    utillinuxCurses
+    # utillinuxCurses
     powerstat
     pciutils
     ag
@@ -2777,7 +3076,7 @@ set-window-option -g automatic-rename
     tree
     gitAndTools.diff-so-fancy
     gitAndTools.git-hub
-    pypi2nix
+    # pypi2nix
     lsyncd
     gnupg
     imagemagick
