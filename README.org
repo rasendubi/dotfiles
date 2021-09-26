@@ -832,6 +832,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       restclient
       rjsx-mode
       rust-mode
+      slime
       smex
       spaceline
       terraform-mode
@@ -7598,6 +7599,23 @@ Emacs configuration.
 
   (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
   (org-babel-do-load-languages 'org-babel-load-languages '((plantuml . t))))
+#+end_src
+*** Common Lisp
+Install SBCL.
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.packages = [
+    pkgs.sbcl
+  ];
+}
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package slime
+  :commands (slime)
+  :config
+  (setq inferior-lisp-program "sbcl"))
 #+end_src
 * Look and Feel
 ** Remove the clutter

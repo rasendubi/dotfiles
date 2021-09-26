@@ -778,6 +778,11 @@
               home.packages = [ pkgs.plantuml ];
             }
             {
+              home.packages = [
+                pkgs.sbcl
+              ];
+            }
+            {
               fonts.fontconfig.enable = true;
               home.packages = [
                 pkgs.inconsolata
@@ -919,6 +924,7 @@
                     restclient
                     rjsx-mode
                     rust-mode
+                    slime
                     smex
                     spaceline
                     terraform-mode
