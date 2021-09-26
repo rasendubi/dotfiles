@@ -3984,6 +3984,11 @@ Set my org files location.
       org-agenda-files (rasen/org-files-in-dir "~/org"))
 #+end_src
 
+Show agenda as the only window in a new tag and close the tab on quit (so that agenda does not mess up with my layout).
+#+begin_src emacs-lisp
+(setq org-agenda-window-setup 'other-tab)
+#+end_src
+
 Configure my agenda view.
 #+name: org-config
 #+begin_src emacs-lisp
