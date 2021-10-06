@@ -3430,8 +3430,14 @@ My capture templates.
          "* %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n")
 
         ("l" "link" entry (file rasen/org-refile-file)
-         "* %a \n:PROPERTIES:\n:CREATED:  %U\n:END:\n"
+         "* %a %(rasen/org-title \"%F\") \n:PROPERTIES:\n:CREATED:  %U\n:END:\n"
          :immediate-finish t)))
+
+(defun rasen/org-title (file)
+  (if-let (b (find-buffer-visiting file))
+      (with-current-buffer b
+        (and (derived-mode-p 'org-mode)
+             (cdar (org-collect-keywords '("title") '("title")))))))
 
 (defun rasen/org-capture-link ()
   (interactive)
