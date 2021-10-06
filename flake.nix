@@ -1085,8 +1085,8 @@
                   src = pkgs.fetchzip {
                     name = "input-mono-${old.version}.zip";
                     extension = ".zip";
-                    url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=&.zip";
-                    sha256 = "sha256-hOWgCMlaR3CVeTeNjQN8QS1lL1Qj33baZWmrAz/AXGk=";
+                    url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
+                    sha256 = "sha256-vchfXs2QZJlBQsjfklFwXeAJEQtqA0bB3iv6HeZO1Jc=";
               
                     stripRoot = false;
               

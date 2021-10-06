@@ -86,13 +86,14 @@ Pieces not (yet) covered in org files are:
     - [[#workman][Workman]]
     - [[#keyboard-layout][Keyboard layout]]
     - [[#xkeymap][Xkeymap]]
+    - [[#compose-keys][Compose keys]]
+    - [[#xcape][xcape]]
     - [[#emacs-quail][Emacs quail]]
   - [[#mouse][Mouse]]
     - [[#python-listener][Python listener]]
     - [[#emacs-handler][Emacs handler]]
 - [[#network][Network]]
   - [[#networkmanager][NetworkManager]]
-  - [[#vpn][VPN]]
   - [[#ssh][SSH]]
     - [[#mosh][Mosh]]
   - [[#dnsmasq][dnsmasq]]
@@ -106,6 +107,7 @@ Pieces not (yet) covered in org files are:
   - [[#direnv][direnv]]
     - [[#flake-1][flake]]
     - [[#direnv--lorri][direnv + lorri]]
+  - [[#virtualbox][VirtualBox]]
 - [[#hardware][Hardware]]
   - [[#do-not-suspend-on-ac][Do not suspend on AC]]
   - [[#autorandr][Autorandr]]
@@ -131,7 +133,6 @@ Pieces not (yet) covered in org files are:
   - [[#lispyville][lispyville]]
 - [[#org-mode][Org-mode]]
   - [[#general-2][General]]
-  - [[#drill][Drill]]
   - [[#todo][Todo]]
   - [[#highlight-projects][Highlight projects]]
   - [[#clocking][Clocking]]
@@ -151,8 +152,11 @@ Pieces not (yet) covered in org files are:
   - [[#image-preview][Image preview]]
   - [[#export][Export]]
   - [[#crypt][Crypt]]
+  - [[#org-list][org-list]]
+  - [[#org-checklist][org-checklist]]
   - [[#habits][Habits]]
   - [[#adaptive-wrap][adaptive-wrap]]
+  - [[#org-id][org-id]]
   - [[#org-roam][org-roam]]
     - [[#org-roam-exclude-org-fc][org-roam-exclude-org-fc]]
     - [[#org-roam-slip-boxes][org-roam-slip-boxes]]
@@ -162,6 +166,9 @@ Pieces not (yet) covered in org files are:
     - [[#org-roam-protocol][org-roam-protocol]]
     - [[#org-roam-graph][org-roam-graph]]
     - [[#org-roam-kebab-slugs][org-roam-kebab-slugs]]
+    - [[#org-roam-update-ids][org-roam-update-ids]]
+    - [[#org-roam-new-node][org-roam-new-node]]
+  - [[#org-roam-ui][org-roam-ui]]
   - [[#org-ref][org-ref]]
   - [[#org-roam-bibtex][org-roam-bibtex]]
   - [[#toc-org][toc-org]]
@@ -246,6 +253,7 @@ Pieces not (yet) covered in org files are:
     - [[#protobuf][protobuf]]
     - [[#sql][SQL]]
     - [[#plantuml][PlantUML]]
+    - [[#common-lisp][Common Lisp]]
 - [[#look-and-feel][Look and Feel]]
   - [[#remove-the-clutter][Remove the clutter]]
   - [[#beacon-mode][beacon-mode]]
@@ -2347,18 +2355,6 @@ Auto-start ~nm-applet~ (emacs-lisp)
 #+begin_src emacs-lisp
 (rasen/autostart "nm-applet")
 #+end_src
-** VPN
-(~<<nixos-section>>~)
-#+name: nixos-section
-#+begin_src nix
-{
-  services.openvpn.servers.nano-vpn = {
-    config = ''
-      config /root/openvpn/nano-vpn.ovpn
-    '';
-  };
-}
-#+end_src
 ** SSH
 (~<<nixos-section>>~)
 #+name: nixos-section
@@ -2502,11 +2498,6 @@ in {
   # Start backup on boot if missed one while laptop was off
   systemd.timers.borgbackup-job-all.timerConfig = {
     Persistent = true;
-  };
-
-  # Require VPN connection for repo to be reachable
-  systemd.services.borgbackup-job-all = {
-    requires = ["openvpn-nano-vpn.service"];
   };
 })
 #+end_src
@@ -7763,8 +7754,8 @@ I like [[https://input.djr.com/download/?customize&fontSelection=fourStyleFamily
     src = pkgs.fetchzip {
       name = "input-mono-${old.version}.zip";
       extension = ".zip";
-      url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=&.zip";
-      sha256 = "sha256-hOWgCMlaR3CVeTeNjQN8QS1lL1Qj33baZWmrAz/AXGk=";
+      url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
+      sha256 = "sha256-vchfXs2QZJlBQsjfklFwXeAJEQtqA0bB3iv6HeZO1Jc=";
 
       stripRoot = false;
 
