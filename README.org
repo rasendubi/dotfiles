@@ -3274,7 +3274,7 @@ Use the following states: =TODO= =NEXT= =DONE= =CANCELED= =WAIT=.
 When repeated task is finished, go back to =TODO= state.
 #+name: org-config
 #+begin_src emacs-lisp
-(setq-default org-todo-repeat-to-state "TODO")
+(setq-default org-todo-repeat-to-state "NEXT")
 #+end_src
 
 Log state changes to "LOGBOOK" drawer.
