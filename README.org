@@ -3711,7 +3711,7 @@ With a `C-u` ARG, just jump to the headline."
 
 (defmacro rasen/make-refile-hydra (hydraname name &rest options)
   (declare (indent defun))
-  `(defhydra ,hydraname (:exit t)
+  `(defhydra ,hydraname (:foreign-keys run :exit t)
      ,name
 
      ,@(mapcar (lambda (x)
@@ -3719,25 +3719,36 @@ With a `C-u` ARG, just jump to the headline."
                        (name (nth 1 x))
                        (file (nth 2 x))
                        (path (nthcdr 3 x)))
-                   `(,key (rasen/refile ,file ',path current-prefix-arg) ,name)))
+                   (if (stringp file)
+                       `(,key (rasen/refile ,file ',path current-prefix-arg) ,name)
+                     `(,key ,file ,name))))
                options)
-
-     ("w"
-      (if (eq major-mode 'org-agenda-mode)
-          (org-agenda-refile current-prefix-arg)
-        (org-refile current-prefix-arg))
-      "select")
 
      ("q" nil "cancel")))
 
+(rasen/make-refile-hydra rasen/org-refile-hydra-someday "Someday"
+  ("l"  "Latte List" "~/org/plan.org"       "Someday/Maybe" "Latte List")
+  ("u"  "Uniorg"     "~/org/plan.org"       "Someday/Maybe" "Uniorg")
+  ("n"  "Notes"      "~/org/plan.org"       "Someday/Maybe" "Notes")
+  ("a"  "Writing"    "~/org/plan.org"       "Someday/Maybe" "Writing / website")
+  ("c"  "Computer"   "~/org/plan.org"       "Someday/Maybe" "Computer")
+  ("r"  "Reading"    "~/org/plan.org"       "Someday/Maybe" "Reading")
+  ("s"  "Misc"       "~/org/plan.org"       "Someday/Maybe" "Misc"))
+
 (rasen/make-refile-hydra rasen/org-refile-hydra "Refile"
   ("p"  "Projects"   "~/org/plan.org"       "Projects")
-  ("t"  "To do"      "~/org/plan.org"       "To do")
-  ("s"  "Someday"    "~/org/plan.org"       "Someday/Maybe")
-  ("P"  "Periodic"   "~/org/plan.org"       "Periodic")
-  ("T"  "Tracking"   "~/org/plan.org"       "Tracking")
+
+  ("n"  "To do"      "~/org/plan.org"       "To do")
+  ("s"  "Someday"    rasen/org-refile-hydra-someday/body)
+  ("t"  "Tickler"    "~/org/plan.org"       "Tickler")
+  ("W"  "Waiting"    "~/org/plan.org"       "Waiting")
   ("r"  "Resources"  "~/org/resources.org")
-  ("b"  "Books"      "~/org/books.org"))
+  ("b"  "Books"      "~/org/books.org")
+
+  ("w" "select"
+   (if (eq major-mode 'org-agenda-mode)
+       (org-agenda-refile current-prefix-arg)
+     (org-refile current-prefix-arg))))
 
 (leader-def 'normal 'org-mode-map         "w" #'rasen/org-refile-hydra/body)
 (leader-def 'motion 'org-agenda-mode-map  "w" #'rasen/org-refile-hydra/body)
@@ -4519,11 +4530,8 @@ Do not treat [[*org-fc][org-fc]] cards as nodes.
 #+begin_src emacs-lisp :tangle no
 (setq org-roam-db-node-include-function
       (defun rasen/org-roam-include ()
-        (or
-         ;; exclude org-fc headlines from org-roam
-         (not (member "fc" (org-get-tags)))
-         ;; but include infant notes
-         (member "infant" (org-get-tags)))))
+        ;; exclude org-fc headlines from org-roam
+        (not (member "fc" (org-get-tags)))))
 #+end_src
 *** org-roam-slip-boxes
 Slip boxes are basically different directories that I split notes into.
@@ -4697,7 +4705,7 @@ All daily notes are stored in a separate directory so they do not mix up with no
                               "- day of week :: %<%A>\n"
                               "\n"
                               "* Events\n"
-                              "* Mood\n"
+                              "* Decisions\n"
                               "* Tomorrow\n")))))
 #+end_src
 *** org-roam-protocol
