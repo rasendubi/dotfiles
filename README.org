@@ -3077,7 +3077,7 @@ Default bindings for ~RET~ prevent many of my commands from working. Remap ~RET~
 #+begin_src emacs-lisp
 (use-package lispyville
   :hook
-  ((clojure-mode emacs-lisp-mode) . lispyville-mode)
+  ((clojure-mode emacs-lisp-mode lisp-mode) . lispyville-mode)
   :config
   (lispyville-set-key-theme
    '(operators
@@ -6780,7 +6780,8 @@ Keep lisp code always indented.
   :hook
   (clojure-mode . aggressive-indent-mode)
   (clojurescript-mode . aggressive-indent-mode)
-  (emacs-lisp-mode . aggressive-indent-mode))
+  (emacs-lisp-mode . aggressive-indent-mode)
+  (lisp-mode . aggressive-indent-mode))
 #+end_src
 **** Fix indentation for keywords
 Alternate indent function definition.
@@ -7598,6 +7599,7 @@ Install SBCL.
 {
   home.packages = [
     pkgs.sbcl
+    pkgs.clpm
   ];
 }
 #+end_src

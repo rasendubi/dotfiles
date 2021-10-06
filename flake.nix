@@ -780,6 +780,7 @@
             {
               home.packages = [
                 pkgs.sbcl
+                pkgs.clpm
               ];
             }
             {

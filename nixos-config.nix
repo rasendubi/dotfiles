@@ -111,11 +111,6 @@ let
         systemd.timers.borgbackup-job-all.timerConfig = {
           Persistent = true;
         };
-      
-        # Require VPN connection for repo to be reachable
-        systemd.services.borgbackup-job-all = {
-          requires = ["openvpn-nano-vpn.service"];
-        };
       })
       {
         console.packages = [
@@ -233,13 +228,6 @@ in
       };
     
       users.extraUsers.rasen.extraGroups = [ "networkmanager" ];
-    }
-    {
-      services.openvpn.servers.nano-vpn = {
-        config = ''
-          config /root/openvpn/nano-vpn.ovpn
-        '';
-      };
     }
     {
       services.openssh = {
