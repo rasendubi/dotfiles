@@ -6021,19 +6021,19 @@ vterm is a terminal emulator using libvterm. Which allows running it within Emac
   ;; (push 'vterm-mode evil-motion-state-modes)
   (general-def 'vterm-mode-map
     "<f1>" nil
-    "<return>" nil)
-  (general-def '(insert normal) 'vterm-mode-map
-    "<C-return>" #'vterm-send-return
-    "C-c C-z" #'evil-collection-vterm-toggle-send-escape
-    "C-c z" #'evil-collection-vterm-toggle-send-escape
-    )
-  (general-def 'normal 'vterm-mode-map)
+    "RET" nil)
+  (general-def 'normal 'vterm-mode-map
+    "RET" nil)
   (general-def 'insert 'vterm-mode-map
     "<f1>" #'vterm--self-insert
     "C-h" #'vterm--self-insert
-    "<return>" #'vterm-send-return
+    "RET" #'vterm-send-return
     "C-c" nil
     "C-c C-c" #'vterm-send-C-c)
+  (general-def '(insert normal) 'vterm-mode-map
+    "<C-return>" #'vterm-send-return
+    "C-c C-z" #'evil-collection-vterm-toggle-send-escape
+    "C-c z" #'evil-collection-vterm-toggle-send-escape)
 
   (setq vterm-buffer-name-string "vterm %s"))
 #+end_src
