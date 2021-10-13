@@ -265,7 +265,7 @@ Pieces not (yet) covered in org files are:
   - [[#color-theme][Color theme]]
   - [[#emacs-modeline][Emacs modeline]]
 - [[#misc-2][Misc]]
-  - [[#goto-config][goto config]]
+  - [[#quick-access][quick access]]
   - [[#configure-path][Configure PATH]]
 
 * Top-level
@@ -3993,9 +3993,10 @@ Set my org files location.
       org-agenda-files (rasen/org-files-in-dir "~/org"))
 #+end_src
 
-Show agenda as the only window in a new tag and close the tab on quit (so that agenda does not mess up with my layout).
+Show agenda as the only window and restore window layout on quit (so that agenda does not mess up with my layout).
 #+begin_src emacs-lisp
-(setq org-agenda-window-setup 'other-tab)
+(setq org-agenda-window-setup 'only-window)
+(setq org-agenda-restore-windows-after-quit t)
 #+end_src
 
 Configure my agenda view.
@@ -4012,6 +4013,18 @@ Configure stuck projects.
       '("+PROJECT/-TODO-DONE-CANCELED-WAIT" ("NEXT" "WAIT") nil ""))
 #+end_src
 
+Do not align tags in agenda.
+#+name: org-config
+#+begin_src emacs-lisp
+(setq org-agenda-tags-column 0)
+#+end_src
+
+Do not show project tags.
+#+name: org-config
+#+begin_src emacs-lisp
+(setq org-agenda-hide-tags-regexp "PROJECT\\|fc\\|suspended")
+#+end_src
+
 #+begin_src emacs-lisp
 (use-package org-super-agenda
   :config
@@ -4024,7 +4037,9 @@ Configure stuck projects.
 
   (setq org-agenda-block-separator nil
         org-agenda-compact-blocks t
-        org-agenda-time-grid '((daily today require-timed) nil "......"  "----------------"))
+        org-agenda-time-grid '((daily today require-timed) (1000 1200 1400 1600 1800 2000 2200) "......"  "----------------")
+        ;; org-agenda-time-grid '((daily today require-timed) nil "......"  "----------------")
+        )
 
   (setq org-agenda-custom-commands
         '(("o" "Overview"
@@ -8002,9 +8017,8 @@ Display time and battery level in modeline.
 }
 #+end_src
 
-** goto config
-The following provides key binding to quickly open my configuration file.
-
+** quick access
+A key binding to quickly open my configuration file.
 #+begin_src emacs-lisp
 (defun rasen/find-config ()
   (interactive)
@@ -8015,6 +8029,31 @@ The following provides key binding to quickly open my configuration file.
 
 (rasen/exwm-input-set-key (kbd "<s-f12>") #'rasen/find-config)
 #+end_src
+
+Same for my planning file.
+#+begin_src emacs-lisp
+(defun rasen/find-plan ()
+  (interactive)
+  (find-file (expand-file-name "plan.org" org-directory)))
+
+(general-def
+  "<f10>" #'rasen/find-plan)
+
+(rasen/exwm-input-set-key (kbd "<s-f10>") #'rasen/find-plan)
+#+end_src
+
+And for agenda.
+#+begin_src emacs-lisp
+(defun rasen/find-agenda-overview ()
+  (interactive)
+  (org-agenda nil "o"))
+
+(general-def
+  "<f9>" #'rasen/find-agenda-overview)
+
+(rasen/exwm-input-set-key (kbd "<s-f9>") #'rasen/find-agenda-overview)
+#+end_src
+
 ** Configure PATH
 Set PATH env variable from =exec-path=. This is required for =shell-command= to find executables available in =exec-path=. (Most notably, org-mode latex preview fails without this.)
 #+begin_src emacs-lisp
