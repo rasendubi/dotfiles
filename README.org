@@ -6055,11 +6055,34 @@ vterm is a terminal emulator using libvterm. Which allows running it within Emac
   ;; (push 'vterm-mode evil-motion-state-modes)
   (general-def 'vterm-mode-map
     "<f1>" nil
+    "<f2>" nil
+    "<f3>" nil
+    "<f4>" nil
+    "<f5>" nil
+    "<f6>" nil
+    "<f7>" nil
+    "<f8>" nil
+    "<f9>" nil
+    "<f10>" nil
+    "<f11>" nil
+    "<f12>" nil
+    "<return>" nil
     "RET" nil)
   (general-def 'normal 'vterm-mode-map
     "RET" nil)
   (general-def 'insert 'vterm-mode-map
     "<f1>" #'vterm--self-insert
+    "<f2>" #'vterm--self-insert
+    "<f3>" #'vterm--self-insert
+    "<f4>" #'vterm--self-insert
+    "<f5>" #'vterm--self-insert
+    "<f6>" #'vterm--self-insert
+    "<f7>" #'vterm--self-insert
+    "<f8>" #'vterm--self-insert
+    "<f9>" #'vterm--self-insert
+    "<f10>" #'vterm--self-insert
+    "<f11>" #'vterm--self-insert
+    "<f12>" #'vterm--self-insert
     "C-h" #'vterm--self-insert
     "RET" #'vterm-send-return
     "C-c" nil
