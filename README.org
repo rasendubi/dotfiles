@@ -792,7 +792,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       flycheck-rust
       forth-mode
       general
-      gitconfig-mode
       go-mode
       google-translate
       graphviz-dot-mode
@@ -863,7 +862,8 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
 
     ]) ++
     [
-      epkgs.orgPackages.org-plus-contrib
+      epkgs.elpaPackages.org
+      epkgs.nongnuPackages.org-contrib
       epkgs.elpaPackages.adaptive-wrap
       epkgs.exwm
       # not available in melpa
@@ -937,7 +937,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
           # sha256 = "sha256-s2Buyv4YVrgyxWDkbz9xA8LoBNr+BPttUUGTV5m8cpM=";
         };
         packageRequires = [
-          epkgs.orgPackages.org-plus-contrib
+          epkgs.elpaPackages.org
           epkgs.melpaPackages.hydra
         ];
         propagatedUserEnvPkgs = [ pkgs.findutils pkgs.gawk ];
@@ -955,10 +955,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       # required for org-roam/emacsql-sqlite3
       pkgs.sqlite
 
-      (pkgs.ycmd.override (old: {
-        # racerd is currently broken
-        rustracerd = null;
-      }))
       pkgs.notmuch
       pkgs.w3m
       pkgs.imagemagick
@@ -983,11 +979,17 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
     ]
   );
 
-  emacs-final = (pkgs.emacsPackagesGen emacs-base).emacsWithPackages emacs-packages;
+  overrides = self: super: {
+    # select org from elpa
+    org = super.elpaPackages.org;
+  };
+
+  emacs-final = ((pkgs.emacsPackagesGen emacs-base).overrideScope' overrides).emacsWithPackages emacs-packages;
 
  in {
    my-emacs = emacs-final // {
      base = emacs-base;
+     overrides = overrides;
      packages = emacs-packages;
    };
  })
@@ -1001,6 +1003,7 @@ Install Emacs with Home manager (~<<home-manager-section>>~)
     enable = true;
     package = pkgs.my-emacs.base;
     extraPackages = pkgs.my-emacs.packages;
+    overrides = pkgs.my-emacs.overrides;
   };
   # services.emacs.enable = true;
 
@@ -2983,6 +2986,9 @@ evil-collection is a collection of evil bindings for different modes.
 
 (use-package evil-collection
   :after (evil)
+  :init
+  (setq evil-want-integration t
+        evil-want-keybinding nil)
   :config
   (defun rasen/rotate-keys (_mode mode-keymaps &rest _rest)
     (evil-collection-translate-key 'normal mode-keymaps
@@ -3150,7 +3156,6 @@ Default bindings for ~RET~ prevent many of my commands from working. Remap ~RET~
    "M-l" nil
    "M-h" nil)
   :gfhook 'flyspell-mode
-  :ensure org-plus-contrib
   :init
   <<org-init>>
   :config
@@ -3449,14 +3454,8 @@ My capture templates.
          "* %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n")
 
         ("l" "link" entry (file rasen/org-refile-file)
-         "* %a %(rasen/org-title \"%F\") \n:PROPERTIES:\n:CREATED:  %U\n:END:\n"
+         "* %a\n:PROPERTIES:\n:CREATED:  %U\n:END:\n"
          :immediate-finish t)))
-
-(defun rasen/org-title (file)
-  (if-let (b (find-buffer-visiting file))
-      (with-current-buffer b
-        (and (derived-mode-p 'org-mode)
-             (cdar (org-collect-keywords '("title") '("title")))))))
 
 (defun rasen/org-capture-link ()
   (interactive)
@@ -4499,7 +4498,7 @@ So a typical ID could look like \"Org:4nd91V40HI\"."
 			    (concat "@" (message-make-fqdn))))))
 	(setq unique (concat etime postfix))))
      ((eq org-id-method 'ts)
-      (let ((ts (el-patch-swap (format-time-string "%Y%m%dT%H%M%S.%6N")
+      (let ((ts (el-patch-swap (format-time-string org-id-ts-format)
                                (rasen/tsid)))
 	    (postfix (if org-id-include-domain
 			 (progn
@@ -4753,12 +4752,12 @@ org-roam-protocol allows opening a note corresponding to the current URL directl
 
 First, add the following snippet as a bookmarklet:
 #+begin_src js
-javascript:location.href = 'org-protocol://roam-ref?template=r&ref='
-  + encodeURIComponent(location.href.split('#')[0])
-  + '&title='
-  + encodeURIComponent(document.title)
-  + '&body='
-  + encodeURIComponent(window.getSelection())
+javascript:location.href = 'org-protocol://roam-ref?' + new URLSearchParams({
+  template: 'r',
+  ref: location.href.split('#')[0],
+  title: encodeURIComponent(document.title),
+  body: encodeURIComponent(window.getSelection())
+})
 #+end_src
 
 Firefox is annoying with asking permissions to allow =org-protocol= urls, but you can disable that if you go to [[about:config]] and toggle =security.external_protocol_requires_permission= off (only if you know what you’re doing).
@@ -5474,7 +5473,16 @@ rating the card."
 (use-package evil-org
   :after org
   :diminish
+  :init
+  ;; https://github.com/Somelauw/evil-org-mode/issues/93
+  (fset 'evil-redirect-digit-argument 'ignore)
+
   :custom
+  ;; https://github.com/Somelauw/evil-org-mode/issues/93
+  (add-to-list 'evil-digit-bound-motions 'evil-org-beginning-of-line)
+  (evil-define-key 'motion 'evil-org-mode
+    (kbd "0") 'evil-org-beginning-of-line)
+
   ;; swap j/k
   (evil-org-movement-bindings '((up . "j")
                                 (down . "k")
@@ -6445,11 +6453,6 @@ Also, install git for the rest of the system. (~<<nixos-section>>~)
 }
 #+end_src
 
-git-config mode for emacs.
-#+begin_src emacs-lisp
-(use-package gitconfig-mode
-  :mode "^\\.gitconfig$")
-#+end_src
 *** magit
 Magit is a cool emacs interface to git. (emacs-lisp)
 #+begin_src emacs-lisp
@@ -7829,7 +7832,7 @@ I like [[https://input.djr.com/download/?customize&fontSelection=fourStyleFamily
       name = "input-mono-${old.version}.zip";
       extension = ".zip";
       url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
-      sha256 = "sha256-vchfXs2QZJlBQsjfklFwXeAJEQtqA0bB3iv6HeZO1Jc=";
+      sha256 = "sha256-+4l9MbVHUb0JnTLzSoR4m0kF7H9aqmVr2jDiIiNfijo=";
 
       stripRoot = false;
 

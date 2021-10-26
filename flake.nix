@@ -156,6 +156,7 @@
                 enable = true;
                 package = pkgs.my-emacs.base;
                 extraPackages = pkgs.my-emacs.packages;
+                overrides = pkgs.my-emacs.overrides;
               };
               # services.emacs.enable = true;
             
@@ -877,7 +878,6 @@
                     flycheck-rust
                     forth-mode
                     general
-                    gitconfig-mode
                     go-mode
                     google-translate
                     graphviz-dot-mode
@@ -948,7 +948,8 @@
               
                   ]) ++
                   [
-                    epkgs.orgPackages.org-plus-contrib
+                    epkgs.elpaPackages.org
+                    epkgs.nongnuPackages.org-contrib
                     epkgs.elpaPackages.adaptive-wrap
                     epkgs.exwm
                     # not available in melpa
@@ -1022,7 +1023,7 @@
                         # sha256 = "sha256-s2Buyv4YVrgyxWDkbz9xA8LoBNr+BPttUUGTV5m8cpM=";
                       };
                       packageRequires = [
-                        epkgs.orgPackages.org-plus-contrib
+                        epkgs.elpaPackages.org
                         epkgs.melpaPackages.hydra
                       ];
                       propagatedUserEnvPkgs = [ pkgs.findutils pkgs.gawk ];
@@ -1040,10 +1041,6 @@
                     # required for org-roam/emacsql-sqlite3
                     pkgs.sqlite
               
-                    (pkgs.ycmd.override (old: {
-                      # racerd is currently broken
-                      rustracerd = null;
-                    }))
                     pkgs.notmuch
                     pkgs.w3m
                     pkgs.imagemagick
@@ -1068,11 +1065,17 @@
                   ]
                 );
               
-                emacs-final = (pkgs.emacsPackagesGen emacs-base).emacsWithPackages emacs-packages;
+                overrides = self: super: {
+                  # select org from elpa
+                  org = super.elpaPackages.org;
+                };
+              
+                emacs-final = ((pkgs.emacsPackagesGen emacs-base).overrideScope' overrides).emacsWithPackages emacs-packages;
               
                in {
                  my-emacs = emacs-final // {
                    base = emacs-base;
+                   overrides = overrides;
                    packages = emacs-packages;
                  };
                })
@@ -1087,7 +1090,7 @@
                     name = "input-mono-${old.version}.zip";
                     extension = ".zip";
                     url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
-                    sha256 = "sha256-vchfXs2QZJlBQsjfklFwXeAJEQtqA0bB3iv6HeZO1Jc=";
+                    sha256 = "sha256-+4l9MbVHUb0JnTLzSoR4m0kF7H9aqmVr2jDiIiNfijo=";
               
                     stripRoot = false;
               

@@ -103,7 +103,7 @@
      `(org-archived ((,class (:foreground ,fg-alt))))
 
      `(org-link ((,class :foreground ,blue-alt :background ,bg-alt :underline nil :inherit link)))
-     ;; `(org-roam-link ((,class :foreground ,green-alt :inherit org-link)))
+     `(rasen/org-id-link ((,class :foreground ,green-alt :inherit org-link)))
      ))
 
   (setq org-todo-keyword-faces
