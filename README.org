@@ -4055,7 +4055,7 @@ Do not show project tags.
 
   (setq org-agenda-block-separator nil
         org-agenda-compact-blocks t
-        org-agenda-time-grid '((daily today require-timed) (1000 1200 1400 1600 1800 2000 2200) "......"  "----------------")
+        org-agenda-time-grid '((daily today require-timed) (1000 1100 1200 1300 1400 1500 1600 1700 1800 1900 2000 2100 2200 2300) "......"  "----------------")
         ;; org-agenda-time-grid '((daily today require-timed) nil "......"  "----------------")
         )
 
@@ -4074,31 +4074,36 @@ Do not show project tags.
                         ;; Show habits on each day. (Useful if today
                         ;; is closed but you still want to see the
                         ;; habit graph.)
-                        (org-habit-show-habits-only-for-today nil)
+                        ;; (org-habit-show-habits-only-for-today nil)
 
                         (org-super-agenda-groups
                          '(;; 1. time-grid
-                           ;; 2. scheduled|deadline without time
-                           ;; 3. habits
-                           ;; 4. rest (anniversaries, etc.)
-                           ;; 5. future scheduled|deadline (reminders)
-                           (:name none
+                           ;; 2. scheduled today
+                           ;; 3. deadline today
+                           ;; 4. habits
+                           ;; 5. rest (anniversaries, etc.)
+                           ;; 6. deadline reminders
+                           (:name none ;; habits
                             :habit t
-                            :order 3)
-                           (:name none
+                            :order 4)
+                           (:name none ;; time-grid
                             :time-grid t
                             :order 1)
-                           (:name none
-                            :scheduled future
-                            :deadline future
-                            :order 5)
-                           (:name none
-                            :scheduled t
-                            :deadline t
+                           (:name none ;; don't show closed items—they are still seen in the log
+                            :discard (:todo ("DONE" "CANCELED")))
+                           (:name none ;; scheduled today
+                            :scheduled today
                             :order 2)
-                           (:name none
+                           (:name none ;; deadline today
+                            :deadline today
+                            :order 3)
+                           (:name none ;; deadline reminders
+                            :deadline t
+                            :scheduled t
+                            :order 6)
+                           (:name none ;; everything else
                             :anything t
-                            :order 4)))))
+                            :order 5)))))
             (alltodo "" ((org-agenda-overriding-header "")
                          (org-super-agenda-groups
                           '(;; drop scheduled items—they are shown in
