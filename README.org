@@ -4513,6 +4513,17 @@ So a typical ID could look like \"Org:4nd91V40HI\"."
      (t (error "Invalid `org-id-method'")))
     (concat prefix unique)))
 #+end_src
+
+Highlight org-id links with different color.
+#+name: org-config
+#+begin_src emacs-lisp
+(defface rasen/org-id-link
+  '((t :inherit org-link))
+  "Face for org-id links.")
+
+(org-link-set-parameters "id" :face 'rasen/org-id-link)
+#+end_src
+Actual style is overridden in Color theme section.
 ** org-roam
 #+begin_src emacs-lisp
 (use-package org-roam
@@ -8011,6 +8022,9 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Go
      `(org-todo ((,class :foreground ,magenta-alt-other
                          :weight bold)))
 
+     ;; Make tags stand out
+     `(org-tag ((,class :foreground ,fg-main :background ,yellow-intense-bg)))
+
      ;; dim done items
      `(org-done ((,class :foreground ,fg-alt)))
      `(org-headline-done ((,class :foreground ,fg-alt)))
@@ -8020,8 +8034,7 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Go
      `(org-archived ((,class (:foreground ,fg-alt))))
 
      `(org-link ((,class :foreground ,blue-alt :background ,bg-alt :underline nil :inherit link)))
-     ;; `(org-roam-link ((,class :foreground ,green-alt :inherit org-link)))
-     ))
+     `(rasen/org-id-link ((,class :foreground ,green-alt :inherit org-link)))))
 
   (setq org-todo-keyword-faces
         `(("TODO"     . (:foreground ,blue-intense :inherit fixed-pitch))

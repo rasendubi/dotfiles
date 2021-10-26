@@ -94,6 +94,9 @@
      `(org-todo ((,class :foreground ,magenta-alt-other
                          :weight bold)))
 
+     ;; Make tags stand out
+     `(org-tag ((,class :foreground ,fg-main :background ,yellow-intense-bg)))
+
      ;; dim done items
      `(org-done ((,class :foreground ,fg-alt)))
      `(org-headline-done ((,class :foreground ,fg-alt)))
@@ -103,8 +106,7 @@
      `(org-archived ((,class (:foreground ,fg-alt))))
 
      `(org-link ((,class :foreground ,blue-alt :background ,bg-alt :underline nil :inherit link)))
-     `(rasen/org-id-link ((,class :foreground ,green-alt :inherit org-link)))
-     ))
+     `(rasen/org-id-link ((,class :foreground ,green-alt :inherit org-link)))))
 
   (setq org-todo-keyword-faces
         `(("TODO"     . (:foreground ,blue-intense :inherit fixed-pitch))
