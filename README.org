@@ -5751,9 +5751,13 @@ Pin old version of mbsync until the bug is fixed.
   (defun rasen/mbsync ()
     (interactive)
     (let ((mbsync-cmd (if (string= (system-name) "omicron")
-                          "mbsync sync-gmail & mbsync sync-egoless & mbsync sync-ps & wait; /home/rasen/dotfiles/notmuch.sh"
+                          "mbsync sync-gmail & wait; /home/rasen/dotfiles/notmuch.sh"
                         "notmuch new")))
       (async-shell-command mbsync-cmd "*mbsync*")))
+
+  ;; bind q in shell to hide buffer
+  (general-def 'motion shell-mode-map
+    "q" #'quit-window)
 
   (defun rasen/notmuch-search-mute ()
     (interactive)
