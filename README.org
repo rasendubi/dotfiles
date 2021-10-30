@@ -4577,7 +4577,9 @@ Actual style is overridden in Color theme section.
 
   <<org-roam-new-node>>
 
-  (org-roam-setup))
+  <<org-roam-update-title>>
+
+  (org-roam-db-autosync-enable))
 #+end_src
 *** org-roam-exclude-org-fc
 Do not treat [[*org-fc][org-fc]] cards as nodes.
@@ -5024,6 +5026,47 @@ A function to create a new node without prompting for a title. Sometimes I want 
 (s-leader-def "n n" #'rasen/org-roam-new-node)
 (s-leader-def "n d" #'rasen/org-roam-new-node-default)
 (s-leader-def "n l" #'rasen/org-roam-new-node-life)
+#+end_src
+*** org-roam-update-title
+#+name: org-roam-update-title
+#+begin_src emacs-lisp
+;; TODO: this only handles file renames. Make it work for headline nodes too.
+(defun rasen/org-roam-title-update ()
+  "Update the title of the current node and patch all incoming links."
+  (interactive)
+  (save-restriction
+    (save-excursion
+      (goto-char (point-min))
+      (let* ((old-node (org-roam-node-at-point))
+             (old-title (and old-node (org-roam-node-title old-node)))
+             (old-id (and old-node (org-roam-node-id old-node)))
+             (new-title (cdar (org-collect-keywords '("title") '("title")))))
+        (when (not (string-equal old-title new-title))
+          (message "renaming: %s -> %s" old-title new-title)
+          (let ((files (org-roam-db-query [:select (unique file)
+                                           :from links
+                                           :inner-join nodes
+                                           :on (= links:source nodes:id)
+                                           :where (= dest $s1)
+                                           :and (= type "id")]
+                                          old-id))
+                (replace-re (rx "[[id:"
+                                (literal old-id)
+                                "]["
+                                (literal old-title)
+                                "]"))
+                (new-link (concat "[[id:" old-id "][" new-title "]")))
+            (mapc (pcase-lambda (`(,file))
+                    (with-current-buffer (find-file-noselect file)
+                      (goto-char (point-min))
+                      (while (re-search-forward replace-re nil t)
+                        (replace-match new-link))))
+                  files)))))))
+
+(add-hook 'org-mode-hook
+          (defun rasen/setup-title-hook ()
+            (add-hook 'before-save-hook #'rasen/org-roam-title-update 0 t)
+            (add-hook 'after-save-hook #'org-roam-db-update-file 0 t)))
 #+end_src
 ** org-roam-ui
 #+begin_src emacs-lisp
