@@ -1249,7 +1249,7 @@ I use [[https://github.com/noctuid/general.el][general]] to define my keybinding
 
 ;; Definer for my leader
 (general-create-definer --leader-def   :prefix "SPC")
-(general-create-definer --s-leader-def :prefix "s-SPC" :non-normal-prefix "s-SPC")
+(general-create-definer --s-leader-def :keymaps '(motion insert emacs) :prefix "s-SPC" :non-normal-prefix "s-SPC")
 
 ;; Extra-hackery to define key with multiple prefixes
 (defmacro leader-def (&rest args)
@@ -1259,7 +1259,8 @@ I use [[https://github.com/noctuid/general.el][general]] to define my keybinding
 
 ;; Definer for my leader + applied globally across all windows.
 (general-create-definer s-leader-def
-  :keymaps '(motion) :prefix "SPC"
+  :keymaps '(motion emacs insert) :prefix "SPC"
+  :non-normal-prefix "s-SPC"
   :global-prefix "s-SPC")
 
 (use-package evil
