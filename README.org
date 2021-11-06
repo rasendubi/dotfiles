@@ -869,33 +869,30 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       # not available in melpa
       epkgs.elpaPackages.valign
 
-      # Was too quick to add org-ref-cite---org-cite itself is not
-      # released yet ;P
-      #
-      # (epkgs.trivialBuild rec {
-      #   pname = "org-ref-cite";
-      #   version = "20210810";
-      #   src = pkgs.fetchFromGitHub {
-      #     owner = "jkitchin";
-      #     repo = "org-ref-cite";
-      #     rev = "7cc320676bfff9094e96b638c4f22ea4134edab1";
-      #     sha256 = "sha256-kbc6EswdtGo6pIyP5o/rGOPBzsUDWh2R3z6hWeI0cuc=";
-      #   };
-      #
-      #   packageRequires = [
-      #     epkgs.orgPackages.org-plus-contrib
-      #     epkgs.melpaPackages.ivy
-      #     epkgs.melpaPackages.hydra
-      #     epkgs.melpaPackages.bibtex-completion
-      #     epkgs.melpaPackages.avy
-      #     epkgs.melpaPackages.ivy-bibtex
-      #   ];
-      #
-      #   meta = {
-      #     description = "An org-cite processor that is like org-ref.";
-      #     license = pkgs.lib.licenses.gpl2Plus;
-      #   };
-      # })
+      (epkgs.trivialBuild rec {
+        pname = "org-ref-cite";
+        version = "20210810";
+        src = pkgs.fetchFromGitHub {
+          owner = "jkitchin";
+          repo = "org-ref-cite";
+          rev = "102a853a678c57de43081bcf824917e2f7a8a4af";
+          sha256 = "sha256-caHUyePjMk186d38xic105Jd3Q28reNO8tBrLvr8+0s=";
+        };
+
+        packageRequires = [
+          epkgs.elpaPackages.org
+          epkgs.melpaPackages.ivy
+          epkgs.melpaPackages.hydra
+          epkgs.melpaPackages.bibtex-completion
+          epkgs.melpaPackages.avy
+          epkgs.melpaPackages.ivy-bibtex
+        ];
+
+        meta = {
+          description = "An org-cite processor that is like org-ref.";
+          license = pkgs.lib.licenses.gpl2Plus;
+        };
+      })
 
       (epkgs.trivialBuild rec {
         pname = "org-roam-ui";
@@ -5082,6 +5079,7 @@ A function to create a new node without prompting for a title. Sometimes I want 
 #+begin_src emacs-lisp
 (use-package ivy-bibtex
   :config
+  (push (cons 'org-mode #'bibtex-completion-format-citation-org-cite) bibtex-completion-format-citation-functions)
   (defun rasen/ivy-cite ()
     (interactive)
     (let ((ivy-bibtex-default-action #'ivy-bibtex-insert-citation))
@@ -5095,14 +5093,16 @@ A function to create a new node without prompting for a title. Sometimes I want 
          (bib-files (mapcar (lambda (x) (expand-file-name x bib-directory)) bib-file-name)))
 
     (setq reftex-default-bibliography bib-files)
-    (setq org-ref-default-bibliography bib-files)
+    ;; (setq org-ref-default-bibliography bib-files)
     (setq bibtex-completion-bibliography bib-files)
 
-    (setq org-ref-bibliography-notes bib-directory)
+    ;; (setq org-ref-bibliography-notes bib-directory)
     (setq bibtex-completion-notes-path bib-directory)
 
-    (setq org-ref-pdf-directory bib-files-directory)
+    ;; (setq org-ref-pdf-directory bib-files-directory)
     (setq bibtex-completion-library-path `(,bib-files-directory)))
+
+  (require 'org-ref-ivy)
 
   (require 'org-ref-url-utils)
   (require 'org-ref-isbn)
@@ -5173,6 +5173,38 @@ If optional arg MOVE is non-nil move point to end of field."
         (fill-region-as-paragraph (line-beginning-position) end-field
                                   default-justification nil (point)))
       (if move (goto-char end-field)))))
+#+end_src
+** org-ref-cite
+#+begin_src emacs-lisp
+(use-package citeproc)
+
+(use-package oc
+  :config
+  (require 'oc-csl))
+
+(use-package org-ref-cite
+  :after org-ref
+  :config
+  (setq org-cite-global-bibliography bibtex-completion-bibliography
+        org-cite-insert-processor 'org-ref-cite
+        org-cite-follow-processor 'org-ref-cite
+        org-cite-activate-processor 'org-ref-cite)
+
+  ;; blatantly re-define function to suppress errors
+  (defun org-ref-cite-activate (&rest args)
+    "Run all the activation functions in `org-ref-cite-activation-functions'.
+Argument CITATION is an org-element holding the references."
+    (cl-loop for activate-func in org-ref-cite-activation-functions
+             do
+             (apply activate-func args)))
+
+  ;; (defadvice org-activate-links (around org-activate-links-ignore-errors)
+  ;;   "Ignore errors in `org-activate-links'."
+  ;;   (ignore-error wrong-number-of-arguments ad-do-it))
+  ;; (ad-deactivate 'org-activate-links)
+  ;; (ad-activate 'org-activate-links)
+  )
+
 #+end_src
 ** org-roam-bibtex
 Citations and bibliography tools for org-mode.
@@ -8068,6 +8100,7 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Go
      ;; Make TODOs bold
      `(org-todo ((,class :foreground ,magenta-alt-other
                          :weight bold)))
+     `(org-table ((,class (:foreground ,fg-special-cold :inherit nil))))
 
      ;; Make tags stand out
      `(org-tag ((,class :foreground ,fg-main :background ,yellow-intense-bg)))

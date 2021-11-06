@@ -93,6 +93,7 @@
      ;; Make TODOs bold
      `(org-todo ((,class :foreground ,magenta-alt-other
                          :weight bold)))
+     `(org-table ((,class (:foreground ,fg-special-cold :inherit nil))))
 
      ;; Make tags stand out
      `(org-tag ((,class :foreground ,fg-main :background ,yellow-intense-bg)))

@@ -955,33 +955,30 @@
                     # not available in melpa
                     epkgs.elpaPackages.valign
               
-                    # Was too quick to add org-ref-cite---org-cite itself is not
-                    # released yet ;P
-                    #
-                    # (epkgs.trivialBuild rec {
-                    #   pname = "org-ref-cite";
-                    #   version = "20210810";
-                    #   src = pkgs.fetchFromGitHub {
-                    #     owner = "jkitchin";
-                    #     repo = "org-ref-cite";
-                    #     rev = "7cc320676bfff9094e96b638c4f22ea4134edab1";
-                    #     sha256 = "sha256-kbc6EswdtGo6pIyP5o/rGOPBzsUDWh2R3z6hWeI0cuc=";
-                    #   };
-                    #
-                    #   packageRequires = [
-                    #     epkgs.orgPackages.org-plus-contrib
-                    #     epkgs.melpaPackages.ivy
-                    #     epkgs.melpaPackages.hydra
-                    #     epkgs.melpaPackages.bibtex-completion
-                    #     epkgs.melpaPackages.avy
-                    #     epkgs.melpaPackages.ivy-bibtex
-                    #   ];
-                    #
-                    #   meta = {
-                    #     description = "An org-cite processor that is like org-ref.";
-                    #     license = pkgs.lib.licenses.gpl2Plus;
-                    #   };
-                    # })
+                    (epkgs.trivialBuild rec {
+                      pname = "org-ref-cite";
+                      version = "20210810";
+                      src = pkgs.fetchFromGitHub {
+                        owner = "jkitchin";
+                        repo = "org-ref-cite";
+                        rev = "102a853a678c57de43081bcf824917e2f7a8a4af";
+                        sha256 = "sha256-caHUyePjMk186d38xic105Jd3Q28reNO8tBrLvr8+0s=";
+                      };
+              
+                      packageRequires = [
+                        epkgs.elpaPackages.org
+                        epkgs.melpaPackages.ivy
+                        epkgs.melpaPackages.hydra
+                        epkgs.melpaPackages.bibtex-completion
+                        epkgs.melpaPackages.avy
+                        epkgs.melpaPackages.ivy-bibtex
+                      ];
+              
+                      meta = {
+                        description = "An org-cite processor that is like org-ref.";
+                        license = pkgs.lib.licenses.gpl2Plus;
+                      };
+                    })
               
                     (epkgs.trivialBuild rec {
                       pname = "org-roam-ui";
