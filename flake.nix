@@ -371,6 +371,28 @@
               # Store mails in ~/Mail
               accounts.email.maildirBasePath = "Mail";
             
+              accounts.email.accounts.as = {
+                realName = "Alexey Shmalko";
+                address = "me@alexeyshmalko.com";
+                flavor = "plain";
+            
+                userName = "me@alexeyshmalko.com";
+                imap.host = "imap.secureserver.net";
+                imap.port = 993;
+                imap.tls.enable = true;
+                smtp.host = "smtpout.secureserver.net";
+                smtp.port = 465;
+                smtp.tls.enable = true;
+            
+                passwordCommand = "pass me@alexeyshmalko.com";
+                maildir.path = "alexeyshmalko";
+            
+                msmtp.enable = true;
+                notmuch.enable = true;
+                mbsync.enable = true;
+                mbsync.create = "maildir";
+              };
+            
               # Use mbsync to fetch email. Configuration is constructed manually
               # to keep my current email layout.
               programs.mbsync = {
@@ -440,20 +462,20 @@
                       Account ${name}
             
                       Channel sync-${name}-all
-                      Master :${name}-remote:"[Gmail]/All Mail"
-                      Slave :local:${path}/all
+                      Far :${name}-remote:"[Gmail]/All Mail"
+                      Near :local:${path}/all
                       Create Both
                       SyncState *
             
                       Channel sync-${name}-spam
-                      Master :${name}-remote:"[Gmail]/Spam"
-                      Slave :local:${path}/spam
+                      Far :${name}-remote:"[Gmail]/Spam"
+                      Near :local:${path}/spam
                       Create Both
                       SyncState *
             
                       Channel sync-${name}-sent
-                      Master :${name}-remote:"[Gmail]/Sent Mail"
-                      Slave :local:${path}/sent
+                      Far :${name}-remote:"[Gmail]/Sent Mail"
+                      Near :local:${path}/sent
                       Create Both
                       SyncState *
             
@@ -464,9 +486,6 @@
                     '';
                   };
                 in map mkGmailBox emails;
-            }
-            {
-              programs.mbsync.package = pkgs.stable.isync;
             }
             {
               home.file.".mailcap".text = ''
@@ -823,7 +842,7 @@
           in
             mergeSections [
               (let
-                emacs-base = pkgs.emacsUnstable.override {
+                emacs-base = pkgs.emacs.override {
                   withX = true;
                   # select lucid toolkit
                   toolkit = "lucid";
@@ -1087,7 +1106,7 @@
                     name = "input-mono-${old.version}.zip";
                     extension = ".zip";
                     url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
-                    sha256 = "sha256-+4l9MbVHUb0JnTLzSoR4m0kF7H9aqmVr2jDiIiNfijo=";
+                    sha256 = "sha256-QtmI5ydABvq20Q8lwCcB1cz59oDNfgBpRPOLr7kudho=";
               
                     stripRoot = false;
               

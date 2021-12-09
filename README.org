@@ -737,7 +737,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
 #+name: flake-packages
 #+begin_src nix
 (let
-  emacs-base = pkgs.emacsUnstable.override {
+  emacs-base = pkgs.emacs.override {
     withX = true;
     # select lucid toolkit
     toolkit = "lucid";
@@ -2734,6 +2734,12 @@ Use PipeWire as audio server.
 }
 #+end_src
 
+#+begin_src emacs-lisp
+(defun rasen/pavucontrol ()
+  (interactive)
+  (rasen/switch-start "Pavucontrol" "pavucontrol"))
+#+end_src
+
 Bind volume control commands. (emacs-lisp)
 #+begin_src emacs-lisp
 (rasen/exwm-input-set-key (kbd "<XF86AudioMute>")
@@ -3998,7 +4004,8 @@ prefix argument (`C-u C-u C-u C-c C-w')."
 ** Archive
 #+name: org-config
 #+begin_src emacs-lisp
-(setq-default org-archive-default-command 'org-archive-to-archive-sibling)
+;; (setq-default org-archive-default-command 'org-archive-to-archive-sibling)
+(setq-default org-archive-default-command #'org-archive-subtree)
 #+end_src
 ** Agenda
 Set my org files location.
@@ -5087,7 +5094,7 @@ A function to create a new node without prompting for a title. Sometimes I want 
       (call-interactively #'ivy-bibtex))))
 (use-package org-ref
   :after org-roam
-  :config
+  :init
   (let* ((bib-file-name '("books.bib" "papers.bib" "online.bib"))
          (bib-directory (expand-file-name "biblio" org-roam-directory))
          (bib-files-directory (expand-file-name "files/" bib-directory))
@@ -5102,6 +5109,7 @@ A function to create a new node without prompting for a title. Sometimes I want 
 
     ;; (setq org-ref-pdf-directory bib-files-directory)
     (setq bibtex-completion-library-path `(,bib-files-directory)))
+  :config
 
   (require 'org-ref-ivy)
 
@@ -5197,14 +5205,13 @@ If optional arg MOVE is non-nil move point to end of field."
 Argument CITATION is an org-element holding the references."
     (cl-loop for activate-func in org-ref-cite-activation-functions
              do
-             (apply activate-func args)))
+             (ignore-error wrong-number-of-arguments (apply activate-func args))))
 
-  ;; (defadvice org-activate-links (around org-activate-links-ignore-errors)
-  ;;   "Ignore errors in `org-activate-links'."
-  ;;   (ignore-error wrong-number-of-arguments ad-do-it))
+  (defadvice org-activate-links (around org-activate-links-ignore-errors)
+    "Ignore errors in `org-activate-links'."
+    (ignore-error wrong-number-of-arguments ad-do-it))
   ;; (ad-deactivate 'org-activate-links)
-  ;; (ad-activate 'org-activate-links)
-  )
+  (ad-activate 'org-activate-links))
 
 #+end_src
 ** org-roam-bibtex
@@ -5683,6 +5690,28 @@ Applications are configured with Home Manager, and notmuch frontend is configure
   # Store mails in ~/Mail
   accounts.email.maildirBasePath = "Mail";
 
+  accounts.email.accounts.as = {
+    realName = "Alexey Shmalko";
+    address = "me@alexeyshmalko.com";
+    flavor = "plain";
+
+    userName = "me@alexeyshmalko.com";
+    imap.host = "imap.secureserver.net";
+    imap.port = 993;
+    imap.tls.enable = true;
+    smtp.host = "smtpout.secureserver.net";
+    smtp.port = 465;
+    smtp.tls.enable = true;
+
+    passwordCommand = "pass me@alexeyshmalko.com";
+    maildir.path = "alexeyshmalko";
+
+    msmtp.enable = true;
+    notmuch.enable = true;
+    mbsync.enable = true;
+    mbsync.create = "maildir";
+  };
+
   # Use mbsync to fetch email. Configuration is constructed manually
   # to keep my current email layout.
   programs.mbsync = {
@@ -5752,20 +5781,20 @@ Applications are configured with Home Manager, and notmuch frontend is configure
           Account ${name}
 
           Channel sync-${name}-all
-          Master :${name}-remote:"[Gmail]/All Mail"
-          Slave :local:${path}/all
+          Far :${name}-remote:"[Gmail]/All Mail"
+          Near :local:${path}/all
           Create Both
           SyncState *
 
           Channel sync-${name}-spam
-          Master :${name}-remote:"[Gmail]/Spam"
-          Slave :local:${path}/spam
+          Far :${name}-remote:"[Gmail]/Spam"
+          Near :local:${path}/spam
           Create Both
           SyncState *
 
           Channel sync-${name}-sent
-          Master :${name}-remote:"[Gmail]/Sent Mail"
-          Slave :local:${path}/sent
+          Far :${name}-remote:"[Gmail]/Sent Mail"
+          Near :local:${path}/sent
           Create Both
           SyncState *
 
@@ -5776,16 +5805,6 @@ Applications are configured with Home Manager, and notmuch frontend is configure
         '';
       };
     in map mkGmailBox emails;
-}
-#+end_src
-** Older mbsync
-The latest mbsync has changed Master/Slave to Far/Near and that seems to have broken file formats. It can no longer sync my mail and I've had to restore from backup.
-
-Pin old version of mbsync until the bug is fixed.
-#+name: home-manager-section
-#+begin_src nix
-{
-  programs.mbsync.package = pkgs.stable.isync;
 }
 #+end_src
 ** Interface
@@ -5827,7 +5846,7 @@ Pin old version of mbsync until the bug is fixed.
   (defun rasen/mbsync ()
     (interactive)
     (let ((mbsync-cmd (if (string= (system-name) "omicron")
-                          "mbsync sync-gmail & wait; /home/rasen/dotfiles/notmuch.sh"
+                          "mbsync sync-gmail & mbsync as & wait; /home/rasen/dotfiles/notmuch.sh"
                         "notmuch new")))
       (async-shell-command mbsync-cmd "*mbsync*")))
 
@@ -7928,7 +7947,7 @@ I like [[https://input.djr.com/download/?customize&fontSelection=fourStyleFamily
       name = "input-mono-${old.version}.zip";
       extension = ".zip";
       url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
-      sha256 = "sha256-+4l9MbVHUb0JnTLzSoR4m0kF7H9aqmVr2jDiIiNfijo=";
+      sha256 = "sha256-QtmI5ydABvq20Q8lwCcB1cz59oDNfgBpRPOLr7kudho=";
 
       stripRoot = false;
 
