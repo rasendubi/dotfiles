@@ -343,7 +343,7 @@ Nix flakes are still an experimental feature, so you need the following in NixOS
   nix = {
     package = pkgs.nixFlakes;
     extraOptions = ''
-      experimental-features = nix-command flakes ca-references
+      experimental-features = nix-command flakes
     '';
   };
 }
@@ -351,7 +351,7 @@ Nix flakes are still an experimental feature, so you need the following in NixOS
 
 For non-NixOS system, install ~nixFlakes~ and put the following into =~/.config/nix/nix.conf=.
 #+begin_src conf :tangle no
-experimental-features = nix-command flakes ca-references
+experimental-features = nix-command flakes
 #+end_src
 
 ** Stable packages
@@ -450,7 +450,7 @@ in {
     imports = [
       <<home-manager-section>>
     ];
-    home.stateVersion = "20.09";
+    home.stateVersion = "21.05";
   };
   homeManagerConfigurations = genHosts homeManagerHosts mkHomeManagerConfiguration;
 })
@@ -528,7 +528,7 @@ in
       nixpkgs.config.allowUnfree = true;
 
       # The NixOS release to be compatible with for stateful data such as databases.
-      system.stateVersion = "19.09";
+      system.stateVersion = "21.05";
     }
 
     <<nixos-section>>
@@ -842,6 +842,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       slime
       smex
       spaceline
+      svelte-mode
       terraform-mode
       tide
       toc-org
@@ -5802,6 +5803,7 @@ Applications are configured with Home Manager, and notmuch frontend is configure
           Channel sync-${name}-all
           Channel sync-${name}-spam
           Channel sync-${name}-sent
+
         '';
       };
     in map mkGmailBox emails;
@@ -5820,12 +5822,12 @@ Applications are configured with Home Manager, and notmuch frontend is configure
           (:name "unread-inbox" :query "tag:inbox and tag:unread" :key "u")
           ;; (:name "unread" :query "tag:unread and not tag:nixos and not tag:rust" :key "u")
           (:name "unread-egoless" :query "tag:egoless and tag:unread" :key "e")
-          (:name "unread-rust" :query "tag:unread and tag:rust" :key "r")
           (:name "unread-nixos" :query "tag:unread and tag:nixos and not tag:nixpkgs" :key "n")
           (:name "unread-nixpkgs" :query "tag:unread and tag:nixpkgs" :key "p")
           (:name "unread-participating" :query "tag:unread and tag:participating" :key "t")
           (:name "unread-doctoright" :query "tag:unread and tag:doctoright" :key "d")
-          (:name "unread-other" :query "tag:unread and not tag:nixos and not tag:inbox and not tag:doctoright and not tag:rust" :key "o")
+          (:name "unread-rss" :query "tag:unread and tag:rss" :key "r")
+          (:name "unread-other" :query "tag:unread and not tag:nixos and not tag:inbox and not tag:doctoright and not tag:rss" :key "o")
           (:name "later" :query "tag:later" :key "l")
           (:name "flagged" :query "tag:flagged" :key "F")
           (:name "personal" :query "tag:personal" :key "P")
@@ -5846,7 +5848,7 @@ Applications are configured with Home Manager, and notmuch frontend is configure
   (defun rasen/mbsync ()
     (interactive)
     (let ((mbsync-cmd (if (string= (system-name) "omicron")
-                          "mbsync sync-gmail & mbsync as & wait; /home/rasen/dotfiles/notmuch.sh"
+                          "mbsync sync-gmail & mbsync as & r2e run & wait; /home/rasen/dotfiles/notmuch.sh"
                         "notmuch new")))
       (async-shell-command mbsync-cmd "*mbsync*")))
 
@@ -5939,6 +5941,14 @@ Email sending.
   (setq mail-specify-envelope-from nil
         send-mail-function 'message-send-mail-with-sendmail
         sendmail-program "msmtp"))
+#+end_src
+** rss2email
+Install rss2email to deliver RSS feeds to my maildir.
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.packages = [ pkgs.rss2email ];
+}
 #+end_src
 * Applications
 Here go applications (almost) every normal user needs.
@@ -7162,7 +7172,8 @@ Pretty self-explaining.
 (use-package rust-mode
   :mode ("\\.rs$" . rust-mode)
   :config
-  (add-hook 'rust-mode-hook (lambda () (setq-local fill-column 100))))
+  (add-hook 'rust-mode-hook (lambda () (setq-local fill-column 100)))
+  (add-hook 'rust-mode-hook #'rust-enable-format-on-save))
 
 (use-package racer
   :after rust-mode
@@ -7526,6 +7537,14 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 (use-package flycheck-jest
   :after flycheck)
 #+end_src
+*** Svelte
+#+begin_src emacs-lisp
+(use-package svelte-mode
+  :mode "\\.svelte$"
+  :gfhook #'prettier-js-mode
+  :config
+  (setq svelte-basic-offset 2))
+#+end_src
 *** Vue
 #+begin_src emacs-lisp
 (use-package vue-mode
@@ -7782,14 +7801,14 @@ Emacs configuration.
   (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
   (org-babel-do-load-languages 'org-babel-load-languages '((plantuml . t))))
 #+end_src
-*** Common Lisp
+*** COMMENT Common Lisp
 Install SBCL.
 #+name: home-manager-section
 #+begin_src nix
 {
   home.packages = [
     pkgs.sbcl
-    pkgs.clpm
+    # pkgs.clpm
   ];
 }
 #+end_src
@@ -8101,6 +8120,8 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Go
      'modus-operandi
 
      `(rasen/org-project-face ((t :weight bold :background ,bg-alt)))
+
+     `(rasen/agenda-date-header ((t :weight bold :foreground ,fg-dim)))
 
      ;; custom colors for vterm
      `(vterm-color-default ((,class (:background ,bg-main :foreground ,fg-main))))

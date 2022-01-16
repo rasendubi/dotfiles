@@ -483,6 +483,7 @@
                       Channel sync-${name}-all
                       Channel sync-${name}-spam
                       Channel sync-${name}-sent
+            
                     '';
                   };
                 in map mkGmailBox emails;
@@ -492,6 +493,9 @@
                 text/html; firefox %s
                 application/pdf; zathura %s
               '';
+            }
+            {
+              home.packages = [ pkgs.rss2email ];
             }
             {
               home.packages = [
@@ -800,7 +804,7 @@
             {
               home.packages = [
                 pkgs.sbcl
-                pkgs.clpm
+                # pkgs.clpm
               ];
             }
             {
@@ -831,7 +835,7 @@
               '';
             }
           ];
-          home.stateVersion = "20.09";
+          home.stateVersion = "21.05";
         };
         homeManagerConfigurations = genHosts homeManagerHosts mkHomeManagerConfiguration;
       })
@@ -947,6 +951,7 @@
                     slime
                     smex
                     spaceline
+                    svelte-mode
                     terraform-mode
                     tide
                     toc-org

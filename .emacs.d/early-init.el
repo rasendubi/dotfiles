@@ -75,6 +75,8 @@
 
      `(rasen/org-project-face ((t :weight bold :background ,bg-alt)))
 
+     `(rasen/agenda-date-header ((t :weight bold :foreground ,fg-dim)))
+
      ;; custom colors for vterm
      `(vterm-color-default ((,class (:background ,bg-main :foreground ,fg-main))))
      `(vterm-color-black ((,class (:background "#000" :foreground "#000"))))

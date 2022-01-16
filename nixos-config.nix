@@ -131,14 +131,14 @@ in
       nixpkgs.config.allowUnfree = true;
 
       # The NixOS release to be compatible with for stateful data such as databases.
-      system.stateVersion = "19.09";
+      system.stateVersion = "21.05";
     }
 
     {
       nix = {
         package = pkgs.nixFlakes;
         extraOptions = ''
-          experimental-features = nix-command flakes ca-references
+          experimental-features = nix-command flakes
         '';
       };
     }
