@@ -88,7 +88,7 @@ let
         services.xserver.displayManager.lightdm.greeters.gtk.cursorTheme = {
           name = "Vanilla-DMZ";
           package = pkgs.vanilla-dmz;
-          size = 64;
+          size = 64; # was 64
         };
         environment.variables.XCURSOR_SIZE = "64";
       }
@@ -324,25 +324,72 @@ in
       ];
     }
     {
-      system.nixos.tags = [ "with-intel" ];
-      services.xserver.videoDrivers = [ "intel" ];  # modesetting didn't help
-      hardware.nvidiaOptimus.disable = true;
-      boot.blacklistedKernelModules = [ "nouveau" "nvidia" ];  # bbswitch
-      
-      # https://github.com/NixOS/nixpkgs/issues/94315 <- from here. bugfix for this: https://discourse.nixos.org/t/update-to-21-05-breaks-opengl-because-of-dependency-on-glibc-2-31/14218 note, that there are multiple occurences of this
+      system.nixos.tags = [ "with-nvidia-egpu" ];
+      # environment.systemPackages = let
+      #   nvidia-offload = pkgs.writeShellScriptBin "nvidia-offload" ''
+      #     export __NV_PRIME_RENDER_OFFLOAD=1
+      #     export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
+      #     export __GLX_VENDOR_LIBRARY_NAME=nvidia
+      #     export __VK_LAYER_NV_optimus=NVIDIA_only
+      #     exec -a "$0" "$@"
+      #   '';
+      # in [ nvidia-offload ]; 
+      # boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11 ];
+      # Nvidia stuff (https://discourse.nixos.org/t/how-to-use-nvidia-prime-offload-to-run-the-x-server-on-the-integrated-board/9091/13)
+      boot.extraModprobeConfig = "options nvidia \"NVreg_DynamicPowerManagement=0x02\"\n";
+      services.hardware.bolt.enable = true;
+      services.udev.extraRules = ''
+        # Remove NVIDIA USB xHCI Host Controller devices, if present
+        ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{remove}="1"
+    
+        # Remove NVIDIA USB Type-C UCSI devices, if present
+        ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c8000", ATTR{remove}="1"
+    
+        # Remove NVIDIA Audio devices, if present
+        ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{remove}="1"
+    
+        # Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
+        ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
+        ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
+    
+        # Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
+        ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
+        ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
+        '';
       # hardware.opengl.package = pkgs.nixpkgs-2009.mesa_drivers;
+      services.xserver.videoDrivers = [ "intel" ];
+      boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11 ];
+      boot.blacklistedKernelModules = [ "nouveau" "nvidia_drm" "nvidia_modeset" "nvidia" ];
+      environment.systemPackages = [ pkgs.linuxPackages.nvidia_x11 ]; # packages
+      # hardware.nvidia.package = pkgs.os-specific.linux.nvidia_x11.generic 
+      # /home/moritz/Projects/nixpkgs/pkgs/os-specific/linux/nvidia-x11/default.nix <- add version 450
+      hardware.opengl = {
+        enable = true;
+        driSupport = true;
+        extraPackages = with pkgs; [
+          # intel-media-driver # LIBVA_DRIVER_NAME=iHD
+          # vaapiIntel         # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
+          # vaapiVdpau
+          # libvdpau-va-gl
+          pkgs.linuxPackages.nvidia_x11.out  # required for nvidia-docker
+        ];
+        extraPackages32 = [ pkgs.linuxPackages.nvidia_x11.lib32 ];
+      };
+      
       services.xserver = {
         displayManager = {
           lightdm.enable = false;
           gdm.enable = true;
         };
       };
+      
     }
     {
       hardware.bluetooth.enable = true;
       hardware.bluetooth.powerOnBoot = false;
       services.blueman.enable = true;
       hardware.bluetooth.settings.General.Enable = "Source,Sink,Media,Socket";
+      
       hardware.pulseaudio = {
         enable = true;
     
@@ -351,7 +398,7 @@ in
         # Bluetooth support, so it must be selected here.
     
         extraModules = [ pkgs.pulseaudio-modules-bt ];
-        # package = pkgs.pulseaudioFull;
+        # package = pkgs.pulseaudioFull;  # already defined elsewhere
       };
     }
     {
@@ -360,83 +407,11 @@ in
       ];
     }
     {
-      environment.systemPackages = [
-        pkgs.sshfs
-      ];
       fileSystems."/mnt/cclab_nas" = {
         device = "//nas22.ethz.ch/biol_imhs_ciaudo";
         fsType = "cifs";
         options = [ "credentials=/home/moritz/.secret/cclab_nas.credentials" "workgroup=d.ethz.ch" "uid=moritz" "gid=users" "noauto" "echo_interval=30" ];
       };
-    
-    # https://releases.nixos.org/nix-dev/2016-September/021763.html  TODO not working :/
-      fileSystems."/mnt/cclab_server" = let
-        sshAsUser = user: 
-          pkgs.writeScript "ssh_as_${user}" ''
-            exec ${pkgs.sudo}/bin/sudo -i -u ${user} \
-              ${pkgs.openssh}/bin/ssh $@
-          '';
-      in {
-        # device = "sshfs#schamori@mhs-cclab-srv001.ethz.ch:/";
-        fsType = "fuse";
-        device = "${pkgs.sshfsFuse}/bin/sshfs#schamori@mhs-cclab-srv001.ethz.ch:/";
-        options = [
-                "noauto" "_netdev" "allow_other" "x-gvfs-hide" #"reconnect"  # "x-systemd.automount" 
-                "ServerAliveInterval=5" "ServerAliveCountMax=1"
-                "uid=30925" "gid=100" "umask=0"   # TODO comment if fails
-                "ssh_command=${sshAsUser "moritz"}"
-              ];
-      };
-      
-      # https://soultrace.net/mount-network-share-after-boot/ <- more beautiful
-      networking.networkmanager.dispatcherScripts = [
-        {
-          source = pkgs.writeText "mountHook" ''
-            if [ "$2" != "vpn-up" ]; then
-                logger "exit: event $2 != vpn-up"
-                exit
-            fi
-            mount /mnt/cclab_nas
-            # mount /mnt/cclab_server
-            logger "Mounted cclab_nas"
-          '';
-          type = "basic";
-        }
-        {
-          source = pkgs.writeText "umountHook" ''
-            if [ "$2" != "vpn-pre-down" ]; then
-                logger "exit: event $2 != vpn-pre-down"
-                exit
-            fi
-            umount -a -l -t cifs
-            umount /mnt/cclab_server
-            logger "Unmounted cclab_nas"
-          '';
-          type = "pre-down";
-        }
-      ];
-      
-      systemd.services.suspend-disconnect = {
-        description = "Disconnect VPN before suspend";
-        wantedBy = [ "systemd-suspend.service" ];
-        before = [ "systemd-suspend.service" ];
-        script = ''
-          /run/current-system/sw/bin/nmcli con down id VPN\ ETHZ 2> /tmp/suspend
-        '';
-        serviceConfig.Type = "oneshot";
-      };
-      # systemd.services.tun-connect = {
-      #   wants = [ "sys-devices-virtual-net-tun0.device" ];
-      #   after = [ "sys-devices-virtual-net-tun0.device" ];
-      #   requires = [];
-      #   services.systemd-logind.environment.SYSTEMD_LOG_LEVEL
-      #   requires
-      #   script = ''
-      #   echo "cte" > /tmp/vpn
-      #   mount /mnt/cclab_nas
-      #   '';
-      # };
-      # powerManagement.powerDownCommands = "\"fusermount -u /home/moritz/sshfs \"\n\"echo ieie > /tmp/testt\"";  # doesn't work (at least not without reboot..)
     }
     {
       system.autoUpgrade.enable = true;
@@ -527,7 +502,6 @@ in
         enable = true;
         alsaSeq.enable = false;
     
-    
         # If I build with either of these, I get a PREEMPT error, much like
         #   https://github.com/musnix/musnix/issues/100
         # kernel.realtime = true;
@@ -600,6 +574,11 @@ in
         dataDir = "/home/moritz/.config/syncthing";
         configDir = "/home/moritz/.config/syncthing";
         openDefaultPorts = true;
+      };
+    }
+    {
+      services.onedrive = {
+        enable = true;
       };
     }
     {
@@ -852,12 +831,6 @@ in
     }
     {
       environment.systemPackages = with pkgs; [
-        mirage-im
-        element-desktop
-      ];
-    }
-    {
-      environment.systemPackages = with pkgs; [
         (pass.withExtensions (exts: [ exts.pass-otp ]))
         pinentry-curses
         pinentry-qt
@@ -943,6 +916,21 @@ in
        virtualisation.virtualbox.host.enableExtensionPack = true;
     }
     {
+      environment.systemPackages = with pkgs; [ xournalpp okular ];
+    }
+    {
+      environment.systemPackages = with pkgs; [
+        qt5full
+        aria 
+        fd
+        wmctrl
+        nodejs
+        nodePackages.npm
+        mupdf
+      ];
+      environment.variables.QT_QPA_PLATFORM_PLUGIN_PATH = "${pkgs.qt5.qtbase.bin.outPath}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";
+    }
+    {
       environment.systemPackages =
         with pkgs;
         let sparkleshare_fixed = sparkleshare.overrideAttrs ( oldAttrs: {
@@ -1015,11 +1003,14 @@ in
         tcl
     
         # Used by naga setup
-        xdotool
+        xdotool # required by eaf
       ];
     }
     {
       environment.systemPackages = [ pkgs.niv ];
+    }
+    {
+    services.flatpak.enable = true;
     }
     {
       environment.variables.EDITOR = "vim";
@@ -1094,17 +1085,40 @@ in
       ];
     }
     {
-      environment.systemPackages = let R-with-my-packages = pkgs.rWrapper.override{ packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra INSPEcT XVector S4Vectors MAGeCKFlute]; };
+      environment.systemPackages = let R-with-my-packages = pkgs.rWrapper.override{ packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra INSPEcT XVector S4Vectors MAGeCKFlute openxlsx]; };
       in [ R-with-my-packages ];
     }
     {
       environment.systemPackages =
         let python = (with pkgs; python3.withPackages (python-packages: with python-packages;
           let opencvGtk = opencv4.override (old : { enableGtk2 = true; enableGStreamer = true; });
-          in [
+              eaf-deps = [
+                pyqt5 sip
+                pyqtwebengine
+                epc lxml
+                # eaf-file-browser
+                qrcode
+                # eaf-browser
+                pysocks
+                # eaf-pdf-viewer
+                pymupdf
+                # eaf-file-manager
+                pypinyin
+                # eaf-system-monitor
+                psutil
+                # eaf-markdown-previewer
+                retry
+                markdown
+              ];
+              orger-pkgs = [
+                orger
+                hpi
+                pdfannots  # required for pdfs
+                datasets  # for twint (twitter)
+                twint
+              ];
+          in orger-pkgs ++ eaf-deps ++ [
           # gseapy
-          orger
-          hpi
           icecream
           plotly
           pytorch
@@ -1158,9 +1172,7 @@ in
           scikit-plot
           scikit-bio
           powerline
-          python-language-server
-          pyls-isort
-          pyls-mypy
+          python-lsp-server
           smogn
           docker
           absl-py
@@ -1173,7 +1185,7 @@ in
         pkgs.pipenv
         pip
         pkgs.nodePackages.pyright
-        python-language-server
+        python-lsp-server
         selenium
         # pkgs.zlib
         #pkgs.zlib.dev
@@ -1200,7 +1212,7 @@ in
       ];
     }
     {
-      # environment.systemPackages = [ pkgs.unstable.esphome ];  # 1.15.0 fixes bug
+      environment.systemPackages = [ pkgs.unstable.esphome ];  # 1.15.0 fixes bug
      
       # from https://raw.githubusercontent.com/platformio/platformio-core/master/scripts/99-platformio-udev.rules
       # QinHeng Electronics HL-340 USB-Serial adapter
@@ -1265,7 +1277,7 @@ in
         nmap
         sqlite
         gitAndTools.hub
-        youtube-dl
+        yt-dlp
         sshfs
         bash
         wget

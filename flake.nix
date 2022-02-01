@@ -8,7 +8,7 @@
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-21.05";
+      ref = "nixos-21.11";
     };
     nixpkgs-2009 = {
       type = "github";
@@ -51,7 +51,7 @@
       type = "github";
       owner = "rycee";
       repo = "home-manager";
-      ref = "bqv-flakes";
+      ref = "master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     musnix = {
@@ -128,7 +128,7 @@
               inherit name;
               paths = [
                 # (callPackage ../applications/virtualization/libnvidia-container { })
-                (pkgs.callPackage "${inputs.nixpkgs-moritz}/pkgs/applications/virtualization/libnvidia-container" { })
+                (pkgs.callPackage "${inputs.nixpkgs-moritz}/pkgs/applications/virtualization/libnvidia-container" { inherit (pkgs.linuxPackages) nvidia_x11; })
                 nvidia-container-runtime
                 (pkgs.callPackage "${inputs.nixpkgs}/pkgs/applications/virtualization/nvidia-container-toolkit" {
                   inherit nvidia-container-runtime;
@@ -168,6 +168,66 @@
         ( let
             myOverride = rec {
               packageOverrides = _self: _super: {
+              
+                # python-socks = _super.buildPythonPackage rec { # overwrite because too old
+                #   pname = "python-socks";
+                #   version = "2.0.3";
+        
+                #   src = _super.fetchPypi {
+                #     inherit pname version;
+                #     # sha256 = "e3a9ca8e554733862ce4d8ce1d10efb480fd3a3acdafd03393943ec00c98ba8a"; 2.0.3
+                #   };
+        
+                #   propagatedBuildInputs = with _super; [ trio curio async-timeout anyio ];
+                # };
+        
+                # aiohttp-socks-new = _super.buildPythonPackage rec {  # if >=0.7 is needed
+                #   pname = "aiohttp-socks";
+                #   version = "0.7.1";
+                #   propagatedBuildInputs = [ _super.aiohttp _super.attrs _self.python-socks];
+                #   doCheck = false;
+                #   src = _super.fetchPypi {
+                #     inherit version;
+                #     pname = "aiohttp_socks";
+                #     sha256 = "2215cac4891ef3fa14b7d600ed343ed0f0a670c23b10e4142aa862b3db20341a";
+                #   };
+                # };
+                googletransx = _super.buildPythonPackage rec {
+                  pname = "googletransx";
+                  version = "2.4.2";
+                  propagatedBuildInputs = [ _super.requests ];
+                  doCheck = false;
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "c46567e3365c2abbe8af1004121b6303f530bf72025d1c3045ed14861902d6da";
+                  };
+                };
+                twint = _super.buildPythonPackage rec {
+                  pname = "twint";
+                  version = "2.1.22";
+                  propagatedBuildInputs = with _super; [ aiohttp aiodns beautifulsoup4 cchardet elasticsearch pysocks pandas aiohttp-socks schedule geopy fake-useragent _self.googletransx ];
+                  
+                  postPatch = ''
+                    substituteInPlace setup.py --replace "dataclasses" ""
+                  '';
+                  doCheck = false;
+                  src = builtins.fetchGit {
+                    url = "https://github.com/twintproject/twint/";
+                    rev = "e7c8a0c764f6879188e5c21e25fb6f1f856a7221";
+                  };
+                };
+                pdfannots = _super.buildPythonPackage rec {
+                  pname = "pdfannots";
+                  version = "0.3";
+                  propagatedBuildInputs = [ _super.pdfminer ];
+                  nativeBuildInputes = [ _super.setuptools-scm ];
+                  doCheck = false;
+                  src = _super.fetchPypi {
+                    inherit pname version;
+                    sha256 = "5931fdab0f06283536b58782bec16109a6c193816d6df0ab737924513ea7ed0a";
+                  };
+                };
+        
                 cachew = _super.buildPythonPackage rec {
                   pname = "cachew";
                   version = "0.9.0";
@@ -181,13 +241,14 @@
                 };
                 hpi =_super.buildPythonPackage rec {
                   pname = "HPI";
-                  version = "0.3.20210220";
+                  version = "0.3.20211031";
                   propagatedBuildInputs = [ _super.pytz _super.appdirs _super.more-itertools _super.decorator _super.click _super.setuptools-scm _super.logzero _self.cachew _super.mypy ];  # orjson
                   nativeBuildInputes = [ _super.setuptools-scm ];
+                  SETUPTOOLS_SCM_PRETEND_VERSION = version;
                   doCheck = false;
-                  src = _super.fetchPypi {
-                    inherit pname version;
-                    sha256 = "96ee36d9d217330243ed0da436a97eb553a410df36d174417e8ff338e9802e44";
+                  src = builtins.fetchGit {
+                    url = "git://github.com/karlicoss/HPI";
+                    rev = "a1f03f9c028df9d1898de2cc14f1df4fa6d8c471";
                   };
                 };
                 orger =_super.buildPythonPackage rec {

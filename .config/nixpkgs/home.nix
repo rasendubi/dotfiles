@@ -19,6 +19,8 @@
 
   # this (maybe) fixes the issue that zoom cannot change to bluetooth sink: https://unix.stackexchange.com/questions/452907/pavucontrol-wont-change-output-on-some-apps
   home.file.".alsoftrc".text = ''
+drivers = alsa,pulse,core,oss
+
 [pulse]
 allow-moves=yes
   '';
@@ -126,6 +128,7 @@ home.packages =   with pkgs; [
   # services.emacs.enable = true;
 
   services.lorri.enable = true;
+  services.kdeconnect.enable = true;
 
   programs.browserpass = {
     enable = true;
@@ -193,6 +196,7 @@ home.packages =   with pkgs; [
     autorandr -c
     xrdb -merge ~/.Xresources
   '';
+  home.file.".icons/default".source = "${pkgs.vanilla-dmz}/share/icons/Vanilla-DMZ";
   # ~/.screenlayout/default.sh
 
   fonts.fontconfig.enable = true;
@@ -275,7 +279,7 @@ home.packages =   with pkgs; [
 #       "Xft.rgba" = "rgb";
 #     };
 #   };
-  # this is colliding with the configs I already have in ~/.config/autorandr, so I disabled it
+  # this is coliding with the configs I already have in ~/.config/autorandr, so I disabled it
   programs.autorandr = {
     enable = false;
     profiles = {
@@ -344,4 +348,7 @@ home.packages =   with pkgs; [
   };
 
   services.network-manager-applet.enable = true;
+
+
 }
+

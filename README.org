@@ -99,7 +99,7 @@ Make this repository flake-compatible:
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-21.05";
+      ref = "nixos-21.11";
     };
     nixpkgs-2009 = {
       type = "github";
@@ -142,7 +142,7 @@ Make this repository flake-compatible:
       type = "github";
       owner = "rycee";
       repo = "home-manager";
-      ref = "bqv-flakes";
+      ref = "master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     musnix = {
@@ -233,7 +233,7 @@ Make this repository flake-compatible:
         inherit name;
         paths = [
           # (callPackage ../applications/virtualization/libnvidia-container { })
-          (pkgs.callPackage "${inputs.nixpkgs-moritz}/pkgs/applications/virtualization/libnvidia-container" { })
+          (pkgs.callPackage "${inputs.nixpkgs-moritz}/pkgs/applications/virtualization/libnvidia-container" { inherit (pkgs.linuxPackages) nvidia_x11; })
           nvidia-container-runtime
           (pkgs.callPackage "${inputs.nixpkgs}/pkgs/applications/virtualization/nvidia-container-toolkit" {
             inherit nvidia-container-runtime;
@@ -369,7 +369,7 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
 #+end_src
 ***** Intel only
 
-#+name: nixos-section
+#+name: nixos-section-unused
 #+begin_src nix
 {
   system.nixos.tags = [ "with-intel" ];
@@ -442,7 +442,7 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
 #+end_src
 
 ***** Nvidia eGPU
-#+name: nixos-section-unused
+#+name: nixos-section
 #+begin_src nix
 {
   system.nixos.tags = [ "with-nvidia-egpu" ];
@@ -551,7 +551,7 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
   services.xserver.displayManager.lightdm.greeters.gtk.cursorTheme = {
     name = "Vanilla-DMZ";
     package = pkgs.vanilla-dmz;
-    size = 64;
+    size = 64; # was 64
   };
   environment.variables.XCURSOR_SIZE = "64";
 }
@@ -749,6 +749,7 @@ I have a bluetooth headset, so this enables bluetooth audio in NixOS.
   hardware.bluetooth.powerOnBoot = false;
   services.blueman.enable = true;
   hardware.bluetooth.settings.General.Enable = "Source,Sink,Media,Socket";
+  
   hardware.pulseaudio = {
     enable = true;
 
@@ -757,7 +758,7 @@ I have a bluetooth headset, so this enables bluetooth audio in NixOS.
     # Bluetooth support, so it must be selected here.
 
     extraModules = [ pkgs.pulseaudio-modules-bt ];
-    # package = pkgs.pulseaudioFull;
+    # package = pkgs.pulseaudioFull;  # already defined elsewhere
   };
 }
 #+end_src
@@ -773,17 +774,24 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
 }
 #+end_src
 ** Network mounts
+can delete
 #+name: nixos-section
 #+begin_src nix
 {
-  environment.systemPackages = [
-    pkgs.sshfs
-  ];
   fileSystems."/mnt/cclab_nas" = {
     device = "//nas22.ethz.ch/biol_imhs_ciaudo";
     fsType = "cifs";
     options = [ "credentials=/home/moritz/.secret/cclab_nas.credentials" "workgroup=d.ethz.ch" "uid=moritz" "gid=users" "noauto" "echo_interval=30" ];
   };
+}
+#+end_src
+
+#+name: nixos-section-unused
+#+begin_src nix
+{
+  environment.systemPackages = [
+    pkgs.sshfs
+  ];
 
 # https://releases.nixos.org/nix-dev/2016-September/021763.html  TODO not working :/
   fileSystems."/mnt/cclab_server" = let
@@ -975,7 +983,6 @@ Also, Pulseaudio is a requirement for Firefox Quantum.
     enable = true;
     alsaSeq.enable = false;
 
-
     # If I build with either of these, I get a PREEMPT error, much like
     #   https://github.com/musnix/musnix/issues/100
     # kernel.realtime = true;
@@ -1108,6 +1115,17 @@ I use Syncthing to sync my org-mode files to my phone.
   };
 }
 #+end_src
+** OneDrive
+I use OneDrive from my job
+
+#+name: nixos-section
+#+begin_src nix
+{
+  services.onedrive = {
+    enable = true;
+  };
+}
+#+end_src
 ** Firewall
 Enable firewall. This blocks all ports (for ingress traffic) and pings.
 
@@ -1206,6 +1224,7 @@ Automatic USB stick mounting
   services.devmon.enable = true;
 }
 #+end_src
+
 ** Logind
 #+name: nixos-section
 #+begin_src nix
@@ -1629,7 +1648,7 @@ Here go applications (almost) every normal user needs.
 }
 #+end_src
 ** Matrix Chat
-#+name: nixos-section
+#+name: nixos-section-unused
 #+begin_src nix
 {
   environment.systemPackages = with pkgs; [
@@ -1827,6 +1846,30 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 }
 #+END_SRC
 
+** PDF
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = with pkgs; [ xournalpp okular ];
+}
+#+END_SRC
+** EAF
+
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = with pkgs; [
+    qt5Full
+    aria 
+    fd
+    wmctrl
+    nodejs
+    nodePackages.npm
+    mupdf
+  ];
+  environment.variables.QT_QPA_PLATFORM_PLUGIN_PATH = "${pkgs.qt5.qtbase.bin.outPath}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";
+}
+#+END_SRC
 ** Other applications
 Don't require additional setup.
 
@@ -1905,7 +1948,7 @@ Don't require additional setup.
     tcl
 
     # Used by naga setup
-    xdotool
+    xdotool # required by eaf
   ];
 }
 #+end_src
@@ -1944,6 +1987,13 @@ CLOSED: [2021-07-14 Wed 12:52]
 }
 #+end_src
 
+** Flatpak
+#+name: nixos-section
+#+begin_src nix
+{
+services.flatpak.enable = true;
+}
+#+end_src
 ** Editors
 I'm a seasoned Vim user, but I've switched to emacs.
 #+name: nixos-section
@@ -2310,7 +2360,7 @@ set-window-option -g automatic-rename
 #+name: nixos-section
 #+begin_src nix
 {
-  environment.systemPackages = let R-with-my-packages = pkgs.rWrapper.override{ packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra INSPEcT XVector S4Vectors MAGeCKFlute]; };
+  environment.systemPackages = let R-with-my-packages = pkgs.rWrapper.override{ packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra INSPEcT XVector S4Vectors MAGeCKFlute openxlsx]; };
   in [ R-with-my-packages ];
 }
 #+end_src
@@ -2321,10 +2371,33 @@ set-window-option -g automatic-rename
   environment.systemPackages =
     let python = (with pkgs; python3.withPackages (python-packages: with python-packages;
       let opencvGtk = opencv4.override (old : { enableGtk2 = true; enableGStreamer = true; });
-      in [
+          eaf-deps = [
+            pyqt5 sip
+            pyqtwebengine
+            epc lxml
+            # eaf-file-browser
+            qrcode
+            # eaf-browser
+            pysocks
+            # eaf-pdf-viewer
+            pymupdf
+            # eaf-file-manager
+            pypinyin
+            # eaf-system-monitor
+            psutil
+            # eaf-markdown-previewer
+            retry
+            markdown
+          ];
+          orger-pkgs = [
+            orger
+            hpi
+            pdfannots  # required for pdfs
+            datasets  # for twint (twitter)
+            twint
+          ];
+      in orger-pkgs ++ eaf-deps ++ [
       # gseapy
-      orger
-      hpi
       icecream
       plotly
       pytorch
@@ -2378,9 +2451,7 @@ set-window-option -g automatic-rename
       scikit-plot
       scikit-bio
       powerline
-      python-language-server
-      pyls-isort
-      pyls-mypy
+      python-lsp-server
       smogn
       docker
       absl-py
@@ -2393,7 +2464,7 @@ set-window-option -g automatic-rename
     pkgs.pipenv
     pip
     pkgs.nodePackages.pyright
-    python-language-server
+    python-lsp-server
     selenium
     # pkgs.zlib
     #pkgs.zlib.dev
@@ -2408,6 +2479,66 @@ set-window-option -g automatic-rename
 ( let
     myOverride = rec {
       packageOverrides = _self: _super: {
+      
+        # python-socks = _super.buildPythonPackage rec { # overwrite because too old
+        #   pname = "python-socks";
+        #   version = "2.0.3";
+
+        #   src = _super.fetchPypi {
+        #     inherit pname version;
+        #     # sha256 = "e3a9ca8e554733862ce4d8ce1d10efb480fd3a3acdafd03393943ec00c98ba8a"; 2.0.3
+        #   };
+
+        #   propagatedBuildInputs = with _super; [ trio curio async-timeout anyio ];
+        # };
+
+        # aiohttp-socks-new = _super.buildPythonPackage rec {  # if >=0.7 is needed
+        #   pname = "aiohttp-socks";
+        #   version = "0.7.1";
+        #   propagatedBuildInputs = [ _super.aiohttp _super.attrs _self.python-socks];
+        #   doCheck = false;
+        #   src = _super.fetchPypi {
+        #     inherit version;
+        #     pname = "aiohttp_socks";
+        #     sha256 = "2215cac4891ef3fa14b7d600ed343ed0f0a670c23b10e4142aa862b3db20341a";
+        #   };
+        # };
+        googletransx = _super.buildPythonPackage rec {
+          pname = "googletransx";
+          version = "2.4.2";
+          propagatedBuildInputs = [ _super.requests ];
+          doCheck = false;
+          src = _super.fetchPypi {
+            inherit pname version;
+            sha256 = "c46567e3365c2abbe8af1004121b6303f530bf72025d1c3045ed14861902d6da";
+          };
+        };
+        twint = _super.buildPythonPackage rec {
+          pname = "twint";
+          version = "2.1.22";
+          propagatedBuildInputs = with _super; [ aiohttp aiodns beautifulsoup4 cchardet elasticsearch pysocks pandas aiohttp-socks schedule geopy fake-useragent _self.googletransx ];
+          
+          postPatch = ''
+            substituteInPlace setup.py --replace "dataclasses" ""
+          '';
+          doCheck = false;
+          src = builtins.fetchGit {
+            url = "https://github.com/twintproject/twint/";
+            rev = "e7c8a0c764f6879188e5c21e25fb6f1f856a7221";
+          };
+        };
+        pdfannots = _super.buildPythonPackage rec {
+          pname = "pdfannots";
+          version = "0.3";
+          propagatedBuildInputs = [ _super.pdfminer ];
+          nativeBuildInputes = [ _super.setuptools-scm ];
+          doCheck = false;
+          src = _super.fetchPypi {
+            inherit pname version;
+            sha256 = "5931fdab0f06283536b58782bec16109a6c193816d6df0ab737924513ea7ed0a";
+          };
+        };
+
         cachew = _super.buildPythonPackage rec {
           pname = "cachew";
           version = "0.9.0";
@@ -2421,13 +2552,14 @@ set-window-option -g automatic-rename
         };
         hpi =_super.buildPythonPackage rec {
           pname = "HPI";
-          version = "0.3.20210220";
+          version = "0.3.20211031";
           propagatedBuildInputs = [ _super.pytz _super.appdirs _super.more-itertools _super.decorator _super.click _super.setuptools-scm _super.logzero _self.cachew _super.mypy ];  # orjson
           nativeBuildInputes = [ _super.setuptools-scm ];
+          SETUPTOOLS_SCM_PRETEND_VERSION = version;
           doCheck = false;
-          src = _super.fetchPypi {
-            inherit pname version;
-            sha256 = "96ee36d9d217330243ed0da436a97eb553a410df36d174417e8ff338e9802e44";
+          src = builtins.fetchGit {
+            url = "git://github.com/karlicoss/HPI";
+            rev = "a1f03f9c028df9d1898de2cc14f1df4fa6d8c471";
           };
         };
         orger =_super.buildPythonPackage rec {
@@ -2973,7 +3105,7 @@ set-window-option -g automatic-rename
 #+name: nixos-section
 #+begin_src nix
 {
-  # environment.systemPackages = [ pkgs.unstable.esphome ];  # 1.15.0 fixes bug
+  environment.systemPackages = [ pkgs.unstable.esphome ];  # 1.15.0 fixes bug
  
   # from https://raw.githubusercontent.com/platformio/platformio-core/master/scripts/99-platformio-udev.rules
   # QinHeng Electronics HL-340 USB-Serial adapter
@@ -3048,7 +3180,7 @@ set-window-option -g automatic-rename
     nmap
     sqlite
     gitAndTools.hub
-    youtube-dl
+    yt-dlp
     sshfs
     bash
     wget
