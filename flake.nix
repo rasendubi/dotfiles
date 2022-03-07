@@ -514,7 +514,7 @@
                 pkgs.dolphin
                 # pkgs.kdeFrameworks.kfilemetadata
                 pkgs.filelight
-                pkgs.shared_mime_info
+                pkgs.shared-mime-info
               ];
             }
             {
@@ -1080,7 +1080,16 @@
               
                     # latex for displaying fragments in org-mode
                     (pkgs.texlive.combine {
-                      inherit (pkgs.texlive) scheme-small dvipng dvisvgm mhchem tikz-cd ;
+                      inherit (pkgs.texlive)
+                        scheme-small
+                        dvipng
+                        dvisvgm
+                        mhchem # chemistry
+                        tikz-cd # category theory diagrams
+                        # required for org export
+                        wrapfig
+                        capt-of
+                      ;
                     })
                     pkgs.ghostscript
                   ]
@@ -1091,7 +1100,7 @@
                   org = super.elpaPackages.org;
                 };
               
-                emacs-final = ((pkgs.emacsPackagesGen emacs-base).overrideScope' overrides).emacsWithPackages emacs-packages;
+                emacs-final = ((pkgs.emacsPackagesFor emacs-base).overrideScope' overrides).emacsWithPackages emacs-packages;
               
                in {
                  my-emacs = emacs-final // {
@@ -1111,7 +1120,7 @@
                     name = "input-mono-${old.version}.zip";
                     extension = ".zip";
                     url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
-                    sha256 = "sha256-QtmI5ydABvq20Q8lwCcB1cz59oDNfgBpRPOLr7kudho=";
+                    sha256 = "sha256-Kn2eLz2dHeTKI3rTrXhZPKmj3qDvAIS29Ur4vYzBOJ4=";
               
                     stripRoot = false;
               

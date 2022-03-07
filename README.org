@@ -592,7 +592,7 @@ Build all packages in sandbox:
 #+name: nixos-section
 #+begin_src nix
 {
-  nix.useSandbox = true;
+  nix.settings.sandbox = true;
 }
 #+end_src
 ** Users
@@ -607,7 +607,7 @@ I'm the only user of the system:
     extraGroups = [ "users" "wheel" ];
     initialPassword = "HelloWorld";
   };
-  nix.trustedUsers = ["rasen"];
+  nix.settings.trusted-users = ["rasen"];
 }
 #+end_src
 
@@ -637,7 +637,7 @@ This is my small Dell XPS 13.
     ];
   };
 
-  nix.maxJobs = lib.mkDefault 4;
+  nix.settings.max-jobs = lib.mkDefault 4;
 
   # powerManagement.cpuFreqGovernor = "powersave";
 
@@ -982,7 +982,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
     org = super.elpaPackages.org;
   };
 
-  emacs-final = ((pkgs.emacsPackagesGen emacs-base).overrideScope' overrides).emacsWithPackages emacs-packages;
+  emacs-final = ((pkgs.emacsPackagesFor emacs-base).overrideScope' overrides).emacsWithPackages emacs-packages;
 
  in {
    my-emacs = emacs-final // {
@@ -2499,7 +2499,7 @@ in {
 
   # Start backup on boot if missed one while laptop was off
   systemd.timers.borgbackup-job-all.timerConfig = {
-    Persistent = true;
+    Persistent = lib.mkForce true;
   };
 })
 #+end_src
@@ -5813,7 +5813,7 @@ Applications are configured with Home Manager, and notmuch frontend is configure
 #+begin_src emacs-lisp
 (use-package notmuch
   :config
-  (setenv "NOTMUCH_CONFIG" "/home/rasen/.config/notmuch/notmuchrc")
+  (setenv "NOTMUCH_CONFIG" "/home/rasen/.config/notmuch/default/config")
   ;; (setq mm-text-html-renderer 'shr)
 
   (setq notmuch-archive-tags '("-unread"))
@@ -5848,7 +5848,7 @@ Applications are configured with Home Manager, and notmuch frontend is configure
   (defun rasen/mbsync ()
     (interactive)
     (let ((mbsync-cmd (if (string= (system-name) "omicron")
-                          "mbsync sync-gmail & mbsync as & r2e run & wait; /home/rasen/dotfiles/notmuch.sh"
+                          "mbsync sync-gmail & r2e run & wait; /home/rasen/dotfiles/notmuch.sh"
                         "notmuch new")))
       (async-shell-command mbsync-cmd "*mbsync*")))
 
@@ -6048,7 +6048,7 @@ I don't use full KDE but some apps are definitely nice.
     pkgs.dolphin
     # pkgs.kdeFrameworks.kfilemetadata
     pkgs.filelight
-    pkgs.shared_mime_info
+    pkgs.shared-mime-info
   ];
 }
 #+end_src
@@ -7966,7 +7966,7 @@ I like [[https://input.djr.com/download/?customize&fontSelection=fourStyleFamily
       name = "input-mono-${old.version}.zip";
       extension = ".zip";
       url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
-      sha256 = "sha256-QtmI5ydABvq20Q8lwCcB1cz59oDNfgBpRPOLr7kudho=";
+      sha256 = "sha256-Kn2eLz2dHeTKI3rTrXhZPKmj3qDvAIS29Ur4vYzBOJ4=";
 
       stripRoot = false;
 

@@ -24,7 +24,7 @@ let
           ];
         };
       
-        nix.maxJobs = lib.mkDefault 4;
+        nix.settings.max-jobs = lib.mkDefault 4;
       
         # powerManagement.cpuFreqGovernor = "powersave";
       
@@ -109,7 +109,7 @@ let
       
         # Start backup on boot if missed one while laptop was off
         systemd.timers.borgbackup-job-all.timerConfig = {
-          Persistent = true;
+          Persistent = lib.mkForce true;
         };
       })
       {
@@ -163,7 +163,7 @@ in
       };
     }
     {
-      nix.useSandbox = true;
+      nix.settings.sandbox = true;
     }
     {
       users.extraUsers.rasen = {
@@ -172,7 +172,7 @@ in
         extraGroups = [ "users" "wheel" ];
         initialPassword = "HelloWorld";
       };
-      nix.trustedUsers = ["rasen"];
+      nix.settings.trusted-users = ["rasen"];
     }
     {
       environment.systemPackages = [ pkgs.xorg.xhost ];
