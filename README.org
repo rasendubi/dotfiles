@@ -903,6 +903,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       el-patch
       elpy
       emojify
+      envrc
       epresent
       evil
       evil-collection
@@ -2665,6 +2666,7 @@ direnv allows having per-directory environment configuration. You can think of a
 #+begin_src nix
 {
   programs.direnv.enable = true;
+  programs.direnv.nix-direnv.enable = true;
   services.lorri.enable = pkgs.stdenv.isLinux;
 }
 #+end_src
@@ -2672,8 +2674,16 @@ direnv allows having per-directory environment configuration. You can think of a
 Enable Emacs integration. (emacs-lisp)
 #+begin_src emacs-lisp
 (use-package direnv
+  :disabled t
   :config
   (direnv-mode))
+#+end_src
+
+Better (?) direnv integration via [[https://github.com/purcell/envrc][purcell/envrc]]. (emacs-lisp)
+#+begin_src emacs-lisp
+(use-package envrc
+  :config
+  (envrc-global-mode))
 #+end_src
 ** VirtualBox
 #+name: nixos-section
