@@ -48,3 +48,4 @@
 /README.el
 /emacs.el
 /README.nix
+/.emacs.d/transient/

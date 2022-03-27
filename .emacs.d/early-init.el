@@ -20,6 +20,11 @@
 
 (defun rasen/set-my-fonts ()
   (cond
+   ((and (eq system-type 'darwin)
+         (rasen/font-exists-p "Input"))
+    (set-face-attribute 'fixed-pitch nil :family "Input" :height 140)
+    (set-face-attribute 'default nil :family "Input" :height 140))
+
    ((rasen/font-exists-p "Input") ; check for custom four-family font first
     (set-face-attribute 'fixed-pitch nil :family "Input" :height 65)
     (set-face-attribute 'default nil :family "Input" :height 65))
@@ -37,6 +42,10 @@
     (set-face-attribute 'default nil :family "Terminus" :height 160)))
 
   (cond
+   ((and (eq system-type 'darwin)
+         (rasen/font-exists-p "Linux Libertine O"))
+    (set-face-attribute 'variable-pitch nil :family "Linux Libertine O" :height 180))
+
    ((rasen/font-exists-p "Linux Libertine O")
     (set-face-attribute 'variable-pitch nil :family "Linux Libertine O" :height 90))
    ((rasen/font-exists-p "Vollkorn")

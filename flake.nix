@@ -25,6 +25,10 @@
       ref = "master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    darwin = {
+      url = "github:lnl7/nix-darwin";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nixos-hardware = {
       type = "github";
       owner = "NixOS";
@@ -45,7 +49,7 @@
       #
       # That's why flakes must explicitly export sets for each system
       # supported.
-      systems = ["x86_64-linux" "aarch64-linux"];
+      systems = ["x86_64-linux" "aarch64-linux" "aarch64-darwin"];
 
       # genAttrs applies f to all elements of a list of strings, and
       # returns an attrset { name -> result }
@@ -123,9 +127,23 @@
         # NixOS module and standalone home-manager config.
         lib.home-manager-common = { lib, pkgs, config, ... }: {
           imports = [
+            ({ config, lib, pkgs, ... }:
+            
+            {
+              config = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
+                # Install MacOS applications to the user environment.
+                home.file."Applications/Home Manager Apps".source = let
+                  apps = pkgs.buildEnv {
+                    name = "home-manager-applications";
+                    paths = config.home.packages;
+                    pathsToLink = "/Applications";
+                  };
+                in "${apps}/Applications";
+              };
+            })
             {
               home.file."nixpkgs".source = inputs.nixpkgs;
-              systemd.user.sessionVariables.NIX_PATH = lib.mkForce "nixpkgs=$HOME/nixpkgs\${NIX_PATH:+:}$NIX_PATH";
+              systemd.user.sessionVariables.NIX_PATH = pkgs.lib.linux-only (lib.mkForce "nixpkgs=$HOME/nixpkgs\${NIX_PATH:+:}$NIX_PATH");
             
               xdg.configFile."nix/registry.json".text = builtins.toJSON {
                 version = 2;
@@ -167,12 +185,12 @@
               ];
             }
             {
-              home.packages = [
+              home.packages = pkgs.lib.linux-only [
                 pkgs.xss-lock
               ];
             }
             {
-              home.packages = [ pkgs.escrotum ];
+              home.packages = pkgs.lib.linux-only [ pkgs.escrotum ];
             }
             {
               home.keyboard = {
@@ -253,17 +271,17 @@
             }
             {
               services.xcape = {
-                enable = true;
+                enable = pkgs.stdenv.isLinux;
                 mapExpression = {
                   Control_L = "Escape";
                 };
               };
             }
             {
-              home.packages = [ pkgs.naga ];
+              home.packages = pkgs.lib.linux-only [ pkgs.naga ];
             }
             {
-              home.packages = [ pkgs.networkmanagerapplet ];
+              home.packages = pkgs.lib.linux-only [ pkgs.networkmanagerapplet ];
             }
             {
               xdg.configFile."direnv/lib/use_flake.sh".text = ''
@@ -276,7 +294,7 @@
             }
             {
               programs.direnv.enable = true;
-              services.lorri.enable = true;
+              services.lorri.enable = pkgs.stdenv.isLinux;
             }
             {
               programs.autorandr = {
@@ -342,13 +360,13 @@
               };
             }
             {
-              home.packages = [ pkgs.acpilight ];
+              home.packages = pkgs.lib.linux-only [ pkgs.acpilight ];
             }
             {
-              home.packages = [ pkgs.pavucontrol ];
+              home.packages = pkgs.lib.linux-only [ pkgs.pavucontrol ];
             }
             {
-              home.packages = [
+              home.packages = pkgs.lib.linux-only [
                 pkgs.firefox
                 pkgs.google-chrome
               ];
@@ -509,7 +527,7 @@
               };
             }
             {
-              home.packages = [
+              home.packages = pkgs.lib.linux-only [
                 pkgs.gwenview
                 pkgs.dolphin
                 # pkgs.kdeFrameworks.kfilemetadata
@@ -533,12 +551,12 @@
             }
             {
               home.packages = [
-                pkgs.google-play-music-desktop-player
-                pkgs.tdesktop # Telegram
+                (pkgs.lib.linux-only pkgs.google-play-music-desktop-player)
+                (pkgs.lib.linux-only pkgs.tdesktop) # Telegram
                 pkgs.feh
             
                 pkgs.mplayer
-                pkgs.smplayer
+                (pkgs.lib.linux-only pkgs.smplayer)
               ];
             }
             {
@@ -731,10 +749,10 @@
                 userName = "Alexey Shmalko";
                 userEmail = "rasen.dubi@gmail.com";
             
-                signing = {
-                  key = "EB3066C3";
-                  signByDefault = true;
-                };
+                # signing = {
+                #   key = "EB3066C3";
+                #   signByDefault = true;
+                # };
             
                 extraConfig = {
                   sendemail = {
@@ -846,7 +864,7 @@
           in
             mergeSections [
               (let
-                emacs-base = pkgs.emacs.override {
+                emacs-base = if pkgs.stdenv.isDarwin then pkgs.emacs else pkgs.emacs.override {
                   withX = true;
                   # select lucid toolkit
                   toolkit = "lucid";
@@ -1080,16 +1098,7 @@
               
                     # latex for displaying fragments in org-mode
                     (pkgs.texlive.combine {
-                      inherit (pkgs.texlive)
-                        scheme-small
-                        dvipng
-                        dvisvgm
-                        mhchem # chemistry
-                        tikz-cd # category theory diagrams
-                        # required for org export
-                        wrapfig
-                        capt-of
-                      ;
+                      inherit (pkgs.texlive) scheme-small dvipng dvisvgm mhchem tikz-cd ;
                     })
                     pkgs.ghostscript
                   ]
@@ -1120,7 +1129,7 @@
                     name = "input-mono-${old.version}.zip";
                     extension = ".zip";
                     url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
-                    sha256 = "sha256-Kn2eLz2dHeTKI3rTrXhZPKmj3qDvAIS29Ur4vYzBOJ4=";
+                    sha256 = "sha256-Z3HcYQ1YlSIzajUJzlC6L5rU/O/U2/ZDSizQYwlOSOk=";
               
                     stripRoot = false;
               
@@ -1156,10 +1165,92 @@
               config = { allowUnfree = true; };
             };
           })
+          (final: prev: {
+            lib = prev.lib // {
+              linux-only = prev.lib.mkIf final.stdenv.isLinux;
+            };
+          })
           inputs.emacs-overlay.overlay
         ];
       in {
         overlays = genAttrs systems mkOverlays;
+      })
+      (let
+        darwinHosts = {
+          bayraktar = {
+            system = "aarch64-darwin";
+          };
+        };
+      
+        mkDarwinConfiguration = { name, system, modules ? [] }:
+          inputs.darwin.lib.darwinSystem {
+            inherit system;
+            modules = modules ++ [ self.darwin-common ];
+          };
+      
+      in {
+        darwin-common = { pkgs, ... }: {
+          imports = [
+            {
+              imports = [inputs.home-manager.darwinModules.home-manager];
+              home-manager = {
+                useUserPackages = false;
+                useGlobalPkgs = true;
+                users.rasen = { ... }: {
+                  imports = [inputs.self.lib.home-manager-common];
+                };
+                # users.rasen = inputs.self.lib.home-manager-common;
+              };
+            }
+            {
+              nix.package = pkgs.nixFlakes;
+              nixpkgs.config = {
+                allowUnfree = true;
+              };
+              nixpkgs.overlays = self.overlays.aarch64-darwin;
+              services.nix-daemon.enable = true;
+            
+              system.stateVersion = 4;
+            }
+            ({ lib, config, ... }: {
+              system.activationScripts.applications.text = lib.mkForce ''
+                # Set up applications.
+                echo "setting up ~/Applications..." >&2
+                mkdir -p ~/Applications
+                if [ ! -e ~/Applications/Nix\ Apps -o -L ~/Applications/Nix\ Apps ]; then
+                  ln -sfn ${config.system.build.applications}/Applications ~/Applications/Nix\ Apps
+                else
+                  echo "warning: ~/Applications/Nix Apps is not owned by nix-darwin, skipping App linking..." >&2
+                fi
+              '';
+            })
+            {
+              users.users.rasen = {
+                description = "Alexey Shmalko";
+                home = "/Users/rasen/";
+              };
+            }
+            {
+              environment.systemPackages = [ pkgs.syncthing ];
+            }
+            {
+              environment.systemPackages = [ pkgs.gnupg ];
+              programs.gnupg.agent = {
+                enable = true;
+                enableSSHSupport = true;
+              };
+            }
+            {
+              programs.fish.enable = true;
+              # add fish to default shells
+              environment.shells = [ pkgs.fish ];
+              # set it as default for me
+              users.users.rasen.shell = pkgs.fish;
+            }
+          ];
+        };
+      
+        darwinConfigurations = genHosts darwinHosts mkDarwinConfiguration;
       })
     ];
 }

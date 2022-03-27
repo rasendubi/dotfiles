@@ -298,7 +298,7 @@ The following goes to ~flake.nix~ file.
       #
       # That's why flakes must explicitly export sets for each system
       # supported.
-      systems = ["x86_64-linux" "aarch64-linux"];
+      systems = ["x86_64-linux" "aarch64-linux" "aarch64-darwin"];
 
       # genAttrs applies f to all elements of a list of strings, and
       # returns an attrset { name -> result }
@@ -332,6 +332,7 @@ The following goes to ~flake.nix~ file.
       <<flake-outputs-home-manager>>
       <<flake-outputs-packages>>
       <<flake-outputs-overlays>>
+      <<flake-outputs-nix-darwin>>
     ];
 }
 #+end_src
@@ -469,6 +470,119 @@ Integrate home-manager module into NixOS.
 }
 #+end_src
 
+Integrate home-manager into nix-darwin.
+#+name: darwin-section
+#+begin_src nix
+{
+  imports = [inputs.home-manager.darwinModules.home-manager];
+  home-manager = {
+    useUserPackages = false;
+    useGlobalPkgs = true;
+    users.rasen = { ... }: {
+      imports = [inputs.self.lib.home-manager-common];
+    };
+    # users.rasen = inputs.self.lib.home-manager-common;
+  };
+}
+#+end_src
+
+** nix-darwin
+Add nix-darwin to flake inputs.
+#+name: flake-inputs
+#+begin_src nix
+darwin = {
+  url = "github:lnl7/nix-darwin";
+  inputs.nixpkgs.follows = "nixpkgs";
+};
+#+end_src
+
+Add helper function to differentiate linux-only config:
+#+name: flake-overlays
+#+begin_src nix
+(final: prev: {
+  lib = prev.lib // {
+    linux-only = prev.lib.mkIf final.stdenv.isLinux;
+  };
+})
+#+end_src
+
+#+name: flake-outputs-nix-darwin
+#+begin_src nix
+(let
+  darwinHosts = {
+    bayraktar = {
+      system = "aarch64-darwin";
+    };
+  };
+
+  mkDarwinConfiguration = { name, system, modules ? [] }:
+    inputs.darwin.lib.darwinSystem {
+      inherit system;
+      modules = modules ++ [ self.darwin-common ];
+    };
+
+in {
+  darwin-common = { pkgs, ... }: {
+    imports = [
+      <<darwin-section>>
+    ];
+  };
+
+  darwinConfigurations = genHosts darwinHosts mkDarwinConfiguration;
+})
+#+end_src
+
+#+name: darwin-section
+#+begin_src nix
+{
+  nix.package = pkgs.nixFlakes;
+  nixpkgs.config = {
+    allowUnfree = true;
+  };
+  nixpkgs.overlays = self.overlays.aarch64-darwin;
+  services.nix-daemon.enable = true;
+
+  system.stateVersion = 4;
+}
+#+end_src
+
+*** Fix linking applications
+[[https://github.com/LnL7/nix-darwin/pull/226/files][LnL7/nix-darwin#226 Disable taking control of ~/Applications folder by berbiche]]
+
+#+name: darwin-section
+#+begin_src nix
+({ lib, config, ... }: {
+  system.activationScripts.applications.text = lib.mkForce ''
+    # Set up applications.
+    echo "setting up ~/Applications..." >&2
+    mkdir -p ~/Applications
+    if [ ! -e ~/Applications/Nix\ Apps -o -L ~/Applications/Nix\ Apps ]; then
+      ln -sfn ${config.system.build.applications}/Applications ~/Applications/Nix\ Apps
+    else
+      echo "warning: ~/Applications/Nix Apps is not owned by nix-darwin, skipping App linking..." >&2
+    fi
+  '';
+})
+#+end_src
+
+And enable this in home-manager ([[https://github.com/nix-community/home-manager/blob/master/modules/targets/darwin/linkapps.nix][home-manager/linkapps.nix at master · nix-community/home-manager · GitHub]]):
+#+name: home-manager-section
+#+begin_src nix
+({ config, lib, pkgs, ... }:
+
+{
+  config = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
+    # Install MacOS applications to the user environment.
+    home.file."Applications/Home Manager Apps".source = let
+      apps = pkgs.buildEnv {
+        name = "home-manager-applications";
+        paths = config.home.packages;
+        pathsToLink = "/Applications";
+      };
+    in "${apps}/Applications";
+  };
+})
+#+end_src
 ** Packages
 Generate packages set for each supported system.
 #+name: flake-outputs-packages
@@ -560,7 +674,7 @@ Same but for Home Manager–managed host.
 #+begin_src nix
 {
   home.file."nixpkgs".source = inputs.nixpkgs;
-  systemd.user.sessionVariables.NIX_PATH = lib.mkForce "nixpkgs=$HOME/nixpkgs\${NIX_PATH:+:}$NIX_PATH";
+  systemd.user.sessionVariables.NIX_PATH = pkgs.lib.linux-only (lib.mkForce "nixpkgs=$HOME/nixpkgs\${NIX_PATH:+:}$NIX_PATH");
 
   xdg.configFile."nix/registry.json".text = builtins.toJSON {
     version = 2;
@@ -713,6 +827,18 @@ Fix screen tearing ([[https://wiki.archlinux.org/index.php/intel_graphics#Tearin
   '';
 }
 #+end_src
+* macOS
+** Users
+#+name: darwin-section
+#+begin_src nix
+{
+  users.users.rasen = {
+    description = "Alexey Shmalko";
+    home = "/Users/rasen/";
+  };
+}
+#+end_src
+
 * Emacs
 ** Install Emacs
 #+name: install-emacs
@@ -737,7 +863,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
 #+name: flake-packages
 #+begin_src nix
 (let
-  emacs-base = pkgs.emacs.override {
+  emacs-base = if pkgs.stdenv.isDarwin then pkgs.emacs else pkgs.emacs.override {
     withX = true;
     # select lucid toolkit
     toolkit = "lucid";
@@ -1730,6 +1856,7 @@ Add a couple of helpers functions. (emacs-lisp)
 
 (defun rasen/start-command (command &optional buffer)
   "Start shell COMMAND in the background. If BUFFER is provided, log process output to that buffer."
+  (interactive (list (read-shell-command "Run: ")))
   (start-process-shell-command command buffer command))
 
 (defun rasen/switch-start (buffer cmd)
@@ -1915,7 +2042,7 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 #+name: home-manager-section
 #+begin_src nix
 {
-  home.packages = [
+  home.packages = pkgs.lib.linux-only [
     pkgs.xss-lock
   ];
 }
@@ -1960,7 +2087,7 @@ Install it. (~<<home-manager-section>>~)
 #+name: home-manager-section
 #+begin_src nix
 {
-  home.packages = [ pkgs.escrotum ];
+  home.packages = pkgs.lib.linux-only [ pkgs.escrotum ];
 }
 #+end_src
 
@@ -2047,6 +2174,11 @@ I never use Caps Lock–the feature, so it's nice to have Caps LED indicate alte
   services.xserver.xkbOptions = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
   # services.xserver.xkbOptions = "grp:caps_toggle,grp_led:caps";
 }
+#+end_src
+
+On macOS, right option acts as AltGr. Make Emacs ignore it, so it can work correctly:
+#+begin_src emacs-lisp
+(setq ns-right-alternate-modifier 'none)
 #+end_src
 
 *** Xkeymap
@@ -2156,7 +2288,7 @@ Make short press on left control behave as Escape (=<<home-manager-section>>=):
 #+begin_src nix
 {
   services.xcape = {
-    enable = true;
+    enable = pkgs.stdenv.isLinux;
     mapExpression = {
       Control_L = "Escape";
     };
@@ -2271,7 +2403,7 @@ Finally install it (~<<home-manager-section>>~).
 #+name: home-manager-section
 #+begin_src nix
 {
-  home.packages = [ pkgs.naga ];
+  home.packages = pkgs.lib.linux-only [ pkgs.naga ];
 }
 #+end_src
 
@@ -2349,7 +2481,7 @@ Install network manager applet for user. (~<<home-manager-section>>~)
 #+name: home-manager-section
 #+begin_src nix
 {
-  home.packages = [ pkgs.networkmanagerapplet ];
+  home.packages = pkgs.lib.linux-only [ pkgs.networkmanagerapplet ];
 }
 #+end_src
 
@@ -2457,6 +2589,14 @@ I use Syncthing to sync my org-mode files to my phone.
   };
 }
 #+end_src
+
+On Darwin:
+#+name: darwin-section
+#+begin_src nix
+{
+  environment.systemPackages = [ pkgs.syncthing ];
+}
+#+end_src
 ** Docker
 ** Backup
 I use borg for backups.
@@ -2525,7 +2665,7 @@ direnv allows having per-directory environment configuration. You can think of a
 #+begin_src nix
 {
   programs.direnv.enable = true;
-  services.lorri.enable = true;
+  services.lorri.enable = pkgs.stdenv.isLinux;
 }
 #+end_src
 
@@ -2655,7 +2795,7 @@ For Home Manager–managed hosts.
 #+name: home-manager-section
 #+begin_src nix
 {
-  home.packages = [ pkgs.acpilight ];
+  home.packages = pkgs.lib.linux-only [ pkgs.acpilight ];
 }
 #+end_src
 
@@ -2731,7 +2871,7 @@ Use PipeWire as audio server.
 #+name: home-manager-section
 #+begin_src nix
 {
-  home.packages = [ pkgs.pavucontrol ];
+  home.packages = pkgs.lib.linux-only [ pkgs.pavucontrol ];
 }
 #+end_src
 
@@ -2788,7 +2928,7 @@ Firefox is default, Chrome for backup.
 #+name: home-manager-section
 #+begin_src nix
 {
-  home.packages = [
+  home.packages = pkgs.lib.linux-only [
     pkgs.firefox
     pkgs.google-chrome
   ];
@@ -5979,6 +6119,18 @@ Here go applications (almost) every normal user needs.
 }
 #+end_src
 
+Install on macOS:
+#+name: darwin-section
+#+begin_src nix
+{
+  environment.systemPackages = [ pkgs.gnupg ];
+  programs.gnupg.agent = {
+    enable = true;
+    enableSSHSupport = true;
+  };
+}
+#+end_src
+
 Request passwords in Emacs minibuffer. (emacs-lisp)
 #+begin_src emacs-lisp
 (setq epa-pinentry-mode 'loopback)
@@ -6043,7 +6195,7 @@ I don't use full KDE but some apps are definitely nice.
 #+name: home-manager-section
 #+begin_src nix
 {
-  home.packages = [
+  home.packages = pkgs.lib.linux-only [
     pkgs.gwenview
     pkgs.dolphin
     # pkgs.kdeFrameworks.kfilemetadata
@@ -6084,12 +6236,12 @@ KDE apps might have issues with mime types without this:
 #+begin_src nix
 {
   home.packages = [
-    pkgs.google-play-music-desktop-player
-    pkgs.tdesktop # Telegram
+    (pkgs.lib.linux-only pkgs.google-play-music-desktop-player)
+    (pkgs.lib.linux-only pkgs.tdesktop) # Telegram
     pkgs.feh
 
     pkgs.mplayer
-    pkgs.smplayer
+    (pkgs.lib.linux-only pkgs.smplayer)
   ];
 }
 #+end_src
@@ -6368,6 +6520,18 @@ For home-manager:
   programs.bash.enable = true;
 }
 #+end_src
+
+For macOS:
+#+name: darwin-section
+#+begin_src nix
+{
+  programs.fish.enable = true;
+  # add fish to default shells
+  environment.shells = [ pkgs.fish ];
+  # set it as default for me
+  users.users.rasen.shell = pkgs.fish;
+}
+#+end_src
 **** Vi key bindings
 #+name: home-manager-section
 #+begin_src nix
@@ -6494,10 +6658,10 @@ For home-manager. (~<<home-manager-section>>~)
     userName = "Alexey Shmalko";
     userEmail = "rasen.dubi@gmail.com";
 
-    signing = {
-      key = "EB3066C3";
-      signByDefault = true;
-    };
+    # signing = {
+    #   key = "EB3066C3";
+    #   signByDefault = true;
+    # };
 
     extraConfig = {
       sendemail = {
@@ -7789,6 +7953,7 @@ Emacs configuration.
 #+begin_src emacs-lisp
 (use-package plantuml-mode
   :config
+  :disabled t
   (setq plantuml-executable-path (executable-find "plantuml"))
   (setq plantuml-jar-path (expand-file-name "../lib/plantuml.jar" (file-name-directory (file-truename plantuml-executable-path))))
   (setq org-plantuml-jar-path plantuml-jar-path)
@@ -7912,6 +8077,11 @@ Configure fonts in Emacs. (~.emacs.d/early-init.el~)
 
 (defun rasen/set-my-fonts ()
   (cond
+   ((and (eq system-type 'darwin)
+         (rasen/font-exists-p "Input"))
+    (set-face-attribute 'fixed-pitch nil :family "Input" :height 140)
+    (set-face-attribute 'default nil :family "Input" :height 140))
+
    ((rasen/font-exists-p "Input") ; check for custom four-family font first
     (set-face-attribute 'fixed-pitch nil :family "Input" :height 65)
     (set-face-attribute 'default nil :family "Input" :height 65))
@@ -7929,6 +8099,10 @@ Configure fonts in Emacs. (~.emacs.d/early-init.el~)
     (set-face-attribute 'default nil :family "Terminus" :height 160)))
 
   (cond
+   ((and (eq system-type 'darwin)
+         (rasen/font-exists-p "Linux Libertine O"))
+    (set-face-attribute 'variable-pitch nil :family "Linux Libertine O" :height 180))
+
    ((rasen/font-exists-p "Linux Libertine O")
     (set-face-attribute 'variable-pitch nil :family "Linux Libertine O" :height 90))
    ((rasen/font-exists-p "Vollkorn")
@@ -7966,7 +8140,7 @@ I like [[https://input.djr.com/download/?customize&fontSelection=fourStyleFamily
       name = "input-mono-${old.version}.zip";
       extension = ".zip";
       url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
-      sha256 = "sha256-Kn2eLz2dHeTKI3rTrXhZPKmj3qDvAIS29Ur4vYzBOJ4=";
+      sha256 = "sha256-Z3HcYQ1YlSIzajUJzlC6L5rU/O/U2/ZDSizQYwlOSOk=";
 
       stripRoot = false;
 
@@ -7993,8 +8167,9 @@ Use variable-pitch fonts in org-mode. (~<<org-config>>~)
 (push "~/.emacs.d/site-lisp" load-path)
 (require 'org-variable-pitch)
 (setq org-variable-pitch-fixed-font "Input")
-(set-face-attribute 'org-variable-pitch-fixed-face nil :height 65)
-(set-face-attribute 'org-variable-pitch-fixed-face nil :weight 'regular)
+(set-face-attribute 'org-variable-pitch-fixed-face nil
+                    :height (if (eq system-type 'darwin) 140 65)
+                    :weight 'regular)
 (diminish 'org-variable-pitch-minor-mode)
 (diminish 'buffer-face-mode)
 
