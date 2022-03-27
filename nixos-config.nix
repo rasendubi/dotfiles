@@ -75,7 +75,10 @@ let
       }
       (let
         commonOptions = {
-          repo = "borg@10.13.0.3:.";
+          # repo = "borg@10.13.0.3:.";
+          repo = "/run/media/ext-data/borg";
+          removableDevice = true;
+      
           encryption.mode = "keyfile-blake2";
           encryption.passCommand = "cat /root/secrets/borg";
           compression = "auto,lzma,9";
@@ -83,6 +86,13 @@ let
           environment = { BORG_RSH = "ssh -i /root/.ssh/borg"; };
           # UTC timestamp
           dateFormat = "-u +%Y-%m-%dT%H:%M:%S";
+      
+          prune.keep = {
+            daily = 7;
+            weekly = 4;
+            monthly = 12;
+            yearly = -1;
+          };
         };
       in {
         services.borgbackup.jobs."all" = commonOptions // {
@@ -95,6 +105,7 @@ let
             "/home/rasen/.password-store/"
             "/home/rasen/dotfiles/"
             "/home/rasen/org/"
+            "/home/rasen/syncthing/"
       
             # Mail
             "/home/rasen/Mail/"
@@ -287,6 +298,29 @@ in
         dataDir = "/home/rasen/.config/syncthing";
         configDir = "/home/rasen/.config/syncthing";
         openDefaultPorts = true;
+      };
+    }
+    {
+      # Prepare mount point
+      system.activationScripts = {
+        ensure-ext-data = {
+          text = ''
+            mkdir -p /run/media/ext-data
+          '';
+          deps = [];
+        };
+      };
+    
+      fileSystems."/run/media/ext-data" = {
+        device = "/dev/disk/by-uuid/63972645-dbc8-4543-b854-91038b2da6cb";
+        fsType = "ext4";
+        options = [
+          "noauto"                       # do not mount on boot
+          "nofail"
+          "x-systemd.automount"          # mount when needed
+          "x-systemd.device-timeout=1ms" # device should be plugged already—do not wait for it
+          "x-systemd.idle-timout=5m"     # unmount after 5 min of inactivity
+        ];
       };
     }
     {

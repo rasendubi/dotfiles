@@ -294,6 +294,7 @@
             }
             {
               programs.direnv.enable = true;
+              programs.direnv.nix-direnv.enable = true;
               services.lorri.enable = pkgs.stdenv.isLinux;
             }
             {
@@ -904,6 +905,7 @@
                     el-patch
                     elpy
                     emojify
+                    envrc
                     epresent
                     evil
                     evil-collection
@@ -1098,7 +1100,16 @@
               
                     # latex for displaying fragments in org-mode
                     (pkgs.texlive.combine {
-                      inherit (pkgs.texlive) scheme-small dvipng dvisvgm mhchem tikz-cd ;
+                      inherit (pkgs.texlive)
+                        scheme-small
+                        dvipng
+                        dvisvgm
+                        mhchem # chemistry
+                        tikz-cd # category theory diagrams
+                        # required for org export
+                        wrapfig
+                        capt-of
+                      ;
                     })
                     pkgs.ghostscript
                   ]
