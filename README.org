@@ -432,7 +432,7 @@ Expose home-manager configurations.
     let pkgs = pkgsBySystem.${system};
     in inputs.home-manager.lib.homeManagerConfiguration {
       inherit system pkgs username homeDirectory;
-      configuration = { ... }: {
+      configuration = { lib, ... }: {
         nixpkgs.config.allowUnfree = true;
         nixpkgs.config.firefox.enableTridactylNative = true;
         nixpkgs.overlays = self.overlays.${system};
@@ -457,6 +457,17 @@ in {
 })
 #+end_src
 
+#+name: home-manager-section
+#+begin_src nix
+{
+  options.hostname = lib.mkOption {
+    default = null;
+    type = lib.types.nullOr lib.types.str;
+    description = "hostname so that other home-manager options can depend on it.";
+  };
+}
+#+end_src
+
 Integrate home-manager module into NixOS.
 #+name: nixos-section
 #+begin_src nix
@@ -479,7 +490,10 @@ Integrate home-manager into nix-darwin.
     useUserPackages = false;
     useGlobalPkgs = true;
     users.rasen = { ... }: {
-      imports = [inputs.self.lib.home-manager-common];
+      imports = [
+        inputs.self.lib.home-manager-common
+        { hostname = config.networking.hostName; }
+      ];
     };
     # users.rasen = inputs.self.lib.home-manager-common;
   };
@@ -510,19 +524,20 @@ Add helper function to differentiate linux-only config:
 #+begin_src nix
 (let
   darwinHosts = {
-    bayraktar = {
-      system = "aarch64-darwin";
-    };
+    <<darwin-host>>
   };
 
   mkDarwinConfiguration = { name, system, modules ? [] }:
     inputs.darwin.lib.darwinSystem {
       inherit system;
-      modules = modules ++ [ self.darwin-common ];
+      modules = modules ++ [
+        { networking.hostName = name; }
+        self.darwin-common
+      ];
     };
 
 in {
-  darwin-common = { pkgs, ... }: {
+  darwin-common = { lib, pkgs, config, ... }: {
     imports = [
       <<darwin-section>>
     ];
@@ -728,8 +743,21 @@ I'm the only user of the system:
 =initialPassword= is used only first time when user is created. It must be changed as soon as possible with =passwd=.
 
 ** Machines
-*** omicron
-This is my small Dell XPS 13.
+* macOS
+** Users
+#+name: darwin-section
+#+begin_src nix
+{
+  users.users.rasen = {
+    description = "Alexey Shmalko";
+    home = "/Users/rasen/";
+  };
+}
+#+end_src
+
+* Machines
+** omicron
+This is my small Dell XPS 13 running NixOS.
 #+name: machine-omicron
 #+begin_src nix
 {
@@ -827,15 +855,36 @@ Fix screen tearing ([[https://wiki.archlinux.org/index.php/intel_graphics#Tearin
   '';
 }
 #+end_src
-* macOS
-** Users
-#+name: darwin-section
+** bayraktar
+bayraktar is macbook pro managed with nix-darwin.
+#+name: darwin-host
+#+begin_src nix
+bayraktar = {
+  system = "aarch64-darwin";
+};
+#+end_src
+
+*** Work email
+#+name: home-manager-section
 #+begin_src nix
 {
-  users.users.rasen = {
-    description = "Alexey Shmalko";
-    home = "/Users/rasen/";
-  };
+  accounts.email.accounts = lib.mkIf (config.hostname == "bayraktar") (lib.mkForce {
+    fluxon = {
+      realName = "Alexey Shmalko";
+      address = "as@fluxon.com";
+      flavor = "gmail.com";
+      primary = true;
+
+      passwordCommand = "pass fluxon/google.com/as@fluxon.com/email";
+      maildir.path = "fluxon";
+
+      msmtp.enable = true;
+      notmuch.enable = true;
+      mbsync.enable = true;
+      mbsync.create = "maildir";
+    };
+  });
+  programs.mbsync.extraConfig = lib.mkForce "";
 }
 #+end_src
 
@@ -1622,6 +1671,14 @@ I use smex for improved =counsel-M-x= (show most frequently used commands first)
   ;; reset ivy initial inputs for counsel
   (setq-default ivy-initial-inputs-alist nil)
   (counsel-mode 1))
+#+end_src
+
+Install ripgrep (rg) to user environment:
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.packages = [ pkgs.ripgrep ];
+}
 #+end_src
 ** avy
 Jump anywhere with a few keystrokes in tree-like way.
@@ -4214,7 +4271,7 @@ Set my org files location.
 #+begin_src emacs-lisp
 (setq org-directory "~/org"
       org-default-notes-file rasen/org-refile-file
-      org-agenda-files (rasen/org-files-in-dir "~/org"))
+      org-agenda-files (cons "~/org/roam/fluxon/index.org" (rasen/org-files-in-dir "~/org")))
 #+end_src
 
 Show agenda as the only window and restore window layout on quit (so that agenda does not mess up with my layout).
@@ -4341,6 +4398,87 @@ Do not show project tags.
             (search "+{:CREATED:}" ((org-agenda-files (mapcar (lambda (x) (concat rasen/org-directory "/" x))
                                                               '("refile-omicron.org"
                                                                 "orgzly.org")))
+                                    (org-agenda-overriding-header "")
+                                    (org-super-agenda-groups
+                                     '((:name "Inbox"
+                                        :auto-category t
+                                        :anything t)))))))
+
+          ("f" "Fluxon"
+           ((agenda "" ((org-agenda-files '("~/org/roam/fluxon/index.org" "~/org/refile-bayraktar.org"))
+                        ;; start from yesterday
+                        (org-agenda-start-day "-1d")
+
+                        ;; show 6 days
+                        (org-agenda-span 6)
+
+                        ;; show closed items
+                        (org-agenda-show-log t)
+                        (org-agenda-log-mode-items '(closed))
+
+                        ;; Show habits on each day. (Useful if today
+                        ;; is closed but you still want to see the
+                        ;; habit graph.)
+                        ;; (org-habit-show-habits-only-for-today nil)
+
+                        (org-super-agenda-groups
+                         '(;; 1. time-grid
+                           ;; 2. scheduled today
+                           ;; 3. deadline today
+                           ;; 4. habits
+                           ;; 5. rest (anniversaries, etc.)
+                           ;; 6. deadline reminders
+                           (:name none ;; habits
+                            :habit t
+                            :order 4)
+                           (:name none ;; time-grid
+                            :time-grid t
+                            :order 1)
+                           (:name none ;; don't show closed items—they are still seen in the log
+                            :discard (:todo ("DONE" "CANCELED")))
+                           (:name none ;; scheduled today
+                            :scheduled today
+                            :order 2)
+                           (:name none ;; deadline today
+                            :deadline today
+                            :order 3)
+                           (:name none ;; deadline reminders
+                            :deadline t
+                            :scheduled t
+                            :order 6)
+                           (:name none ;; everything else
+                            :anything t
+                            :order 5)))))
+            (alltodo "" ((org-agenda-files '("~/org/roam/fluxon/index.org" "~/org/refile-bayraktar.org"))
+                         (org-agenda-overriding-header "")
+                         (org-super-agenda-groups
+                          '(;; drop scheduled items—they are shown in
+                            ;; agenda view
+                            (:discard (:scheduled t))
+
+                            ;; 8. Next items
+                            ;; 9. Active projects (NEXT/WAIT)
+                            ;; 11. Active books (NEXT)
+                            ;; 12. Waiting for items (WAIT)
+                            (:name "Books"
+                             :and (:category "books"
+                                   :todo "NEXT")
+                             :order 11)
+                            (:name "Projects"
+                             :and (:tag "PROJECT"
+                                   :todo "NEXT")
+                             :and (:tag "PROJECT"
+                                   :todo "WAIT")
+                             :order 9)
+                            (:name "Next"
+                             :todo "NEXT"
+                             :order 8)
+                            (:todo "WAIT"
+                             :order 12)
+                            (:discard (:anything t))))))
+
+            ;; inbox items (they must have a “CREATED” property to be considered an item)
+            (search "+{:CREATED:}" ((org-agenda-files '("~/org/refile-bayraktar.org"))
                                     (org-agenda-overriding-header "")
                                     (org-super-agenda-groups
                                      '((:name "Inbox"
@@ -5235,6 +5373,9 @@ A function to create a new node without prompting for a title. Sometimes I want 
 (s-leader-def "n n" #'rasen/org-roam-new-node)
 (s-leader-def "n d" #'rasen/org-roam-new-node-default)
 (s-leader-def "n l" #'rasen/org-roam-new-node-life)
+(s-leader-def "n F" (defun rasen/org-roam-new-node-fluxon ()
+                      (interactive)
+                      (rasen/org-roam-new-node "f")))
 #+end_src
 *** org-roam-update-title
 #+name: org-roam-update-title
@@ -6052,7 +6193,7 @@ Applications are configured with Home Manager, and notmuch frontend is configure
     (interactive)
     (let ((mbsync-cmd (if (string= (system-name) "omicron")
                           "mbsync sync-gmail & r2e run & wait; /home/rasen/dotfiles/notmuch.sh"
-                        "notmuch new")))
+                        "mbsync -a && notmuch new")))
       (async-shell-command mbsync-cmd "*mbsync*")))
 
   ;; bind q in shell to hide buffer

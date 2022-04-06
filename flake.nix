@@ -110,7 +110,7 @@
           let pkgs = pkgsBySystem.${system};
           in inputs.home-manager.lib.homeManagerConfiguration {
             inherit system pkgs username homeDirectory;
-            configuration = { ... }: {
+            configuration = { lib, ... }: {
               nixpkgs.config.allowUnfree = true;
               nixpkgs.config.firefox.enableTridactylNative = true;
               nixpkgs.overlays = self.overlays.${system};
@@ -127,6 +127,13 @@
         # NixOS module and standalone home-manager config.
         lib.home-manager-common = { lib, pkgs, config, ... }: {
           imports = [
+            {
+              options.hostname = lib.mkOption {
+                default = null;
+                type = lib.types.nullOr lib.types.str;
+                description = "hostname so that other home-manager options can depend on it.";
+              };
+            }
             ({ config, lib, pkgs, ... }:
             
             {
@@ -170,6 +177,25 @@
               };
             }
             {
+              accounts.email.accounts = lib.mkIf (config.hostname == "bayraktar") (lib.mkForce {
+                fluxon = {
+                  realName = "Alexey Shmalko";
+                  address = "as@fluxon.com";
+                  flavor = "gmail.com";
+                  primary = true;
+            
+                  passwordCommand = "pass fluxon/google.com/as@fluxon.com/email";
+                  maildir.path = "fluxon";
+            
+                  msmtp.enable = true;
+                  notmuch.enable = true;
+                  mbsync.enable = true;
+                  mbsync.create = "maildir";
+                };
+              });
+              programs.mbsync.extraConfig = lib.mkForce "";
+            }
+            {
               programs.emacs = {
                 enable = true;
                 package = pkgs.my-emacs.base;
@@ -183,6 +209,9 @@
                 pkgs.input-mono
                 pkgs.libertine
               ];
+            }
+            {
+              home.packages = [ pkgs.ripgrep ];
             }
             {
               home.packages = pkgs.lib.linux-only [
@@ -518,7 +547,8 @@
             }
             {
               home.packages = [
-                (pkgs.pass.withExtensions (exts: [ exts.pass-otp ]))
+                (pkgs.pass.withExtensions (exts: [ exts.pass-otp exts.pass-audit exts.pass-genphrase ]))
+                pkgs.qrencode
               ];
             }
             {
@@ -1197,11 +1227,14 @@
         mkDarwinConfiguration = { name, system, modules ? [] }:
           inputs.darwin.lib.darwinSystem {
             inherit system;
-            modules = modules ++ [ self.darwin-common ];
+            modules = modules ++ [
+              { networking.hostName = name; }
+              self.darwin-common
+            ];
           };
       
       in {
-        darwin-common = { pkgs, ... }: {
+        darwin-common = { lib, pkgs, config, ... }: {
           imports = [
             {
               imports = [inputs.home-manager.darwinModules.home-manager];
@@ -1209,7 +1242,10 @@
                 useUserPackages = false;
                 useGlobalPkgs = true;
                 users.rasen = { ... }: {
-                  imports = [inputs.self.lib.home-manager-common];
+                  imports = [
+                    inputs.self.lib.home-manager-common
+                    { hostname = config.networking.hostName; }
+                  ];
                 };
                 # users.rasen = inputs.self.lib.home-manager-common;
               };
