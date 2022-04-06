@@ -8638,35 +8638,36 @@ Set PATH env variable from =exec-path=. This is required for =shell-command= to 
 
 Watch IdleHint from logind to pause or resume break-mode.
 #+begin_src emacs-lisp
-(require 'dbus)
+(when (featurep 'dbusbind)
+  (require 'dbus)
 
-(defvar rasen/idlehint-changed-hook nil)
-(defvar rasen/idlehint-object nil)
+  (defvar rasen/idlehint-changed-hook nil)
+  (defvar rasen/idlehint-object nil)
 
-(defun rasen/idlehint-changed-handler (interface changed invalidated)
-  (if-let ((idlehintprop (alist-get "IdleHint" changed nil nil 'equal)))
-      (run-hook-with-args 'rasen/idlehint-changed-hook (caar idlehintprop))))
-(defun rasen/idlehint-watch ()
-  (interactive)
-  (rasen/idlehint-unwatch)
-  (dbus-register-signal
-   :system
-   nil
-   "/org/freedesktop/login1/user/_1000"
-   "org.freedesktop.DBus.Properties"
-   "PropertiesChanged"
-   #'rasen/idlehint-changed-handler))
-(defun rasen/idlehint-unwatch ()
-  (interactive)
-  (when rasen/idlehint-object
-    (dbus-unregister-object rasen/idlehint-object)
-    (setq rasen/idlehint-object nil)))
-(rasen/idlehint-watch)
+  (defun rasen/idlehint-changed-handler (interface changed invalidated)
+    (if-let ((idlehintprop (alist-get "IdleHint" changed nil nil 'equal)))
+        (run-hook-with-args 'rasen/idlehint-changed-hook (caar idlehintprop))))
+  (defun rasen/idlehint-watch ()
+    (interactive)
+    (rasen/idlehint-unwatch)
+    (dbus-register-signal
+     :system
+     nil
+     "/org/freedesktop/login1/user/_1000"
+     "org.freedesktop.DBus.Properties"
+     "PropertiesChanged"
+     #'rasen/idlehint-changed-handler))
+  (defun rasen/idlehint-unwatch ()
+    (interactive)
+    (when rasen/idlehint-object
+      (dbus-unregister-object rasen/idlehint-object)
+      (setq rasen/idlehint-object nil)))
+  (rasen/idlehint-watch)
 
-(defun rasen/idlehinit-to-break (idle)
-  (message "(rasen/idlehint-to-break %s)" idle)
-  (if idle
-      (break-pause)
-    (break-resume)))
-(add-hook 'rasen/idlehint-changed-hook #'rasen/idlehinit-to-break)
+  (defun rasen/idlehinit-to-break (idle)
+    (message "(rasen/idlehint-to-break %s)" idle)
+    (if idle
+        (break-pause)
+      (break-resume)))
+  (add-hook 'rasen/idlehint-changed-hook #'rasen/idlehinit-to-break))
 #+end_src
