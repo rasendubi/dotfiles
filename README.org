@@ -6158,7 +6158,6 @@ Applications are configured with Home Manager, and notmuch frontend is configure
 #+begin_src emacs-lisp
 (use-package notmuch
   :config
-  (setenv "NOTMUCH_CONFIG" "/home/rasen/.config/notmuch/default/config")
   ;; (setq mm-text-html-renderer 'shr)
 
   (setq notmuch-archive-tags '("-unread"))
