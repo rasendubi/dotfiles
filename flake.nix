@@ -865,7 +865,7 @@
           in
             mergeSections [
               (let
-                emacs-base = if pkgs.stdenv.isDarwin then pkgs.emacs else pkgs.emacs.override {
+                emacs-base = if pkgs.stdenv.isDarwin then pkgs.emacsUnstable else pkgs.emacs.override {
                   withX = true;
                   # select lucid toolkit
                   toolkit = "lucid";
