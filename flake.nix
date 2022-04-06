@@ -913,6 +913,7 @@
                     evil-org
                     evil-surround
                     evil-swap-keys
+                    exec-path-from-shell
                     fish-completion
                     fish-mode
                     flycheck

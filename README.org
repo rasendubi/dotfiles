@@ -911,6 +911,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       evil-org
       evil-surround
       evil-swap-keys
+      exec-path-from-shell
       fish-completion
       fish-mode
       flycheck
@@ -2722,7 +2723,7 @@ direnv allows having per-directory environment configuration. You can think of a
 Enable Emacs integration. (emacs-lisp)
 #+begin_src emacs-lisp
 (use-package direnv
-  :disabled t
+  :after exec-path-from-shell
   :config
   (direnv-mode))
 #+end_src
@@ -2730,6 +2731,8 @@ Enable Emacs integration. (emacs-lisp)
 Better (?) direnv integration via [[https://github.com/purcell/envrc][purcell/envrc]]. (emacs-lisp)
 #+begin_src emacs-lisp
 (use-package envrc
+  :disabled t
+  :after exec-path-from-shell
   :config
   (envrc-global-mode))
 #+end_src
@@ -8470,7 +8473,14 @@ And for agenda.
 ** Configure PATH
 Set PATH env variable from =exec-path=. This is required for =shell-command= to find executables available in =exec-path=. (Most notably, org-mode latex preview fails without this.)
 #+begin_src emacs-lisp
-(setenv "PATH" (string-join exec-path ":"))
+(use-package exec-path-from-shell
+  :config
+  (let ((old-path exec-path))
+    (exec-path-from-shell-initialize)
+    ;; append some old paths (required for )
+    (setq exec-path (delete-dups (append exec-path old-path)))
+    ;; set new value to PATH
+    (setenv "PATH" (string-join exec-path ":"))))
 #+end_src
 
 ** break mode
