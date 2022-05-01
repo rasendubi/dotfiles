@@ -9,8 +9,8 @@
       "x-scheme-handler/msteams" = [ "teams.desktop" ];
       "image/png" = [ "org.inkscape.Inkscape.desktop" ];  # annoyiiiing
       "image/svg+xml" = [ "org.inkscape.Inkscape.desktop" ];
-      "x-scheme-handler/http" = [ "qutebrowser.desktop" ];
-      "x-scheme-handler/https" = [ "qutebrowser.desktop" ];
+      "x-scheme-handler/http" = [ "org.qutebrowser.qutebrowser.desktop" ];
+      "x-scheme-handler/https" = [ "org.qutebrowser.qutebrowser.desktop" ];
     };
   };
   # targets.genericLinux.enable = true;
@@ -146,6 +146,9 @@ home.packages =   with pkgs; [
     enable = true;
     shellAliases = {
       g = "git";
+      l = "ls -lhrta";
+      clip = "xclip -selection clipboard";
+      muwvpn = "pass show Wien/meduniwien.ac.at/mschae83 | sudo openconnect --passwd-on-stdin --user mschae83 --authgroup _CeMM_exkl.Journale vpn.meduniwien.ac.at";
     };
     shellInit = ''
       set -gx PATH $HOME/bin $PATH
@@ -163,8 +166,6 @@ home.packages =   with pkgs; [
       eval (direnv hook fish)
       fish_vi_key_bindings
 
-      alias l 'ls -lhtra'
-      alias clip 'xclip -selection clipboard'
     '';
   };
   # programs.bash = {
@@ -185,10 +186,11 @@ home.packages =   with pkgs; [
   #xsession.windowManager.exwm = {
   #  enable = true;
   #};
+  # I manage my xresources manually..
   # xsession.pointerCursor = {
   #   name = "Vanilla-DMZ";
   #   package = pkgs.vanilla-dmz;
-  #   size = 128;
+  #   size = 64;
   # };
   xsession.initExtra = ''
     # xkbcomp /home/moritz/nixos-config/.Xkeymap $DISPLAY # TODO enable?

@@ -14,6 +14,7 @@ let
       
         # from nixos-hardware
         boot.loader.systemd-boot.enable = true;
+        boot.loader.systemd-boot.configurationLimit = 10;
         boot.loader.efi.canTouchEfiVariables = false;  # disabled after a boot or two to prevent usage on that kind of ram
         services.thermald.enable = true; 
       
@@ -88,7 +89,7 @@ let
         services.xserver.displayManager.lightdm.greeters.gtk.cursorTheme = {
           name = "Vanilla-DMZ";
           package = pkgs.vanilla-dmz;
-          size = 64; # was 64
+          size = 128; # was 64
         };
         environment.variables.XCURSOR_SIZE = "64";
       }
@@ -104,6 +105,11 @@ let
         console.packages = [
           pkgs.terminus_font
         ];
+        environment.variables = {
+          GDK_SCALE = "2";
+          GDK_DPI_SCALE = "0.5";
+          QT_AUTO_SCREEN_SCALE_FACTOR = "1";
+        };
         console.font = "ter-132n";
         services.xserver.dpi = 220;
       }
@@ -183,6 +189,7 @@ let
       
       
         boot.loader.systemd-boot.enable = true;
+        boot.loader.systemd-boot.configurationLimit = 10;
         # boot.loader.efi.canTouchEfiVariables = true;
             
         # accelerateion
@@ -284,9 +291,9 @@ let
   #   };
 in
 {
-  # disabledModules = [ "services/x11/window-managers/exwm.nix"  ]; 
+  disabledModules = [ "services/printing/cupsd.nix" ]; 
   imports = [
-    # (import "${inputs.nixpkgs-moritz}/nixos/modules/services/x11/window-managers/exwm.nix")
+    (import "${inputs.nixpkgs-local}/nixos/modules/services/printing/cupsd.nix")
     (import "${inputs.musnix}")
     {
     
@@ -361,7 +368,7 @@ in
       boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11 ];
       boot.blacklistedKernelModules = [ "nouveau" "nvidia_drm" "nvidia_modeset" "nvidia" ];
       environment.systemPackages = [ pkgs.linuxPackages.nvidia_x11 ]; # packages
-      # hardware.nvidia.package = pkgs.os-specific.linux.nvidia_x11.generic 
+      # hardware.nvidia.package = pkgs.os-specific.linux.nvidia_x11.production;  # alternative: stable 
       # /home/moritz/Projects/nixpkgs/pkgs/os-specific/linux/nvidia-x11/default.nix <- add version 450
       hardware.opengl = {
         enable = true;
@@ -443,11 +450,33 @@ in
       nix.gc.options = "--delete-generations +12";
     }
     {
+      security.pam.loginLimits = [{ # http://www.linux-pam.org/Linux-PAM-html/sag-pam_limits.html
+        "domain" = "moritz";  # or group @users
+        "type" = "-";
+        "item" = "nice";
+        "value" = "-18";
+      }
+      # {  # disabled for testing. check if everything works fine after reboot...
+      #   "domain" = "moritz";  # or group @users
+      #   "type" = "-";
+      #   "item" = "priority";
+      #   "value" = "-10";
+      # }
+      ];
+    }
+    {
       
       networking = {
         hostName = name;
     
-        networkmanager.enable = true;
+        networkmanager = {
+          enable = true;
+          packages = [
+            pkgs.networkmanager-openconnect
+            pkgs.networkmanager-vpnc
+            pkgs.vpnc-scripts
+          ];
+        };
     
         # disable wpa_supplicant
         wireless.enable = false;
@@ -456,7 +485,10 @@ in
       users.extraUsers.moritz.extraGroups = [ "networkmanager" ];
     
       environment.systemPackages = [
+        pkgs.openconnect
         pkgs.networkmanagerapplet
+        pkgs.vpnc
+        pkgs.vpnc-scripts
       ];
     }
     {
@@ -464,6 +496,7 @@ in
         enable = true;
         interfaces = [];
         openFirewall = false;
+        nssmdns = true;
       };
     }
     {
@@ -524,13 +557,21 @@ in
     }
     {
       services.printing.enable = true;
+      services.printing.browsedConf = ''
+        CreateIPPPrinterQueues All
+      '';
       services.printing.drivers = with pkgs; [
         gutenprint
         gutenprintBin
         samsungUnifiedLinuxDriver
         splix
+        canon-cups-ufr2
+        carps-cups
       ];
       services.system-config-printer.enable = true;
+      environment.systemPackages = [
+        pkgs.gtklp
+      ];
     }
     {
       services.locate = {
@@ -584,7 +625,7 @@ in
     {
       networking.firewall = {
         enable = true;
-        allowPing = false;
+        allowPing = true;  # neede for samba
     
         connectionTrackingModules = [];
         autoLoadConntrackHelpers = false;
@@ -601,7 +642,7 @@ in
         pkgs.docker-compose
         pkgs.kvm
         pkgs.qemu
-        pkgs.nvtop # for nvidia
+        # pkgs.nvtop # for nvidia
         pkgs.usbtop
       ];
     
@@ -648,6 +689,51 @@ in
       services.logind.extraConfig = ''
         HandlePowerKey=suspend
       '';
+    }
+    {
+      networking.firewall.extraCommands = ''iptables -t raw -A OUTPUT -p udp -m udp --dport 137 -j CT --helper netbios-ns'';
+      services.gvfs.enable = true;
+      services.samba = {
+        enable = true;
+        securityType = "user";
+        openFirewall = true;
+        extraConfig = ''
+          workgroup = WORKGROUP
+          wins support = no
+          wins server = 192.168.1.10
+          server string = smbnix
+          netbios name = smbnix
+          security = user 
+          #use sendfile = yes
+          #max protocol = smb2
+          hosts allow = 192.168.  localhost
+          hosts deny = 0.0.0.0/0
+          guest account = nobody
+          map to guest = bad user
+        '';
+        shares = {
+          # public = {
+          #   path = "/mnt/Shares/Public";
+          #   browseable = "yes";
+          #   "read only" = "no";
+          #   "guest ok" = "yes";
+          #   "create mask" = "0644";
+          #   "directory mask" = "0755";
+          #   "force user" = "username";
+          #   "force group" = "groupname";
+          # };
+          moritz = {
+            path = "/home/moritz/";
+            browseable = "yes";
+            "read only" = "no";
+            "guest ok" = "no";
+            "create mask" = "0644";
+            "directory mask" = "0755";
+            "force user" = "moritz";
+            "force group" = "users";
+          };
+        };
+      };
     }
     {
       environment.systemPackages = [
@@ -773,8 +859,21 @@ in
     {
       services.redshift = {
         enable = true;
+        brightness.night = "0.8";
+        temperature.night = 2600;
       };
+    
       location.provider = "geoclue2";
+      
+      systemd.services.resume-redshift-restart = {
+        description = "Restart redshift after resume to workaround bug not reacting after suspend/resume";
+        wantedBy = [ "sleep.target" ];
+        after = [ "systemd-suspend.service" "systemd-hybrid-sleep.service" "systemd-hibernate.service" ];
+        script = ''
+          /run/current-system/sw/bin/systemctl restart --machine=moritz@.host --user redshift
+        '';
+        serviceConfig.Type = "oneshot";
+      };
     }
     {
       hardware.acpilight.enable = true;
@@ -860,9 +959,13 @@ in
       ];
     }
     {
-      environment.systemPackages = [
-        pkgs.qutebrowser
-      ];
+      environment.systemPackages =
+        let wrapper = pkgs.writeScriptBin "qutebrowser-niced" ''
+            #!${pkgs.stdenv.shell}
+            exec nice --adjustment="-6" ${pkgs.qutebrowser}/bin/qutebrowser
+            '';
+        in
+        [ pkgs.qutebrowser wrapper ];
       environment.variables.QUTE_BIB_FILEPATH = "/home/moritz/wiki/papers/references.bib";
     }
     {
@@ -897,13 +1000,14 @@ in
       services.tor.client.enable = false;
     }
     {
+    
       environment.systemPackages = with pkgs; [
         #haskellPackages.pandoc
         jabref
         nixpkgs-2009.pandoc
         nixpkgs-2009.haskellPackages.pandoc-crossref  # broken...
         nixpkgs-2009.haskellPackages.pandoc-citeproc  # broken...
-        texlive.combined.scheme-full
+        texlive.combined.scheme-full  # until 22.05, this installs an old version of ghostscript
       ];
     }
     {
@@ -916,11 +1020,11 @@ in
        virtualisation.virtualbox.host.enableExtensionPack = true;
     }
     {
-      environment.systemPackages = with pkgs; [ xournalpp okular ];
+      environment.systemPackages = with pkgs; [ xournalpp  masterpdfeditor qpdfview ];
     }
     {
       environment.systemPackages = with pkgs; [
-        qt5full
+        qt5Full
         aria 
         fd
         wmctrl
@@ -964,6 +1068,7 @@ in
           '';
           } ); in
         [
+        miraclecast
         xcolor
         vlc
         aria
@@ -973,6 +1078,7 @@ in
         qbittorrent
         blender
         teams
+        discord
         inkscape
         arandr
         dmenu
@@ -982,7 +1088,6 @@ in
         sparkleshare_fixed 
         gnome3.gpaste
         autorandr
-        teams
         libnotify
         
         # kdenlive  # fails in current unstable
@@ -1001,6 +1106,7 @@ in
         smplayer
         lm_sensors
         tcl
+        pymol
     
         # Used by naga setup
         xdotool # required by eaf
@@ -1081,12 +1187,14 @@ in
     {
       environment.systemPackages = [
         pkgs.tmux
-        pkgs.python37Packages.powerline
+        pkgs.python39Packages.powerline
       ];
     }
     {
-      environment.systemPackages = let R-with-my-packages = pkgs.rWrapper.override{ packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra INSPEcT XVector S4Vectors MAGeCKFlute openxlsx]; };
-      in [ R-with-my-packages ];
+      environment.systemPackages = let my-r-packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra INSPEcT XVector S4Vectors MAGeCKFlute openxlsx];
+                                       R-with-my-packages = pkgs.rWrapper.override{ packages = my-r-packages; }; 
+                                       RStudio-with-my-packages = pkgs.rstudioWrapper.override{ packages = my-r-packages; };
+      in [ R-with-my-packages RStudio-with-my-packages  ];
     }
     {
       environment.systemPackages =
@@ -1270,6 +1378,7 @@ in
     }
     {
       environment.systemPackages = with pkgs; [
+        nix-index
         tmux
         unstable.gpu-burn
         gdrive
@@ -1284,6 +1393,7 @@ in
         htop
         psmisc
         zip
+        p7zip
         unzip
         unrar
         # p7zip marked as insecure
