@@ -305,6 +305,7 @@
                     omicron = "00ffffffffffff004d104a14000000001e190104a51d11780ede50a3544c99260f505400000001010101010101010101010101010101cd9180a0c00834703020350026a510000018a47480a0c00834703020350026a510000018000000fe0052584e3439814c513133335a31000000000002410328001200000b010a202000cc";
                     work = "00ffffffffffff004d108d1400000000051c0104a52213780ea0f9a95335bd240c5157000000010101010101010101010101010101014dd000a0f0703e803020350058c210000018000000000000000000000000000000000000000000fe00464e564452804c513135364431000000000002410328011200000b010a202000ee";
                     home-monitor = "00ffffffffffff0010acc0a042524530031c010380351e78eae245a8554da3260b5054a54b00714f8180a9c0a940d1c0e10001010101a36600a0f0701f80302035000f282100001a000000ff004438565846383148304552420a000000fc0044454c4c205032343135510a20000000fd001d4c1e8c1e000a202020202020018802032ef15390050402071601141f1213272021220306111523091f07830100006d030c001000003c200060030201023a801871382d40582c25000f282100001e011d8018711c1620582c25000f282100009e04740030f2705a80b0588a000f282100001e565e00a0a0a02950302035000f282100001a0000000000000000008a";
+                    home-monitor-2 = "00ffffffffffff004c2d767135305943341f0103804024782a6115ad5045a4260e5054bfef80714f810081c081809500a9c0b300010108e80030f2705a80b0588a0078682100001e000000fd0030901eff8f000a202020202020000000fc004c53323841473730304e0a2020000000ff0048345a524330303236380a2020017f02034bf14761103f04035f762309070783010000e305c0006b030c001000b83c200020016dd85dc401788053003090c354056d1a0000020f3090000461045a04e6060501615a00e30f4100565e00a0a0a029503020350078682100001a6fc200a0a0a055503020350078682100001a0000000000000000000000000000000037";
                     work-monitor = "00ffffffffffff0010acc2d0545741312c1b010380351e78eaad75a9544d9d260f5054a54b008100b300d100714fa9408180d1c00101565e00a0a0a02950302035000e282100001a000000ff004d59334e44374234314157540a000000fc0044454c4c205032343138440a20000000fd0031561d711c000a202020202020010302031bb15090050403020716010611121513141f2065030c001000023a801871382d40582c45000e282100001e011d8018711c1620582c25000e282100009ebf1600a08038134030203a000e282100001a7e3900a080381f4030203a000e282100001a00000000000000000000000000000000000000000000000000000000d8";
                   in {
                   "omicron" = {
@@ -327,13 +328,23 @@
                       DP-1 = home-monitor;
                     };
                     config = {
-                      eDP-1 = {
-                        enable = false;
+                      eDP-1.enable = false;
+                      DP-1 = {
+                        enable = true;
                         primary = true;
-                        position = "320x2160";
-                        mode = "3200x1800";
+                        position = "0x0";
+                        mode = "3840x2160";
                         rate = "60.00";
                       };
+                    };
+                  };
+                  "omicron-home-2" = {
+                    fingerprint = {
+                      eDP-1 = omicron;
+                      DP-1 = home-monitor-2;
+                    };
+                    config = {
+                      eDP-1.enable = false;
                       DP-1 = {
                         enable = true;
                         primary = true;
@@ -346,6 +357,20 @@
                   "omicron-home-monitor" = {
                     fingerprint = {
                       DP-1 = home-monitor;
+                    };
+                    config = {
+                      DP-1 = {
+                        enable = true;
+                        primary = true;
+                        position = "0x0";
+                        mode = "3840x2160";
+                        rate = "60.00";
+                      };
+                    };
+                  };
+                  omicron-home-monitor-2 = {
+                    fingerprint = {
+                      DP-1 = home-monitor-2;
                     };
                     config = {
                       DP-1 = {
@@ -1140,7 +1165,7 @@
                     name = "input-mono-${old.version}.zip";
                     extension = ".zip";
                     url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
-                    sha256 = "sha256-Z3HcYQ1YlSIzajUJzlC6L5rU/O/U2/ZDSizQYwlOSOk=";
+                    sha256 = "sha256-QXp/JOaw+A5pJqTHJ5VsrJVB3qw5zxT+FPY9fx032Fw=";
               
                     stripRoot = false;
               

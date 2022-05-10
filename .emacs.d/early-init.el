@@ -26,8 +26,8 @@
     (set-face-attribute 'default nil :family "Input" :height 140))
 
    ((rasen/font-exists-p "Input") ; check for custom four-family font first
-    (set-face-attribute 'fixed-pitch nil :family "Input" :height 65)
-    (set-face-attribute 'default nil :family "Input" :height 65))
+    (set-face-attribute 'fixed-pitch nil :family "Input" :height 70)
+    (set-face-attribute 'default nil :family "Input" :height 70))
    ((rasen/font-exists-p "Input Mono")
     (set-face-attribute 'fixed-pitch nil :family "Input Mono" :height 65)
     (set-face-attribute 'default nil :family "Input Mono" :height 65))
