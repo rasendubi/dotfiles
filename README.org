@@ -892,7 +892,7 @@ bayraktar = {
 ** Install Emacs
 #+name: install-emacs
 
-I use emacs-27 from [[https://github.com/nix-community/emacs-overlay][emacs-overlay]].
+I use emacs from [[https://github.com/nix-community/emacs-overlay][emacs-overlay]].
 #+name: flake-inputs
 #+begin_src nix
 emacs-overlay = {
@@ -912,18 +912,12 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
 #+name: flake-packages
 #+begin_src nix
 (let
-  emacs-base = if pkgs.stdenv.isDarwin then pkgs.emacsUnstable else pkgs.emacs.override {
+  emacs-base = if pkgs.stdenv.isDarwin then pkgs.emacs else pkgs.emacs.override {
     withX = true;
     # select lucid toolkit
     toolkit = "lucid";
     withGTK2 = false; withGTK3 = false;
   };
-  # emacs = pkgs.emacsUnstable;
-  # emacs = pkgs.emacs.override {
-  #   # Build emacs with proper imagemagick support.
-  #   # See https://github.com/NixOS/nixpkgs/issues/70631#issuecomment-570085306
-  #   imagemagick = pkgs.imagemagickBig;
-  # };
   emacs-packages = (epkgs:
     (with epkgs.melpaPackages; [
 
@@ -3286,8 +3280,6 @@ evil-collection is a collection of evil bindings for different modes.
       "gj" "gk"
       (kbd "M-j") (kbd "M-k")
       (kbd "M-k") (kbd "M-j")
-      (kbd "C-j") nil ; used for window-management
-      (kbd "C-k") nil ; used for window-management
       "." ";"
       ";" "."))
   (add-hook 'evil-collection-setup-hook #'rasen/rotate-keys)
@@ -3328,12 +3320,10 @@ evil-collection is a collection of evil bindings for different modes.
   (general-def
     :states `(,evil-collection-magit-state visual)
     :keymaps 'magit-mode-map
-    "j"    #'evil-previous-visual-line
-    "k"    #'evil-next-visual-line
-    "C-j"  #'magit-section-backward
-    "C-k"  #'magit-section-forward
-    "gj"   #'magit-section-backward-sibling
-    "gk"   #'magit-section-forward-sibling)
+    "C-j"  #'magit-section-backward-sibling
+    "C-k"  #'magit-section-forward-sibling
+    "gj"   #'magit-section-backward
+    "gk"   #'magit-section-forward)
 
   (evil-collection-init))
 #+end_src
