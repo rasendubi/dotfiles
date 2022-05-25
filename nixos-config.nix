@@ -929,6 +929,9 @@ in
       services.pcscd.enable = true;
     }
     {
+      programs.kdeconnect.enable = true;
+    }
+    {
       environment.systemPackages = with pkgs; [
         (pass.withExtensions (exts: [ exts.pass-otp ]))
         pinentry-curses
@@ -1191,7 +1194,7 @@ in
       ];
     }
     {
-      environment.systemPackages = let my-r-packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra INSPEcT XVector S4Vectors MAGeCKFlute openxlsx];
+      environment.systemPackages = let my-r-packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra INSPEcT XVector S4Vectors MAGeCKFlute openxlsx tidyverse enrichR];
                                        R-with-my-packages = pkgs.rWrapper.override{ packages = my-r-packages; }; 
                                        RStudio-with-my-packages = pkgs.rstudioWrapper.override{ packages = my-r-packages; };
       in [ R-with-my-packages RStudio-with-my-packages  ];

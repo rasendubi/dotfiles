@@ -1766,6 +1766,13 @@ Here go applications (almost) every normal user needs.
   services.pcscd.enable = true;
 }
 #+end_src
+** KDEconnect
+#+name: nixos-section
+#+begin_src nix
+{
+  programs.kdeconnect.enable = true;
+}
+#+end_src
 ** Matrix Chat
 #+name: nixos-section-unused
 #+begin_src nix
@@ -2486,7 +2493,7 @@ set-window-option -g automatic-rename
 #+name: nixos-section
 #+begin_src nix
 {
-  environment.systemPackages = let my-r-packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra INSPEcT XVector S4Vectors MAGeCKFlute openxlsx];
+  environment.systemPackages = let my-r-packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra INSPEcT XVector S4Vectors MAGeCKFlute openxlsx tidyverse enrichR];
                                    R-with-my-packages = pkgs.rWrapper.override{ packages = my-r-packages; }; 
                                    RStudio-with-my-packages = pkgs.rstudioWrapper.override{ packages = my-r-packages; };
   in [ R-with-my-packages RStudio-with-my-packages  ];
