@@ -80,7 +80,7 @@ Keywords=pulseaudio;tray;system tray;applet;volume;'';
 #   propagatedBuildInputs = with python37Packages; [ numpy ];  # incomplete..
 # }; in
 home.packages =   with pkgs; [
-    xpdf # this is an insecure package. an exception is in config.nix
+    #xpdf # this is an insecure package. an exception is in config.nix
     dolphin
     tmux
     xdotool

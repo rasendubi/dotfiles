@@ -9,7 +9,7 @@ There are still a lot of manual steps involved:
 4. Install spacemacs (clone git-spacemacs into ~/.emacs.d as described in the installation instructions of spacemacs README)
 5. connect syncthing
 6. sync wiki and secretdotfiles (for ssh config)
-7. get encrypted private key from secrets
+7. get encrypted private key from secrets: https://snow-dev.com/posts/setup-pass-on-multiple-devices.html
 8. clone my passwords repo to have my pass-logins, transfer gpg-keys (https://www.hjdskes.nl/blog/pass/)
 9. clone my dotfiles and link them using homesick
 10. install home-manager (maybe)
@@ -40,6 +40,9 @@ let
     mobook = [
       <<machine-mobook>>
     ];
+    mopad = [
+      <<machine-mopad>>
+    ];
   };
   # nur-no-pkgs = import (builtins.fetchTarball {
   #   url = "https://github.com/nix-community/NUR/archive/master.tar.gz";
@@ -53,14 +56,15 @@ let
   #   };
 in
 {
-  disabledModules = [ "services/printing/cupsd.nix" ]; 
+  # disabledModules = [ "services/printing/cupsd.nix" ]; 
   imports = [
-    (import "${inputs.nixpkgs-local}/nixos/modules/services/printing/cupsd.nix")
+    # (import "${inputs.nixpkgs-local}/nixos/modules/services/printing/cupsd.nix")
     (import "${inputs.musnix}")
     {
     
       nixpkgs.config.allowUnfree = true;
       nixpkgs.config.allowBroken = true;
+      nixpkgs.config.allowInsecure = true;
 
       # The NixOS release to be compatible with for stateful data such as databases.
       system.stateVersion = "20.03";
@@ -99,7 +103,7 @@ Make this repository flake-compatible:
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-21.11";
+      ref = "nixos-22.05";
     };
     nixpkgs-2009 = {
       type = "github";
@@ -125,9 +129,9 @@ Make this repository flake-compatible:
       # ref = "nixpkgs-unstable";
       ref = "fix-libnvidia-container";
     };
-    nixpkgs-local = {
-      url = "/home/moritz/Projects/nixpkgs/";
-    };
+    # nixpkgs-local = {
+    #   url = "/home/moritz/Projects/nixpkgs/";
+    # };
     
     nixos-hardware = {
       type = "github";
@@ -140,7 +144,7 @@ Make this repository flake-compatible:
     };
     home-manager = {
       type = "github";
-      owner = "rycee";
+      owner = "nix-community";
       repo = "home-manager";
       ref = "master";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -152,8 +156,9 @@ Make this repository flake-compatible:
       flake = false;
     };
   };
-
-  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-local, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, musnix }@inputs:
+  
+# nixpkgs-local
+  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, musnix }@inputs:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
@@ -165,7 +170,7 @@ Make this repository flake-compatible:
     in {
       nixosConfigurations =
         let
-          hosts = ["moxps" "mobook"];
+          hosts = ["moxps" "mobook" "mopad"];
           mkHost = name:
             nixpkgs.lib.nixosSystem {
               system = "x86_64-linux";
@@ -296,7 +301,7 @@ I'm the only user of the system:
 #+name: nixos-section
 #+begin_src nix
 {
-  users.extraUsers.moritz = {
+  users.users.moritz = {
     isNormalUser = true;
     uid = 1000;
     extraGroups = [ "users" "wheel" "input" ];
@@ -454,7 +459,7 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
 #+end_src
 
 ***** Nvidia eGPU
-#+name: nixos-section
+#+name: nixos-section-unused
 #+begin_src nix
 {
   system.nixos.tags = [ "with-nvidia-egpu" ];
@@ -568,6 +573,87 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
   environment.variables.XCURSOR_SIZE = "64";
 }
 #+end_src
+*** mopad
+Thinkpad X1 Extreme gen 4
+
+#+name: machine-mopad
+#+begin_src nix
+{
+  imports = [
+    (import "${inputs.nixos-hardware}/lenovo/thinkpad/p1/3th-gen")
+    (import "${inputs.nixos-hardware}/common/gpu/nvidia.nix")
+    inputs.nixpkgs.nixosModules.notDetected
+  ];
+  
+  environment.systemPackages = [ pkgs.linuxPackages.nvidia_x11 ];
+  boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod" "sdhci_pci" ];
+  boot.initrd.kernelModules = [ ];
+  boot.kernelModules = [ "kvm-intel" ];
+  boot.extraModulePackages = [ ];
+
+  fileSystems."/" =
+    { device = "/dev/disk/by-uuid/aed145a9-e93a-428b-be62-d3220fb1ab0f";
+      fsType = "ext4";
+    };
+
+  fileSystems."/boot" =
+    { device = "/dev/disk/by-uuid/F1D8-DA4A";
+      fsType = "vfat";
+    };
+
+  # Use the systemd-boot EFI boot loader.
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+  swapDevices =
+    [ { device = "/dev/disk/by-uuid/a048e8ec-3daa-4430-86ad-3a7f5e9acd91"; }
+    ];
+
+  powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
+  hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+  # high-resolution display
+  hardware.video.hidpi.enable = lib.mkDefault true;
+
+  services.xserver = {
+    enable = true;
+    displayManager = {
+      # lightdm.enable = true;
+      gdm.enable = true;
+    };
+  };
+}
+#+end_src
+
+Keyboard: 
+
+https://nixos.wiki/wiki/Keyboard_Layout_Customization#Using_xmodmap
+
+#+name: machine-mopad
+#+begin_src nix
+{
+  let
+    myCustomLayout = pkgs.writeText "xkb-layout" ''
+    keycode 36 = ISO_Level3_Shift
+    '';
+  in
+    services.xserver.displayManager.sessionCommands = "${pkgs.xorg.xmodmap}/bin/xmodmap ${myCustomLayout}";
+}
+#+end_src nix
+
+**** Alternative way to fix enter key -> iso_level3
+as described in https://nixos.wiki/wiki/Keyboard_Layout_Customization I could also add the following xkb code, but how?
+
+#+begin_quote
+partial modifier_keys
+xkb_symbols "enter_switch" {
+  key <RTRN> {
+    type[Group1]="ONE_LEVEL",
+    symbols[Group1] = [ ISO_Level3_Shift ]
+  };
+  include "level3(modifier_mapping)"
+};
+#+end_quote
+
+Of note, rasendubi somehow did this quite elegantly. Have a look here: /home/moritz/nixos-config/.config/xkb/my
 *** mobook
 This is my late 2013 MBP.
 #+name: machine-mobook
@@ -951,10 +1037,9 @@ can delete
 
     networkmanager = {
       enable = true;
-      packages = [
+      plugins = [
         pkgs.networkmanager-openconnect
         pkgs.networkmanager-vpnc
-        pkgs.vpnc-scripts
       ];
     };
 
@@ -962,7 +1047,7 @@ can delete
     wireless.enable = false;
   };
 
-  users.extraUsers.moritz.extraGroups = [ "networkmanager" ];
+  users.users.moritz.extraGroups = [ "networkmanager" ];
 
   environment.systemPackages = [
     pkgs.openconnect
@@ -1016,7 +1101,7 @@ Also, Pulseaudio is a requirement for Firefox Quantum.
   # };
   # boot.kernelModules = [ "snd-seq" "snd-rawmidi" ];
 
-  users.extraUsers.moritz.extraGroups = [ "audio" ];  # "jackaudio" 
+  users.users.moritz.extraGroups = [ "audio" ];  # "jackaudio" 
 
   # from https://github.com/JeffreyBenjaminBrown/nixos-experiments/blob/6c4be545e2ec18c6d9b32ec9b66d37c59d9ebc1f/audio.nix
   security.sudo.extraConfig = ''
@@ -1084,7 +1169,7 @@ https://nixos.wiki/wiki/Printing
   services.printing.drivers = with pkgs; [
     gutenprint
     gutenprintBin
-    samsungUnifiedLinuxDriver
+    samsung-unified-linux-driver
     splix
     canon-cups-ufr2
     carps-cups
@@ -1204,7 +1289,7 @@ Enable firewall. This blocks all ports (for ingress traffic) and pings.
   hardware.opengl.driSupport32Bit = true;
   environment.systemPackages = [
     pkgs.docker-compose
-    pkgs.kvm
+    pkgs.qemu_kvm
     pkgs.qemu
     # pkgs.nvtop # for nvidia
     pkgs.usbtop
@@ -1597,7 +1682,9 @@ https://github.com/bsag/nixos-config/blob/330e34c40aba37664bbc20550bf4dd427f0e47
 {
   services.xserver.layout = "de,de,us";
   services.xserver.xkbVariant = "bone,,";
-  services.xserver.xkbOptions= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp";
+  services.xserver.xkbOptions= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp,altwin:swap_lalt_lwin";
+  
+  environment.systemPackages = [ pkgs.xorg.xmodmap ];
 
   # Use same config for linux console
   console.useXkbConfig = true;
@@ -1675,7 +1762,7 @@ Redshift blocks some blue light (making screen more red), which should improve m
     pkgs.acpilight
     pkgs.brightnessctl
   ];
-  users.extraUsers.moritz.extraGroups = [ "video" ];
+  users.users.moritz.extraGroups = [ "video" ];
 }
 #+end_src
 * Look and Feel
@@ -1709,7 +1796,8 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
 
 xserver-dpi is also controlled in ~/.Xresources
 
-#+name: machine-moxps
+# #+name: machine-moxps
+#+name: nixos-section
 #+begin_src nix
 {
   console.packages = [
@@ -1721,17 +1809,26 @@ xserver-dpi is also controlled in ~/.Xresources
     QT_AUTO_SCREEN_SCALE_FACTOR = "1";
   };
   console.font = "ter-132n";
+}
+#+end_src
+
+#+name: machine-monix
+#+begin_src nix
+{
   services.xserver.dpi = 220;
+}
+#+end_src
+
+#+name: machine-mopad
+#+begin_src nix
+{
+  services.xserver.dpi = 188;
 }
 #+end_src
 
 #+name: machine-mobook
 #+begin_src nix
 {
-  console.packages = [
-    pkgs.terminus_font
-  ];
-  console.font = "ter-132n";
   services.xserver.dpi = 200;
 }
 #+end_src
@@ -1807,7 +1904,7 @@ I don't use full KDE but some apps are definitely nice.
     pkgs.gwenview
     pkgs.dolphin
     pkgs.filelight
-    pkgs.shared_mime_info
+    pkgs.shared-mime-info
   ];
 }
 #+end_src
@@ -3299,7 +3396,7 @@ set-window-option -g automatic-rename
 #+begin_src nix
 {
   environment.systemPackages = [ pkgs.arduino ];
-  users.extraUsers.moritz.extraGroups = [ "dialout" ];
+  users.users.moritz.extraGroups = [ "dialout" ];
 }
 #+end_src
 
@@ -3333,7 +3430,7 @@ set-window-option -g automatic-rename
     # utillinuxCurses
     powerstat
     pciutils
-    ag
+    silver-searcher
     ispell
     usbutils
     libv4l
