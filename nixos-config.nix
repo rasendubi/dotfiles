@@ -54,6 +54,55 @@ let
       
       }
       {
+        system.nixos.tags = [ "with-nvidia" ];
+        # environment.systemPackages = let
+        #   nvidia-offload = pkgs.writeShellScriptBin "nvidia-offload" ''
+        #     export __NV_PRIME_RENDER_OFFLOAD=1
+        #     export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
+        #     export __GLX_VENDOR_LIBRARY_NAME=nvidia
+        #     export __VK_LAYER_NV_optimus=NVIDIA_only
+        #     exec -a "$0" "$@"
+        #   '';
+        # in [ nvidia-offload ]; 
+        # boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11 ];
+        # Nvidia stuff (https://discourse.nixos.org/t/how-to-use-nvidia-prime-offload-to-run-the-x-server-on-the-integrated-board/9091/13)
+        boot.extraModprobeConfig = "options nvidia \"NVreg_DynamicPowerManagement=0x02\"\n";
+        services.hardware.bolt.enable = true;
+        services.udev.extraRules = ''
+          # Remove NVIDIA USB xHCI Host Controller devices, if present
+          ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{remove}="1"
+      
+          # Remove NVIDIA USB Type-C UCSI devices, if present
+          ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c8000", ATTR{remove}="1"
+      
+          # Remove NVIDIA Audio devices, if present
+          ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{remove}="1"
+      
+          # Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
+          ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
+          ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
+      
+          # Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
+          ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
+          ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
+          '';
+        services.xserver.videoDrivers = [ "nvidia" ];
+        
+        hardware.nvidia.modesetting.enable = lib.mkDefault true;
+        hardware.nvidia.optimus_prime.enable = lib.mkDefault true;  # warning: The option `hardware.nvidia.optimus_prime.enable' defined in `<unknown-file>' has been renamed to `hardware.nvidia.prime.sync.enable'.
+        hardware.nvidia.prime.nvidiaBusId = lib.mkDefault "PCI:1:0:0";
+        hardware.nvidia.prime.intelBusId = lib.mkDefault "PCI:0:2:0";
+      
+        # hardware.bumblebee.enable = false;
+        # hardware.bumblebee.pmMethod = "none";
+        services.xserver = {
+          displayManager = {
+            lightdm.enable = true;
+            gdm.enable = false;
+          };
+        };
+      }
+      {
         fileSystems."/" =
           { device = "/dev/disk/by-uuid/8f0a4152-e9f1-4315-8c34-0402ff7efff4";
             fsType = "btrfs";
@@ -100,18 +149,6 @@ let
           #   When I start using the external one, change it.
           soundcardPciId = "00:1f.3";
         };
-      }
-      {
-        console.packages = [
-          pkgs.terminus_font
-        ];
-        environment.variables = {
-          GDK_SCALE = "2";
-          GDK_DPI_SCALE = "0.5";
-          QT_AUTO_SCREEN_SCALE_FACTOR = "1";
-        };
-        console.font = "ter-132n";
-        services.xserver.dpi = 220;
       }
     ];
     mobook = [
@@ -271,11 +308,56 @@ let
         };
       }
       {
-        console.packages = [
-          pkgs.terminus_font
-        ];
-        console.font = "ter-132n";
         services.xserver.dpi = 200;
+      }
+    ];
+    mopad = [
+      {
+        imports = [
+          (import "${inputs.nixos-hardware}/lenovo/thinkpad/p1/3th-gen")
+          (import "${inputs.nixos-hardware}/common/gpu/nvidia.nix")
+          inputs.nixpkgs.nixosModules.notDetected
+        ];
+        
+        environment.systemPackages = [ pkgs.linuxPackages.nvidia_x11 ];
+        boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod" "sdhci_pci" ];
+        boot.initrd.kernelModules = [ ];
+        boot.kernelModules = [ "kvm-intel" ];
+        boot.extraModulePackages = [ ];
+      
+        fileSystems."/" =
+          { device = "/dev/disk/by-uuid/aed145a9-e93a-428b-be62-d3220fb1ab0f";
+            fsType = "ext4";
+          };
+      
+        fileSystems."/boot" =
+          { device = "/dev/disk/by-uuid/F1D8-DA4A";
+            fsType = "vfat";
+          };
+      
+        # Use the systemd-boot EFI boot loader.
+        boot.loader.systemd-boot.enable = true;
+        boot.loader.efi.canTouchEfiVariables = true;
+        swapDevices =
+          [ { device = "/dev/disk/by-uuid/a048e8ec-3daa-4430-86ad-3a7f5e9acd91"; }
+          ];
+      
+        powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
+        hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+        # high-resolution display
+        hardware.video.hidpi.enable = lib.mkDefault true;
+      
+        services.xserver = {
+          enable = true;
+          displayManager = {
+            # lightdm.enable = true;
+            gdm.enable = true;
+          };
+        };
+      }
+      
+      {
+        services.xserver.dpi = 188;
       }
     ];
   };
@@ -291,15 +373,15 @@ let
   #   };
 in
 {
-  disabledModules = [ "services/printing/cupsd.nix" ]; 
+  # disabledModules = [ "services/printing/cupsd.nix" ]; 
   imports = [
-    (import "${inputs.nixpkgs-local}/nixos/modules/services/printing/cupsd.nix")
+    # (import "${inputs.nixpkgs-local}/nixos/modules/services/printing/cupsd.nix")
     (import "${inputs.musnix}")
     {
     
       nixpkgs.config.allowUnfree = true;
       nixpkgs.config.allowBroken = true;
-      #nixpkgs.config.allowInsecure = true;
+      # nixpkgs.config.allowInsecure = true;
 
       # The NixOS release to be compatible with for stateful data such as databases.
       system.stateVersion = "20.03";
@@ -319,7 +401,7 @@ in
       ];
     }
     {
-      users.extraUsers.moritz = {
+      users.users.moritz = {
         isNormalUser = true;
         uid = 1000;
         extraGroups = [ "users" "wheel" "input" ];
@@ -332,70 +414,10 @@ in
       ];
     }
     {
-      system.nixos.tags = [ "with-nvidia" ];
-      # environment.systemPackages = let
-      #   nvidia-offload = pkgs.writeShellScriptBin "nvidia-offload" ''
-      #     export __NV_PRIME_RENDER_OFFLOAD=1
-      #     export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
-      #     export __GLX_VENDOR_LIBRARY_NAME=nvidia
-      #     export __VK_LAYER_NV_optimus=NVIDIA_only
-      #     exec -a "$0" "$@"
-      #   '';
-      # in [ nvidia-offload ]; 
-      # boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11 ];
-      # Nvidia stuff (https://discourse.nixos.org/t/how-to-use-nvidia-prime-offload-to-run-the-x-server-on-the-integrated-board/9091/13)
-      boot.extraModprobeConfig = "options nvidia \"NVreg_DynamicPowerManagement=0x02\"\n";
-      services.hardware.bolt.enable = true;
-      services.udev.extraRules = ''
-        # Remove NVIDIA USB xHCI Host Controller devices, if present
-        ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{remove}="1"
-    
-        # Remove NVIDIA USB Type-C UCSI devices, if present
-        ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c8000", ATTR{remove}="1"
-    
-        # Remove NVIDIA Audio devices, if present
-        ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{remove}="1"
-    
-        # Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
-        ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
-        ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
-    
-        # Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
-        ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
-        ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
-        '';
-      services.xserver.videoDrivers = [ "nvidia" ];
-      
-      hardware.nvidia.modesetting.enable = lib.mkDefault true;
-      hardware.nvidia.optimus_prime.enable = lib.mkDefault true;  # warning: The option `hardware.nvidia.optimus_prime.enable' defined in `<unknown-file>' has been renamed to `hardware.nvidia.prime.sync.enable'.
-      hardware.nvidia.prime.nvidiaBusId = lib.mkDefault "PCI:1:0:0";
-      hardware.nvidia.prime.intelBusId = lib.mkDefault "PCI:0:2:0";
-    
-      # hardware.bumblebee.enable = false;
-      # hardware.bumblebee.pmMethod = "none";
-      services.xserver = {
-        displayManager = {
-          lightdm.enable = true;
-          gdm.enable = false;
-        };
-      };
-    }
-    {
       hardware.bluetooth.enable = true;
       hardware.bluetooth.powerOnBoot = false;
       services.blueman.enable = true;
       hardware.bluetooth.settings.General.Enable = "Source,Sink,Media,Socket";
-      
-      hardware.pulseaudio = {
-        enable = true;
-    
-        # NixOS allows either a lightweight build (default) or full build
-        # of PulseAudio to be installed.  Only the full build has
-        # Bluetooth support, so it must be selected here.
-    
-        extraModules = [ pkgs.pulseaudio-modules-bt ];
-        # package = pkgs.pulseaudioFull;  # already defined elsewhere
-      };
     }
     {
       environment.systemPackages = [
@@ -454,16 +476,14 @@ in
       ];
     }
     {
-      
       networking = {
         hostName = name;
     
         networkmanager = {
           enable = true;
-          packages = [
+          plugins = [
             pkgs.networkmanager-openconnect
             pkgs.networkmanager-vpnc
-            pkgs.vpnc-scripts
           ];
         };
     
@@ -471,7 +491,7 @@ in
         wireless.enable = false;
       };
     
-      users.extraUsers.moritz.extraGroups = [ "networkmanager" ];
+      users.users.moritz.extraGroups = [ "networkmanager" ];
     
       environment.systemPackages = [
         pkgs.openconnect
@@ -514,7 +534,7 @@ in
       # };
       # boot.kernelModules = [ "snd-seq" "snd-rawmidi" ];
     
-      users.extraUsers.moritz.extraGroups = [ "audio" ];  # "jackaudio" 
+      users.users.moritz.extraGroups = [ "audio" ];  # "jackaudio" 
     
       # from https://github.com/JeffreyBenjaminBrown/nixos-experiments/blob/6c4be545e2ec18c6d9b32ec9b66d37c59d9ebc1f/audio.nix
       security.sudo.extraConfig = ''
@@ -552,7 +572,7 @@ in
       services.printing.drivers = with pkgs; [
         gutenprint
         gutenprintBin
-        samsungUnifiedLinuxDriver
+        samsung-unified-linux-driver
         splix
         canon-cups-ufr2
         carps-cups
@@ -629,7 +649,7 @@ in
       hardware.opengl.driSupport32Bit = true;
       environment.systemPackages = [
         pkgs.docker-compose
-        pkgs.kvm
+        pkgs.qemu_kvm
         pkgs.qemu
         # pkgs.nvtop # for nvidia
         pkgs.usbtop
@@ -815,7 +835,9 @@ in
     {
       services.xserver.layout = "de,de,us";
       services.xserver.xkbVariant = "bone,,";
-      services.xserver.xkbOptions= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp";
+      services.xserver.xkbOptions= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp,altwin:swap_lalt_lwin";
+      
+      environment.systemPackages = [ pkgs.xorg.xmodmap ];
     
       # Use same config for linux console
       console.useXkbConfig = true;
@@ -867,7 +889,7 @@ in
         pkgs.acpilight
         pkgs.brightnessctl
       ];
-      users.extraUsers.moritz.extraGroups = [ "video" ];
+      users.users.moritz.extraGroups = [ "video" ];
     }
     {
       fonts = {
@@ -888,6 +910,17 @@ in
           libertine
         ];
       };
+    }
+    {
+      console.packages = [
+        pkgs.terminus_font
+      ];
+      environment.variables = {
+        GDK_SCALE = "2";
+        GDK_DPI_SCALE = "0.5";
+        QT_AUTO_SCREEN_SCALE_FACTOR = "1";
+      };
+      console.font = "ter-132n";
     }
     {
       programs.ssh = {
@@ -931,7 +964,7 @@ in
         pkgs.gwenview
         pkgs.dolphin
         pkgs.filelight
-        pkgs.shared_mime_info
+        pkgs.shared-mime-info
       ];
     }
     {
@@ -993,9 +1026,9 @@ in
       environment.systemPackages = with pkgs; [
         #haskellPackages.pandoc
         jabref
-        nixpkgs-2009.pandoc # 2009
-        nixpkgs-2009.haskellPackages.pandoc-crossref  # broken... 2009
-        nixpkgs-2009.haskellPackages.pandoc-citeproc  # broken... 2009
+        nixpkgs-2009.pandoc
+        nixpkgs-2009.haskellPackages.pandoc-crossref  # broken...
+        nixpkgs-2009.haskellPackages.pandoc-citeproc  # broken...
         texlive.combined.scheme-full  # until 22.05, this installs an old version of ghostscript
       ];
     }
@@ -1180,12 +1213,6 @@ in
       ];
     }
     {
-      environment.systemPackages = let my-r-packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra INSPEcT XVector S4Vectors MAGeCKFlute openxlsx tidyverse enrichR];
-                                       R-with-my-packages = pkgs.rWrapper.override{ packages = my-r-packages; }; 
-                                       RStudio-with-my-packages = pkgs.rstudioWrapper.override{ packages = my-r-packages; };
-      in [ R-with-my-packages RStudio-with-my-packages  ];
-    }
-    {
       environment.systemPackages =
         let python = (with pkgs; python3.withPackages (python-packages: with python-packages;
           let opencvGtk = opencv4.override (old : { enableGtk2 = true; enableGStreamer = true; });
@@ -1363,7 +1390,7 @@ in
     }
     {
       environment.systemPackages = [ pkgs.arduino ];
-      users.extraUsers.moritz.extraGroups = [ "dialout" ];
+      users.users.moritz.extraGroups = [ "dialout" ];
     }
     {
       environment.systemPackages = with pkgs; [
@@ -1391,7 +1418,7 @@ in
         # utillinuxCurses
         powerstat
         pciutils
-        ag
+        silver-searcher
         ispell
         usbutils
         libv4l

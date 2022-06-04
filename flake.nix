@@ -8,7 +8,7 @@
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-21.11";
+      ref = "nixos-22.05";
     };
     nixpkgs-2009 = {
       type = "github";
@@ -34,9 +34,9 @@
       # ref = "nixpkgs-unstable";
       ref = "fix-libnvidia-container";
     };
-    nixpkgs-local = {
-      url = "/home/moritz/Projects/nixpkgs/";
-    };
+    # nixpkgs-local = {
+    #   url = "/home/moritz/Projects/nixpkgs/";
+    # };
     
     nixos-hardware = {
       type = "github";
@@ -49,7 +49,7 @@
     };
     home-manager = {
       type = "github";
-      owner = "rycee";
+      owner = "nix-community";
       repo = "home-manager";
       ref = "master";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -61,8 +61,9 @@
       flake = false;
     };
   };
-
-  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-local, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, musnix }@inputs:
+  
+# nixpkgs-local
+  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, musnix }@inputs:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
@@ -74,7 +75,7 @@
     in {
       nixosConfigurations =
         let
-          hosts = ["moxps" "mobook"];
+          hosts = ["moxps" "mobook" "mopad"];
           mkHost = name:
             nixpkgs.lib.nixosSystem {
               system = "x86_64-linux";

@@ -330,7 +330,7 @@ I thought it wouldn't be required to install it (see flakes section), but it see
 I currently have only one machine.
 *** moxps
 This is my Dell XPS 15. Only use Intel OR Nvidia
-**** Hardware 
+**** Hardware
 #+name: machine-moxps
 #+begin_src nix
 {
@@ -406,7 +406,7 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
 }
 #+end_src
 ***** Nvidia PRIME
-#+name: nixos-section
+#+name: machine-moxps
 #+begin_src nix
 {
   system.nixos.tags = [ "with-nvidia" ];
@@ -849,17 +849,6 @@ I have a bluetooth headset, so this enables bluetooth audio in NixOS.
   hardware.bluetooth.powerOnBoot = false;
   services.blueman.enable = true;
   hardware.bluetooth.settings.General.Enable = "Source,Sink,Media,Socket";
-  
-  hardware.pulseaudio = {
-    enable = true;
-
-    # NixOS allows either a lightweight build (default) or full build
-    # of PulseAudio to be installed.  Only the full build has
-    # Bluetooth support, so it must be selected here.
-
-    extraModules = [ pkgs.pulseaudio-modules-bt ];
-    # package = pkgs.pulseaudioFull;  # already defined elsewhere
-  };
 }
 #+end_src
 ** NTFS
@@ -2580,7 +2569,7 @@ set-window-option -g automatic-rename
   # TODO override R package  (openssl)
 #+end_src
 
-#+name: nixos-section
+#+name: nixos-section-unused
 #+begin_src nix
 {
   environment.systemPackages = let my-r-packages = with pkgs.rPackages; [ ggplot2 eulerr gridExtra INSPEcT XVector S4Vectors MAGeCKFlute openxlsx tidyverse enrichR];

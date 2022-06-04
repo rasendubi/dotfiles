@@ -7,15 +7,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1638150501,
-        "narHash": "sha256-aWH3MRmjUtx8ciSGLegBJC5mhymsuroHPs74ZldrNTU=",
-        "owner": "rycee",
+        "lastModified": 1654113406,
+        "narHash": "sha256-70esZvhal+FsyU89mJRcAb+cDGHKt0sgZ6MlRr9Cplg=",
+        "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "9de77227d7780518cfeaee5a917970247f3ecc56",
+        "rev": "684e85d01d333be91c4875baebb05b93c7d2ffaa",
         "type": "github"
       },
       "original": {
-        "owner": "rycee",
+        "owner": "nix-community",
         "ref": "master",
         "repo": "home-manager",
         "type": "github"
@@ -55,16 +55,16 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1653830209,
-        "narHash": "sha256-V+HnLKJzvk2HZcLUKt9z2puZ46vLo74chOakxbLfXek=",
+        "lastModified": 1654181793,
+        "narHash": "sha256-kP4m7ZgFYj8fh7oW2L0uW0sJw/e0k1HY26HYJcvNEKM=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "cc257c49c495b2d0d7d40c5753a452d0abc8adf3",
+        "rev": "40e2b1ae0535885507ab01d7a58969934cf2713c",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
-        "ref": "nixos-21.11",
+        "ref": "nixos-22.05",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -83,21 +83,6 @@
         "ref": "nixos-20.09",
         "repo": "nixpkgs",
         "type": "github"
-      }
-    },
-    "nixpkgs-local": {
-      "locked": {
-        "lastModified": 1653928801,
-        "narHash": "sha256-3BD3muAKA2oy/Aowmo5Tapcx7NmS8oWJadKdpQPwiP4=",
-        "ref": "fix-libnvidia-container",
-        "rev": "903591e10e236e0eb921a240e3f0da78f4be1371",
-        "revCount": 381813,
-        "type": "git",
-        "url": "file:///home/moritz/Projects/nixpkgs"
-      },
-      "original": {
-        "type": "git",
-        "url": "file:///home/moritz/Projects/nixpkgs"
       }
     },
     "nixpkgs-moritz": {
@@ -154,7 +139,6 @@
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs",
         "nixpkgs-2009": "nixpkgs-2009",
-        "nixpkgs-local": "nixpkgs-local",
         "nixpkgs-moritz": "nixpkgs-moritz",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nur": "nur"
