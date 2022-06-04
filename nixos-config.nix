@@ -299,6 +299,7 @@ in
     
       nixpkgs.config.allowUnfree = true;
       nixpkgs.config.allowBroken = true;
+      #nixpkgs.config.allowInsecure = true;
 
       # The NixOS release to be compatible with for stateful data such as databases.
       system.stateVersion = "20.03";
@@ -331,7 +332,7 @@ in
       ];
     }
     {
-      system.nixos.tags = [ "with-nvidia-egpu" ];
+      system.nixos.tags = [ "with-nvidia" ];
       # environment.systemPackages = let
       #   nvidia-offload = pkgs.writeShellScriptBin "nvidia-offload" ''
       #     export __NV_PRIME_RENDER_OFFLOAD=1
@@ -363,33 +364,21 @@ in
         ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
         ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
         '';
-      # hardware.opengl.package = pkgs.nixpkgs-2009.mesa_drivers;
-      services.xserver.videoDrivers = [ "intel" ];
-      boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11 ];
-      boot.blacklistedKernelModules = [ "nouveau" "nvidia_drm" "nvidia_modeset" "nvidia" ];
-      environment.systemPackages = [ pkgs.linuxPackages.nvidia_x11 ]; # packages
-      # hardware.nvidia.package = pkgs.os-specific.linux.nvidia_x11.production;  # alternative: stable 
-      # /home/moritz/Projects/nixpkgs/pkgs/os-specific/linux/nvidia-x11/default.nix <- add version 450
-      hardware.opengl = {
-        enable = true;
-        driSupport = true;
-        extraPackages = with pkgs; [
-          # intel-media-driver # LIBVA_DRIVER_NAME=iHD
-          # vaapiIntel         # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
-          # vaapiVdpau
-          # libvdpau-va-gl
-          pkgs.linuxPackages.nvidia_x11.out  # required for nvidia-docker
-        ];
-        extraPackages32 = [ pkgs.linuxPackages.nvidia_x11.lib32 ];
-      };
+      services.xserver.videoDrivers = [ "nvidia" ];
       
+      hardware.nvidia.modesetting.enable = lib.mkDefault true;
+      hardware.nvidia.optimus_prime.enable = lib.mkDefault true;  # warning: The option `hardware.nvidia.optimus_prime.enable' defined in `<unknown-file>' has been renamed to `hardware.nvidia.prime.sync.enable'.
+      hardware.nvidia.prime.nvidiaBusId = lib.mkDefault "PCI:1:0:0";
+      hardware.nvidia.prime.intelBusId = lib.mkDefault "PCI:0:2:0";
+    
+      # hardware.bumblebee.enable = false;
+      # hardware.bumblebee.pmMethod = "none";
       services.xserver = {
         displayManager = {
-          lightdm.enable = false;
-          gdm.enable = true;
+          lightdm.enable = true;
+          gdm.enable = false;
         };
       };
-      
     }
     {
       hardware.bluetooth.enable = true;
@@ -751,9 +740,6 @@ in
       ];
     }
     {
-      services.xserver.enable = true;
-    }
-    {
       i18n.supportedLocales = [ "en_US.UTF-8/UTF-8" ];
     }
     {
@@ -766,7 +752,7 @@ in
           startx.enable = false;
           autoLogin = {  # if errors, then disable again
             user = "moritz";
-            enable = false;
+            enable = true;
           }; 
         };
         enable = true;
@@ -794,7 +780,7 @@ in
         };
         stumpwm.enable = false;
       };
-      # services.xserver.displayManager.defaultSession = "none+exwm";  # Firefox works more fluently with plasma5+exwm instead of "none+exwm". or does it??
+      services.xserver.displayManager.defaultSession = "none+exwm";  # Firefox works more fluently with plasma5+exwm instead of "none+exwm". or does it??
       services.xserver.desktopManager = {
         xterm.enable = false;
         plasma5.enable = true;
@@ -1007,9 +993,9 @@ in
       environment.systemPackages = with pkgs; [
         #haskellPackages.pandoc
         jabref
-        nixpkgs-2009.pandoc
-        nixpkgs-2009.haskellPackages.pandoc-crossref  # broken...
-        nixpkgs-2009.haskellPackages.pandoc-citeproc  # broken...
+        nixpkgs-2009.pandoc # 2009
+        nixpkgs-2009.haskellPackages.pandoc-crossref  # broken... 2009
+        nixpkgs-2009.haskellPackages.pandoc-citeproc  # broken... 2009
         texlive.combined.scheme-full  # until 22.05, this installs an old version of ghostscript
       ];
     }
@@ -1399,7 +1385,6 @@ in
         p7zip
         unzip
         unrar
-        # p7zip marked as insecure
         bind
         file
         which
@@ -1412,7 +1397,7 @@ in
         libv4l
         v4l-utils
         gparted
-        etcher
+        # etcher
         powerline-fonts
         xsel
         tree
