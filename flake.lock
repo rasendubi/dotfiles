@@ -55,11 +55,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1646933238,
-        "narHash": "sha256-RZJnLN0o4B35eTnUc2tEAD12X5TNeeJhhvH3Fd6Pmdo=",
+        "lastModified": 1653830209,
+        "narHash": "sha256-V+HnLKJzvk2HZcLUKt9z2puZ46vLo74chOakxbLfXek=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "bacbfd713b4781a4a82c1f390f8fe21ae3b8b95b",
+        "rev": "cc257c49c495b2d0d7d40c5753a452d0abc8adf3",
         "type": "github"
       },
       "original": {
@@ -87,8 +87,11 @@
     },
     "nixpkgs-local": {
       "locked": {
-        "lastModified": 1628691931,
-        "narHash": "sha256-/iB9PwaNQCD6tMhBAgRuACWUHla0R2dJ2maJlerAUzg=",
+        "lastModified": 1653928801,
+        "narHash": "sha256-3BD3muAKA2oy/Aowmo5Tapcx7NmS8oWJadKdpQPwiP4=",
+        "ref": "fix-libnvidia-container",
+        "rev": "903591e10e236e0eb921a240e3f0da78f4be1371",
+        "revCount": 381813,
         "type": "git",
         "url": "file:///home/moritz/Projects/nixpkgs"
       },
@@ -99,11 +102,11 @@
     },
     "nixpkgs-moritz": {
       "locked": {
-        "lastModified": 1628691931,
-        "narHash": "sha256-ZFN3u9xVXTB4eZr83YVNfmA9cEbK30imvOkeApTHBGQ=",
+        "lastModified": 1653928801,
+        "narHash": "sha256-3BD3muAKA2oy/Aowmo5Tapcx7NmS8oWJadKdpQPwiP4=",
         "owner": "moritzschaefer",
         "repo": "nixpkgs",
-        "rev": "ac8fc72c23278c79e6d986132c1141f921f253e8",
+        "rev": "903591e10e236e0eb921a240e3f0da78f4be1371",
         "type": "github"
       },
       "original": {

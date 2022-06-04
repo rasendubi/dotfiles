@@ -12,7 +12,7 @@ There are still a lot of manual steps involved:
 7. get encrypted private key from secrets: https://snow-dev.com/posts/setup-pass-on-multiple-devices.html
 8. clone my passwords repo to have my pass-logins, transfer gpg-keys (https://www.hjdskes.nl/blog/pass/)
 9. clone my dotfiles and link them using homesick
-10. install home-manager (maybe)
+10. install home-manager!
 
 ---
 
@@ -64,7 +64,7 @@ in
     
       nixpkgs.config.allowUnfree = true;
       nixpkgs.config.allowBroken = true;
-      nixpkgs.config.allowInsecure = true;
+      # nixpkgs.config.allowInsecure = true;
 
       # The NixOS release to be compatible with for stateful data such as databases.
       system.stateVersion = "20.03";
@@ -221,7 +221,8 @@ Make this repository flake-compatible:
     unstable = import inputs.nixpkgs-unstable {
       inherit system;
       overlays = self.overlays; # .${system};
-      config = { allowUnfree = true; };
+      
+      config = { allowUnfree = true;  allowBroken = true; };
     };
     nixpkgs-2009 = import inputs.nixpkgs-2009 {
       inherit system;
@@ -405,7 +406,7 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
 }
 #+end_src
 ***** Nvidia PRIME
-#+name: nixos-section-unused
+#+name: nixos-section
 #+begin_src nix
 {
   system.nixos.tags = [ "with-nvidia" ];
@@ -499,7 +500,7 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
   boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11 ];
   boot.blacklistedKernelModules = [ "nouveau" "nvidia_drm" "nvidia_modeset" "nvidia" ];
   environment.systemPackages = [ pkgs.linuxPackages.nvidia_x11 ]; # packages
-  # hardware.nvidia.package = pkgs.os-specific.linux.nvidia_x11.production;  # alternative: stable 
+  hardware.nvidia.package = pkgs.os-specific.linux.nvidia_x11.production;  # alternative: stable 
   # /home/moritz/Projects/nixpkgs/pkgs/os-specific/linux/nvidia-x11/default.nix <- add version 450
   hardware.opengl = {
     enable = true;
@@ -1031,7 +1032,6 @@ can delete
 #+name: nixos-section
 #+begin_src nix
 {
-  
   networking = {
     hostName = name;
 
@@ -1563,13 +1563,6 @@ gpg_path=gpg2
 #+end_src
 * Environment
 ** General
-I definitely use X server:
-#+name: nixos-section
-#+begin_src nix
-{
-  services.xserver.enable = true;
-}
-#+end_src
 
 Use English as my only supported locale:
 #+name: nixos-section
@@ -1596,7 +1589,7 @@ Setup timezone:
       startx.enable = false;
       autoLogin = {  # if errors, then disable again
         user = "moritz";
-        enable = false;
+        enable = true;
       }; 
     };
     enable = true;
@@ -1630,7 +1623,7 @@ I use EXWM:
     };
     stumpwm.enable = false;
   };
-  # services.xserver.displayManager.defaultSession = "none+exwm";  # Firefox works more fluently with plasma5+exwm instead of "none+exwm". or does it??
+  services.xserver.displayManager.defaultSession = "none+exwm";  # Firefox works more fluently with plasma5+exwm instead of "none+exwm". or does it??
   services.xserver.desktopManager = {
     xterm.enable = false;
     plasma5.enable = true;
@@ -3242,51 +3235,51 @@ set-window-option -g automatic-rename
           # pythonImportsCheck = [ "smogn" ];
         };
         # I don't know how to overwrite seaborn from unstable. That's why I overwrite it manually..
-        seaborn = _super.buildPythonPackage rec {
-          pname = "seaborn";
-          version = "0.11.1";
-          disabled = _super.pythonOlder "3.6";
-          doCheck = false;
+        # seaborn = _super.buildPythonPackage rec {
+        #   pname = "seaborn";
+        #   version = "0.11.1";
+        #   disabled = _super.pythonOlder "3.6";
+        #   doCheck = false;
 
-          src = _super.fetchPypi {
-            inherit pname version;
-            sha256 = "44e78eaed937c5a87fc7a892c329a7cc091060b67ebd1d0d306b446a74ba01ad";
-          };
+        #   src = _super.fetchPypi {
+        #     inherit pname version;
+        #     sha256 = "44e78eaed937c5a87fc7a892c329a7cc091060b67ebd1d0d306b446a74ba01ad";
+        #   };
 
-          checkInputs = [ _super.nose ];
-          propagatedBuildInputs = [ _super.pandas _super.matplotlib ];
-        };
-        scikitlearn_0241 = _super.buildPythonPackage rec {
-          pname = "scikit-learn";
-          version = "0.24.1";
-          doCheck = false;
+        #   checkInputs = [ _super.nose ];
+        #   propagatedBuildInputs = [ _super.pandas _super.matplotlib ];
+        # };
+        # scikitlearn_0241 = _super.buildPythonPackage rec {
+        #   pname = "scikit-learn";
+        #   version = "0.24.1";
+        #   doCheck = false;
 
-          src = _super.fetchPypi {
-            inherit pname version;
-            sha256 = "oDNKGALmTWVgIsO/q1anP71r9LEpg0PzaIryFRgQu98=";
-          };
+        #   src = _super.fetchPypi {
+        #     inherit pname version;
+        #     sha256 = "oDNKGALmTWVgIsO/q1anP71r9LEpg0PzaIryFRgQu98=";
+        #   };
 
-          buildInputs = [
-            _super.pillow
-            pkgs.gfortran
-            pkgs.glibcLocales
-          ] ++ pkgs.lib.optionals pkgs.stdenv.cc.isClang [
-            pkgs.llvmPackages.openmp
-          ];
+        #   buildInputs = [
+        #     _super.pillow
+        #     pkgs.gfortran
+        #     pkgs.glibcLocales
+        #   ] ++ pkgs.lib.optionals pkgs.stdenv.cc.isClang [
+        #     pkgs.llvmPackages.openmp
+        #   ];
 
-          nativeBuildInputs = [
-            _super.cython
-          ];
+        #   nativeBuildInputs = [
+        #     _super.cython
+        #   ];
 
-          propagatedBuildInputs = [
-            _super.numpy
-            _super.scipy
-            _super.numpy.blas
-            _super.joblib
-            _super.threadpoolctl
-          ];
-          LC_ALL="en_US.UTF-8";
-        };
+        #   propagatedBuildInputs = [
+        #     _super.numpy
+        #     _super.scipy
+        #     _super.numpy.blas
+        #     _super.joblib
+        #     _super.threadpoolctl
+        #   ];
+        #   LC_ALL="en_US.UTF-8";
+        # };
       };
     };
   in _self: _super: rec {
@@ -3423,7 +3416,6 @@ set-window-option -g automatic-rename
     p7zip
     unzip
     unrar
-    # p7zip marked as insecure
     bind
     file
     which
@@ -3436,7 +3428,7 @@ set-window-option -g automatic-rename
     libv4l
     v4l-utils
     gparted
-    etcher
+    # etcher
     powerline-fonts
     xsel
     tree

@@ -111,7 +111,8 @@
           unstable = import inputs.nixpkgs-unstable {
             inherit system;
             overlays = self.overlays; # .${system};
-            config = { allowUnfree = true; };
+        
+            config = { allowUnfree = true;  allowBroken = true; };
           };
           nixpkgs-2009 = import inputs.nixpkgs-2009 {
             inherit system;
@@ -699,51 +700,51 @@
                   # pythonImportsCheck = [ "smogn" ];
                 };
                 # I don't know how to overwrite seaborn from unstable. That's why I overwrite it manually..
-                seaborn = _super.buildPythonPackage rec {
-                  pname = "seaborn";
-                  version = "0.11.1";
-                  disabled = _super.pythonOlder "3.6";
-                  doCheck = false;
+                # seaborn = _super.buildPythonPackage rec {
+                #   pname = "seaborn";
+                #   version = "0.11.1";
+                #   disabled = _super.pythonOlder "3.6";
+                #   doCheck = false;
         
-                  src = _super.fetchPypi {
-                    inherit pname version;
-                    sha256 = "44e78eaed937c5a87fc7a892c329a7cc091060b67ebd1d0d306b446a74ba01ad";
-                  };
+                #   src = _super.fetchPypi {
+                #     inherit pname version;
+                #     sha256 = "44e78eaed937c5a87fc7a892c329a7cc091060b67ebd1d0d306b446a74ba01ad";
+                #   };
         
-                  checkInputs = [ _super.nose ];
-                  propagatedBuildInputs = [ _super.pandas _super.matplotlib ];
-                };
-                scikitlearn_0241 = _super.buildPythonPackage rec {
-                  pname = "scikit-learn";
-                  version = "0.24.1";
-                  doCheck = false;
+                #   checkInputs = [ _super.nose ];
+                #   propagatedBuildInputs = [ _super.pandas _super.matplotlib ];
+                # };
+                # scikitlearn_0241 = _super.buildPythonPackage rec {
+                #   pname = "scikit-learn";
+                #   version = "0.24.1";
+                #   doCheck = false;
         
-                  src = _super.fetchPypi {
-                    inherit pname version;
-                    sha256 = "oDNKGALmTWVgIsO/q1anP71r9LEpg0PzaIryFRgQu98=";
-                  };
+                #   src = _super.fetchPypi {
+                #     inherit pname version;
+                #     sha256 = "oDNKGALmTWVgIsO/q1anP71r9LEpg0PzaIryFRgQu98=";
+                #   };
         
-                  buildInputs = [
-                    _super.pillow
-                    pkgs.gfortran
-                    pkgs.glibcLocales
-                  ] ++ pkgs.lib.optionals pkgs.stdenv.cc.isClang [
-                    pkgs.llvmPackages.openmp
-                  ];
+                #   buildInputs = [
+                #     _super.pillow
+                #     pkgs.gfortran
+                #     pkgs.glibcLocales
+                #   ] ++ pkgs.lib.optionals pkgs.stdenv.cc.isClang [
+                #     pkgs.llvmPackages.openmp
+                #   ];
         
-                  nativeBuildInputs = [
-                    _super.cython
-                  ];
+                #   nativeBuildInputs = [
+                #     _super.cython
+                #   ];
         
-                  propagatedBuildInputs = [
-                    _super.numpy
-                    _super.scipy
-                    _super.numpy.blas
-                    _super.joblib
-                    _super.threadpoolctl
-                  ];
-                  LC_ALL="en_US.UTF-8";
-                };
+                #   propagatedBuildInputs = [
+                #     _super.numpy
+                #     _super.scipy
+                #     _super.numpy.blas
+                #     _super.joblib
+                #     _super.threadpoolctl
+                #   ];
+                #   LC_ALL="en_US.UTF-8";
+                # };
               };
             };
           in _self: _super: rec {
