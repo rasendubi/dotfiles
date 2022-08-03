@@ -165,7 +165,11 @@ Make this repository flake-compatible:
         inherit system;
         overlays = self.overlays;
         config = { allowUnfree = true;  
-                    allowBroken = true; };
+                    allowBroken = true;
+                    permittedInsecurePackages = [
+                      "adobe-reader-9.5.5"
+                    ];
+                    };
       };
     in {
       nixosConfigurations =
@@ -196,21 +200,22 @@ Make this repository flake-compatible:
         <<flake-overlays>>
       ];
 
-      homeManagerConfigurations.x86_64-linux =
-        let
-          hosts = ["MoritzSchaefer"];
-          mkHost = hostname:
+      homeConfigurations.moritz =
+        #let
+          # hosts = ["MoritzSchaefer"];
+          # mkHost = hostname:
             home-manager.lib.homeManagerConfiguration {
               configuration = { ... }: {
                 nixpkgs.config.allowUnfree = true;
                 nixpkgs.overlays = self.overlays;
                 imports = [(import ./.config/nixpkgs/home.nix)];
               };
+              system = "x86_64-linux";
               username = "moritz";
               homeDirectory = "/home/moritz";
-              inherit system pkgs;
+              inherit pkgs;
             };
-        in nixpkgs.lib.genAttrs hosts mkHost;
+        # in nixpkgs.lib.genAttrs hosts mkHost;
     };
 }
 #+end_src
@@ -582,9 +587,30 @@ Thinkpad X1 Extreme gen 4
 {
   imports = [
     (import "${inputs.nixos-hardware}/lenovo/thinkpad/p1/3th-gen")
+    (import "${inputs.nixos-hardware}/lenovo/thinkpad/p1/3th-gen/nvidia.nix")
     (import "${inputs.nixos-hardware}/common/gpu/nvidia.nix")
     inputs.nixpkgs.nixosModules.notDetected
   ];
+
+  # hardware.nvidia.modesetting.enable = true;  # TODO maybe enable
+  # hardware.opengl.driSupport32Bit = true;
+  # hardware.opengl.enable = true;
+  # services.xserver.videoDrivers = [ "nvidia" ];
+  hardware.bumblebee.enable = false;
+  hardware.nvidia.prime = {
+    # Bus ID of the Intel GPU.
+    intelBusId = lib.mkDefault "PCI:0:2:0";
+    # Bus ID of the NVIDIA GPU.
+    nvidiaBusId = lib.mkDefault "PCI:1:0:0";
+     # sync.enable = true;
+     offload.enable = true;
+  };
+  # TODO enable later
+  # services.xserver.screenSection = ''
+  #   Option         "metamodes" "nvidia-auto-select +0+0 {ForceFullCompositionPipeline=On}"
+  #   Option         "AllowIndirectGLXProtocol" "off"
+  #   Option         "TripleBuffer" "on"
+  # '';
   
   environment.systemPackages = [ pkgs.linuxPackages.nvidia_x11 ];
   boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod" "sdhci_pci" ];
@@ -617,10 +643,11 @@ Thinkpad X1 Extreme gen 4
   services.xserver = {
     enable = true;
     displayManager = {
-      # lightdm.enable = true;
-      gdm.enable = true;
+      lightdm.enable = true;
+      # gdm.enable = true;
     };
   };
+  
 }
 #+end_src
 
@@ -637,6 +664,20 @@ https://nixos.wiki/wiki/Keyboard_Layout_Customization#Using_xmodmap
     '';
   in
     services.xserver.displayManager.sessionCommands = "${pkgs.xorg.xmodmap}/bin/xmodmap ${myCustomLayout}";
+}
+#+end_src nix
+
+Cursor
+
+#+name: machine-mopad
+#+begin_src nix
+{
+  services.xserver.displayManager.lightdm.greeters.gtk.cursorTheme = {
+    name = "Vanilla-DMZ";
+    package = pkgs.vanilla-dmz;
+    size = 64; # was 64
+  };
+  environment.variables.XCURSOR_SIZE = "64";
 }
 #+end_src nix
 
@@ -863,17 +904,6 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
 }
 #+end_src
 ** Network mounts
-can delete
-#+name: nixos-section
-#+begin_src nix
-{
-  fileSystems."/mnt/cclab_nas" = {
-    device = "//nas22.ethz.ch/biol_imhs_ciaudo";
-    fsType = "cifs";
-    options = [ "credentials=/home/moritz/.secret/cclab_nas.credentials" "workgroup=d.ethz.ch" "uid=moritz" "gid=users" "noauto" "echo_interval=30" ];
-  };
-}
-#+end_src
 
 #+name: nixos-section-unused
 #+begin_src nix
@@ -1672,7 +1702,11 @@ https://github.com/bsag/nixos-config/blob/330e34c40aba37664bbc20550bf4dd427f0e47
   console.useXkbConfig = true;
 }
 #+end_src
-
+**** TODO on normal keyboards I might want to deactivate mod5-locking (see links)
+https://askubuntu.com/questions/41213/what-does-key-to-choose-5th-level-in-gnome-keyboard-properties-do
+[[file:~/nixos-config/README.org::nixos-section][nixos-section]] <- continue here
+i created the a folder in nixos-config
+https://nixos.wiki/wiki/Keyboard_Layout_Customization
 *** Speed
 #+name: nixos-section
 #+begin_src nix
@@ -1775,8 +1809,11 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
 }
 #+end_src
 ** Hi-DPI
+Also see https://wiki.archlinux.org/title/HiDPI (e.g. for GDK_SCALE)
 
-xserver-dpi is also controlled in ~/.Xresources
+Be careful: ~/.spacemacs.d/.spacemacs.env does not update and overwrites env-variables...
+
+xserver-dpi is also controlled in ~/.Xresources <- this influences URXVT and emacs/EXWM itself!
 
 # #+name: machine-moxps
 #+name: nixos-section
@@ -1786,9 +1823,10 @@ xserver-dpi is also controlled in ~/.Xresources
     pkgs.terminus_font
   ];
   environment.variables = {
-    GDK_SCALE = "2";
-    GDK_DPI_SCALE = "0.5";
-    QT_AUTO_SCREEN_SCALE_FACTOR = "1";
+    GDK_SCALE = "1"; # this one impacts inkscape and only takes integers (1.3 would be ideal..., 2 is too much..)
+    GDK_DPI_SCALE = "1.2"; # this only scales text and can take floats
+    QT_SCALE_FACTOR = "1.4";  # this one impacts qutebrowser
+    QT_AUTO_SCREEN_SCALE_FACTOR = "1.4";
   };
   console.font = "ter-132n";
 }
@@ -1801,10 +1839,11 @@ xserver-dpi is also controlled in ~/.Xresources
 }
 #+end_src
 
+This one seems to determine chrome
 #+name: machine-mopad
 #+begin_src nix
 {
-  services.xserver.dpi = 188;
+  services.xserver.dpi = 150;  # was 150, 
 }
 #+end_src
 
@@ -1845,6 +1884,16 @@ Here go applications (almost) every normal user needs.
   services.pcscd.enable = true;
 }
 #+end_src
+** FileZilla
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = with pkgs; [
+    filezilla
+  ];
+}
+#+end_src
+
 ** KDEconnect
 #+name: nixos-section
 #+begin_src nix
@@ -1934,7 +1983,7 @@ I use Firefox Quantum as my default browser now.
   environment.variables.QUTE_BIB_FILEPATH = "/home/moritz/wiki/papers/references.bib";
 }
 #+end_src
-** Zathura
+** PDF
 [[https://pwmt.org/projects/zathura/][Zathura]] is a cool document viewer with Vim-like bindings.
 #+name: nixos-section
 #+begin_src nix
@@ -1955,6 +2004,13 @@ These are my rebinding for Workman layout (swap j/k):
 map j scroll up
 map k scroll down
 #+end_src
+
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = with pkgs; [ xournalpp  masterpdfeditor qpdfview sioyek evince adobe-reader pdftk ];
+}
+#+END_SRC
 ** Screen locking
 *** Slock
 [[http://tools.suckless.org/slock/][Slock]] is a simple X display locker and should probably not crash as xscreensaver does.
@@ -2056,13 +2112,6 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 }
 #+END_SRC
 
-** PDF
-#+name: nixos-section
-#+begin_src nix
-{
-  environment.systemPackages = with pkgs; [ xournalpp  masterpdfeditor qpdfview ];
-}
-#+END_SRC
 ** EAF
 
 #+name: nixos-section
@@ -2140,6 +2189,7 @@ Don't require additional setup.
     gnome3.gpaste
     autorandr
     libnotify
+    feh
     
     # kdenlive  # fails in current unstable
     audacity
@@ -2658,7 +2708,7 @@ set-window-option -g automatic-rename
       xdg
       epc
       importmagic
-      jupyterlab
+      # jupyterlab
       jupyter_console
       ipykernel
       pyperclip
@@ -3387,6 +3437,7 @@ set-window-option -g automatic-rename
 #+begin_src nix
 {
   environment.systemPackages = with pkgs; [
+    cookiecutter
     nix-index
     tmux
     unstable.gpu-burn
@@ -3400,6 +3451,7 @@ set-window-option -g automatic-rename
     bash
     wget
     htop
+    glances
     psmisc
     zip
     p7zip

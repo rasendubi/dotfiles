@@ -315,9 +315,30 @@ let
       {
         imports = [
           (import "${inputs.nixos-hardware}/lenovo/thinkpad/p1/3th-gen")
+          (import "${inputs.nixos-hardware}/lenovo/thinkpad/p1/3th-gen/nvidia.nix")
           (import "${inputs.nixos-hardware}/common/gpu/nvidia.nix")
           inputs.nixpkgs.nixosModules.notDetected
         ];
+      
+        # hardware.nvidia.modesetting.enable = true;  # TODO maybe enable
+        # hardware.opengl.driSupport32Bit = true;
+        # hardware.opengl.enable = true;
+        # services.xserver.videoDrivers = [ "nvidia" ];
+        hardware.bumblebee.enable = false;
+        hardware.nvidia.prime = {
+          # Bus ID of the Intel GPU.
+          intelBusId = lib.mkDefault "PCI:0:2:0";
+          # Bus ID of the NVIDIA GPU.
+          nvidiaBusId = lib.mkDefault "PCI:1:0:0";
+           # sync.enable = true;
+           offload.enable = true;
+        };
+        # TODO enable later
+        # services.xserver.screenSection = ''
+        #   Option         "metamodes" "nvidia-auto-select +0+0 {ForceFullCompositionPipeline=On}"
+        #   Option         "AllowIndirectGLXProtocol" "off"
+        #   Option         "TripleBuffer" "on"
+        # '';
         
         environment.systemPackages = [ pkgs.linuxPackages.nvidia_x11 ];
         boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod" "sdhci_pci" ];
@@ -350,14 +371,16 @@ let
         services.xserver = {
           enable = true;
           displayManager = {
-            # lightdm.enable = true;
-            gdm.enable = true;
+            lightdm.enable = true;
+            # gdm.enable = true;
           };
         };
+        
       }
       
+      
       {
-        services.xserver.dpi = 188;
+        services.xserver.dpi = 150;  # was 150, 
       }
     ];
   };
@@ -423,13 +446,6 @@ in
       environment.systemPackages = [
         pkgs.ntfs3g
       ];
-    }
-    {
-      fileSystems."/mnt/cclab_nas" = {
-        device = "//nas22.ethz.ch/biol_imhs_ciaudo";
-        fsType = "cifs";
-        options = [ "credentials=/home/moritz/.secret/cclab_nas.credentials" "workgroup=d.ethz.ch" "uid=moritz" "gid=users" "noauto" "echo_interval=30" ];
-      };
     }
     {
       system.autoUpgrade.enable = true;
@@ -916,9 +932,10 @@ in
         pkgs.terminus_font
       ];
       environment.variables = {
-        GDK_SCALE = "2";
-        GDK_DPI_SCALE = "0.5";
-        QT_AUTO_SCREEN_SCALE_FACTOR = "1";
+        GDK_SCALE = "1"; # this one impacts inkscape and only takes integers (1.3 would be ideal...)
+        GDK_DPI_SCALE = "1.4"; # this only scales text and can take floats
+        QT_SCALE_FACTOR = "1.4";  # this one impacts qutebrowser
+        QT_AUTO_SCREEN_SCALE_FACTOR = "1.4";
       };
       console.font = "ter-132n";
     }
@@ -946,6 +963,11 @@ in
       # };
     
       services.pcscd.enable = true;
+    }
+    {
+      environment.systemPackages = with pkgs; [
+        filezilla
+      ];
     }
     {
       programs.kdeconnect.enable = true;
@@ -996,6 +1018,9 @@ in
       ];
     }
     {
+      environment.systemPackages = with pkgs; [ xournalpp  masterpdfeditor qpdfview sioyek evince adobe-reader pdftk ];
+    }
+    {
       programs.slock.enable = true;
     }
     {
@@ -1040,9 +1065,6 @@ in
        users.extraGroups.vboxusers.members = [ "moritz" ];
        nixpkgs.config.allowUnfree = true;
        virtualisation.virtualbox.host.enableExtensionPack = true;
-    }
-    {
-      environment.systemPackages = with pkgs; [ xournalpp  masterpdfeditor qpdfview ];
     }
     {
       environment.systemPackages = with pkgs; [
@@ -1111,6 +1133,7 @@ in
         gnome3.gpaste
         autorandr
         libnotify
+        feh
         
         # kdenlive  # fails in current unstable
         audacity
@@ -1289,7 +1312,7 @@ in
           xdg
           epc
           importmagic
-          jupyterlab
+          # jupyterlab
           jupyter_console
           ipykernel
           pyperclip
@@ -1394,6 +1417,7 @@ in
     }
     {
       environment.systemPackages = with pkgs; [
+        cookiecutter
         nix-index
         tmux
         unstable.gpu-burn
@@ -1407,6 +1431,7 @@ in
         bash
         wget
         htop
+        glances
         psmisc
         zip
         p7zip

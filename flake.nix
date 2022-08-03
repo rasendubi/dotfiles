@@ -70,7 +70,11 @@
         inherit system;
         overlays = self.overlays;
         config = { allowUnfree = true;  
-                    allowBroken = true; };
+                    allowBroken = true;
+                    permittedInsecurePackages = [
+                      "adobe-reader-9.5.5"
+                    ];
+                    };
       };
     in {
       nixosConfigurations =
@@ -762,20 +766,21 @@
           } )
       ];
 
-      homeManagerConfigurations.x86_64-linux =
-        let
-          hosts = ["MoritzSchaefer"];
-          mkHost = hostname:
+      homeConfigurations.moritz =
+        #let
+          # hosts = ["MoritzSchaefer"];
+          # mkHost = hostname:
             home-manager.lib.homeManagerConfiguration {
               configuration = { ... }: {
                 nixpkgs.config.allowUnfree = true;
                 nixpkgs.overlays = self.overlays;
                 imports = [(import ./.config/nixpkgs/home.nix)];
               };
+              system = "x86_64-linux";
               username = "moritz";
               homeDirectory = "/home/moritz";
-              inherit system pkgs;
+              inherit pkgs;
             };
-        in nixpkgs.lib.genAttrs hosts mkHost;
+        # in nixpkgs.lib.genAttrs hosts mkHost;
     };
 }
