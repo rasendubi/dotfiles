@@ -320,11 +320,13 @@ let
           inputs.nixpkgs.nixosModules.notDetected
         ];
       
-        # hardware.nvidia.modesetting.enable = true;  # TODO maybe enable
+        # hardware.nvidia.modesetting.enable = true;
         # hardware.opengl.driSupport32Bit = true;
         # hardware.opengl.enable = true;
         # services.xserver.videoDrivers = [ "nvidia" ];
-        hardware.bumblebee.enable = false;
+        # hardware.bumblebee.enable = false;
+        
+        services.hardware.bolt.enable = true;
         hardware.nvidia.prime = {
           # Bus ID of the Intel GPU.
           intelBusId = lib.mkDefault "PCI:0:2:0";
@@ -333,12 +335,14 @@ let
            # sync.enable = true;
            offload.enable = true;
         };
-        # TODO enable later
-        # services.xserver.screenSection = ''
-        #   Option         "metamodes" "nvidia-auto-select +0+0 {ForceFullCompositionPipeline=On}"
-        #   Option         "AllowIndirectGLXProtocol" "off"
-        #   Option         "TripleBuffer" "on"
-        # '';
+      
+        # specialisation = {
+        #   external-display.configuration = {
+        #     system.nixos.tags = [ "external-display" ];
+        #     hardware.nvidia.prime.offload.enable = lib.mkForce false;
+        #     hardware.nvidia.powerManagement.enable = lib.mkForce false;
+        #   };
+        # };
         
         environment.systemPackages = [ pkgs.linuxPackages.nvidia_x11 ];
         boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod" "sdhci_pci" ];
@@ -374,13 +378,27 @@ let
             lightdm.enable = true;
             # gdm.enable = true;
           };
+          libinput = {
+            enable = true;
+            touchpad.accelSpeed = "0.7";
+      
+            # disabling mouse acceleration
+            # mouse = {
+            #   accelProfile = "flat";
+            # };
+      
+            # # disabling touchpad acceleration
+            # touchpad = {
+            #   accelProfile = "flat";
+            # };
+          };
+      
         };
-        
       }
       
       
       {
-        services.xserver.dpi = 150;  # was 150, 
+        services.xserver.dpi = 130;  # was 150, 
       }
     ];
   };
@@ -533,7 +551,13 @@ in
         package = pkgs.pulseaudioFull; # .override { jackaudioSupport = true; };  # need "full" for bluetooth
       };
     
-      environment.systemPackages = with pkgs; [ pavucontrol libjack2 jack2 qjackctl jack2Full jack_capture ];
+      environment.systemPackages = with pkgs; [ pavucontrol libjack2 jack2 qjackctl jack2Full jack_capture
+      gst_all_1.gstreamer
+      gst_all_1.gst-plugins-good
+      gst_all_1.gst-plugins-base
+      # gst_all_1.gst-plugins-ugly gst_all_1.gst-plugins-bad
+      ffmpeg
+      ];
     
       # services.jack = {
       #   jackd.enable = true;
@@ -669,6 +693,7 @@ in
         pkgs.qemu
         # pkgs.nvtop # for nvidia
         pkgs.usbtop
+        pkgs.xorg.xhost
       ];
     
       users.users.moritz.extraGroups = ["libvirtd" "docker"];  # the former is required for qemu I think 
@@ -826,7 +851,7 @@ in
           enableXfwm = true;
         };
       };
-      # services.picom.enable = true;
+      services.picom.enable = false;  # required for KDE connect but does not work anyways... might be responsible for weird/slow behaviour a couple of minutes after boot
     }
     {
       environment.systemPackages = [
@@ -932,9 +957,9 @@ in
         pkgs.terminus_font
       ];
       environment.variables = {
-        GDK_SCALE = "1"; # this one impacts inkscape and only takes integers (1.3 would be ideal...)
-        GDK_DPI_SCALE = "1.4"; # this only scales text and can take floats
-        QT_SCALE_FACTOR = "1.4";  # this one impacts qutebrowser
+        GDK_SCALE = "1"; # this one impacts inkscape and only takes integers (1.3 would be ideal..., 2 is too much..)
+        GDK_DPI_SCALE = "1.2"; # this only scales text and can take floats
+        QT_SCALE_FACTOR = "1.2";  # this one impacts qutebrowser
         QT_AUTO_SCREEN_SCALE_FACTOR = "1.4";
       };
       console.font = "ter-132n";
@@ -1018,7 +1043,7 @@ in
       ];
     }
     {
-      environment.systemPackages = with pkgs; [ xournalpp  masterpdfeditor qpdfview sioyek evince adobe-reader pdftk ];
+      environment.systemPackages = with pkgs; [ xournalpp  masterpdfeditor qpdfview sioyek evince adobe-reader pdftk ];  # unstable.sioyek fails tzz
     }
     {
       programs.slock.enable = true;
@@ -1045,6 +1070,10 @@ in
     {
       services.tor.enable = false;
       services.tor.client.enable = false;
+      environment.systemPackages = [ pkgs.tor-browser-bundle-bin ];
+    }
+    {
+      environment.systemPackages = [ pkgs.steam-run ];
     }
     {
     
@@ -1197,7 +1226,7 @@ in
         ### Micro
         SUBSYSTEMS=="usb", ATTRS{idVendor}=="2a03", ATTRS{idProduct}=="0037", TAG+="uaccess", ENV{ID_MM_DEVICE_IGNORE}="1"
       '';
-      environment.systemPackages = [ pkgs.unstable.qmk ];
+      environment.systemPackages = [ pkgs.qmk ];  # TODO might need unstable
     }
     {
       environment.systemPackages = [
@@ -1278,6 +1307,8 @@ in
           openpyxl
           biopython
           # scikitlearn
+          wandb
+          imageio
           matplotlib
           pyproj
           seaborn
@@ -1295,6 +1326,7 @@ in
           # jedi
           # json-rpc
           # service-factory
+          debugpy
     
           fritzconnection
           # jupyter
