@@ -392,7 +392,6 @@ let
             #   accelProfile = "flat";
             # };
           };
-      
         };
       }
       
@@ -807,48 +806,51 @@ in
       time.timeZone = "Europe/Berlin";
     }
     {
+      security.sudo.extraConfig = ''
+        Defaults        timestamp_timeout=120
+      '';
+    }
+    {
       services.xserver = {
         # desktopManager.gnome3.enable = true;
+        enable = true;
         displayManager = {
           startx.enable = false;
           autoLogin = {  # if errors, then disable again
             user = "moritz";
             enable = true;
-          }; 
+          };
+          defaultSession = "none+exwm";  # Firefox works more fluently with plasma5+exwm instead of "none+exwm". or does it??
         };
-        enable = true;
-      };
-    }
-    {
-      services.xserver.windowManager = {
-        exwm = {
-          enable = true;
-          extraPackages = epkgs: with epkgs; [ emacsql-sqlite pkgs.imagemagick pkgs.escrotum epkgs.vterm ];  # unfortunately, adding zmq and jupyter here, didn't work so I had to install them manually (i.e. compiling emacs-zmq)
-          # I only managed to compile emacs-zmq once (~/emacs.d/elpa/27.1/develop/zmq-.../emacs-zmq.so). I just copied it from there to mobook
-          enableDefaultConfig = false;  # todo disable and enable loadScript
-          # careful, 'loadScript option' was merged from Vizaxo into my personal nixpkgs repo.
-          loadScript = ''
-            (require 'exwm)
-            ;; most of it is now in .spacemacs.d/lisp/exwm.el
-            (require 'exwm-systemtray)
-            (require 'exwm-randr)
-            ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "HDMI1" 2 "DP2" 3 "eDP1" 4 "HDMI1" 5 "DP2"))
-            ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "eDP1" 2 "HDMI1" 3 "eDP1" 4 "eDP1" 5 "eDP1"))
-            ;; (exwm-randr-enable)
-            (exwm-systemtray-enable)
-            (exwm-enable)
-          '';
+        windowManager = {
+          exwm = {
+            enable = true;
+            extraPackages = epkgs: with epkgs; [ emacsql-sqlite pkgs.imagemagick pkgs.escrotum epkgs.vterm ];  # unfortunately, adding zmq and jupyter here, didn't work so I had to install them manually (i.e. compiling emacs-zmq)
+            # I only managed to compile emacs-zmq once (~/emacs.d/elpa/27.1/develop/zmq-.../emacs-zmq.so). I just copied it from there to mobook
+            enableDefaultConfig = false;  # todo disable and enable loadScript
+            # careful, 'loadScript option' was merged from Vizaxo into my personal nixpkgs repo.
+            loadScript = ''
+              (require 'exwm)
+              ;; most of it is now in .spacemacs.d/lisp/exwm.el
+              (require 'exwm-systemtray)
+              (require 'exwm-randr)
+              ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "HDMI1" 2 "DP2" 3 "eDP1" 4 "HDMI1" 5 "DP2"))
+              ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "eDP1" 2 "HDMI1" 3 "eDP1" 4 "eDP1" 5 "eDP1"))
+              ;; (exwm-randr-enable)
+              (exwm-systemtray-enable)
+              (exwm-enable)
+            '';
+          };
+          stumpwm.enable = false;
         };
-        stumpwm.enable = false;
-      };
-      services.xserver.displayManager.defaultSession = "none+exwm";  # Firefox works more fluently with plasma5+exwm instead of "none+exwm". or does it??
-      services.xserver.desktopManager = {
-        xterm.enable = false;
-        plasma5.enable = true;
-        xfce = {
-          enable = true;
-          noDesktop= true;
-          enableXfwm = true;
+        desktopManager = {
+          xterm.enable = false;
+          plasma5.enable = true;
+          xfce = {
+            enable = true;
+            noDesktop= true;
+            enableXfwm = true;
+          };
         };
       };
       services.picom.enable = false;  # required for KDE connect but does not work anyways... might be responsible for weird/slow behaviour a couple of minutes after boot
@@ -858,6 +860,7 @@ in
         pkgs.wmname
         pkgs.xclip
         pkgs.escrotum
+        pkgs.graphviz
       ];
     }
     {
@@ -874,6 +877,17 @@ in
       };
     }
     {
+      systemd.services.fix-enter-iso3 = {
+        script = ''
+          /run/current-system/sw/bin/setkeycodes 0x1c 58  # enter 
+          /run/current-system/sw/bin/setkeycodes 0x2b 28  # enter
+          /run/current-system/sw/bin/setkeycodes e038 86 # map alt gr to less than/greater than international key
+          
+        '';
+        wantedBy = [ "multi-user.target" ];
+      };
+    }
+    {
       services.xserver.layout = "de,de,us";
       services.xserver.xkbVariant = "bone,,";
       services.xserver.xkbOptions= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp,altwin:swap_lalt_lwin";
@@ -884,8 +898,8 @@ in
       console.useXkbConfig = true;
     }
     {
-      services.xserver.autoRepeatDelay = 180;
-      services.xserver.autoRepeatInterval = 50;
+      services.xserver.autoRepeatDelay = 150;
+      services.xserver.autoRepeatInterval = 40;
     
       # Use same config for linux console
       console.useXkbConfig = true;
@@ -908,7 +922,7 @@ in
     {
       services.redshift = {
         enable = true;
-        brightness.night = "0.8";
+        brightness.night = "1";
         temperature.night = 2600;
       };
     
@@ -1200,6 +1214,11 @@ in
       ];
     }
     {
+      environment.systemPackages = [
+        pkgs.cudaPackages.cuda_nvcc
+      ];
+    }
+    {
       # leads to trouble only..
       systemd.services.modem-manager.enable = false;
       systemd.services."dbus-org.freedesktop.ModemManager1".enable = false;
@@ -1300,6 +1319,7 @@ in
           pytorch
           # ignite
           pytorch-lightning
+          # pytorch-geometric
           python3
           pandas
           XlsxWriter
@@ -1383,6 +1403,7 @@ in
         gcc
         pkg-config
         autoconf
+        clang-tools
       ];
     }
     {
