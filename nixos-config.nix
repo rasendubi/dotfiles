@@ -438,6 +438,9 @@ in
       };
     }
     {
+      environment.systemPackages = [ pkgs.nixos-option ];
+    }
+    {
     nix.nixPath = [
         "nixpkgs=${inputs.nixpkgs}"
       ];
@@ -1118,13 +1121,11 @@ in
        users.extraGroups.vboxusers.members = [ "moritz" ];
        nixpkgs.config.allowUnfree = true;
        virtualisation.virtualbox.host.enableExtensionPack = true;
-       # virtualisation.virtualbox.guest.enable = true;
-       # virtualisation.virtualbox.guest.x11 = true;
     }
     {
       environment.systemPackages = with pkgs; [
         qt5Full
-        aria 
+        aria
         fd
         wmctrl
         nodejs
@@ -1223,12 +1224,6 @@ in
       environment.systemPackages = [
         pkgs.vim_configurable # .override { python3 = true; })
         pkgs.neovim
-      ];
-    }
-    {
-      environment.systemPackages = [
-        pkgs.editorconfig-core-c
-        pkgs.editorconfig-checker
       ];
     }
     {
