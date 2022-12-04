@@ -316,7 +316,7 @@ let
         imports = [
           (import "${inputs.nixos-hardware}/lenovo/thinkpad/p1/3th-gen")
           (import "${inputs.nixos-hardware}/lenovo/thinkpad/p1/3th-gen/nvidia.nix")
-          (import "${inputs.nixos-hardware}/common/gpu/nvidia.nix")
+          (import "${inputs.nixos-hardware}/common/gpu/nvidia/prime.nix")  # default: offload
           inputs.nixpkgs.nixosModules.notDetected
         ];
       
@@ -327,25 +327,28 @@ let
         # hardware.bumblebee.enable = false;
         
         services.hardware.bolt.enable = true;
+        hardware.nvidia.powerManagement.enable = true;
+        hardware.nvidia.powerManagement.finegrained = true;
         hardware.nvidia.prime = {
           # Bus ID of the Intel GPU.
           intelBusId = lib.mkDefault "PCI:0:2:0";
           # Bus ID of the NVIDIA GPU.
           nvidiaBusId = lib.mkDefault "PCI:1:0:0";
-           # sync.enable = true;
-           offload.enable = true;
+          
         };
       
-        # specialisation = {
-        #   external-display.configuration = {
-        #     system.nixos.tags = [ "external-display" ];
-        #     hardware.nvidia.prime.offload.enable = lib.mkForce false;
-        #     hardware.nvidia.powerManagement.enable = lib.mkForce false;
-        #   };
-        # };
-        
+        specialisation = {
+          sync-gpu.configuration = {
+            system.nixos.tags = [ "sync-gpu" ];
+            hardware.nvidia.prime.offload.enable = lib.mkForce false;
+            hardware.nvidia.prime.sync.enable = lib.mkForce true;
+            hardware.nvidia.powerManagement.finegrained = lib.mkForce false;
+          };
+        };
+      
         environment.systemPackages = [ pkgs.linuxPackages.nvidia_x11 ];
         boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod" "sdhci_pci" ];
+        boot.blacklistedKernelModules = [ "nouveau" "nvidia_drm" "nvidia_modeset" "nvidia" ];
         boot.initrd.kernelModules = [ ];
         boot.kernelModules = [ "kvm-intel" ];
         boot.extraModulePackages = [ ];
@@ -397,7 +400,7 @@ let
       
       
       {
-        services.xserver.dpi = 130;  # was 150, 
+        services.xserver.dpi = 140;  # was 130, 
       }
     ];
   };
@@ -421,7 +424,6 @@ in
     
       nixpkgs.config.allowUnfree = true;
       nixpkgs.config.allowBroken = true;
-      # nixpkgs.config.allowInsecure = true;
 
       # The NixOS release to be compatible with for stateful data such as databases.
       system.stateVersion = "20.03";
@@ -785,6 +787,15 @@ in
       };
     }
     {
+      # Enable cron service
+      services.cron = {
+        enable = true;
+        systemCronJobs = [
+          "* * * * 0      moritz    . /etc/profile; cd /home/moritz/wiki/; ${pkgs.git}/bin/git add .; ${pkgs.git}/bin/git commit -m 'Weekly checkpoint' 2>&1 >> /tmp/git_out"
+        ];
+      };
+    }
+    {
       environment.systemPackages = [
         pkgs.isync
       ];
@@ -881,8 +892,7 @@ in
         script = ''
           /run/current-system/sw/bin/setkeycodes 0x1c 58  # enter 
           /run/current-system/sw/bin/setkeycodes 0x2b 28  # enter
-          /run/current-system/sw/bin/setkeycodes e038 86 # map alt gr to less than/greater than international key
-          
+          /run/current-system/sw/bin/setkeycodes e038 86 # map alt gr to less than/greater than international key. should fix some issues in browser-based excel etc.
         '';
         wantedBy = [ "multi-user.target" ];
       };
@@ -891,7 +901,7 @@ in
       services.xserver.layout = "de,de,us";
       services.xserver.xkbVariant = "bone,,";
       services.xserver.xkbOptions= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp,altwin:swap_lalt_lwin";
-      
+    
       environment.systemPackages = [ pkgs.xorg.xmodmap ];
     
       # Use same config for linux console
@@ -899,7 +909,7 @@ in
     }
     {
       services.xserver.autoRepeatDelay = 150;
-      services.xserver.autoRepeatInterval = 40;
+      services.xserver.autoRepeatInterval = 35;
     
       # Use same config for linux console
       console.useXkbConfig = true;
@@ -1108,6 +1118,8 @@ in
        users.extraGroups.vboxusers.members = [ "moritz" ];
        nixpkgs.config.allowUnfree = true;
        virtualisation.virtualbox.host.enableExtensionPack = true;
+       # virtualisation.virtualbox.guest.enable = true;
+       # virtualisation.virtualbox.guest.x11 = true;
     }
     {
       environment.systemPackages = with pkgs; [
@@ -1163,7 +1175,7 @@ in
         obs-studio
         jmtpfs
         qbittorrent
-        blender
+        unstable.blender
         teams
         discord
         inkscape
@@ -1180,7 +1192,7 @@ in
         
         # kdenlive  # fails in current unstable
         audacity
-        google-play-music-desktop-player
+        ytmdesktop
         tdesktop # Telegram
         signal-cli # Signal
         signal-desktop # Signal
@@ -1211,6 +1223,12 @@ in
       environment.systemPackages = [
         pkgs.vim_configurable # .override { python3 = true; })
         pkgs.neovim
+      ];
+    }
+    {
+      environment.systemPackages = [
+        pkgs.editorconfig-core-c
+        pkgs.editorconfig-checker
       ];
     }
     {
@@ -1275,6 +1293,7 @@ in
         pkgs.gitFull
         pkgs.gitg
         pkgs.git-lfs
+        pkgs.git-filter-repo
       ];
     }
     {
@@ -1318,9 +1337,10 @@ in
           plotly
           pytorch
           # ignite
-          pytorch-lightning
+          # pytorch-lightning
           # pytorch-geometric
           python3
+          black
           pandas
           XlsxWriter
           opencvGtk
@@ -1333,6 +1353,7 @@ in
           pyproj
           seaborn
           requests
+          pillow
           ipdb
           isort
           tox
@@ -1359,7 +1380,7 @@ in
           # swifter
           gffutils
           pyensembl
-          pybedtools
+          # pybedtools
           pybigwig
           xdg
           epc
@@ -1368,8 +1389,8 @@ in
           jupyter_console
           ipykernel
           pyperclip
-          scikit-plot
-          scikit-bio
+          # scikit-plot
+          # scikit-bio
           powerline
           python-lsp-server
           smogn
@@ -1410,59 +1431,6 @@ in
       environment.systemPackages = with pkgs; [
         bedtools
       ];
-    }
-    {
-      environment.systemPackages = [ pkgs.unstable.esphome ];  # 1.15.0 fixes bug
-     
-      # from https://raw.githubusercontent.com/platformio/platformio-core/master/scripts/99-platformio-udev.rules
-      # QinHeng Electronics HL-340 USB-Serial adapter
-      services.udev.extraRules = ''
-        #  CP210X USB UART
-        ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
-    
-        # FT231XS USB UART
-        ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6015", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
-    
-        # Prolific Technology, Inc. PL2303 Serial Port
-        ATTRS{idVendor}=="067b", ATTRS{idProduct}=="2303", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
-    
-        # QinHeng Electronics HL-340 USB-Serial adapter
-        ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
-    
-        # Arduino boards
-        ATTRS{idVendor}=="2341", ATTRS{idProduct}=="[08][02]*", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
-        ATTRS{idVendor}=="2a03", ATTRS{idProduct}=="[08][02]*", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
-    
-        # Arduino SAM-BA
-        ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="6124", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{MTP_NO_PROBE}="1"
-    
-        # Digistump boards
-        ATTRS{idVendor}=="16d0", ATTRS{idProduct}=="0753", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
-    
-        # Maple with DFU
-        ATTRS{idVendor}=="1eaf", ATTRS{idProduct}=="000[34]", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
-    
-        # USBtiny
-        ATTRS{idProduct}=="0c9f", ATTRS{idVendor}=="1781", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
-    
-        # USBasp V2.0
-        ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="05dc", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
-    
-        # Teensy boards
-        ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="04[789B]?", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
-        ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="04[789A]?", ENV{MTP_NO_PROBE}="1"
-        SUBSYSTEMS=="usb", ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="04[789ABCD]?", MODE:="0666"
-        KERNEL=="ttyACM*", ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="04[789B]?", MODE:="0666"
-    
-        #TI Stellaris Launchpad
-        ATTRS{idVendor}=="1cbe", ATTRS{idProduct}=="00fd", MODE="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
-    
-        #TI MSP430 Launchpad
-        ATTRS{idVendor}=="0451", ATTRS{idProduct}=="f432", MODE="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
-    
-        #GD32V DFU Bootloader
-        ATTRS{idVendor}=="28e9", ATTRS{idProduct}=="0189", MODE="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
-        '';
     }
     {
       environment.systemPackages = [ pkgs.arduino ];

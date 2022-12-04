@@ -8,7 +8,7 @@
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-22.05";
+      ref = "nixos-22.11";
     };
     nixpkgs-2009 = {
       type = "github";
@@ -71,8 +71,11 @@
         overlays = self.overlays;
         config = { allowUnfree = true;  
                     allowBroken = true;
+                    allowInsecure = true;
                     permittedInsecurePackages = [
                       "adobe-reader-9.5.5"
+                      "qtwebkit-5.212.0-alpha4"
+                      "openjdk-18+36"
                     ];
                     };
       };

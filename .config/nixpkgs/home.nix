@@ -166,6 +166,9 @@ home.packages =   with pkgs; [
       eval (direnv hook fish)
       fish_vi_key_bindings
 
+      set SNAKEMAKE_CONDA_PREFIX /home/moritz/.conda
+
+      set fish_color_autosuggestion brblue
     '';
   };
   # programs.bash = {
