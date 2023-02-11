@@ -343,12 +343,13 @@ let
             hardware.nvidia.prime.offload.enable = lib.mkForce false;
             hardware.nvidia.prime.sync.enable = lib.mkForce true;
             hardware.nvidia.powerManagement.finegrained = lib.mkForce false;
+            hardware.nvidia.powerManagement.enable = lib.mkForce false;
           };
         };
       
         environment.systemPackages = [ pkgs.linuxPackages.nvidia_x11 ];
         boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod" "sdhci_pci" ];
-        boot.blacklistedKernelModules = [ "nouveau" "nvidia_drm" "nvidia_modeset" "nvidia" ];
+        # boot.blacklistedKernelModules = [ "nouveau" "nvidia_drm" "nvidia_modeset" "nvidia" ];
         boot.initrd.kernelModules = [ ];
         boot.kernelModules = [ "kvm-intel" ];
         boot.extraModulePackages = [ ];
@@ -439,6 +440,19 @@ in
     }
     {
       environment.systemPackages = [ pkgs.nixos-option ];
+    }
+    {
+      nix = {
+        settings = {
+          substituters = [
+            "https://nix-community.cachix.org"
+            "https://cache.nixos.org/"
+          ];
+          trusted-public-keys = [
+            "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+          ];
+        };
+      };
     }
     {
     nix.nixPath = [
@@ -1025,6 +1039,13 @@ in
       programs.kdeconnect.enable = true;
     }
     {
+      services.minidlna = {
+        enable = true;
+        openFirewall = true;
+        settings.media_dir= [ "/srv/minidlna/" ];
+      };
+    }
+    {
       environment.systemPackages = with pkgs; [
         (pass.withExtensions (exts: [ exts.pass-otp ]))
         pinentry-curses
@@ -1036,7 +1057,6 @@ in
     {
       environment.systemPackages = [
         pkgs.gwenview
-        pkgs.dolphin
         pkgs.filelight
         pkgs.shared-mime-info
       ];
@@ -1100,13 +1120,24 @@ in
       environment.systemPackages = [ pkgs.tor-browser-bundle-bin ];
     }
     {
-      environment.systemPackages = [ pkgs.steam-run ];
+      environment.systemPackages = [ pkgs.steam-run pkgs.steam ];
+      hardware.opengl.driSupport32Bit = true;
+      hardware.opengl.extraPackages32 = with pkgs.pkgsi686Linux; [ libva vaapiIntel];
+      hardware.pulseaudio.support32Bit = true;
+      programs.steam.package = pkgs.steam.override {
+        extraLibraries = pkgs: (with config.hardware.opengl;
+          if pkgs.hostPlatform.is64bit
+          then [ package ] ++ extraPackages
+          else [ package32 ] ++ extraPackages32)
+          ++ [ pkgs.libxcrypt ];
+      };
+    
     }
     {
     
       environment.systemPackages = with pkgs; [
         #haskellPackages.pandoc
-        jabref
+        # jabref
         nixpkgs-2009.pandoc
         nixpkgs-2009.haskellPackages.pandoc-crossref  # broken...
         nixpkgs-2009.haskellPackages.pandoc-citeproc  # broken...
@@ -1117,14 +1148,14 @@ in
       environment.systemPackages = [ pkgs.supercollider ];
     }
     {
-       virtualisation.virtualbox.host.enable = true;
+       # virtualisation.virtualbox.host.enable = true;
        users.extraGroups.vboxusers.members = [ "moritz" ];
        nixpkgs.config.allowUnfree = true;
        virtualisation.virtualbox.host.enableExtensionPack = true;
     }
     {
       environment.systemPackages = with pkgs; [
-        qt5Full
+        # qt5Full
         aria
         fd
         wmctrl
@@ -1132,7 +1163,7 @@ in
         nodePackages.npm
         mupdf
       ];
-      environment.variables.QT_QPA_PLATFORM_PLUGIN_PATH = "${pkgs.qt5.qtbase.bin.outPath}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";
+      environment.variables.QT_QPA_PLATFORM_PLUGIN_PATH = "${pkgs.qt5.qtbase.bin.outPath}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";  # need to rerun 'spacemacs/force-init-spacemacs-env' after QT updates...
     }
     {
       environment.systemPackages =
@@ -1168,6 +1199,7 @@ in
           '';
           } ); in
         [
+        betaflight-configurator
         miraclecast
         xcolor
         vlc
@@ -1204,6 +1236,7 @@ in
         gimp-with-plugins
     
         mplayer
+        mpv
         smplayer
         lm_sensors
         tcl
@@ -1215,6 +1248,9 @@ in
     }
     {
       environment.systemPackages = [ pkgs.niv ];
+    }
+    {
+      environment.systemPackages = [ pkgs.hugo ];
     }
     {
     services.flatpak.enable = true;
@@ -1302,8 +1338,8 @@ in
         let python = (with pkgs; python3.withPackages (python-packages: with python-packages;
           let opencvGtk = opencv4.override (old : { enableGtk2 = true; enableGStreamer = true; });
               eaf-deps = [
-                pyqt5 sip
-                pyqtwebengine
+                # pyqt5 sip
+                # pyqtwebengine
                 epc lxml
                 # eaf-file-browser
                 qrcode
@@ -1338,10 +1374,10 @@ in
           black
           pandas
           XlsxWriter
-          opencvGtk
+          # opencvGtk
           openpyxl
           biopython
-          # scikitlearn
+          scikitlearn
           wandb
           imageio
           matplotlib

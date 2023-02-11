@@ -81,13 +81,13 @@ Keywords=pulseaudio;tray;system tray;applet;volume;'';
 # }; in
 home.packages =   with pkgs; [
     #xpdf # this is an insecure package. an exception is in config.nix
-    dolphin
     tmux
     xdotool
     xss-lock
     (pass.withExtensions (exts: [ exts.pass-otp ]))
     acpilight
 
+    mcfly
     minicom
     firefox
     google-chrome
@@ -96,7 +96,7 @@ home.packages =   with pkgs; [
     ripgrep
     pavucontrol
 
-    google-play-music-desktop-player
+    # google-play-music-desktop-player
 
     inconsolata
     dejavu_fonts
@@ -169,6 +169,8 @@ home.packages =   with pkgs; [
       set SNAKEMAKE_CONDA_PREFIX /home/moritz/.conda
 
       set fish_color_autosuggestion brblue
+
+      mcfly init fish | source
     '';
   };
   # programs.bash = {

@@ -293,13 +293,21 @@ Make this repository flake-compatible:
 }
 #+end_src
 
-** Cachix
-# deactivated due to restricted mode (error: access to path '/etc/nixos/cachix.nix' is forbidden in restricted mode)
-# #+name: nixos-section
+** Caching
+#+name: nixos-section
 #+begin_src nix
 {
-  environment.systemPackages = [ pkgs.cachix ];
-  imports = [ /etc/nixos/cachix.nix ];
+  nix = {
+    settings = {
+      substituters = [
+        "https://nix-community.cachix.org"
+        "https://cache.nixos.org/"
+      ];
+      trusted-public-keys = [
+        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      ];
+    };
+  };
 }
 #+end_src
 
@@ -627,12 +635,13 @@ Thinkpad X1 Extreme gen 4
       hardware.nvidia.prime.offload.enable = lib.mkForce false;
       hardware.nvidia.prime.sync.enable = lib.mkForce true;
       hardware.nvidia.powerManagement.finegrained = lib.mkForce false;
+      hardware.nvidia.powerManagement.enable = lib.mkForce false;
     };
   };
 
   environment.systemPackages = [ pkgs.linuxPackages.nvidia_x11 ];
   boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod" "sdhci_pci" ];
-  boot.blacklistedKernelModules = [ "nouveau" "nvidia_drm" "nvidia_modeset" "nvidia" ];
+  # boot.blacklistedKernelModules = [ "nouveau" "nvidia_drm" "nvidia_modeset" "nvidia" ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
@@ -1837,7 +1846,7 @@ Redshift blocks some blue light (making screen more red), which should improve m
   services.redshift = {
     enable = true;
     brightness.night = "1";
-    temperature.night = 2600;
+    temperature.night = 2800;
   };
 
   location.provider = "geoclue2";
@@ -1986,6 +1995,18 @@ Here go applications (almost) every normal user needs.
   programs.kdeconnect.enable = true;
 }
 #+end_src
+** DLNA
+#+name: nixos-section
+#+begin_src nix
+{
+  services.minidlna = {
+    enable = true;
+    openFirewall = true;
+    settings.media_dir= [ "/srv/minidlna/" ];
+  };
+}
+#+end_src
+
 ** Matrix Chat
 #+name: nixos-section-unused
 #+begin_src nix
@@ -2018,7 +2039,6 @@ I don't use full KDE but some apps are definitely nice.
 {
   environment.systemPackages = [
     pkgs.gwenview
-    pkgs.dolphin
     pkgs.filelight
     pkgs.shared-mime-info
   ];
@@ -2155,10 +2175,21 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 #+end_src
 
 ** Steam
-#+name: nixos-section
+#+name: machine-mopad
 #+begin_src nix
 {
-  environment.systemPackages = [ pkgs.steam-run ];
+  environment.systemPackages = [ pkgs.steam-run pkgs.steam ];
+  hardware.opengl.driSupport32Bit = true;
+  hardware.opengl.extraPackages32 = with pkgs.pkgsi686Linux; [ libva vaapiIntel];
+  hardware.pulseaudio.support32Bit = true;
+  programs.steam.package = pkgs.steam.override {
+    extraLibraries = pkgs: (with config.hardware.opengl;
+      if pkgs.hostPlatform.is64bit
+      then [ package ] ++ extraPackages
+      else [ package32 ] ++ extraPackages32)
+      ++ [ pkgs.libxcrypt ];
+  };
+
 }
 #+end_src
 
@@ -2178,7 +2209,7 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 
   environment.systemPackages = with pkgs; [
     #haskellPackages.pandoc
-    jabref
+    # jabref
     nixpkgs-2009.pandoc
     nixpkgs-2009.haskellPackages.pandoc-crossref  # broken...
     nixpkgs-2009.haskellPackages.pandoc-citeproc  # broken...
@@ -2198,7 +2229,7 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 #+name: nixos-section
 #+begin_src nix
 {
-   virtualisation.virtualbox.host.enable = true;
+   # virtualisation.virtualbox.host.enable = true;
    users.extraGroups.vboxusers.members = [ "moritz" ];
    nixpkgs.config.allowUnfree = true;
    virtualisation.virtualbox.host.enableExtensionPack = true;
@@ -2211,7 +2242,7 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 #+begin_src nix
 {
   environment.systemPackages = with pkgs; [
-    qt5Full
+    # qt5Full
     aria
     fd
     wmctrl
@@ -2219,7 +2250,7 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
     nodePackages.npm
     mupdf
   ];
-  environment.variables.QT_QPA_PLATFORM_PLUGIN_PATH = "${pkgs.qt5.qtbase.bin.outPath}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";
+  environment.variables.QT_QPA_PLATFORM_PLUGIN_PATH = "${pkgs.qt5.qtbase.bin.outPath}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";  # need to rerun 'spacemacs/force-init-spacemacs-env' after QT updates...
 }
 #+END_SRC
 ** Other applications
@@ -2261,6 +2292,7 @@ Don't require additional setup.
       '';
       } ); in
     [
+    betaflight-configurator
     miraclecast
     xcolor
     vlc
@@ -2297,6 +2329,7 @@ Don't require additional setup.
     gimp-with-plugins
 
     mplayer
+    mpv
     smplayer
     lm_sensors
     tcl
@@ -2339,6 +2372,14 @@ CLOSED: [2021-07-14 Wed 12:52]
 #+begin_src nix
 {
   environment.systemPackages = [ pkgs.niv ];
+}
+#+end_src
+
+** Website
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [ pkgs.hugo ];
 }
 #+end_src
 
@@ -2443,7 +2484,7 @@ Start emacs as a daemon:
 
 #+name: flake-overlays
 #+begin_src nix
-  (_self: _super: { conda = _super.conda.override { extraPkgs = [ _super.which ]; }; })  # this is an overlay
+  (_self: _super: { conda = _super.conda.override { extraPkgs = [ _super.which _super.libxcrypt ]; }; })  # this is an overlay
 #+end_src
 
 ** rxvt-unicode
@@ -2740,8 +2781,8 @@ set-window-option -g automatic-rename
     let python = (with pkgs; python3.withPackages (python-packages: with python-packages;
       let opencvGtk = opencv4.override (old : { enableGtk2 = true; enableGStreamer = true; });
           eaf-deps = [
-            pyqt5 sip
-            pyqtwebengine
+            # pyqt5 sip
+            # pyqtwebengine
             epc lxml
             # eaf-file-browser
             qrcode
@@ -2776,10 +2817,10 @@ set-window-option -g automatic-rename
       black
       pandas
       XlsxWriter
-      opencvGtk
+      # opencvGtk
       openpyxl
       biopython
-      # scikitlearn
+      scikitlearn
       wandb
       imageio
       matplotlib

@@ -171,7 +171,7 @@
           #   config = { allowUnfree = true; };
           # };
         })
-        (_self: _super: { conda = _super.conda.override { extraPkgs = [ _super.which ]; }; })  # this is an overlay
+        (_self: _super: { conda = _super.conda.override { extraPkgs = [ _super.which _super.libxcrypt ]; }; })  # this is an overlay
         # TODO override R package  (openssl)
         ( let
             myOverride = rec {
