@@ -411,8 +411,7 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
 }
 #+end_src
 ***** Intel only
-
-#+name: nixos-section-unused
+#+name: machine-moxps
 #+begin_src nix
 {
   system.nixos.tags = [ "with-intel" ];
@@ -431,7 +430,7 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
 }
 #+end_src
 ***** Nvidia PRIME
-#+name: machine-moxps
+#+name: machine-moxps-unused
 #+begin_src nix
 {
   system.nixos.tags = [ "with-nvidia" ];
@@ -943,7 +942,7 @@ I have a bluetooth headset, so this enables bluetooth audio in NixOS.
   hardware.bluetooth.settings.General.Enable = "Source,Sink,Media,Socket";
 }
 #+end_src
-** NTFS
+** NTFS & exfat
 Install ntfs-3g to mount ntfs volumes in read-write mode.
 
 #+name: nixos-section
@@ -951,6 +950,7 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
 {
   environment.systemPackages = [
     pkgs.ntfs3g
+    pkgs.exfatprogs
   ];
 }
 #+end_src
@@ -1135,6 +1135,11 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
     enable = true;
     interfaces = [];
     openFirewall = false;
+    publish = {
+      addresses = true;
+      workstation = true;
+      enable = true;
+    };
     nssmdns = true;
   };
 }
@@ -1269,7 +1274,7 @@ Update [[https://linux.die.net/man/1/locate][locate]] database daily.
 }
 #+end_src
 ** SSH
-#+name: nixos-section
+#+name: nixos-section-unused
 #+begin_src nix
 {
   services.openssh = {
@@ -1281,7 +1286,7 @@ Update [[https://linux.die.net/man/1/locate][locate]] database daily.
 #+end_src
 *** Mosh
 [[https://mosh.mit.edu/][Mosh (mobile shell)]] is a cool addition to ssh.
-#+name: nixos-section
+#+name: nixos-section-unused
 #+begin_src nix
 {
   programs.mosh.enable = true;
@@ -1449,7 +1454,7 @@ Automatic USB stick mounting
 #+end_src
 
 ** Samba
-#+name: nixos-section
+#+name: machine-mopad
 #+begin_src nix
 {
   networking.firewall.extraCommands = ''iptables -t raw -A OUTPUT -p udp -m udp --dport 137 -j CT --helper netbios-ns'';
@@ -3716,3 +3721,850 @@ if [ ! -e "$DEST/.config/fish/functions/fisher.fish" ]; then
 fi
 #+end_src
 * Private                                                             :crypt-:
+* Homeserver
+** Networking
+#+name: machine-moxps
+#+begin_src nix
+{
+  networking = {
+    hostName = "moxps";
+    useDHCP = false;
+    interfaces.eth0.useDHCP = true;
+    wireless.enable = false; 
+    networkmanager.enable = true;
+    nat = {  # NAT
+      enable = true;
+      externalInterface = "wlan0";
+      internalInterfaces = [ "wg0" ];
+    };
+    firewall.allowedUDPPorts = [ 51820 ];
+    firewall.allowedTCPPorts = [ 51821 8384 21 5000 ];  # syncthing as well, and FTP; and 5000 for vispr
+  };
+  
+  services.nscd.enable = true;
+  systemd.services.sshd.wantedBy = pkgs.lib.mkForce [ "multi-user.target" ];
+
+  services.openssh = {
+    enable = true;
+    permitRootLogin = "yes";
+    passwordAuthentication = true;
+  };
+}
+#+end_src
+*** Wireguard
+#+name: machine-moxps
+#+begin_src nix
+{
+  networking.wireguard.interfaces = {
+    # "wg0" is the network interface name. You can name the interface arbitrarily.
+    wg0 = {
+      # Determines the IP address and subnet of the server's end of the tunnel interface.
+      ips = [ "10.100.0.1/24" ];
+
+      # The port that WireGuard listens to. Must be accessible by the client.
+      listenPort = 51820;
+
+      # This allows the wireguard server to route your traffic to the internet and hence be like a VPN
+      # For this to work you have to set the dnsserver IP of your router (or dnsserver of choice) in your clients
+      postSetup = ''
+        ${pkgs.iptables}/bin/iptables -t nat -A POSTROUTING -s 10.100.0.0/24 -o eth0 -j MASQUERADE
+      '';
+
+      # This undoes the above command
+      postShutdown = ''
+        ${pkgs.iptables}/bin/iptables -t nat -D POSTROUTING -s 10.100.0.0/24 -o eth0 -j MASQUERADE
+      '';
+
+      # Path to the private key file.
+      #
+      # Note: The private key can also be included inline via the privateKey option,
+      # but this makes the private key world-readable; thus, using privateKeyFile is
+      # recommended.
+      privateKeyFile = "/home/moritz/.wireguard/private_key";
+
+      peers = [
+        # List of allowed peers.
+        { # Feel free to give a meaning full name
+          # Public key of the peer (not a file path).
+          publicKey = "jt+CtENSgKth7oXAmbb/jEyhtovwIz1RJIp5eWXIkz8=";
+          # List of IPs assigned to this peer within the tunnel subnet. Used to configure routing.
+          allowedIPs = [ "10.100.0.2/32" ];
+        }
+      ];
+    };
+  };
+}
+#+end_src
+*** DuckDNS
+
+#+begin_src nix
+{
+  services.ddclient = {
+    enable = true;
+    domains = [ "moritzs.duckdns.org" ];
+    protocol = "duckdns";
+    server = "www.duckdns.org";
+    username = "nouser";
+    passwordFile = "/root/duckdns_password";
+  };
+
+}
+#+end_src
+** FTP server
+#+name: machine-moxps
+#+begin_src nix
+{
+  # FTP server
+  services.vsftpd = {
+    enable = false;
+#   cannot chroot && write
+#    chrootlocalUser = true;
+    writeEnable = true;
+    localUsers = true;
+    userlist = [ "moritz" ];
+    anonymousUserHome = "/mnt/hdd3tb/ftp_anon/";
+    userlistEnable = true;
+    anonymousUser = true;
+    anonymousUploadEnable = true;
+    anonymousMkdirEnable = true;
+  };
+  # networking.firewall.allowedTCPPorts = [ 21 ]; # defined elsewhere
+  services.vsftpd.extraConfig = ''
+	  pasv_enable=Yes
+	  pasv_min_port=51000
+	  pasv_max_port=51800
+	  '';
+  networking.firewall.allowedTCPPortRanges = [ { from = 51000; to = 51800; } ];
+}
+#+end_src
+
+** Node-red
+#+name: machine-moxps
+#+begin_src nix
+{
+  services.node-red = {
+    enable = true;
+    openFirewall = true;
+    withNpmAndGcc = true;
+  };
+}
+#+end_src
+
+** deCONZ
+#+name: machine-moxps
+#+begin_src nix
+{
+  config.virtualisation.oci-containers.containers = {
+    deconz = {
+      image = "deconzcommunity/deconz";
+      ports = [ "0.0.0.0:8124:80" "0.0.0.0:8125:443" ];
+      extraOptions = [ "--device=/dev/ttyUSB0:/dev/ttyUSB0:rwm"  "--expose" "5900" "--expose" "6080"];  # I think the exposes can be deleted
+      volumes = [
+       "/var/lib/deconz:/opt/deCONZ"
+        "/etc/localtime:/etc/localtime:ro"
+      ];
+    };
+  }; 
+}
+
+#+end_src
+
+** Pihole
+#+name: machine-moxps-unused
+#+begin_src nix
+{
+  config.virtualisation.oci-containers.containers.pihole = let serverIP = "192.168.0.10"; in {
+    image = "pihole/pihole:latest";
+    ports = [
+      "${serverIP}:53:53/tcp"
+      "${serverIP}:53:53/udp"
+      "3080:80"
+      "30443:443"
+    ];
+    volumes = [
+      "/var/lib/pihole/:/etc/pihole/"
+      "/var/lib/dnsmasq.d:/etc/dnsmasq.d/"
+    ];
+    environment = {
+      ServerIP = serverIP;
+    };
+    extraOptions = [
+      "--cap-add=NET_ADMIN"
+      "--dns=127.0.0.1"
+      "--dns=1.1.1.1"
+    ];
+    workdir = "/var/lib/pihole/";
+  };
+}
+#+end_src
+
+** Rhasspy
+#+name: machine-moxps-unused
+#+begin_src nix
+{
+  config.virtualisation.oci-containers.containers = {
+    rhasspy = {
+      image = "rhasspy/rhasspy";
+      ports = [ "0.0.0.0:12101:12101" "11111:11111/udp" ];
+      extraOptions = ["--device=/dev/snd:/dev/snd"];
+      cmd = [ "--user-profiles" "/profiles" "--profile" "en"];
+      volumes = [
+        "/home/moritz/.config/rhasspy/profiles:/profiles"
+        "/etc/localtime:/etc/localtime:ro"
+        "/etc/asound.conf:/etc/asound.conf:ro"
+      ];
+    };
+  };
+}
+#+end_src
+** Homeassistant
+#+name: machine-moxps
+#+begin_src nix
+{
+  users.users.hass = {
+    extraGroups = [ "gpio" "dialout" "audio" ];
+  };
+  services.postgresql = {
+    enable = true;
+    ensureDatabases = [ "hass" ];
+    ensureUsers = [{
+      name = "hass";
+      ensurePermissions = {
+        "DATABASE hass" = "ALL PRIVILEGES";
+      };
+    }];
+  };
+  services.postgresqlBackup = {
+    enable = true;
+    startAt = "*-*-* 23:00:00";  # Start before borg (which is at 12)
+  };
+  services.home-assistant = {
+    configWritable = true;
+    enable = true;
+    # config.http.server_port = 8123;
+    openFirewall = true;
+    package = (pkgs.home-assistant.overrideAttrs (oldAttrs: { doInstallCheck=false; doCheck=false; checkPhase=""; dontUsePytestCheck=true; dontUseSetuptoolsCheck=true;})).override {
+    # rpi-gpio pydeconz python-nmap
+        extraPackages = ps: with ps; [ colorlog defusedxml aioesphomeapi PyChromecast pyipp pymetno brother pkgs.ffmpeg ha-ffmpeg psycopg2 ];
+        packageOverrides = self: super: {
+          pydeconz = pkgs.python3Packages.pydeconz;
+          rpi-gpio = pkgs.python3Packages.rpi-gpio;
+          python-nmap = pkgs.python3Packages.python-nmap;
+          # botocore = pkgs.unstable.python3Packages.botocore;
+          # boto3 = pkgs.unstable.python3Packages.boto3;
+          # ha-ffmpeg = pkgs.unstable.python3Packages.ha-ffmpeg;
+	  uvloop = pkgs.python3Packages.uvloop;
+	  uvicorn = pkgs.python3Packages.uvicorn;
+	  # httpcore = pkgs.unstable.python3Packages.httpcore;
+	  pproxy = pkgs.python3Packages.pproxy;
+        };
+      };
+    extraComponents = [
+        "webostv"
+      ];
+
+    config = {
+      default_config = {};
+      backup = {};
+      wake_on_lan = {};
+      recorde.db_url = "postgresql://@/hass";
+      device_tracker = [
+        #{
+          #platform = "bluetooth_tracker";
+        #}
+	{
+	  platform = "nmap_tracker";
+	  hosts = "192.168.0.220"; # I only need to check my phone..
+	  home_interval = 2;
+        }
+      ];
+
+      light = [
+        {
+        platform = "switch";
+        name = "Window ceiling light";
+        entity_id = "switch.ceiling_led_pin";
+        }
+        {
+        platform = "switch";
+        name = "Wardrobe ceiling light";
+        entity_id = "switch.wardrobe_light";
+        }
+      ];
+      group = {
+        moritz_lights = {
+          name = "Moritz' Lichter";
+          entities = [
+            "light.window_ceiling_light"
+            "light.moritz"
+            "light.wardrobe_ceiling_light"
+          ];
+        };
+      };
+      input_boolean = {
+        window = {
+          name = "Controls Window";
+          initial = "off";
+        };
+        monitor = {
+          name = "Controls Monitor";
+          initial = "off";
+        };
+      };
+      script = {
+        indoor_pump = {
+          alias = "Water the wardrobe plant for some time";
+          description = "Enable the water pump for some time (in seconds)";
+          sequence = [
+            {
+              service = "switch.turn_on";
+              data = {
+                entity_id = "switch.wardrobe_plant_pump";
+              };
+            }
+            {
+              delay = 15;
+            }
+            {
+              service = "switch.turn_off";
+              data = {
+                entity_id = "switch.wardrobe_plant_pump";
+              };
+            }
+          ];
+        };
+        outdoor_pump = {
+          alias = "Water the tomatoes for some time";
+          description = "Enable the water pump for some time (in seconds)";
+          sequence = [
+            {
+              service = "switch.turn_on";
+              data = {
+                entity_id = "switch.water_pump";
+              };
+            }
+            {
+              delay = 60;
+            }
+            {
+              service = "switch.turn_off";
+              data = {
+                entity_id = "switch.water_pump";
+              };
+            }
+          ];
+        };
+        close_window = {
+          alias = "Close Window";
+          description = "Closes window";
+          sequence = [
+            {
+              service = "input_boolean.turn_off";
+              data = {
+                entity_id = "input_boolean.window";
+              };
+            }
+            {
+              service = "switch.turn_on";
+              data = {
+                entity_id = "switch.window_pin_2";
+              };
+            }
+            {
+              service = "switch.turn_off";
+              data = {
+                entity_id = "switch.window_pin_1";
+              };
+            }
+            {
+              service = "switch.turn_on";
+              data = {
+                entity_id = "switch.window_motor_enabled";
+              };
+            }
+            {
+              delay = 2;
+            }
+            {
+              service = "switch.turn_off";
+              data = {
+                entity_id = "switch.window_pin_2";
+              };
+            }
+            {
+              service = "switch.turn_off";
+              data = {
+                entity_id = "switch.window_motor_enabled";
+              };
+            }
+          ];
+        };
+        open_window = {
+          alias = "Open Window";
+          description = "Opens window";
+          sequence = [
+            {
+              service = "input_boolean.turn_on";
+              data = {
+                entity_id = "input_boolean.window";
+              };
+            }
+            {
+              service = "switch.turn_on";
+              data = {
+                entity_id = "switch.window_pin_1";
+              };
+            }
+            {
+              service = "switch.turn_off";
+              data = {
+                entity_id = "switch.window_pin_2";
+              };
+            }
+            {
+              service = "switch.turn_on";
+              data = {
+                entity_id = "switch.window_motor_enabled";
+              };
+            }
+            {
+              delay = 2;
+            }
+            {
+              service = "switch.turn_off";
+              data = {
+                entity_id = "switch.window_pin_1";
+              };
+            }
+            {
+              service = "switch.turn_off";
+              data = {
+                entity_id = "switch.window_motor_enabled";
+              };
+            }
+          ];
+        };
+        switch_on_monitor = {
+          alias = "Monitor On";
+          description = "Opens window";
+          sequence = [
+            {
+              service = "input_boolean.turn_on";
+              data = {
+                entity_id = "input_boolean.monitor";
+              };
+            }
+            {
+              service = "shell_command.switch_on_monitor";
+            }
+          ];
+        };
+        switch_off_monitor = {
+          alias = "Monitor off";
+          description = "Opens window";
+          sequence = [
+            {
+              service = "input_boolean.turn_off";
+              data = {
+                entity_id = "input_boolean.monitor";
+              };
+            }
+            {
+              service = "shell_command.switch_off_monitor";
+            }
+          ];
+        };
+      };
+      automation = {
+      "automation manual"=
+      [
+        {
+          id =  "open_window_day";
+          alias =  "Open the window in the evening";
+          trigger =  [
+            {
+              at =  "22:15";
+              platform =  "time";
+            }
+          ];
+          action =  [
+            {
+              service =  "script.open_window";
+            }
+          ];
+        }
+        {
+          id =  "1570373794255";
+          alias =  "Close window in the night before asswhole animal truck";
+          trigger =  [
+            {
+              at =  "4:45";
+              platform =  "time";
+            }
+          ];
+          condition =  {
+            condition =  "time";
+            weekday =  [
+              "mon"
+              "thu"
+            ];
+          };
+          action =  [
+            {
+              service =  "script.close_window";
+            }
+          ];
+        }
+        {
+          id =  "tierspital_noise_close_automation";
+          alias =  "Close window during night when there is noise";
+          trigger =  [
+            {
+              to =  "on";
+              platform =  "state";
+              entity_id = "binary_sensor.outdoor_noise";
+            }
+          ];
+          condition =  {
+            condition =  "time";
+            after = "22:30:00";  # TODO 22
+            before = "7:00:00";
+          };
+          action =  [
+            {
+              service =  "script.close_window";
+            }
+          ];
+        }
+        {
+          id =  "tierspital_noise_open_automation";
+          alias =  "Open window during night when there is no more noise";
+          trigger =  [
+            {
+              to =  "off";
+              platform =  "state";
+              entity_id = "binary_sensor.outdoor_noise";
+            }
+          ];
+          condition =  {
+            condition =  "time";
+            after = "22:30:00";  # TODO 22
+            before = "6:50:00";
+          };
+          action =  [
+            {
+              service =  "script.open_window";
+            }
+          ];
+        }
+        {
+          id =  "tierspital_window_close_automation";
+          alias =  "Close window in the night before asswhole tierspital starts making noise";
+          trigger =  [
+            {
+              at =  "6:35";
+              platform =  "time";
+            }
+          ];
+          condition =  {
+            condition =  "time";
+            weekday =  [
+              "tue"
+              "wed"
+              "fri"
+            ];
+          };
+          action =  [
+            {
+              service =  "script.close_window";
+            }
+          ];
+        }
+        {
+          id =  "church_window_close_automation";
+          alias =  "Close window in the night before asswhole church starts making noise";
+          trigger =  [
+            {
+              at =  "9:00";
+              platform =  "time";
+            }
+          ];
+          condition =  {
+            condition =  "time";
+            weekday =  [
+              "sun"
+              "sat"
+            ];
+          };
+          action =  [
+            {
+              service =  "script.close_window";
+            }
+          ];
+        }
+        {
+          id =  "leave_lights_off";
+          alias =  "Turn off light when I leave";
+          trigger =  {
+            platform =  "state";
+            entity_id =  "person.moritz";
+            to =  "not_home";
+          };
+          action =  [
+            {
+              service =  "light.turn_off";
+              entity_id =  "group.moritz_lights";
+            }
+          ];
+        }
+        {
+          id =  "home_lights_on";
+          alias =  "Turn on light when I come home";
+          trigger =  {
+            platform =  "state";
+            entity_id =  "person.moritz";
+            to =  "home";
+          };
+          action =  [
+            {
+              service =  "light.turn_on";
+              entity_id =  "group.moritz_lights";
+            }
+          ];
+        }
+        {
+          id = "water_indoor";
+          alias = "Water the wardrobe plant every 4 hours during the day";
+          trigger = {
+            platform = "time_pattern";
+            hours = "/4";
+          };
+          condition = {
+            condition = "time";
+            after = "10:00:00";
+            before = "20:00:00";
+          };
+          action = [
+            {
+              service = "script.indoor_pump";
+            }
+          ];
+        }
+        {
+          id = "water_tomatoes";
+          alias = "Water the plants every hour during the day";
+          trigger = {
+            platform = "time_pattern";
+            hours = "/1";
+          };
+          condition = {
+            condition = "time";
+            after = "10:00:00";
+            before = "21:00:00";
+          };
+          action = [
+            {
+              service = "script.outdoor_pump";
+            }
+          ];
+        }
+        {
+          id =  "rhasspy_light_onoff";
+          alias =  "Voice controlled light";
+          trigger =  {
+            platform =  "event";
+            event_type =  "rhasspy_ChangeLightState";
+          };
+          action =  {
+            service_template =  "light.turn_{{ trigger.event.data[\"state\"] }}\n";
+            data_template =  {
+              entity_id =  "{{ trigger.event.data[\"name\"] }}";
+            };
+          };
+        }
+        {
+          id =  "rhasspy_window_open";
+          alias =  "Voice controlled window open";
+          trigger =  {
+            platform =  "event";
+            event_type =  "rhasspy_OpenWindow";
+          };
+          action =  [
+            {
+              service =  "script.open_window";
+            }
+          ];
+        }
+        {
+          id =  "rhasspy_window_close";
+          alias =  "Voice controlled window close";
+          trigger =  {
+            platform =  "event";
+            event_type =  "rhasspy_CloseWindow";
+          };
+          action =  [
+            {
+              service =  "script.close_window";
+            }
+          ];
+        }
+      ];
+      "automation ui" = "!include automations.yaml";
+      };
+
+
+      switch = [{
+        platform = "rpi_gpio";
+        ports = {
+          # "18" = "window_motor_enabled";
+          # "15" = "window_pin_1";
+          # "14" = "window_pin_2";
+          # "23" = "ceiling_led_pin";
+        };
+      } {
+        platform = "template";
+        switches = {
+          window = {
+            friendly_name = "Window";
+            value_template = "{{ is_state(\"input_boolean.window\", \"on\") }}";
+            turn_on =
+              {service = "script.open_window";};
+            turn_off =
+              {service = "script.close_window";};
+            };
+          monitor = {
+            friendly_name = "Monitor";
+            value_template = "{{ is_state(\"input_boolean.monitor\", \"on\") }}";
+            turn_on =
+              {service = "script.switch_on_monitor";};
+            turn_off =
+              {service = "script.switch_off_monitor";};
+          };
+        };
+      }];
+      ffmpeg = {
+        # ffmpeg_bin = "/run/current-system/sw/bin/ffmpeg";
+      };
+      binary_sensor = [{
+        platform = "ffmpeg_noise";
+        initial_state = true;
+        input = "-f alsa -i plughw:2 -sample_rate 44100";
+        peak = -32;
+        duration = 1;
+        reset = 150;
+      }];
+
+      homeassistant = {
+        name = "Home";
+        time_zone = "Europe/Vienna"; 
+        latitude = 48.23057;
+        longitude = 16.35309;
+        elevation = 473;
+        unit_system = "metric";
+        temperature_unit = "C";
+      };
+      # Enable the frontend
+      frontend = {};
+      http = {};
+      config = {};
+      discovery = {
+        ignore = [ ];
+      };
+      logger = {
+        default = "warning";
+        logs = {
+          pydeconz = "debug";
+          "homeassistant.components.deconz" = "debug";
+        };
+      };
+    };
+  };
+}
+#+end_src
+
+** Borg
+#+name: machine-moxps-unused TODO
+#+begin_src nix
+{
+  services.borgbackup.jobs =
+    let common-excludes = [
+          # Largest cache dirs
+          "*/venv"
+          "*/.venv"
+          "*/.conda"
+        ];
+        borg-dirs = {
+          wiki="/mnt/sdd2tb/wiki";
+          media="/mnt/sdd2tb/Media";
+          pi-home="/home/moritz";
+          var-lib="/var/lib";
+          var-backup="/var/backup";  # for now only postgresql
+        };
+        basicBorgJob = name: {
+          encryption.mode = "none";
+          # environment.BORG_RSH = "ssh -o 'StrictHostKeyChecking=no' -i /home/moritz/.ssh/id_ed25519";
+          environment.BORG_UNKNOWN_UNENCRYPTED_REPO_ACCESS_IS_OK = "yes";
+          extraCreateArgs = "--verbose --stats --checkpoint-interval 600";
+          repo = "/mnt/hdd3tb/borg/${name}";
+          compression = "zstd,1";
+          startAt = "daily";  # this means "*-*-* 00:00:00"
+          user = "moritz";
+          prune.keep = {
+            within = "1d"; # Keep all archives from the last day
+            daily = 7;
+            weekly = 4;
+            monthly = 6; # half a year monthly
+            yearly = -1; # every year one backup forever (maybe I should change this at some point?)
+          };
+        };
+  in builtins.mapAttrs (name: value:
+    basicBorgJob name // rec {
+      paths = value;
+      exclude = map (x: paths + "/" + x) common-excludes;
+    }) borg-dirs;
+}
+#+end_src
+
+** Nature filter
+#+name: machine-moxps-unused TODO
+#+begin_src nix
+{
+  services.nature_filter = {
+    enable = true; # feedly fucks
+  };
+}
+#+end_src
+
+** Samba
+#+name: machine-moxps
+#+begin_src nix
+{
+  networking.firewall.extraCommands = ''iptables -t raw -A OUTPUT -p udp -m udp --dport 137 -j CT --helper netbios-ns'';
+  services.samba = {
+    enable = true;
+    securityType = "user";
+    openFirewall = true;
+    extraConfig = ''
+      workgroup = WORKGROUP
+      wins support = yes
+      server string = smbnix
+      netbios name = smbnix
+      security = user 
+      #use sendfile = yes
+      #max protocol = smb2
+      hosts allow = 192.168.0.1/24  localhost
+      hosts deny = 0.0.0.0/0
+      guest account = nobody
+      map to guest = bad user
+    '';
+    #shares = {
+      #nas = {
+        #"path" = "/mnt/sdd2tb";
+        #"guest ok" = "yes";
+        #"read only" = "no";
+      #};
+    #};
+  };
+}
+#+end_src
+
