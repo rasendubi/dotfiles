@@ -71,7 +71,6 @@
         overlays = self.overlays;
         config = { allowUnfree = true;  
                     allowBroken = true;
-                    allowInsecure = true;
                     permittedInsecurePackages = [
                       "adobe-reader-9.5.5"
                       "qtwebkit-5.212.0-alpha4"
