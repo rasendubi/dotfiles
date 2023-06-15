@@ -1134,7 +1134,7 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
   services.avahi = {
     enable = true;
     interfaces = [];
-    openFirewall = false;
+    openFirewall = true;
     publish = {
       addresses = true;
       workstation = true;
@@ -2118,9 +2118,24 @@ map k scroll down
 #+name: nixos-section
 #+begin_src nix
 {
-  environment.systemPackages = with pkgs; [ xournalpp  masterpdfeditor qpdfview sioyek evince adobe-reader pdftk ];  # unstable.sioyek fails tzz
+  environment.systemPackages = with pkgs; [ xournalpp  masterpdfeditor qpdfview sioyek evince adobe-reader pdftk scribus ];  # unstable.sioyek fails tzz
 }
 #+END_SRC
+** Drawing
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [
+    pkgs.weylus
+  ];
+  networking.firewall.allowedTCPPorts = [ 1701 9001 ];  # syncthing as well, and FTP; and 5000 for vispr
+  users.groups.uinput = {};
+  users.users.moritz.extraGroups = [ "uinput" ];
+  services.udev.extraRules = ''
+    KERNEL=="uinput", MODE="0660", GROUP="uinput", OPTIONS+="static_node=uinput"
+  '';
+}
+#+end_src
 ** Screen locking
 *** Slock
 [[http://tools.suckless.org/slock/][Slock]] is a simple X display locker and should probably not crash as xscreensaver does.
@@ -2320,7 +2335,7 @@ Don't require additional setup.
     autorandr
     libnotify
     feh
-    
+
     # kdenlive  # fails in current unstable
     audacity
     ytmdesktop
@@ -2339,6 +2354,7 @@ Don't require additional setup.
     lm_sensors
     tcl
     pymol
+    ruby
 
     # Used by naga setup
     xdotool # required by eaf
@@ -2481,8 +2497,46 @@ Start emacs as a daemon:
 #+name: nixos-section
 #+begin_src nix
 {
-  environment.systemPackages = [
-    pkgs.conda
+  environment.systemPackages =
+    let conda_shell_kernel_commands = pkgs.writeScript "guided_environment" ''
+      #!${pkgs.stdenv.shell}
+      conda activate ag_binding_diffusion
+
+      LOG=/tmp/guided_environ_kernel_output
+      SYMLINK=/tmp/guided_protein_diffusion_kernel.json
+      if [ -L $SYMLINK ]; then
+        echo "Warning: Removing symlink to old kernel."
+        rm $SYMLINK
+      fi
+
+      # Redirect the output of the first command to the named pipe and run it in the background
+      jupyter kernel --kernel=python 2> $LOG &
+
+      PATTERN='/[.a-z0-9/\-]\+.json'
+      while ! grep -q "$PATTERN" $LOG; do sleep 0.2; done
+      target=$(grep -o $PATTERN $LOG)
+      echo $target
+      ln -s $target $SYMLINK
+
+      wait
+      rm $SYMLINK
+    '';
+    conda_shell_env_cmd = pkgs.writeScript "guided_environment" ''
+      #!${pkgs.stdenv.shell}
+      conda activate ag_binding_diffusion
+      $@
+    '';
+    kernel_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_kernel" ''
+      /run/current-system/sw/bin/conda-shell ${conda_shell_kernel_commands}  # TODO conda-shell should be provided via a nix variable
+    '';
+    repl_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_repl" ''
+      /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "python $@"  # TODO conda-shell should be provided via a nix variable
+    '';
+    cmd_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_cmd" ''
+      /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "$@"  # TODO conda-shell should be provided via a nix variable
+    '';
+  in [
+    pkgs.conda kernel_wrapper repl_wrapper cmd_wrapper
   ];
 }
 #+end_src
@@ -2491,6 +2545,8 @@ Start emacs as a daemon:
 #+begin_src nix
   (_self: _super: { conda = _super.conda.override { extraPkgs = [ _super.which _super.libxcrypt ]; }; })  # this is an overlay
 #+end_src
+
+
 
 ** rxvt-unicode
 I use urxvt as my terminal emulator:
@@ -2587,6 +2643,13 @@ URxvt*color15:    #d0d0d0
 {
   programs.fish.enable = true;
   users.defaultUserShell = pkgs.fish;
+  
+  environment.systemPackages = [
+    pkgs.any-nix-shell
+  ];
+  programs.fish.promptInit = ''
+    any-nix-shell fish --info-right | source
+  '';
 }
 #+end_src
 *** Vi key bindings
@@ -2724,6 +2787,7 @@ Use =C-a= as a prefix.
 set -g prefix C-a
 unbind-key C-b
 bind-key C-a send-prefix
+
 #+end_src
 
 Move windows (tabs) around. Stealed from [[https://til.hashrocket.com/posts/6vz1uo5bxv-move-window-tab-in-tmux][here]].
@@ -2812,6 +2876,8 @@ set-window-option -g automatic-rename
           ];
       in orger-pkgs ++ eaf-deps ++ [
       # gseapy
+      pymol
+      umap-learn
       icecream
       plotly
       pytorch
@@ -2864,7 +2930,7 @@ set-window-option -g automatic-rename
       xdg
       epc
       importmagic
-      # jupyterlab
+      jupyterlab
       jupyter_console
       ipykernel
       pyperclip
@@ -2890,7 +2956,8 @@ set-window-option -g automatic-rename
     #pkgs.zlib.dev
     # nur-no-pkgs.repos.moritzschaefer.python3Packages.cytoflow
   ];
-  # environment.variables.LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${stdenv.cc.cc.lib}/lib/libstdc++.so.6";  # TODO doesnt work anymore because of libgl 
+  # Adding libstdc++ to LD_LIB_PATH to fix some python imports (https://nixos.wiki/wiki/Packaging/Quirks_and_Caveats) # TODO might not work anymore because of libgl?
+  environment.variables.LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${stdenv.cc.cc.lib}/lib";  # for file libstdc++.so.6
 }
 #+end_src
 *** Package overlay
@@ -3647,6 +3714,7 @@ set-window-option -g automatic-rename
     gnumake
 
   ];
+  environment.variables.SNAKEMAKE_CONDA_PREFIX = "/home/moritz/.conda";
   # environment.variables.NPM_CONFIG_PREFIX = "$HOME/.npm-global";
   # environment.variables.PATH = "$HOME/.npm-global/bin:$PATH";
 }

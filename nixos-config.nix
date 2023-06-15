@@ -54,51 +54,17 @@ let
       
       }
       {
-        system.nixos.tags = [ "with-nvidia" ];
-        # environment.systemPackages = let
-        #   nvidia-offload = pkgs.writeShellScriptBin "nvidia-offload" ''
-        #     export __NV_PRIME_RENDER_OFFLOAD=1
-        #     export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
-        #     export __GLX_VENDOR_LIBRARY_NAME=nvidia
-        #     export __VK_LAYER_NV_optimus=NVIDIA_only
-        #     exec -a "$0" "$@"
-        #   '';
-        # in [ nvidia-offload ]; 
-        # boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11 ];
-        # Nvidia stuff (https://discourse.nixos.org/t/how-to-use-nvidia-prime-offload-to-run-the-x-server-on-the-integrated-board/9091/13)
-        boot.extraModprobeConfig = "options nvidia \"NVreg_DynamicPowerManagement=0x02\"\n";
-        services.hardware.bolt.enable = true;
-        services.udev.extraRules = ''
-          # Remove NVIDIA USB xHCI Host Controller devices, if present
-          ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{remove}="1"
-      
-          # Remove NVIDIA USB Type-C UCSI devices, if present
-          ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c8000", ATTR{remove}="1"
-      
-          # Remove NVIDIA Audio devices, if present
-          ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{remove}="1"
-      
-          # Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
-          ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
-          ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
-      
-          # Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
-          ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
-          ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
-          '';
-        services.xserver.videoDrivers = [ "nvidia" ];
+        system.nixos.tags = [ "with-intel" ];
+        services.xserver.videoDrivers = [ "intel" ];  # modesetting didn't help
+        hardware.nvidiaOptimus.disable = true;
+        boot.blacklistedKernelModules = [ "nouveau" "nvidia" ];  # bbswitch
         
-        hardware.nvidia.modesetting.enable = lib.mkDefault true;
-        hardware.nvidia.optimus_prime.enable = lib.mkDefault true;  # warning: The option `hardware.nvidia.optimus_prime.enable' defined in `<unknown-file>' has been renamed to `hardware.nvidia.prime.sync.enable'.
-        hardware.nvidia.prime.nvidiaBusId = lib.mkDefault "PCI:1:0:0";
-        hardware.nvidia.prime.intelBusId = lib.mkDefault "PCI:0:2:0";
-      
-        # hardware.bumblebee.enable = false;
-        # hardware.bumblebee.pmMethod = "none";
+        # https://github.com/NixOS/nixpkgs/issues/94315 <- from here. bugfix for this: https://discourse.nixos.org/t/update-to-21-05-breaks-opengl-because-of-dependency-on-glibc-2-31/14218 note, that there are multiple occurences of this
+        # hardware.opengl.package = pkgs.nixpkgs-2009.mesa_drivers;
         services.xserver = {
           displayManager = {
-            lightdm.enable = true;
-            gdm.enable = false;
+            lightdm.enable = false;
+            gdm.enable = true;
           };
         };
       }
@@ -148,6 +114,703 @@ let
           # PITFALL: This is the id of the built-in soundcard.
           #   When I start using the external one, change it.
           soundcardPciId = "00:1f.3";
+        };
+      }
+      {
+        networking = {
+          hostName = "moxps";
+          useDHCP = false;
+          interfaces.eth0.useDHCP = true;
+          wireless.enable = false; 
+          networkmanager.enable = true;
+          nat = {  # NAT
+            enable = true;
+            externalInterface = "wlan0";
+            internalInterfaces = [ "wg0" ];
+          };
+          firewall.allowedUDPPorts = [ 51820 ];
+          firewall.allowedTCPPorts = [ 51821 8384 21 5000 ];  # syncthing as well, and FTP; and 5000 for vispr
+        };
+        
+        services.nscd.enable = true;
+        systemd.services.sshd.wantedBy = pkgs.lib.mkForce [ "multi-user.target" ];
+      
+        services.openssh = {
+          enable = true;
+          permitRootLogin = "yes";
+          passwordAuthentication = true;
+        };
+      }
+      {
+        networking.wireguard.interfaces = {
+          # "wg0" is the network interface name. You can name the interface arbitrarily.
+          wg0 = {
+            # Determines the IP address and subnet of the server's end of the tunnel interface.
+            ips = [ "10.100.0.1/24" ];
+      
+            # The port that WireGuard listens to. Must be accessible by the client.
+            listenPort = 51820;
+      
+            # This allows the wireguard server to route your traffic to the internet and hence be like a VPN
+            # For this to work you have to set the dnsserver IP of your router (or dnsserver of choice) in your clients
+            postSetup = ''
+              ${pkgs.iptables}/bin/iptables -t nat -A POSTROUTING -s 10.100.0.0/24 -o eth0 -j MASQUERADE
+            '';
+      
+            # This undoes the above command
+            postShutdown = ''
+              ${pkgs.iptables}/bin/iptables -t nat -D POSTROUTING -s 10.100.0.0/24 -o eth0 -j MASQUERADE
+            '';
+      
+            # Path to the private key file.
+            #
+            # Note: The private key can also be included inline via the privateKey option,
+            # but this makes the private key world-readable; thus, using privateKeyFile is
+            # recommended.
+            privateKeyFile = "/home/moritz/.wireguard/private_key";
+      
+            peers = [
+              # List of allowed peers.
+              { # Feel free to give a meaning full name
+                # Public key of the peer (not a file path).
+                publicKey = "jt+CtENSgKth7oXAmbb/jEyhtovwIz1RJIp5eWXIkz8=";
+                # List of IPs assigned to this peer within the tunnel subnet. Used to configure routing.
+                allowedIPs = [ "10.100.0.2/32" ];
+              }
+            ];
+          };
+        };
+      }
+      {
+        # FTP server
+        services.vsftpd = {
+          enable = false;
+      #   cannot chroot && write
+      #    chrootlocalUser = true;
+          writeEnable = true;
+          localUsers = true;
+          userlist = [ "moritz" ];
+          anonymousUserHome = "/mnt/hdd3tb/ftp_anon/";
+          userlistEnable = true;
+          anonymousUser = true;
+          anonymousUploadEnable = true;
+          anonymousMkdirEnable = true;
+        };
+        # networking.firewall.allowedTCPPorts = [ 21 ]; # defined elsewhere
+        services.vsftpd.extraConfig = ''
+      	  pasv_enable=Yes
+      	  pasv_min_port=51000
+      	  pasv_max_port=51800
+      	  '';
+        networking.firewall.allowedTCPPortRanges = [ { from = 51000; to = 51800; } ];
+      }
+      {
+        services.node-red = {
+          enable = true;
+          openFirewall = true;
+          withNpmAndGcc = true;
+        };
+      }
+      {
+        config.virtualisation.oci-containers.containers = {
+          deconz = {
+            image = "deconzcommunity/deconz";
+            ports = [ "0.0.0.0:8124:80" "0.0.0.0:8125:443" ];
+            extraOptions = [ "--device=/dev/ttyUSB0:/dev/ttyUSB0:rwm"  "--expose" "5900" "--expose" "6080"];  # I think the exposes can be deleted
+            volumes = [
+             "/var/lib/deconz:/opt/deCONZ"
+              "/etc/localtime:/etc/localtime:ro"
+            ];
+          };
+        }; 
+      }
+      
+      {
+        users.users.hass = {
+          extraGroups = [ "gpio" "dialout" "audio" ];
+        };
+        services.postgresql = {
+          enable = true;
+          ensureDatabases = [ "hass" ];
+          ensureUsers = [{
+            name = "hass";
+            ensurePermissions = {
+              "DATABASE hass" = "ALL PRIVILEGES";
+            };
+          }];
+        };
+        services.postgresqlBackup = {
+          enable = true;
+          startAt = "*-*-* 23:00:00";  # Start before borg (which is at 12)
+        };
+        services.home-assistant = {
+          configWritable = true;
+          enable = true;
+          # config.http.server_port = 8123;
+          openFirewall = true;
+          package = (pkgs.home-assistant.overrideAttrs (oldAttrs: { doInstallCheck=false; doCheck=false; checkPhase=""; dontUsePytestCheck=true; dontUseSetuptoolsCheck=true;})).override {
+          # rpi-gpio pydeconz python-nmap
+              extraPackages = ps: with ps; [ colorlog defusedxml aioesphomeapi PyChromecast pyipp pymetno brother pkgs.ffmpeg ha-ffmpeg psycopg2 ];
+              packageOverrides = self: super: {
+                pydeconz = pkgs.python3Packages.pydeconz;
+                rpi-gpio = pkgs.python3Packages.rpi-gpio;
+                python-nmap = pkgs.python3Packages.python-nmap;
+                # botocore = pkgs.unstable.python3Packages.botocore;
+                # boto3 = pkgs.unstable.python3Packages.boto3;
+                # ha-ffmpeg = pkgs.unstable.python3Packages.ha-ffmpeg;
+      	  uvloop = pkgs.python3Packages.uvloop;
+      	  uvicorn = pkgs.python3Packages.uvicorn;
+      	  # httpcore = pkgs.unstable.python3Packages.httpcore;
+      	  pproxy = pkgs.python3Packages.pproxy;
+              };
+            };
+          extraComponents = [
+              "webostv"
+            ];
+      
+          config = {
+            default_config = {};
+            backup = {};
+            wake_on_lan = {};
+            recorde.db_url = "postgresql://@/hass";
+            device_tracker = [
+              #{
+                #platform = "bluetooth_tracker";
+              #}
+      	{
+      	  platform = "nmap_tracker";
+      	  hosts = "192.168.0.220"; # I only need to check my phone..
+      	  home_interval = 2;
+              }
+            ];
+      
+            light = [
+              {
+              platform = "switch";
+              name = "Window ceiling light";
+              entity_id = "switch.ceiling_led_pin";
+              }
+              {
+              platform = "switch";
+              name = "Wardrobe ceiling light";
+              entity_id = "switch.wardrobe_light";
+              }
+            ];
+            group = {
+              moritz_lights = {
+                name = "Moritz' Lichter";
+                entities = [
+                  "light.window_ceiling_light"
+                  "light.moritz"
+                  "light.wardrobe_ceiling_light"
+                ];
+              };
+            };
+            input_boolean = {
+              window = {
+                name = "Controls Window";
+                initial = "off";
+              };
+              monitor = {
+                name = "Controls Monitor";
+                initial = "off";
+              };
+            };
+            script = {
+              indoor_pump = {
+                alias = "Water the wardrobe plant for some time";
+                description = "Enable the water pump for some time (in seconds)";
+                sequence = [
+                  {
+                    service = "switch.turn_on";
+                    data = {
+                      entity_id = "switch.wardrobe_plant_pump";
+                    };
+                  }
+                  {
+                    delay = 15;
+                  }
+                  {
+                    service = "switch.turn_off";
+                    data = {
+                      entity_id = "switch.wardrobe_plant_pump";
+                    };
+                  }
+                ];
+              };
+              outdoor_pump = {
+                alias = "Water the tomatoes for some time";
+                description = "Enable the water pump for some time (in seconds)";
+                sequence = [
+                  {
+                    service = "switch.turn_on";
+                    data = {
+                      entity_id = "switch.water_pump";
+                    };
+                  }
+                  {
+                    delay = 60;
+                  }
+                  {
+                    service = "switch.turn_off";
+                    data = {
+                      entity_id = "switch.water_pump";
+                    };
+                  }
+                ];
+              };
+              close_window = {
+                alias = "Close Window";
+                description = "Closes window";
+                sequence = [
+                  {
+                    service = "input_boolean.turn_off";
+                    data = {
+                      entity_id = "input_boolean.window";
+                    };
+                  }
+                  {
+                    service = "switch.turn_on";
+                    data = {
+                      entity_id = "switch.window_pin_2";
+                    };
+                  }
+                  {
+                    service = "switch.turn_off";
+                    data = {
+                      entity_id = "switch.window_pin_1";
+                    };
+                  }
+                  {
+                    service = "switch.turn_on";
+                    data = {
+                      entity_id = "switch.window_motor_enabled";
+                    };
+                  }
+                  {
+                    delay = 2;
+                  }
+                  {
+                    service = "switch.turn_off";
+                    data = {
+                      entity_id = "switch.window_pin_2";
+                    };
+                  }
+                  {
+                    service = "switch.turn_off";
+                    data = {
+                      entity_id = "switch.window_motor_enabled";
+                    };
+                  }
+                ];
+              };
+              open_window = {
+                alias = "Open Window";
+                description = "Opens window";
+                sequence = [
+                  {
+                    service = "input_boolean.turn_on";
+                    data = {
+                      entity_id = "input_boolean.window";
+                    };
+                  }
+                  {
+                    service = "switch.turn_on";
+                    data = {
+                      entity_id = "switch.window_pin_1";
+                    };
+                  }
+                  {
+                    service = "switch.turn_off";
+                    data = {
+                      entity_id = "switch.window_pin_2";
+                    };
+                  }
+                  {
+                    service = "switch.turn_on";
+                    data = {
+                      entity_id = "switch.window_motor_enabled";
+                    };
+                  }
+                  {
+                    delay = 2;
+                  }
+                  {
+                    service = "switch.turn_off";
+                    data = {
+                      entity_id = "switch.window_pin_1";
+                    };
+                  }
+                  {
+                    service = "switch.turn_off";
+                    data = {
+                      entity_id = "switch.window_motor_enabled";
+                    };
+                  }
+                ];
+              };
+              switch_on_monitor = {
+                alias = "Monitor On";
+                description = "Opens window";
+                sequence = [
+                  {
+                    service = "input_boolean.turn_on";
+                    data = {
+                      entity_id = "input_boolean.monitor";
+                    };
+                  }
+                  {
+                    service = "shell_command.switch_on_monitor";
+                  }
+                ];
+              };
+              switch_off_monitor = {
+                alias = "Monitor off";
+                description = "Opens window";
+                sequence = [
+                  {
+                    service = "input_boolean.turn_off";
+                    data = {
+                      entity_id = "input_boolean.monitor";
+                    };
+                  }
+                  {
+                    service = "shell_command.switch_off_monitor";
+                  }
+                ];
+              };
+            };
+            automation = {
+            "automation manual"=
+            [
+              {
+                id =  "open_window_day";
+                alias =  "Open the window in the evening";
+                trigger =  [
+                  {
+                    at =  "22:15";
+                    platform =  "time";
+                  }
+                ];
+                action =  [
+                  {
+                    service =  "script.open_window";
+                  }
+                ];
+              }
+              {
+                id =  "1570373794255";
+                alias =  "Close window in the night before asswhole animal truck";
+                trigger =  [
+                  {
+                    at =  "4:45";
+                    platform =  "time";
+                  }
+                ];
+                condition =  {
+                  condition =  "time";
+                  weekday =  [
+                    "mon"
+                    "thu"
+                  ];
+                };
+                action =  [
+                  {
+                    service =  "script.close_window";
+                  }
+                ];
+              }
+              {
+                id =  "tierspital_noise_close_automation";
+                alias =  "Close window during night when there is noise";
+                trigger =  [
+                  {
+                    to =  "on";
+                    platform =  "state";
+                    entity_id = "binary_sensor.outdoor_noise";
+                  }
+                ];
+                condition =  {
+                  condition =  "time";
+                  after = "22:30:00";  # TODO 22
+                  before = "7:00:00";
+                };
+                action =  [
+                  {
+                    service =  "script.close_window";
+                  }
+                ];
+              }
+              {
+                id =  "tierspital_noise_open_automation";
+                alias =  "Open window during night when there is no more noise";
+                trigger =  [
+                  {
+                    to =  "off";
+                    platform =  "state";
+                    entity_id = "binary_sensor.outdoor_noise";
+                  }
+                ];
+                condition =  {
+                  condition =  "time";
+                  after = "22:30:00";  # TODO 22
+                  before = "6:50:00";
+                };
+                action =  [
+                  {
+                    service =  "script.open_window";
+                  }
+                ];
+              }
+              {
+                id =  "tierspital_window_close_automation";
+                alias =  "Close window in the night before asswhole tierspital starts making noise";
+                trigger =  [
+                  {
+                    at =  "6:35";
+                    platform =  "time";
+                  }
+                ];
+                condition =  {
+                  condition =  "time";
+                  weekday =  [
+                    "tue"
+                    "wed"
+                    "fri"
+                  ];
+                };
+                action =  [
+                  {
+                    service =  "script.close_window";
+                  }
+                ];
+              }
+              {
+                id =  "church_window_close_automation";
+                alias =  "Close window in the night before asswhole church starts making noise";
+                trigger =  [
+                  {
+                    at =  "9:00";
+                    platform =  "time";
+                  }
+                ];
+                condition =  {
+                  condition =  "time";
+                  weekday =  [
+                    "sun"
+                    "sat"
+                  ];
+                };
+                action =  [
+                  {
+                    service =  "script.close_window";
+                  }
+                ];
+              }
+              {
+                id =  "leave_lights_off";
+                alias =  "Turn off light when I leave";
+                trigger =  {
+                  platform =  "state";
+                  entity_id =  "person.moritz";
+                  to =  "not_home";
+                };
+                action =  [
+                  {
+                    service =  "light.turn_off";
+                    entity_id =  "group.moritz_lights";
+                  }
+                ];
+              }
+              {
+                id =  "home_lights_on";
+                alias =  "Turn on light when I come home";
+                trigger =  {
+                  platform =  "state";
+                  entity_id =  "person.moritz";
+                  to =  "home";
+                };
+                action =  [
+                  {
+                    service =  "light.turn_on";
+                    entity_id =  "group.moritz_lights";
+                  }
+                ];
+              }
+              {
+                id = "water_indoor";
+                alias = "Water the wardrobe plant every 4 hours during the day";
+                trigger = {
+                  platform = "time_pattern";
+                  hours = "/4";
+                };
+                condition = {
+                  condition = "time";
+                  after = "10:00:00";
+                  before = "20:00:00";
+                };
+                action = [
+                  {
+                    service = "script.indoor_pump";
+                  }
+                ];
+              }
+              {
+                id = "water_tomatoes";
+                alias = "Water the plants every hour during the day";
+                trigger = {
+                  platform = "time_pattern";
+                  hours = "/1";
+                };
+                condition = {
+                  condition = "time";
+                  after = "10:00:00";
+                  before = "21:00:00";
+                };
+                action = [
+                  {
+                    service = "script.outdoor_pump";
+                  }
+                ];
+              }
+              {
+                id =  "rhasspy_light_onoff";
+                alias =  "Voice controlled light";
+                trigger =  {
+                  platform =  "event";
+                  event_type =  "rhasspy_ChangeLightState";
+                };
+                action =  {
+                  service_template =  "light.turn_{{ trigger.event.data[\"state\"] }}\n";
+                  data_template =  {
+                    entity_id =  "{{ trigger.event.data[\"name\"] }}";
+                  };
+                };
+              }
+              {
+                id =  "rhasspy_window_open";
+                alias =  "Voice controlled window open";
+                trigger =  {
+                  platform =  "event";
+                  event_type =  "rhasspy_OpenWindow";
+                };
+                action =  [
+                  {
+                    service =  "script.open_window";
+                  }
+                ];
+              }
+              {
+                id =  "rhasspy_window_close";
+                alias =  "Voice controlled window close";
+                trigger =  {
+                  platform =  "event";
+                  event_type =  "rhasspy_CloseWindow";
+                };
+                action =  [
+                  {
+                    service =  "script.close_window";
+                  }
+                ];
+              }
+            ];
+            "automation ui" = "!include automations.yaml";
+            };
+      
+      
+            switch = [{
+              platform = "rpi_gpio";
+              ports = {
+                # "18" = "window_motor_enabled";
+                # "15" = "window_pin_1";
+                # "14" = "window_pin_2";
+                # "23" = "ceiling_led_pin";
+              };
+            } {
+              platform = "template";
+              switches = {
+                window = {
+                  friendly_name = "Window";
+                  value_template = "{{ is_state(\"input_boolean.window\", \"on\") }}";
+                  turn_on =
+                    {service = "script.open_window";};
+                  turn_off =
+                    {service = "script.close_window";};
+                  };
+                monitor = {
+                  friendly_name = "Monitor";
+                  value_template = "{{ is_state(\"input_boolean.monitor\", \"on\") }}";
+                  turn_on =
+                    {service = "script.switch_on_monitor";};
+                  turn_off =
+                    {service = "script.switch_off_monitor";};
+                };
+              };
+            }];
+            ffmpeg = {
+              # ffmpeg_bin = "/run/current-system/sw/bin/ffmpeg";
+            };
+            binary_sensor = [{
+              platform = "ffmpeg_noise";
+              initial_state = true;
+              input = "-f alsa -i plughw:2 -sample_rate 44100";
+              peak = -32;
+              duration = 1;
+              reset = 150;
+            }];
+      
+            homeassistant = {
+              name = "Home";
+              time_zone = "Europe/Vienna"; 
+              latitude = 48.23057;
+              longitude = 16.35309;
+              elevation = 473;
+              unit_system = "metric";
+              temperature_unit = "C";
+            };
+            # Enable the frontend
+            frontend = {};
+            http = {};
+            config = {};
+            discovery = {
+              ignore = [ ];
+            };
+            logger = {
+              default = "warning";
+              logs = {
+                pydeconz = "debug";
+                "homeassistant.components.deconz" = "debug";
+              };
+            };
+          };
+        };
+      }
+      {
+        networking.firewall.extraCommands = ''iptables -t raw -A OUTPUT -p udp -m udp --dport 137 -j CT --helper netbios-ns'';
+        services.samba = {
+          enable = true;
+          securityType = "user";
+          openFirewall = true;
+          extraConfig = ''
+            workgroup = WORKGROUP
+            wins support = yes
+            server string = smbnix
+            netbios name = smbnix
+            security = user 
+            #use sendfile = yes
+            #max protocol = smb2
+            hosts allow = 192.168.0.1/24  localhost
+            hosts deny = 0.0.0.0/0
+            guest account = nobody
+            map to guest = bad user
+          '';
+          #shares = {
+            #nas = {
+              #"path" = "/mnt/sdd2tb";
+              #"guest ok" = "yes";
+              #"read only" = "no";
+            #};
+          #};
         };
       }
     ];
@@ -401,7 +1064,66 @@ let
       
       
       {
+        networking.firewall.extraCommands = ''iptables -t raw -A OUTPUT -p udp -m udp --dport 137 -j CT --helper netbios-ns'';
+        services.gvfs.enable = true;
+        services.samba = {
+          enable = true;
+          securityType = "user";
+          openFirewall = true;
+          extraConfig = ''
+            workgroup = WORKGROUP
+            wins support = no
+            wins server = 192.168.1.10
+            server string = smbnix
+            netbios name = smbnix
+            security = user 
+            #use sendfile = yes
+            #max protocol = smb2
+            hosts allow = 192.168.  localhost
+            hosts deny = 0.0.0.0/0
+            guest account = nobody
+            map to guest = bad user
+          '';
+          shares = {
+            # public = {
+            #   path = "/mnt/Shares/Public";
+            #   browseable = "yes";
+            #   "read only" = "no";
+            #   "guest ok" = "yes";
+            #   "create mask" = "0644";
+            #   "directory mask" = "0755";
+            #   "force user" = "username";
+            #   "force group" = "groupname";
+            # };
+            moritz = {
+              path = "/home/moritz/";
+              browseable = "yes";
+              "read only" = "no";
+              "guest ok" = "no";
+              "create mask" = "0644";
+              "directory mask" = "0755";
+              "force user" = "moritz";
+              "force group" = "users";
+            };
+          };
+        };
+      }
+      {
         services.xserver.dpi = 140;  # was 130, 
+      }
+      {
+        environment.systemPackages = [ pkgs.steam-run pkgs.steam ];
+        hardware.opengl.driSupport32Bit = true;
+        hardware.opengl.extraPackages32 = with pkgs.pkgsi686Linux; [ libva vaapiIntel];
+        hardware.pulseaudio.support32Bit = true;
+        programs.steam.package = pkgs.steam.override {
+          extraLibraries = pkgs: (with config.hardware.opengl;
+            if pkgs.hostPlatform.is64bit
+            then [ package ] ++ extraPackages
+            else [ package32 ] ++ extraPackages32)
+            ++ [ pkgs.libxcrypt ];
+        };
+      
       }
     ];
   };
@@ -481,6 +1203,7 @@ in
     {
       environment.systemPackages = [
         pkgs.ntfs3g
+        pkgs.exfatprogs
       ];
     }
     {
@@ -556,7 +1279,12 @@ in
       services.avahi = {
         enable = true;
         interfaces = [];
-        openFirewall = false;
+        openFirewall = true;
+        publish = {
+          addresses = true;
+          workstation = true;
+          enable = true;
+        };
         nssmdns = true;
       };
     }
@@ -645,16 +1373,6 @@ in
         enable = true;
         localuser = "moritz";
       };
-    }
-    {
-      services.openssh = {
-        enable = true;
-        passwordAuthentication = false;
-      };
-      users.users.moritz.openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMc+scl71X7g21XFygTNB3onyGuION89iHSUw0eYcN2H mail+macbook@moritzs.de" ];
-    }
-    {
-      programs.mosh.enable = true;
     }
     {
       services.dnsmasq = {
@@ -757,51 +1475,6 @@ in
       services.logind.extraConfig = ''
         HandlePowerKey=suspend
       '';
-    }
-    {
-      networking.firewall.extraCommands = ''iptables -t raw -A OUTPUT -p udp -m udp --dport 137 -j CT --helper netbios-ns'';
-      services.gvfs.enable = true;
-      services.samba = {
-        enable = true;
-        securityType = "user";
-        openFirewall = true;
-        extraConfig = ''
-          workgroup = WORKGROUP
-          wins support = no
-          wins server = 192.168.1.10
-          server string = smbnix
-          netbios name = smbnix
-          security = user 
-          #use sendfile = yes
-          #max protocol = smb2
-          hosts allow = 192.168.  localhost
-          hosts deny = 0.0.0.0/0
-          guest account = nobody
-          map to guest = bad user
-        '';
-        shares = {
-          # public = {
-          #   path = "/mnt/Shares/Public";
-          #   browseable = "yes";
-          #   "read only" = "no";
-          #   "guest ok" = "yes";
-          #   "create mask" = "0644";
-          #   "directory mask" = "0755";
-          #   "force user" = "username";
-          #   "force group" = "groupname";
-          # };
-          moritz = {
-            path = "/home/moritz/";
-            browseable = "yes";
-            "read only" = "no";
-            "guest ok" = "no";
-            "create mask" = "0644";
-            "directory mask" = "0755";
-            "force user" = "moritz";
-            "force group" = "users";
-          };
-        };
-      };
     }
     {
       # Enable cron service
@@ -950,7 +1623,7 @@ in
       services.redshift = {
         enable = true;
         brightness.night = "1";
-        temperature.night = 2600;
+        temperature.night = 2800;
       };
     
       location.provider = "geoclue2";
@@ -1090,7 +1763,18 @@ in
       ];
     }
     {
-      environment.systemPackages = with pkgs; [ xournalpp  masterpdfeditor qpdfview sioyek evince adobe-reader pdftk ];  # unstable.sioyek fails tzz
+      environment.systemPackages = with pkgs; [ xournalpp  masterpdfeditor qpdfview sioyek evince adobe-reader pdftk scribus ];  # unstable.sioyek fails tzz
+    }
+    {
+      environment.systemPackages = [
+        pkgs.weylus
+      ];
+      networking.firewall.allowedTCPPorts = [ 1701 9001 ];  # syncthing as well, and FTP; and 5000 for vispr
+      users.groups.uinput = {};
+      users.users.moritz.extraGroups = [ "uinput" ];
+      services.udev.extraRules = ''
+        KERNEL=="uinput", MODE="0660", GROUP="uinput", OPTIONS+="static_node=uinput"
+      '';
     }
     {
       programs.slock.enable = true;
@@ -1118,20 +1802,6 @@ in
       services.tor.enable = false;
       services.tor.client.enable = false;
       environment.systemPackages = [ pkgs.tor-browser-bundle-bin ];
-    }
-    {
-      environment.systemPackages = [ pkgs.steam-run pkgs.steam ];
-      hardware.opengl.driSupport32Bit = true;
-      hardware.opengl.extraPackages32 = with pkgs.pkgsi686Linux; [ libva vaapiIntel];
-      hardware.pulseaudio.support32Bit = true;
-      programs.steam.package = pkgs.steam.override {
-        extraLibraries = pkgs: (with config.hardware.opengl;
-          if pkgs.hostPlatform.is64bit
-          then [ package ] ++ extraPackages
-          else [ package32 ] ++ extraPackages32)
-          ++ [ pkgs.libxcrypt ];
-      };
-    
     }
     {
     
@@ -1222,7 +1892,7 @@ in
         autorandr
         libnotify
         feh
-        
+    
         # kdenlive  # fails in current unstable
         audacity
         ytmdesktop
@@ -1241,6 +1911,7 @@ in
         lm_sensors
         tcl
         pymol
+        ruby
     
         # Used by naga setup
         xdotool # required by eaf
@@ -1297,8 +1968,46 @@ in
       environment.systemPackages = [ pkgs.qmk ];  # TODO might need unstable
     }
     {
-      environment.systemPackages = [
-        pkgs.conda
+      environment.systemPackages =
+        let conda_shell_kernel_commands = pkgs.writeScript "guided_environment" ''
+          #!${pkgs.stdenv.shell}
+          conda activate ag_binding_diffusion
+    
+          LOG=/tmp/guided_environ_kernel_output
+          SYMLINK=/tmp/guided_protein_diffusion_kernel.json
+          if [ -L $SYMLINK ]; then
+            echo "Warning: Removing symlink to old kernel."
+            rm $SYMLINK
+          fi
+    
+          # Redirect the output of the first command to the named pipe and run it in the background
+          jupyter kernel --kernel=python 2> $LOG &
+    
+          PATTERN='/[.a-z0-9/\-]\+.json'
+          while ! grep -q "$PATTERN" $LOG; do sleep 0.2; done
+          target=$(grep -o $PATTERN $LOG)
+          echo $target
+          ln -s $target $SYMLINK
+    
+          wait
+          rm $SYMLINK
+        '';
+        conda_shell_env_cmd = pkgs.writeScript "guided_environment" ''
+          #!${pkgs.stdenv.shell}
+          conda activate ag_binding_diffusion
+          $@
+        '';
+        kernel_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_kernel" ''
+          /run/current-system/sw/bin/conda-shell ${conda_shell_kernel_commands}  # TODO conda-shell should be provided via a nix variable
+        '';
+        repl_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_repl" ''
+          /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "python $@"  # TODO conda-shell should be provided via a nix variable
+        '';
+        cmd_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_cmd" ''
+          /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "$@"  # TODO conda-shell should be provided via a nix variable
+        '';
+      in [
+        pkgs.conda kernel_wrapper repl_wrapper cmd_wrapper
       ];
     }
     {
@@ -1318,6 +2027,13 @@ in
     {
       programs.fish.enable = true;
       users.defaultUserShell = pkgs.fish;
+      
+      environment.systemPackages = [
+        pkgs.any-nix-shell
+      ];
+      programs.fish.promptInit = ''
+        any-nix-shell fish --info-right | source
+      '';
     }
     {
       environment.systemPackages = [
@@ -1364,6 +2080,8 @@ in
               ];
           in orger-pkgs ++ eaf-deps ++ [
           # gseapy
+          pymol
+          umap-learn
           icecream
           plotly
           pytorch
@@ -1416,7 +2134,7 @@ in
           xdg
           epc
           importmagic
-          # jupyterlab
+          jupyterlab
           jupyter_console
           ipykernel
           pyperclip
@@ -1442,7 +2160,8 @@ in
         #pkgs.zlib.dev
         # nur-no-pkgs.repos.moritzschaefer.python3Packages.cytoflow
       ];
-      # environment.variables.LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${stdenv.cc.cc.lib}/lib/libstdc++.so.6";  # TODO doesnt work anymore because of libgl 
+      # Adding libstdc++ to LD_LIB_PATH to fix some python imports (https://nixos.wiki/wiki/Packaging/Quirks_and_Caveats) # TODO might not work anymore because of libgl?
+      environment.variables.LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${stdenv.cc.cc.lib}/lib";  # for file libstdc++.so.6
     }
     {
       environment.systemPackages = with pkgs; [ clojure leiningen ];
@@ -1522,6 +2241,7 @@ in
         gnumake
     
       ];
+      environment.variables.SNAKEMAKE_CONDA_PREFIX = "/home/moritz/.conda";
       # environment.variables.NPM_CONFIG_PREFIX = "$HOME/.npm-global";
       # environment.variables.PATH = "$HOME/.npm-global/bin:$PATH";
     }
