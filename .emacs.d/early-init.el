@@ -64,7 +64,7 @@
 (require 'modus-themes)
 (require 'modus-operandi-theme)
 
-(setq modus-themes-slanted-constructs t)
+(setq modus-themes-italic-constructs t)
 (setq modus-themes-bold-constructs t)
 
 ;; Use proportional fonts only when I explicitly configure them.
@@ -82,48 +82,51 @@
     (custom-theme-set-faces
      'modus-operandi
 
-     `(rasen/org-project-face ((t :weight bold :background ,bg-alt)))
+     `(rasen/org-project-face ((t :weight bold :background ,bg-dim)))
 
      `(rasen/agenda-date-header ((t :weight bold :foreground ,fg-dim)))
 
+     `(fringe ((,c (:background ,bg-main :foreground ,fg-main))))
+
      ;; custom colors for vterm
-     `(vterm-color-default ((,class (:background ,bg-main :foreground ,fg-main))))
-     `(vterm-color-black ((,class (:background "#000" :foreground "#000"))))
-     `(vterm-color-white ((,class (:background "#fff" :foreground "#fff"))))
-     `(vterm-color-red ((,class (:background ,red-intense-bg :foreground ,red))))
-     `(vterm-color-green ((,class (:background ,green-intense-bg :foreground ,green))))
-     `(vterm-color-yellow ((,class (:background ,yellow-intense-bg :foreground ,yellow))))
-     `(vterm-color-blue ((,class (:background ,blue-intense-bg :foreground ,blue))))
-     `(vterm-color-magenta ((,class (:background ,magenta-intense-bg :foreground ,magenta))))
-     `(vterm-color-cyan ((,class (:background ,cyan-intense-bg :foreground ,cyan))))
+     `(vterm-color-default ((,c (:background ,bg-main :foreground ,fg-main))))
+     `(vterm-color-black ((,c (:background "#000" :foreground "#000"))))
+     `(vterm-color-white ((,c (:background "#fff" :foreground "#fff"))))
+     `(vterm-color-red ((,c (:background ,bg-red-intense :foreground ,red))))
+     `(vterm-color-green ((,c (:background ,bg-green-intense :foreground ,green))))
+     `(vterm-color-yellow ((,c (:background ,bg-yellow-intense :foreground ,yellow))))
+     `(vterm-color-blue ((,c (:background ,bg-blue-intense :foreground ,blue))))
+     `(vterm-color-magenta ((,c (:background ,bg-magenta-intense :foreground ,magenta))))
+     `(vterm-color-cyan ((,c (:background ,bg-cyan-intense :foreground ,cyan))))
 
      ;; do not bold matches (this makes text jiggle with variable-pitch fonts)
-     `(isearch ((,class (:inherit modus-themes-search-success))))
-     `(query-replace ((,class :inherit modus-theme-intense-yellow)))
+     `(isearch ((,c (:inherit modus-themes-search-success))))
+     `(query-replace ((,c :inherit modus-theme-intense-yellow)))
 
      ;; Make TODOs bold
-     `(org-todo ((,class :foreground ,magenta-alt-other
-                         :weight bold)))
-     `(org-table ((,class (:foreground ,fg-special-cold :inherit nil))))
+     `(org-todo ((,c :foreground ,magenta-warmer
+                     :weight bold)))
+     ;; `(org-table ((,c (:foreground ,fg-special-cold :inherit nil))))
 
      ;; Make tags stand out
-     `(org-tag ((,class :foreground ,fg-main :background ,yellow-intense-bg)))
+     `(org-tag ((,c :foreground ,fg-main :background ,bg-yellow-intense)))
 
      ;; dim done items
-     `(org-done ((,class :foreground ,fg-alt)))
-     `(org-headline-done ((,class :foreground ,fg-alt)))
-     `(org-agenda-calendar-event ((,class))) ;; plain black is fine
-     `(org-agenda-done ((,class :foreground ,fg-alt)))
+     `(org-done ((,c :foreground ,fg-alt)))
+     `(org-headline-done ((,c :foreground ,fg-alt)))
+     `(org-agenda-calendar-event ((,c))) ;; plain black is fine
+     `(org-agenda-done ((,c :foreground ,fg-alt)))
      ;; remove special background from archived items
-     `(org-archived ((,class (:foreground ,fg-alt))))
+     `(org-archived ((,c (:foreground ,fg-alt))))
 
-     `(org-link ((,class :foreground ,blue-alt :background ,bg-alt :underline nil :inherit link)))
-     `(rasen/org-id-link ((,class :foreground ,green-alt :inherit org-link)))))
+     `(org-link ((,c :foreground ,blue-warmer :background ,bg-dim :underline nil :inherit link)))
+     `(rasen/org-id-link ((,c :foreground ,green-warmer :inherit org-link)))
+     ))
 
   (setq org-todo-keyword-faces
         `(("TODO"     . (:foreground ,blue-intense :inherit fixed-pitch))
           ("NEXT"     . (:foreground ,red-intense  :inherit fixed-pitch))
           ("BUILD"    . (:foreground ,red-intense  :inherit fixed-pitch))
-          ("WAIT"     . (:foreground ,magenta-alt  :inherit fixed-pitch))
-          ("DONE"     . (:foreground ,fg-alt       :inherit fixed-pitch))
-          ("CANCELED" . (:foreground ,fg-alt       :inherit fixed-pitch)))))
+          ("WAIT"     . (:foreground ,magenta-warmer  :inherit fixed-pitch))
+          ("DONE"     . (:foreground ,fg-dim       :inherit fixed-pitch))
+          ("CANCELED" . (:foreground ,fg-dim       :inherit fixed-pitch)))))

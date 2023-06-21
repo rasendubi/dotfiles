@@ -350,6 +350,19 @@ Nix flakes are still an experimental feature, so you need the following in NixOS
 }
 #+end_src
 
+For nix-darwin systems:
+#+name: darwin-section
+#+begin_src nix
+{
+  nix = {
+    package = pkgs.nixFlakes;
+    extraOptions = ''
+      experimental-features = nix-command flakes
+    '';
+  };
+}
+#+end_src
+
 For non-NixOS system, install ~nixFlakes~ and put the following into =~/.config/nix/nix.conf=.
 #+begin_src conf :tangle no
 experimental-features = nix-command flakes
@@ -365,7 +378,7 @@ nixpkgs-stable = {
   type = "github";
   owner = "NixOS";
   repo = "nixpkgs";
-  ref = "nixos-20.09";
+  ref = "nixos-21.05";
 };
 #+end_src
 
@@ -550,7 +563,6 @@ in {
 #+name: darwin-section
 #+begin_src nix
 {
-  nix.package = pkgs.nixFlakes;
   nixpkgs.config = {
     allowUnfree = true;
   };
@@ -749,12 +761,140 @@ I'm the only user of the system:
 #+begin_src nix
 {
   users.users.rasen = {
-    description = "Alexey Shmalko";
+    description = "Oleksii Shmalko";
     home = "/Users/rasen/";
   };
 }
 #+end_src
 
+** xbar integration function
+#+begin_src emacs-lisp
+(defun rasen/xbar (base &optional arg)
+  "Return a string for xbar plugin integration or perform the action."
+  ;; (message "(rasen/xbar %S %S)" base arg)
+  (pcase arg
+    ('clock-out (org-clock-out))
+    ('clock-in-last (org-clock-in-last))
+
+    ('nil (if (org-clock-is-active)
+              (concat
+               (format "[%s] %s | length=50\n" (org-duration-from-minutes (org-clock-get-clocked-time)) org-clock-heading)
+               "---\n"
+               (format "Clock out | shell=%s | param1=clock-out\n" base))
+
+            (concat
+             (format "not clocking %s | color=gray | size=12\n"
+                     (cond
+                      (break--work-timer (format "w:%s" (break--timer-to-string break--work-timer)))
+                      (break--rest-timer (format "r:%s" (break--timer-to-string break--rest-timer)))
+                      (t "")))
+             "---\n"
+             (format "Clock in last | shell=%s | param1=clock-in-last\n" base))))))
+#+end_src
+
+org-clock.1s.sh
+#+begin_src sh
+#!/usr/bin/env bash
+~/.nix-profile/bin/emacs --batch --eval "(progn (require 'server) (princ (server-eval-at \"server\" '(rasen/xbar \"$0\"${1:+" '$1"}))))"
+#+end_src
+** Yabai integration
+#+name: darwin-section
+#+begin_src nix
+{
+  services.yabai = {
+    enable = true;
+    package = pkgs.yabai;
+    config = {
+      layout = "bsp";
+      window_shadow = "float";
+      window_gap = 10;
+      focus_follows_mouse = "autoraise";
+      mouse_follows_focus = "on";
+      mouse_modifier = "fn";
+      mouse_action1 = "move";
+      mouse_action2 = "resize";
+    };
+    extraConfig = ''
+      yabai -m rule --add app=Emacs manage=on
+    '';
+  };
+}
+#+end_src
+
+[https://gist.github.com/ethan-leba/760054f36a2f7c144c6b06ab6458fae6]
+#+name: darwin-section
+#+begin_src nix
+{
+  environment.systemPackages = [ pkgs.skhd ];
+  services.skhd = {
+    enable = true;
+    skhdConfig = ''
+      :: default : emacsclient -e '(message "default mode")'
+      :: escaping : emacsclient -e '(message "escaping mode")'
+      # :: e : emacsclient -e '(message "escape mode")'
+      # :: es ; e
+      # #default < lcmd - 0x2a ; e
+      # e < lcmd - 0x2a ; default
+
+      default < lcmd - 0x2A ; escaping
+      escaping < lcmd - 0x2A ; default
+
+      # escaping < lcmd - k ~
+
+      default < cmd + ctrl - r : yabai -m space --layout $(yabai -m query --spaces --space | jq -r 'if .type == "bsp" then "float" else "bsp" end')
+      default < lcmd + ctrl - h : yabai -m window --ratio rel:-0.05
+      default < lcmd + ctrl - l : yabai -m window --ratio rel:+0.05
+      default < lcmd + shift - h : yabai -m window --swap west
+      default < lcmd + shift - j : yabai -m window --swap north
+      default < lcmd + shift - k : yabai -m window --swap south
+      default < lcmd + shift - l : yabai -m window --swap east
+      default < lcmd - h [
+        ,* : yabai -m window --focus west
+        "Emacs" ~
+      ]
+      default < lcmd - j [
+        ,* : yabai -m window --focus north
+        "Emacs" ~
+      ]
+      default < lcmd - k [
+        ,* : yabai -m window --focus south
+        "Emacs" ~
+        "Slack" ~
+        "Telegram" ~
+      ]
+      default < lcmd - l [
+        ,* : yabai -m window --focus east
+        "Emacs" ~
+      ]
+    '';
+  };
+}
+#+end_src
+
+Emacs integration for yabai:
+#+begin_src emacs-lisp
+(defun yabai-move-on-error (direction move-fn)
+  (interactive)
+  (condition-case nil
+      (funcall move-fn)
+    (user-error (start-process "yabai" "*yabai*" "yabai" "-m" "window" "--focus" direction))))
+
+(defun yabai-windmove-left ()
+  (interactive)
+  (yabai-move-on-error "west" #'windmove-left))
+
+(defun yabai-windmove-right ()
+  (interactive)
+  (yabai-move-on-error "east" #'windmove-right))
+
+(defun yabai-windmove-up ()
+  (interactive)
+  (yabai-move-on-error "north" #'windmove-up))
+
+(defun yabai-windmove-down ()
+  (interactive)
+  (yabai-move-on-error "south" #'windmove-down))
+#+end_src
 * Machines
 ** omicron
 This is my small Dell XPS 13 running NixOS.
@@ -870,8 +1010,8 @@ bayraktar = {
 {
   accounts.email.accounts = lib.mkIf (config.hostname == "bayraktar") (lib.mkForce {
     fluxon = {
-      realName = "Alexey Shmalko";
-      address = "as@fluxon.com";
+      realName = "Oleksii Shmalko";
+      address = "oleksii@fluxon.com";
       flavor = "gmail.com";
       primary = true;
 
@@ -912,12 +1052,45 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
 #+name: flake-packages
 #+begin_src nix
 (let
-  emacs-base = if pkgs.stdenv.isDarwin then pkgs.emacs else pkgs.emacs.override {
-    withX = true;
-    # select lucid toolkit
-    toolkit = "lucid";
-    withGTK2 = false; withGTK3 = false;
-  };
+  emacs-base =
+    if pkgs.stdenv.isDarwin
+    then pkgs.emacs.overrideAttrs (old: {
+      patches =
+        (old.patches or [])
+        ++ [
+          # Fix OS window role so that yabai can pick up emacs
+          (pkgs.fetchpatch {
+            url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-28/fix-window-role.patch";
+            sha256 = "sha256-+z/KfsBm1lvZTZNiMbxzXQGRTjkCFO4QPlEK35upjsE=";
+          })
+          # Use poll instead of select to get file descriptors
+          # (pkgs.fetchpatch {
+          #   url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-29/poll.patch";
+          #   sha256 = "sha256-jN9MlD8/ZrnLuP2/HUXXEVVd6A+aRZNYFdZF8ReJGfY=";
+          # })
+          # Enable rounded window with no decoration
+          (pkgs.fetchpatch {
+            url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-28/no-titlebar-and-round-corners.patch";
+            sha256 = "sha256-RYdjAf1c43Elh7ad4kujPnrCX8qY7ZWxufJfCc0QW00=";
+          })
+          # Make emacs aware of OS-level light/dark mode
+          (pkgs.fetchpatch {
+            url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-28/system-appearance.patch";
+            sha256 = "sha256-oM6fXdXCWVcBnNrzXmF0ZMdp8j0pzkLE66WteeCutv8=";
+          })
+        ];
+      configureFlags =
+        (old.configureFlags or [])
+        ++ [
+          "LDFLAGS=-headerpad_max_install_names"
+        ];
+    })
+    else pkgs.emacs.override {
+      withX = true;
+      # select lucid toolkit
+      toolkit = "lucid";
+      withGTK2 = false; withGTK3 = false;
+    };
   emacs-packages = (epkgs:
     (with epkgs.melpaPackages; [
 
@@ -942,7 +1115,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       doom-modeline
       dtrt-indent
       edit-indirect
-      eglot
       el-patch
       elpy
       emojify
@@ -987,6 +1159,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       nix-mode
       nix-sandbox
       notmuch
+      ol-notmuch
       org-cliplink
       org-download
       org-drill
@@ -1018,7 +1191,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       tide
       toc-org
       typescript-mode
-      undo-fu
       use-package
       visual-fill-column
       vterm
@@ -1031,6 +1203,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       writegood-mode
       yaml-mode
       yasnippet
+      zig-mode
 
     ]) ++
     [
@@ -1041,30 +1214,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       # not available in melpa
       epkgs.elpaPackages.valign
 
-      (epkgs.trivialBuild rec {
-        pname = "org-ref-cite";
-        version = "20210810";
-        src = pkgs.fetchFromGitHub {
-          owner = "jkitchin";
-          repo = "org-ref-cite";
-          rev = "102a853a678c57de43081bcf824917e2f7a8a4af";
-          sha256 = "sha256-caHUyePjMk186d38xic105Jd3Q28reNO8tBrLvr8+0s=";
-        };
-
-        packageRequires = [
-          epkgs.elpaPackages.org
-          epkgs.melpaPackages.ivy
-          epkgs.melpaPackages.hydra
-          epkgs.melpaPackages.bibtex-completion
-          epkgs.melpaPackages.avy
-          epkgs.melpaPackages.ivy-bibtex
-        ];
-
-        meta = {
-          description = "An org-cite processor that is like org-ref.";
-          license = pkgs.lib.licenses.gpl2Plus;
-        };
-      })
+      epkgs.elpaPackages.eglot
 
       (epkgs.trivialBuild rec {
         pname = "org-roam-ui";
@@ -1164,13 +1314,13 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
 
   emacs-final = ((pkgs.emacsPackagesFor emacs-base).overrideScope' overrides).emacsWithPackages emacs-packages;
 
- in {
-   my-emacs = emacs-final // {
-     base = emacs-base;
-     overrides = overrides;
-     packages = emacs-packages;
-   };
- })
+in {
+  my-emacs = emacs-final // {
+    base = emacs-base;
+    overrides = overrides;
+    packages = emacs-packages;
+  };
+})
 #+end_src
 
 Install Emacs with Home manager (~<<home-manager-section>>~)
@@ -1974,10 +2124,10 @@ Common key bindings. (emacs-lisp)
 ;; window management
 (exwm-input-set-key (kbd "s--") #'delete-other-windows)
 (exwm-input-set-key (kbd "s-0") #'delete-window)
-(exwm-input-set-key (kbd "s-h") #'windmove-left)
-(exwm-input-set-key (kbd "s-k") #'windmove-down)
-(exwm-input-set-key (kbd "s-j") #'windmove-up)
-(exwm-input-set-key (kbd "s-l") #'windmove-right)
+(exwm-input-set-key (kbd "s-h") #'yabai-windmove-left)
+(exwm-input-set-key (kbd "s-k") #'yabai-windmove-down)
+(exwm-input-set-key (kbd "s-j") #'yabai-windmove-up)
+(exwm-input-set-key (kbd "s-l") #'yabai-windmove-right)
 (exwm-input-set-key (kbd "s-s") #'evil-window-split)
 (exwm-input-set-key (kbd "s-v") #'evil-window-vsplit)
 
@@ -2753,7 +2903,7 @@ Mount external drive when needed.
     use_flake() {
       watch_file flake.nix
       watch_file flake.lock
-      eval "$(nix print-dev-env --profile "$(direnv_layout_dir)/flake-profile")"
+      eval "$(nix print-dev-env $@ --profile "$(direnv_layout_dir)/flake-profile")"
     }
   '';
 }
@@ -3110,6 +3260,7 @@ I use [[https://github.com/GhostText/GhostText][GhostText]] firefox extension.
 ** General
 #+begin_src emacs-lisp
 (use-package undo-fu
+  :disabled t
   :commands
   (undo-fu-only-undo
    undo-fu-only-redo))
@@ -3119,9 +3270,7 @@ I use [[https://github.com/GhostText/GhostText][GhostText]] firefox extension.
   (setq evil-want-integration t
         evil-want-keybinding nil)
   :custom
-  (evil-undo-system 'undo-fu)
-  ;; revert to undo-redo when switching back to emacs-28
-  ;; (evil-undo-system 'undo-redo)
+  (evil-undo-system 'undo-redo)
   :config
   <<evil-config>>
   (evil-mode 1))
@@ -3319,11 +3468,14 @@ evil-collection is a collection of evil bindings for different modes.
   (require 'evil-collection-magit)
   (general-def
     :states `(,evil-collection-magit-state visual)
-    :keymaps 'magit-mode-map
+    :keymaps 'magit-status-mode-map
     "C-j"  #'magit-section-backward-sibling
     "C-k"  #'magit-section-forward-sibling
     "gj"   #'magit-section-backward
-    "gk"   #'magit-section-forward)
+    "gk"   #'magit-section-forward
+    "j"    #'evil-previous-visual-line
+    "k"    #'evil-next-visual-line
+    )
 
   (evil-collection-init))
 #+end_src
@@ -3380,7 +3532,7 @@ Default bindings for ~RET~ prevent many of my commands from working. Remap ~RET~
 #+begin_src emacs-lisp
 (use-package lispyville
   :hook
-  ((clojure-mode emacs-lisp-mode lisp-mode) . lispyville-mode)
+  ((clojure-mode emacs-lisp-mode lisp-mode scheme-mode) . lispyville-mode)
   :config
   (lispyville-set-key-theme
    '(operators
@@ -3399,6 +3551,12 @@ Default bindings for ~RET~ prevent many of my commands from working. Remap ~RET~
   (lispyville--define-key 'normal
     (kbd "M-j") #'lispyville-drag-backward
     (kbd "M-k") #'lispyville-drag-forward))
+#+end_src
+** scheme
+#+begin_src emacs-lisp
+(use-package scheme
+  :config
+  (put 'module 'scheme-indent-function 'defun))
 #+end_src
 * Org-mode
 ** General
@@ -3506,7 +3664,10 @@ Allow emphasis marks to follow ndash/mdash, and proper quotes.
 Open pdfs in external viewer:
 #+name: org-config
 #+begin_src emacs-lisp
-(add-to-list 'org-file-apps '("\\.pdf\\'" . "zathura %s"))
+(add-to-list 'org-file-apps
+             `("\\.pdf\\'" . ,(if (eq system-type 'darwin)
+                                  "open %s"
+                                "zathura %s")))
 #+end_src
 
 Use =whitespace-mode= in Org (but don't show too long lines).
@@ -3720,7 +3881,7 @@ My capture templates.
            "\n"))
 
         ("t" "todo" entry (file rasen/org-refile-file)
-         "* TODO %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in nil :clock-resume t)
+         "* TODO %?\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in t :clock-resume t :clock-resume t)
 
         ("T" "today" entry (file rasen/org-refile-file)
          "* NEXT %?\nSCHEDULED: %t\n:PROPERTIES:\n:CREATED:  %U\n:END:\n" :clock-in nil :clock-resume t)
@@ -3842,6 +4003,7 @@ An interactive command to jump to a specific datetree entry in the current buffe
 (setq org-refile-targets
       '((org-agenda-files . (:tag . "honeypot"))
         (org-agenda-files . (:tag . "PROJECT"))))
+(add-to-list 'org-tags-exclude-from-inheritance "honeypot")
 #+end_src
 
 Setting ~org-refile-use-outline-path~ to ~'file~ prepends the file names to refile targets but also has a side effect of allowing refiling to the top level of these files. Patch ~org-refile-get-targets~ to disable that.
@@ -5407,7 +5569,7 @@ A function to create a new node without prompting for a title. Sometimes I want 
              (old-title (and old-node (org-roam-node-title old-node)))
              (old-id (and old-node (org-roam-node-id old-node)))
              (new-title (cdar (org-collect-keywords '("title") '("title")))))
-        (when (not (string-equal old-title new-title))
+        (when (and old-title (not (string-equal old-title new-title)))
           (message "renaming: %s -> %s" old-title new-title)
           (let ((files (org-roam-db-query [:select (unique file)
                                            :from links
@@ -5453,13 +5615,15 @@ A function to create a new node without prompting for a title. Sometimes I want 
     (interactive)
     (let ((ivy-bibtex-default-action #'ivy-bibtex-insert-citation))
       (call-interactively #'ivy-bibtex))))
-(use-package org-ref
-  :after org-roam
-  :init
+
+(use-package oc
+  :config
   (let* ((bib-file-name '("books.bib" "papers.bib" "online.bib"))
-         (bib-directory (expand-file-name "biblio" org-roam-directory))
+         (bib-directory (expand-file-name "roam/biblio/" org-directory))
          (bib-files-directory (expand-file-name "files/" bib-directory))
          (bib-files (mapcar (lambda (x) (expand-file-name x bib-directory)) bib-file-name)))
+
+    (setq org-cite-global-bibliography bib-files)
 
     (setq reftex-default-bibliography bib-files)
     ;; (setq org-ref-default-bibliography bib-files)
@@ -5470,6 +5634,14 @@ A function to create a new node without prompting for a title. Sometimes I want 
 
     ;; (setq org-ref-pdf-directory bib-files-directory)
     (setq bibtex-completion-library-path `(,bib-files-directory)))
+
+  (setq bibtex-completion-pdf-open-function
+        (defun rasen/find-file-external (filename)
+          (start-process filename nil
+                         (if (eq system-type 'darwin) "open" "xdg-open") (expand-file-name filename)))))
+
+(use-package org-ref
+  :after org-roam
   :config
 
   (require 'org-ref-ivy)
@@ -5491,6 +5663,10 @@ A function to create a new node without prompting for a title. Sometimes I want 
     "C-c i"   #'isbn-to-bibtex)
 
   (setq org-ref-completion-library 'org-ref-ivy-cite)
+
+  (setq org-ref-insert-cite-function
+        (lambda ()
+          (org-cite-insert nil)))
 
   ;; Rules for automatic key generation
   (setq bibtex-autokey-year-length 4
@@ -5546,33 +5722,33 @@ If optional arg MOVE is non-nil move point to end of field."
 #+end_src
 ** org-ref-cite
 #+begin_src emacs-lisp
-(use-package citeproc)
-
-(use-package oc
-  :config
-  (require 'oc-csl))
-
-(use-package org-ref-cite
-  :after org-ref
-  :config
-  (setq org-cite-global-bibliography bibtex-completion-bibliography
-        org-cite-insert-processor 'org-ref-cite
-        org-cite-follow-processor 'org-ref-cite
-        org-cite-activate-processor 'org-ref-cite)
-
-  ;; blatantly re-define function to suppress errors
-  (defun org-ref-cite-activate (&rest args)
-    "Run all the activation functions in `org-ref-cite-activation-functions'.
-Argument CITATION is an org-element holding the references."
-    (cl-loop for activate-func in org-ref-cite-activation-functions
-             do
-             (ignore-error wrong-number-of-arguments (apply activate-func args))))
-
-  (defadvice org-activate-links (around org-activate-links-ignore-errors)
-    "Ignore errors in `org-activate-links'."
-    (ignore-error wrong-number-of-arguments ad-do-it))
-  ;; (ad-deactivate 'org-activate-links)
-  (ad-activate 'org-activate-links))
+;; (use-package citeproc)
+;;
+;; (use-package oc
+;;   :config
+;;   (require 'oc-csl))
+;;
+;; (use-package org-ref-cite
+;;   :after org-ref
+;;   :config
+;;   (setq org-cite-global-bibliography bibtex-completion-bibliography
+;;         org-cite-insert-processor 'org-ref-cite
+;;         org-cite-follow-processor 'org-ref-cite
+;;         org-cite-activate-processor 'org-ref-cite)
+;;
+;;   ;; blatantly re-define function to suppress errors
+;;   (defun org-ref-cite-activate (&rest args)
+;;     "Run all the activation functions in `org-ref-cite-activation-functions'.
+;; Argument CITATION is an org-element holding the references."
+;;     (cl-loop for activate-func in org-ref-cite-activation-functions
+;;              do
+;;              (ignore-error wrong-number-of-arguments (apply activate-func args))))
+;;
+;;   (defadvice org-activate-links (around org-activate-links-ignore-errors)
+;;     "Ignore errors in `org-activate-links'."
+;;     (ignore-error wrong-number-of-arguments ad-do-it))
+;;   ;; (ad-deactivate 'org-activate-links)
+;;   (ad-activate 'org-activate-links))
 
 #+end_src
 ** org-roam-bibtex
@@ -6052,7 +6228,7 @@ Applications are configured with Home Manager, and notmuch frontend is configure
   accounts.email.maildirBasePath = "Mail";
 
   accounts.email.accounts.as = {
-    realName = "Alexey Shmalko";
+    realName = "Oleksii Shmalko";
     address = "me@alexeyshmalko.com";
     flavor = "plain";
 
@@ -6119,7 +6295,7 @@ Applications are configured with Home Manager, and notmuch frontend is configure
       ];
       mkGmailBox = { name, email, path, ... }@all: {
         accounts.email.accounts.${name} = {
-          realName = "Alexey Shmalko";
+          realName = "Oleksii Shmalko";
           address = email;
           flavor = "gmail.com";
 
@@ -6208,7 +6384,7 @@ Applications are configured with Home Manager, and notmuch frontend is configure
     (interactive)
     (let ((mbsync-cmd (if (string= (system-name) "omicron")
                           "mbsync sync-gmail & r2e run & wait; /home/rasen/dotfiles/notmuch.sh"
-                        "mbsync -a && notmuch new")))
+                        "mbsync -a && ~/dotfiles/notmuch.sh")))
       (async-shell-command mbsync-cmd "*mbsync*")))
 
   ;; bind q in shell to hide buffer
@@ -6272,7 +6448,7 @@ Open html links in browser:
 #+end_src
 ** Emacs
 #+begin_src emacs-lisp
-(setq user-full-name "Alexey Shmalko"
+(setq user-full-name "Oleksii Shmalko"
       user-mail-address "rasen.dubi@gmail.com")
 #+end_src
 
@@ -6379,13 +6555,24 @@ Temporary workaround:
   ];
 }
 #+end_src
+
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.packages = [
+    pkgs.stable.yubikey-manager
+    pkgs.stable.yubikey-personalization
+  ];
+}
+#+end_src
 ** password-store
 Install [[https://www.passwordstore.org/][password-store]] along with [[https://github.com/tadfisher/pass-otp][one-time password extension]].
 #+name: home-manager-section
 #+begin_src nix
 {
   home.packages = [
-    (pkgs.pass.withExtensions (exts: [ exts.pass-otp ]))
+    (pkgs.pass.withExtensions (exts: [ exts.pass-otp exts.pass-audit exts.pass-genphrase ]))
+    pkgs.qrencode
   ];
 }
 #+end_src
@@ -6737,6 +6924,7 @@ For home-manager:
 
   # manage other shells as well
   programs.bash.enable = true;
+  programs.zsh.enable = true;
 }
 #+end_src
 
@@ -6745,6 +6933,7 @@ For macOS:
 #+begin_src nix
 {
   programs.fish.enable = true;
+  programs.zsh.enable = true;
   # add fish to default shells
   environment.shells = [ pkgs.fish ];
   # set it as default for me
@@ -6839,6 +7028,13 @@ For home-manager. (~<<home-manager-section>>~)
 }
 #+end_src
 *** Other terminal goodies
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.packages = [ pkgs.dtach ];
+}
+#+end_src
+
 #+name: nixos-section
 #+begin_src nix
 {
@@ -6874,8 +7070,8 @@ For home-manager. (~<<home-manager-section>>~)
     enable = true;
     package = pkgs.gitAndTools.gitFull;
 
-    userName = "Alexey Shmalko";
-    userEmail = "rasen.dubi@gmail.com";
+    userName = "Oleksii Shmalko";
+    userEmail = "oleksii@fluxon.com";
 
     # signing = {
     #   key = "EB3066C3";
@@ -7726,6 +7922,7 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 
 #+begin_src emacs-lisp
 (use-package py-autopep8
+  :disabled t
   :hook (elpy-mode . py-autopep8-enable-on-save)
   :config
   (defun rasen/autopep8-disable-on-save ()
@@ -7782,13 +7979,15 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
   :commands (typescript-mode)
   :gfhook
   #'rasen/setup-tide-mode
+  #'abbrev-mode
   :init
   (el-patch-feature typescript-mode)
   (add-hook 'web-mode-hook
-            (lambda ()
-              (when (or (string-equal "tsx" (file-name-extension buffer-file-name))
-                        (string-equal "ts" (file-name-extension buffer-file-name)))
+            (defun rasen/enable-typescript ()
+              (when (member (file-name-extension buffer-file-name)
+                            '("ts" "tsx" "js" "jsx"))
                 (typescript-mode))))
+  (add-hook 'rjsx-mode-hook #'rasen/enable-typescript)
   :general
   ('insert
    'typescript-mode-map
@@ -7949,40 +8148,6 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
   :after clojure-mode
   :config
   (evil-set-initial-state 'cider-stacktrace-mode 'emacs))
-#+end_src
-*** Racket
-#+name: home-manager-section
-#+begin_src nix
-{
-  home.packages = [ pkgs.racket ];
-}
-#+end_src
-
-#+begin_src emacs-lisp
-(use-package racket-mode
-  :mode "\\.rkt$"
-  :gfhook
-  #'lispyville-mode
-  #'aggressive-indent-mode
-  #'paren-face-mode
-  :general
-  ('motion
-   'racket-mode-map
-   "g h" #'racket-repl-describe
-   "SPC e" #'rasen/racket-evil-send-last-sexp)
-  ('racket-repl-mode-map
-   "C-j" nil)
-  ('insert
-   'racket-repl-mode-map
-   "C-j" #'newline-and-indent)
-  :config
-  (evil-set-initial-state 'racket-describe-mode 'motion)
-
-  (defun rasen/racket-evil-send-last-sexp ()
-    (interactive)
-    (save-excursion
-      (right-char)
-      (racket-send-last-sexp))))
 #+end_src
 *** Groovy
 #+begin_src emacs-lisp
@@ -8197,6 +8362,21 @@ Install SBCL.
   :config
   (setq inferior-lisp-program "sbcl"))
 #+end_src
+*** Zig
+#+begin_src emacs-lisp
+(use-package zig-mode
+  :mode "\\.zig$"
+  :config
+
+  (el-patch-defun zig--run-cmd (cmd &optional source &rest args)
+    "Use compile command to execute a zig CMD with ARGS if given.
+If given a SOURCE, execute the CMD on it."
+    (let ((cmd-args
+           (if source
+               (mapconcat 'shell-quote-argument (cons source args) " ")
+             args)))
+      (compile (concat zig-zig-bin " " cmd (el-patch-add " -target native-macos.11") " " cmd-args)))))
+#+end_src
 * Look and Feel
 ** Remove the clutter
 Hide menu, toolbar, scrollbar. (Goes to early-init to avoid flash of unstyled emacs.)
@@ -8353,11 +8533,11 @@ I like [[https://input.djr.com/download/?customize&fontSelection=fourStyleFamily
       name = "input-mono-${old.version}.zip";
       extension = ".zip";
       url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
-      sha256 = "sha256-QXp/JOaw+A5pJqTHJ5VsrJVB3qw5zxT+FPY9fx032Fw=";
+      sha256 = "sha256-vYwbel6yDrhKHv+rZGID5NPUhXw17mA18uUv8r+IhYM=";
 
       stripRoot = false;
 
-      extraPostFetch = ''
+      postFetch = ''
         # Reset the timestamp to release date for determinism.
         PATH=${pkgs.lib.makeBinPath [ pkgs.python3.pkgs.fonttools ]}:$PATH
         for ttf_file in $out/Input_Fonts/*/*/*.ttf; do
@@ -8489,7 +8669,7 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Go
 (require 'modus-themes)
 (require 'modus-operandi-theme)
 
-(setq modus-themes-slanted-constructs t)
+(setq modus-themes-italic-constructs t)
 (setq modus-themes-bold-constructs t)
 
 ;; Use proportional fonts only when I explicitly configure them.
@@ -8507,51 +8687,54 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Go
     (custom-theme-set-faces
      'modus-operandi
 
-     `(rasen/org-project-face ((t :weight bold :background ,bg-alt)))
+     `(rasen/org-project-face ((t :weight bold :background ,bg-dim)))
 
      `(rasen/agenda-date-header ((t :weight bold :foreground ,fg-dim)))
 
+     `(fringe ((,c (:background ,bg-main :foreground ,fg-main))))
+
      ;; custom colors for vterm
-     `(vterm-color-default ((,class (:background ,bg-main :foreground ,fg-main))))
-     `(vterm-color-black ((,class (:background "#000" :foreground "#000"))))
-     `(vterm-color-white ((,class (:background "#fff" :foreground "#fff"))))
-     `(vterm-color-red ((,class (:background ,red-intense-bg :foreground ,red))))
-     `(vterm-color-green ((,class (:background ,green-intense-bg :foreground ,green))))
-     `(vterm-color-yellow ((,class (:background ,yellow-intense-bg :foreground ,yellow))))
-     `(vterm-color-blue ((,class (:background ,blue-intense-bg :foreground ,blue))))
-     `(vterm-color-magenta ((,class (:background ,magenta-intense-bg :foreground ,magenta))))
-     `(vterm-color-cyan ((,class (:background ,cyan-intense-bg :foreground ,cyan))))
+     `(vterm-color-default ((,c (:background ,bg-main :foreground ,fg-main))))
+     `(vterm-color-black ((,c (:background "#000" :foreground "#000"))))
+     `(vterm-color-white ((,c (:background "#fff" :foreground "#fff"))))
+     `(vterm-color-red ((,c (:background ,bg-red-intense :foreground ,red))))
+     `(vterm-color-green ((,c (:background ,bg-green-intense :foreground ,green))))
+     `(vterm-color-yellow ((,c (:background ,bg-yellow-intense :foreground ,yellow))))
+     `(vterm-color-blue ((,c (:background ,bg-blue-intense :foreground ,blue))))
+     `(vterm-color-magenta ((,c (:background ,bg-magenta-intense :foreground ,magenta))))
+     `(vterm-color-cyan ((,c (:background ,bg-cyan-intense :foreground ,cyan))))
 
      ;; do not bold matches (this makes text jiggle with variable-pitch fonts)
-     `(isearch ((,class (:inherit modus-themes-search-success))))
-     `(query-replace ((,class :inherit modus-theme-intense-yellow)))
+     `(isearch ((,c (:inherit modus-themes-search-success))))
+     `(query-replace ((,c :inherit modus-theme-intense-yellow)))
 
      ;; Make TODOs bold
-     `(org-todo ((,class :foreground ,magenta-alt-other
-                         :weight bold)))
-     `(org-table ((,class (:foreground ,fg-special-cold :inherit nil))))
+     `(org-todo ((,c :foreground ,magenta-warmer
+                     :weight bold)))
+     ;; `(org-table ((,c (:foreground ,fg-special-cold :inherit nil))))
 
      ;; Make tags stand out
-     `(org-tag ((,class :foreground ,fg-main :background ,yellow-intense-bg)))
+     `(org-tag ((,c :foreground ,fg-main :background ,bg-yellow-intense)))
 
      ;; dim done items
-     `(org-done ((,class :foreground ,fg-alt)))
-     `(org-headline-done ((,class :foreground ,fg-alt)))
-     `(org-agenda-calendar-event ((,class))) ;; plain black is fine
-     `(org-agenda-done ((,class :foreground ,fg-alt)))
+     `(org-done ((,c :foreground ,fg-alt)))
+     `(org-headline-done ((,c :foreground ,fg-alt)))
+     `(org-agenda-calendar-event ((,c))) ;; plain black is fine
+     `(org-agenda-done ((,c :foreground ,fg-alt)))
      ;; remove special background from archived items
-     `(org-archived ((,class (:foreground ,fg-alt))))
+     `(org-archived ((,c (:foreground ,fg-alt))))
 
-     `(org-link ((,class :foreground ,blue-alt :background ,bg-alt :underline nil :inherit link)))
-     `(rasen/org-id-link ((,class :foreground ,green-alt :inherit org-link)))))
+     `(org-link ((,c :foreground ,blue-warmer :background ,bg-dim :underline nil :inherit link)))
+     `(rasen/org-id-link ((,c :foreground ,green-warmer :inherit org-link)))
+     ))
 
   (setq org-todo-keyword-faces
         `(("TODO"     . (:foreground ,blue-intense :inherit fixed-pitch))
           ("NEXT"     . (:foreground ,red-intense  :inherit fixed-pitch))
           ("BUILD"    . (:foreground ,red-intense  :inherit fixed-pitch))
-          ("WAIT"     . (:foreground ,magenta-alt  :inherit fixed-pitch))
-          ("DONE"     . (:foreground ,fg-alt       :inherit fixed-pitch))
-          ("CANCELED" . (:foreground ,fg-alt       :inherit fixed-pitch)))))
+          ("WAIT"     . (:foreground ,magenta-warmer  :inherit fixed-pitch))
+          ("DONE"     . (:foreground ,fg-dim       :inherit fixed-pitch))
+          ("CANCELED" . (:foreground ,fg-dim       :inherit fixed-pitch)))))
 #+end_src
 ** Emacs modeline
 #+begin_src emacs-lisp
@@ -8646,10 +8829,10 @@ Set PATH env variable from =exec-path=. This is required for =shell-command= to 
 (general-def break-rest-mode-map
   "l" #'rasen/lock-screen)
 
-(setq break-work-length 15
-      break-rest-length 2)
+(setq break-work-length 45
+      break-rest-length 15)
 
-(break-mode)
+;; (break-mode)
 #+end_src
 
 Watch IdleHint from logind to pause or resume break-mode.

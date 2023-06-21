@@ -16,7 +16,7 @@
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-20.09";
+      ref = "nixos-21.05";
     };
     home-manager = {
       type = "github";
@@ -179,8 +179,8 @@
             {
               accounts.email.accounts = lib.mkIf (config.hostname == "bayraktar") (lib.mkForce {
                 fluxon = {
-                  realName = "Alexey Shmalko";
-                  address = "as@fluxon.com";
+                  realName = "Oleksii Shmalko";
+                  address = "oleksii@fluxon.com";
                   flavor = "gmail.com";
                   primary = true;
             
@@ -317,7 +317,7 @@
                 use_flake() {
                   watch_file flake.nix
                   watch_file flake.lock
-                  eval "$(nix print-dev-env --profile "$(direnv_layout_dir)/flake-profile")"
+                  eval "$(nix print-dev-env $@ --profile "$(direnv_layout_dir)/flake-profile")"
                 }
               '';
             }
@@ -445,7 +445,7 @@
               accounts.email.maildirBasePath = "Mail";
             
               accounts.email.accounts.as = {
-                realName = "Alexey Shmalko";
+                realName = "Oleksii Shmalko";
                 address = "me@alexeyshmalko.com";
                 flavor = "plain";
             
@@ -512,7 +512,7 @@
                   ];
                   mkGmailBox = { name, email, path, ... }@all: {
                     accounts.email.accounts.${name} = {
-                      realName = "Alexey Shmalko";
+                      realName = "Oleksii Shmalko";
                       address = email;
                       flavor = "gmail.com";
             
@@ -569,6 +569,18 @@
             }
             {
               home.packages = [ pkgs.rss2email ];
+            }
+            {
+              home.packages = [
+                pkgs.stable.yubikey-manager
+                pkgs.stable.yubikey-personalization
+                # pkgs.yubikey-personalization-gui
+              ];
+            
+              # services.udev.packages = [
+              #   pkgs.yubikey-personalization
+              #   pkgs.libu2f-host
+              # ];
             }
             {
               home.packages = [
@@ -748,6 +760,7 @@
             
               # manage other shells as well
               programs.bash.enable = true;
+              programs.zsh.enable = true;
             }
             {
               programs.fish.functions.fish_user_key_bindings = ''
@@ -798,12 +811,15 @@
               };
             }
             {
+              home.packages = [ pkgs.dtach ];
+            }
+            {
               programs.git = {
                 enable = true;
                 package = pkgs.gitAndTools.gitFull;
             
-                userName = "Alexey Shmalko";
-                userEmail = "rasen.dubi@gmail.com";
+                userName = "Oleksii Shmalko";
+                userEmail = "oleksii@fluxon.com";
             
                 # signing = {
                 #   key = "EB3066C3";
@@ -870,7 +886,7 @@
               };
             }
             {
-              home.packages = [ pkgs.racket ];
+              # home.packages = [ pkgs.racket ];
             }
             {
               home.packages = [ pkgs.plantuml ];
@@ -920,18 +936,45 @@
           in
             mergeSections [
               (let
-                emacs-base = if pkgs.stdenv.isDarwin then pkgs.emacsUnstable else pkgs.emacs.override {
-                  withX = true;
-                  # select lucid toolkit
-                  toolkit = "lucid";
-                  withGTK2 = false; withGTK3 = false;
-                };
-                # emacs = pkgs.emacsUnstable;
-                # emacs = pkgs.emacs.override {
-                #   # Build emacs with proper imagemagick support.
-                #   # See https://github.com/NixOS/nixpkgs/issues/70631#issuecomment-570085306
-                #   imagemagick = pkgs.imagemagickBig;
-                # };
+                emacs-base =
+                  if pkgs.stdenv.isDarwin
+                  then pkgs.emacs.overrideAttrs (old: {
+                    patches =
+                      (old.patches or [])
+                      ++ [
+                        # Fix OS window role so that yabai can pick up emacs
+                        (pkgs.fetchpatch {
+                          url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-28/fix-window-role.patch";
+                          sha256 = "sha256-+z/KfsBm1lvZTZNiMbxzXQGRTjkCFO4QPlEK35upjsE=";
+                        })
+                        # Use poll instead of select to get file descriptors
+                        # (pkgs.fetchpatch {
+                        #   url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-29/poll.patch";
+                        #   sha256 = "sha256-jN9MlD8/ZrnLuP2/HUXXEVVd6A+aRZNYFdZF8ReJGfY=";
+                        # })
+                        # Enable rounded window with no decoration
+                        (pkgs.fetchpatch {
+                          url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-28/no-titlebar-and-round-corners.patch";
+                          sha256 = "sha256-RYdjAf1c43Elh7ad4kujPnrCX8qY7ZWxufJfCc0QW00=";
+                        })
+                        # Make emacs aware of OS-level light/dark mode
+                        (pkgs.fetchpatch {
+                          url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-28/system-appearance.patch";
+                          sha256 = "sha256-oM6fXdXCWVcBnNrzXmF0ZMdp8j0pzkLE66WteeCutv8=";
+                        })
+                      ];
+                    configureFlags =
+                      (old.configureFlags or [])
+                      ++ [
+                        "LDFLAGS=-headerpad_max_install_names"
+                      ];
+                  })
+                  else pkgs.emacs.override {
+                    withX = true;
+                    # select lucid toolkit
+                    toolkit = "lucid";
+                    withGTK2 = false; withGTK3 = false;
+                  };
                 emacs-packages = (epkgs:
                   (with epkgs.melpaPackages; [
               
@@ -956,7 +999,7 @@
                     doom-modeline
                     dtrt-indent
                     edit-indirect
-                    eglot
+                    # eglot
                     el-patch
                     elpy
                     emojify
@@ -1001,6 +1044,7 @@
                     nix-mode
                     nix-sandbox
                     notmuch
+                    ol-notmuch
                     org-cliplink
                     org-download
                     org-drill
@@ -1032,7 +1076,7 @@
                     tide
                     toc-org
                     typescript-mode
-                    undo-fu
+                    # undo-fu
                     use-package
                     visual-fill-column
                     vterm
@@ -1045,6 +1089,7 @@
                     writegood-mode
                     yaml-mode
                     yasnippet
+                    zig-mode
               
                   ]) ++
                   [
@@ -1055,30 +1100,7 @@
                     # not available in melpa
                     epkgs.elpaPackages.valign
               
-                    (epkgs.trivialBuild rec {
-                      pname = "org-ref-cite";
-                      version = "20210810";
-                      src = pkgs.fetchFromGitHub {
-                        owner = "jkitchin";
-                        repo = "org-ref-cite";
-                        rev = "102a853a678c57de43081bcf824917e2f7a8a4af";
-                        sha256 = "sha256-caHUyePjMk186d38xic105Jd3Q28reNO8tBrLvr8+0s=";
-                      };
-              
-                      packageRequires = [
-                        epkgs.elpaPackages.org
-                        epkgs.melpaPackages.ivy
-                        epkgs.melpaPackages.hydra
-                        epkgs.melpaPackages.bibtex-completion
-                        epkgs.melpaPackages.avy
-                        epkgs.melpaPackages.ivy-bibtex
-                      ];
-              
-                      meta = {
-                        description = "An org-cite processor that is like org-ref.";
-                        license = pkgs.lib.licenses.gpl2Plus;
-                      };
-                    })
+                    epkgs.elpaPackages.eglot
               
                     (epkgs.trivialBuild rec {
                       pname = "org-roam-ui";
@@ -1178,13 +1200,13 @@
               
                 emacs-final = ((pkgs.emacsPackagesFor emacs-base).overrideScope' overrides).emacsWithPackages emacs-packages;
               
-               in {
-                 my-emacs = emacs-final // {
-                   base = emacs-base;
-                   overrides = overrides;
-                   packages = emacs-packages;
-                 };
-               })
+              in {
+                my-emacs = emacs-final // {
+                  base = emacs-base;
+                  overrides = overrides;
+                  packages = emacs-packages;
+                };
+              })
               {
                 naga = pkgs.callPackage ./naga { };
               }
@@ -1196,11 +1218,11 @@
                     name = "input-mono-${old.version}.zip";
                     extension = ".zip";
                     url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
-                    sha256 = "sha256-QXp/JOaw+A5pJqTHJ5VsrJVB3qw5zxT+FPY9fx032Fw=";
+                    sha256 = "sha256-vYwbel6yDrhKHv+rZGID5NPUhXw17mA18uUv8r+IhYM=";
               
                     stripRoot = false;
               
-                    extraPostFetch = ''
+                    postFetch = ''
                       # Reset the timestamp to release date for determinism.
                       PATH=${pkgs.lib.makeBinPath [ pkgs.python3.pkgs.fonttools ]}:$PATH
                       for ttf_file in $out/Input_Fonts/*/*/*.ttf; do
@@ -1262,6 +1284,14 @@
         darwin-common = { lib, pkgs, config, ... }: {
           imports = [
             {
+              nix = {
+                package = pkgs.nixFlakes;
+                extraOptions = ''
+                  experimental-features = nix-command flakes
+                '';
+              };
+            }
+            {
               imports = [inputs.home-manager.darwinModules.home-manager];
               home-manager = {
                 useUserPackages = false;
@@ -1276,7 +1306,6 @@
               };
             }
             {
-              nix.package = pkgs.nixFlakes;
               nixpkgs.config = {
                 allowUnfree = true;
               };
@@ -1299,9 +1328,76 @@
             })
             {
               users.users.rasen = {
-                description = "Alexey Shmalko";
+                description = "Oleksii Shmalko";
                 home = "/Users/rasen/";
               };
+            }
+            {
+              services.yabai = {
+                enable = true;
+                package = pkgs.yabai;
+                config = {
+                  layout = "bsp";
+                  window_shadow = "float";
+                  window_gap = 10;
+                  focus_follows_mouse = "autoraise";
+                  mouse_follows_focus = "on";
+                  mouse_modifier = "fn";
+                  mouse_action1 = "move";
+                  mouse_action2 = "resize";
+                };
+                extraConfig = ''
+                  yabai -m rule --add app=Emacs manage=on
+                '';
+              };
+            }
+            {
+              environment.systemPackages = [ pkgs.skhd ];
+              services.skhd = {
+                enable = true;
+                skhdConfig = ''
+                  :: default : emacsclient -e '(message "default mode")'
+                  :: escaping : emacsclient -e '(message "escaping mode")'
+                  # :: e : emacsclient -e '(message "escape mode")'
+                  # :: es ; e
+                  # #default < lcmd - 0x2a ; e
+                  # e < lcmd - 0x2a ; default
+            
+                  default < lcmd - 0x2A ; escaping
+                  escaping < lcmd - 0x2A ; default
+            
+                  # escaping < lcmd - k ~
+            
+                  default < cmd + ctrl - r : yabai -m space --layout $(yabai -m query --spaces --space | jq -r 'if .type == "bsp" then "float" else "bsp" end')
+                  default < lcmd + ctrl - h : yabai -m window --ratio rel:-0.05
+                  default < lcmd + ctrl - l : yabai -m window --ratio rel:+0.05
+                  default < lcmd + shift - h : yabai -m window --swap west
+                  default < lcmd + shift - j : yabai -m window --swap north
+                  default < lcmd + shift - k : yabai -m window --swap south
+                  default < lcmd + shift - l : yabai -m window --swap east
+                  default < lcmd - h [
+                    * : yabai -m window --focus west
+                    "Emacs" ~
+                  ]
+                  default < lcmd - j [
+                    * : yabai -m window --focus north
+                    "Emacs" ~
+                  ]
+                  default < lcmd - k [
+                    * : yabai -m window --focus south
+                    "Emacs" ~
+                    "Slack" ~
+                    "Telegram" ~
+                  ]
+                  default < lcmd - l [
+                    * : yabai -m window --focus east
+                    "Emacs" ~
+                  ]
+                '';
+              };
+            }
+            {
+              environment.systemPackages = [ pkgs.jdk ];
             }
             {
               environment.systemPackages = [ pkgs.syncthing ];
@@ -1315,6 +1411,7 @@
             }
             {
               programs.fish.enable = true;
+              programs.zsh.enable = true;
               # add fish to default shells
               environment.shells = [ pkgs.fish ];
               # set it as default for me
