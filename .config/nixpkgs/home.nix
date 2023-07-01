@@ -84,7 +84,7 @@ Keywords=pulseaudio;tray;system tray;applet;volume;'';
 # }; in
 home.packages =   with pkgs; [
     #xpdf # this is an insecure package. an exception is in config.nix
-    tmux
+    # tmux
     xdotool
     xss-lock
     (pass.withExtensions (exts: [ exts.pass-otp ]))
@@ -161,10 +161,25 @@ home.packages =   with pkgs; [
         set -x TERM xterm-256color
       end
 
-      ssh-add -l > /dev/null
-      if [ $status -ne 0 ]
-          ssh-add
+      function add_ssh_keys
+          ssh-add -l > /dev/null
+          if [ $status -ne 0 ]
+              for I in "$HOME/.ssh/id_rsa;SSH/pass_keys/id_rsa"
+                  set SSHKEYPATH (echo $I | string split ';')[1]
+                  set PASS (echo $I | string split ';')[2]
+                  set pass_output (pass $PASS)
+
+                  expect -c "
+                    spawn ssh-add $SSHKEYPATH
+                    expect \"Enter passphrase for $SSHKEYPATH:\"
+                    send \"$pass_output\r\"
+                    expect eof
+                  "
+              end
+          end
       end
+
+      add_ssh_keys
 
       eval (direnv hook fish)
       fish_vi_key_bindings

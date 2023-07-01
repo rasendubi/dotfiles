@@ -2051,6 +2051,7 @@ Install [[https://www.passwordstore.org/][password-store]] along with [[https://
     pinentry-curses
     pinentry-qt
     pinentry-emacs
+    expect
   ];
   # services.keepassx.enable = true;
 }
