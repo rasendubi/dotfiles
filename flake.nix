@@ -8,7 +8,7 @@
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-22.11";
+      ref = "nixos-23.05";
     };
     nixpkgs-2009 = {
       type = "github";
@@ -51,7 +51,7 @@
       type = "github";
       owner = "nix-community";
       repo = "home-manager";
-      ref = "master";
+      ref = "release-23.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     musnix = {
@@ -75,6 +75,7 @@
                       "adobe-reader-9.5.5"
                       "qtwebkit-5.212.0-alpha4"
                       "openjdk-18+36"
+                      "python-2.7.18.6"
                     ];
                     };
       };
@@ -127,44 +128,44 @@
             config = { allowUnfree = true; };
           };
         
-          mkNvidiaContainerPkg = { name, containerRuntimePath, configTemplate, additionalPaths ? [] }:
-            let
-              nvidia-container-runtime = pkgs.callPackage "${inputs.nixpkgs}/pkgs/applications/virtualization/nvidia-container-runtime" {
-                inherit containerRuntimePath configTemplate;
-              };
-            in pkgs.symlinkJoin {
-              inherit name;
-              paths = [
-                # (callPackage ../applications/virtualization/libnvidia-container { })
-                (pkgs.callPackage "${inputs.nixpkgs-moritz}/pkgs/applications/virtualization/libnvidia-container" { inherit (pkgs.linuxPackages) nvidia_x11; })
-                nvidia-container-runtime
-                (pkgs.callPackage "${inputs.nixpkgs}/pkgs/applications/virtualization/nvidia-container-toolkit" {
-                  inherit nvidia-container-runtime;
-                })
-              ] ++ additionalPaths;
-            };
+          # mkNvidiaContainerPkg = { name, containerRuntimePath, configTemplate, additionalPaths ? [] }:
+          #   let
+          #     nvidia-container-runtime = pkgs.callPackage "${inputs.nixpkgs}/pkgs/applications/virtualization/nvidia-container-runtime" {
+          #       inherit containerRuntimePath configTemplate;
+          #     };
+          #   in pkgs.symlinkJoin {
+          #     inherit name;
+          #     paths = [
+          #       # (callPackage ../applications/virtualization/libnvidia-container { })
+          #       (pkgs.callPackage "${inputs.nixpkgs-moritz}/pkgs/applications/virtualization/libnvidia-container" { inherit (pkgs.linuxPackages) nvidia_x11; })
+          #       nvidia-container-runtime
+          #       (pkgs.callPackage "${inputs.nixpkgs}/pkgs/applications/virtualization/nvidia-container-toolkit" {
+          #         inherit nvidia-container-runtime;
+          #       })
+          #     ] ++ additionalPaths;
+          #   };
         
-          nvidia-docker = pkgs.mkNvidiaContainerPkg {
-            name = "nvidia-docker";
-            containerRuntimePath = "${pkgs.docker}/libexec/docker/runc";
-            # configTemplate = "${inputs.nixpkgs}/pkgs/applications/virtualization/nvidia-docker/config.toml";
-            configTemplate = builtins.toFile "config.toml" ''
-            disable-require = false
-            #swarm-resource = "DOCKER_RESOURCE_GPU"
+          # nvidia-docker = pkgs.mkNvidiaContainerPkg {
+          #   name = "nvidia-docker";
+          #   containerRuntimePath = "${pkgs.docker}/libexec/docker/runc";
+          #   # configTemplate = "${inputs.nixpkgs}/pkgs/applications/virtualization/nvidia-docker/config.toml";
+          #   configTemplate = builtins.toFile "config.toml" ''
+          #   disable-require = false
+          #   #swarm-resource = "DOCKER_RESOURCE_GPU"
         
-            [nvidia-container-cli]
-            #root = "/run/nvidia/driver"
-            #path = "/usr/bin/nvidia-container-cli"
-            environment = []
-            debug = "/var/log/nvidia-container-runtime-hook.log"
-            ldcache = "/tmp/ld.so.cache"
-            load-kmods = true
-            #no-cgroups = false
-            #user = "root:video"
-            ldconfig = "@@glibcbin@/bin/ldconfig"
-            '';
-            additionalPaths = [ (pkgs.callPackage "${inputs.nixpkgs}/pkgs/applications/virtualization/nvidia-docker" { }) ];
-          };
+          #   [nvidia-container-cli]
+          #   #root = "/run/nvidia/driver"
+          #   #path = "/usr/bin/nvidia-container-cli"
+          #   environment = []
+          #   debug = "/var/log/nvidia-container-runtime-hook.log"
+          #   ldcache = "/tmp/ld.so.cache"
+          #   load-kmods = true
+          #   #no-cgroups = false
+          #   #user = "root:video"
+          #   ldconfig = "@@glibcbin@/bin/ldconfig"
+          #   '';
+          #   additionalPaths = [ (pkgs.callPackage "${inputs.nixpkgs}/pkgs/applications/virtualization/nvidia-docker" { }) ];
+          # };
           # mesa-pin = import inputs.mesa-pin {
           #   inherit system;
           #   overlays = self.overlays; # .${system};
@@ -371,28 +372,28 @@
                   #   maintainers = [ maintainers.moritzs ];
                   # };
                 };
-                pyensembl = _super. buildPythonPackage rec {
-                  version = "1.8.5";
-                  pname = "pyensembl";
+                # pyensembl = _super. buildPythonPackage rec {
+                #   version = "1.8.5";
+                #   pname = "pyensembl";
         
-                  src = _super.fetchPypi {
-                    inherit pname version;
-                    sha256 = "13dd05aba296e4acadb14de5a974e6f73834452851a36b9237917ae85b3e060f";
-                  };
+                #   src = _super.fetchPypi {
+                #     inherit pname version;
+                #     sha256 = "13dd05aba296e4acadb14de5a974e6f73834452851a36b9237917ae85b3e060f";
+                #   };
         
-                  propagatedBuildInputs = [ _super.numpy _super.pandas _self.datacache _super.six _self.memoized-property
-                                            _self.gtfparse _self.tinytimer _self.serializable ];
+                #   propagatedBuildInputs = [ _super.numpy _super.pandas _self.datacache _super.six _self.memoized-property
+                #                             _self.gtfparse _self.tinytimer _self.serializable ];
         
-                  # pythonImportsCheck = [ "pyensembl" ];
-                  doCheck = false;  # import fails (only) in build environment because pyensembl creates a file in root directory
+                #   # pythonImportsCheck = [ "pyensembl" ];
+                #   doCheck = false;  # import fails (only) in build environment because pyensembl creates a file in root directory
         
-                  # meta = with stdenv.lib; {
-                  #   homepage = "https://github.com/openvax/pyensembl";
-                  #   description = " Python interface to access reference genome features (such as genes, transcripts, and exons) from Ensembl ";
-                  #   license = licenses.asl20;
-                  #   maintainers = [ maintainers.moritzs ];
-                  # };
-                };
+                #   # meta = with stdenv.lib; {
+                #   #   homepage = "https://github.com/openvax/pyensembl";
+                #   #   description = " Python interface to access reference genome features (such as genes, transcripts, and exons) from Ensembl ";
+                #   #   license = licenses.asl20;
+                #   #   maintainers = [ maintainers.moritzs ];
+                #   # };
+                # };
                 gffutils = _super.buildPythonPackage rec {
                   version = "0.10.1";
                   pname = "gffutils";
@@ -526,29 +527,29 @@
         
                   pythonImportsCheck = [ "datacache" ];
                 };
-                serializable = _super.buildPythonPackage rec {
-                  version = "0.2.1";
-                  pname = "serializable";
+                # serializable = _super.buildPythonPackage rec {
+                #   version = "0.2.1";
+                #   pname = "serializable";
         
-                  src = _super.fetchPypi {
-                    inherit pname version;
-                    sha256 = "ec604e5df0c1236c06d190043a407495c4412dd6b6fd3b45a8514518173ed961";
-                  };
+                #   src = _super.fetchPypi {
+                #     inherit pname version;
+                #     sha256 = "ec604e5df0c1236c06d190043a407495c4412dd6b6fd3b45a8514518173ed961";
+                #   };
         
-                  checkInputs = [ _super.nose ];
-                  propagatedBuildInputs = [ _self.typechecks _super.six _super.simplejson ];
+                #   checkInputs = [ _super.nose ];
+                #   propagatedBuildInputs = [ _self.typechecks _super.six _super.simplejson ];
         
-                  checkPhase = ''
-                    nosetests
-                  '';
+                #   checkPhase = ''
+                #     nosetests
+                #   '';
         
-                  # meta = with stdenv.lib; {
-                  #   homepage = "https://github.com/iskandr/serializable";
-                  #   description = "Base class with serialization methods for user-defined Python objects";
-                  #   license = licenses.asl20;
-                  #   maintainers = [ maintainers.moritzs ];
-                  # };
-                };
+                #   # meta = with stdenv.lib; {
+                #   #   homepage = "https://github.com/iskandr/serializable";
+                #   #   description = "Base class with serialization methods for user-defined Python objects";
+                #   #   license = licenses.asl20;
+                #   #   maintainers = [ maintainers.moritzs ];
+                #   # };
+                # };
                 tinytimer = _super.buildPythonPackage rec {
                   version = "0.0.0";
                   pname = "tinytimer";

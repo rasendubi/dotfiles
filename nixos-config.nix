@@ -911,7 +911,6 @@ let
         boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "usb_storage" "sd_mod" "usbhid" ];
         boot.extraModulePackages = [ config.boot.kernelPackages.broadcom_sta ];
       
-        hardware.video.hidpi.enable = lib.mkDefault true;
         powerManagement.enable = true;
         powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
         
@@ -1037,7 +1036,6 @@ let
         powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
         hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
         # high-resolution display
-        hardware.video.hidpi.enable = lib.mkDefault true;
       
         services.xserver = {
           enable = true;
@@ -1288,7 +1286,7 @@ in
     {
       services.avahi = {
         enable = true;
-        interfaces = [];
+       allowInterfaces = [ "wlp9s0" "tun0" ];  # TODO how to add "all"?
         openFirewall = true;
         publish = {
           addresses = true;
@@ -1386,20 +1384,18 @@ in
     }
     {
       services.dnsmasq = {
-        enable = true;
+        enable = false;
     
         # These are used in addition to resolv.conf
-        servers = [
-          "8.8.8.8"
-          "8.8.4.4"
-        ];
-    
-        extraConfig = ''
-          listen-address=127.0.0.1
-          cache-size=1000
-    
-          no-negcache
-        '';
+        settings = {
+          servers = [
+            "8.8.8.8"
+            "8.8.4.4"
+          ];
+          listenAddress = "127.0.0.1";
+          cacheSize = 1000;
+          noNegcache = true;
+        };
       };
     }
     {
@@ -1724,6 +1720,7 @@ in
         pinentry-curses
         pinentry-qt
         pinentry-emacs
+        expect
       ];
       # services.keepassx.enable = true;
     }
@@ -1738,6 +1735,7 @@ in
       environment.pathsToLink = [ "/share" ];
     }
     {
+      programs.browserpass.enable = true;
       environment.systemPackages = [
         pkgs.google-chrome
       ];
@@ -1834,6 +1832,11 @@ in
         mupdf
       ];
       environment.variables.QT_QPA_PLATFORM_PLUGIN_PATH = "${pkgs.qt5.qtbase.bin.outPath}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";  # need to rerun 'spacemacs/force-init-spacemacs-env' after QT updates...
+    }
+    { 
+      environment.systemPackages = [
+        pkgs.davinci-resolve
+      ];
     }
     {
       environment.systemPackages =
@@ -1995,17 +1998,17 @@ in
         conda_shell_env_cmd = pkgs.writeScript "guided_environment" ''
           #!${pkgs.stdenv.shell}
           conda activate ag_binding_diffusion
-          $@
+          "$@"
         '';
         kernel_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_kernel" ''
-          /run/current-system/sw/bin/conda-shell ${conda_shell_kernel_commands}  # TODO conda-shell should be provided via a nix variable
-        '';
+          /run/current-system/sw/bin/conda-shell ${conda_shell_kernel_commands}  
+        '';  # TODO conda-shell should be provided via a nix variable
         repl_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_repl" ''
-          /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "python $@"  # TODO conda-shell should be provided via a nix variable
-        '';
+          /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "python" "$@"
+        '';  # TODO conda-shell should be provided via a nix variable
         cmd_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_cmd" ''
-          /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "$@"  # TODO conda-shell should be provided via a nix variable
-        '';
+          /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "$@"
+        ''; # TODO conda-shell should be provided via a nix variable
       in [
         pkgs.conda kernel_wrapper repl_wrapper cmd_wrapper
       ];
@@ -2128,7 +2131,7 @@ in
           tabulate
           # swifter
           gffutils
-          pyensembl
+          # pyensembl  # fails due to serializable
           # pybedtools
           pybigwig
           xdg
