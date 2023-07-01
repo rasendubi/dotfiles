@@ -2080,6 +2080,7 @@ Google Chrome used to be my default browser and I still use it from time to time
 #+name: nixos-section
 #+begin_src nix
 {
+  programs.browserpass.enable = true;
   environment.systemPackages = [
     pkgs.google-chrome
   ];
@@ -2289,6 +2290,17 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
   environment.variables.QT_QPA_PLATFORM_PLUGIN_PATH = "${pkgs.qt5.qtbase.bin.outPath}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";  # need to rerun 'spacemacs/force-init-spacemacs-env' after QT updates...
 }
 #+END_SRC
+** Davinci
+#+name: nixos-section
+#+begin_src nix
+{ 
+  environment.systemPackages = [
+    pkgs.davinci-resolve
+  ];
+}
+#+end_src
+
+
 ** Other applications
 Don't require additional setup.
 
