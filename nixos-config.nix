@@ -1108,6 +1108,16 @@ let
         };
       }
       {
+        systemd.services.fix-enter-iso3 = {
+          script = ''
+            /run/current-system/sw/bin/setkeycodes 0x1c 58  # enter 
+            /run/current-system/sw/bin/setkeycodes 0x2b 28  # enter
+            /run/current-system/sw/bin/setkeycodes e038 86 # map alt gr to less than/greater than international key. should fix some issues in browser-based excel etc.
+          '';
+          wantedBy = [ "multi-user.target" ];
+        };
+      }
+      {
         services.xserver.dpi = 140;  # was 130, 
       }
     ];
@@ -1547,16 +1557,6 @@ in
         serviceConfig.Restart = "always";
         serviceConfig.RestartSec = 2;
         serviceConfig.ExecStart = "${pkgs.dunst}/bin/dunst";
-      };
-    }
-    {
-      systemd.services.fix-enter-iso3 = {
-        script = ''
-          /run/current-system/sw/bin/setkeycodes 0x1c 58  # enter 
-          /run/current-system/sw/bin/setkeycodes 0x2b 28  # enter
-          /run/current-system/sw/bin/setkeycodes e038 86 # map alt gr to less than/greater than international key. should fix some issues in browser-based excel etc.
-        '';
-        wantedBy = [ "multi-user.target" ];
       };
     }
     {

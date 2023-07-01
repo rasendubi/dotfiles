@@ -571,6 +571,24 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
   };
 }
 #+end_src
+**** External hard-drives
+#+name: machine-moxps
+#+begin_src nix
+{
+# 3.5" HDD in fast-swappable case
+  fileSystems."/mnt/hdd3tb" =
+    { device = "/dev/disk/by-uuid/f6037d88-f54a-4632-bd9f-a296486fc9bc";
+      fsType = "ext4";
+      options = [ "nofail" ];
+    };
+# 2.5" SSD ugreen
+  fileSystems."/mnt/sdd2tb" =
+    { device = "/dev/disk/by-uuid/44d8f482-0ab4-4184-8941-1cf3969c298c";
+      fsType = "ext4";
+      options = [ "nofail" ];
+    };
+}
+#+end_src
 **** Clickpad and DPI:
 
 #+name: machine-moxps
@@ -1762,7 +1780,7 @@ https://github.com/bsag/nixos-config/blob/330e34c40aba37664bbc20550bf4dd427f0e47
 ** Keyboard & Touchpad
 
 *** Fix enter and iso3
-#+name: nixos-section
+#+name: machine-mopad
 #+begin_src nix
 {
   systemd.services.fix-enter-iso3 = {
@@ -3753,7 +3771,7 @@ fi
 }
 #+end_src
 *** DuckDNS
-
+#+name: machine-moxps
 #+begin_src nix
 {
   services.ddclient = {
@@ -3795,7 +3813,7 @@ fi
 }
 #+end_src
 
-** Node-red
+** Node-red TODO
 #+name: machine-moxps
 #+begin_src nix
 {
@@ -3807,7 +3825,7 @@ fi
 }
 #+end_src
 
-** deCONZ
+** deCONZ TODO
 #+name: machine-moxps
 #+begin_src nix
 {
@@ -3855,7 +3873,7 @@ fi
 }
 #+end_src
 
-** Rhasspy
+** Rhasspy TODO
 #+name: machine-moxps-unused
 #+begin_src nix
 {
@@ -3874,7 +3892,7 @@ fi
   };
 }
 #+end_src
-** Homeassistant
+** Homeassistant TODO
 #+name: machine-moxps
 #+begin_src nix
 {
