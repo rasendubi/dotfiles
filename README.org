@@ -3946,7 +3946,7 @@ fi
 }
 #+end_src
 
-** deCONZ TODO
+** deCONZ
 #+name: machine-moxps
 #+begin_src nix
 {
@@ -4013,7 +4013,7 @@ fi
   };
 }
 #+end_src
-** Homeassistant TODO
+** Homeassistant
 #+name: machine-moxps
 #+begin_src nix
 {
@@ -4063,7 +4063,7 @@ fi
       default_config = {};
       backup = {};
       wake_on_lan = {};
-      recorde.db_url = "postgresql://@/hass";
+      recorder.db_url = "postgresql://@/hass";
       device_tracker = [
         #{
           #platform = "bluetooth_tracker";

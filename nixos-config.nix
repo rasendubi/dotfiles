@@ -97,6 +97,20 @@ let
         };
       }
       {
+      # 3.5" HDD in fast-swappable case
+        fileSystems."/mnt/hdd3tb" =
+          { device = "/dev/disk/by-uuid/f6037d88-f54a-4632-bd9f-a296486fc9bc";
+            fsType = "ext4";
+            options = [ "nofail" ];
+          };
+      # 2.5" SSD ugreen
+        fileSystems."/mnt/sdd2tb" =
+          { device = "/dev/disk/by-uuid/44d8f482-0ab4-4184-8941-1cf3969c298c";
+            fsType = "ext4";
+            options = [ "nofail" ];
+          };
+      }
+      {
         services.xserver.libinput = {
           enable = true;
           touchpad.accelSpeed = "0.7";
@@ -180,6 +194,17 @@ let
             ];
           };
         };
+      }
+      {
+        services.ddclient = {
+          enable = true;
+          domains = [ "moritzs.duckdns.org" ];
+          protocol = "duckdns";
+          server = "www.duckdns.org";
+          username = "nouser";
+          passwordFile = "/root/duckdns_password";
+        };
+      
       }
       {
         # FTP server
@@ -272,7 +297,7 @@ let
             default_config = {};
             backup = {};
             wake_on_lan = {};
-            recorde.db_url = "postgresql://@/hass";
+            recorder.db_url = "postgresql://@/hass";
             device_tracker = [
               #{
                 #platform = "bluetooth_tracker";
