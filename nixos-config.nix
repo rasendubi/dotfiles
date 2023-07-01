@@ -1006,12 +1006,13 @@ let
             hardware.nvidia.prime.offload.enable = lib.mkForce false;
             hardware.nvidia.prime.sync.enable = lib.mkForce true;
             hardware.nvidia.powerManagement.finegrained = lib.mkForce false;
+            hardware.nvidia.powerManagement.enable = lib.mkForce false;
           };
         };
       
         environment.systemPackages = [ pkgs.linuxPackages.nvidia_x11 ];
         boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod" "sdhci_pci" ];
-        boot.blacklistedKernelModules = [ "nouveau" "nvidia_drm" "nvidia_modeset" "nvidia" ];
+        # boot.blacklistedKernelModules = [ "nouveau" "nvidia_drm" "nvidia_modeset" "nvidia" ];
         boot.initrd.kernelModules = [ ];
         boot.kernelModules = [ "kvm-intel" ];
         boot.extraModulePackages = [ ];
@@ -1120,6 +1121,20 @@ let
       {
         services.xserver.dpi = 140;  # was 130, 
       }
+      {
+        environment.systemPackages = [ pkgs.steam-run pkgs.steam ];
+        hardware.opengl.driSupport32Bit = true;
+        hardware.opengl.extraPackages32 = with pkgs.pkgsi686Linux; [ libva vaapiIntel];
+        hardware.pulseaudio.support32Bit = true;
+        programs.steam.package = pkgs.steam.override {
+          extraLibraries = pkgs: (with config.hardware.opengl;
+            if pkgs.hostPlatform.is64bit
+            then [ package ] ++ extraPackages
+            else [ package32 ] ++ extraPackages32)
+            ++ [ pkgs.libxcrypt ];
+        };
+      
+      }
     ];
   };
   # nur-no-pkgs = import (builtins.fetchTarball {
@@ -1157,6 +1172,19 @@ in
     }
     {
       environment.systemPackages = [ pkgs.nixos-option ];
+    }
+    {
+      nix = {
+        settings = {
+          substituters = [
+            "https://nix-community.cachix.org"
+            "https://cache.nixos.org/"
+          ];
+          trusted-public-keys = [
+            "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+          ];
+        };
+      };
     }
     {
     nix.nixPath = [
@@ -1261,7 +1289,7 @@ in
       services.avahi = {
         enable = true;
         interfaces = [];
-        openFirewall = false;
+        openFirewall = true;
         publish = {
           addresses = true;
           workstation = true;
@@ -1595,7 +1623,7 @@ in
       services.redshift = {
         enable = true;
         brightness.night = "1";
-        temperature.night = 2600;
+        temperature.night = 2800;
       };
     
       location.provider = "geoclue2";
@@ -1684,6 +1712,13 @@ in
       programs.kdeconnect.enable = true;
     }
     {
+      services.minidlna = {
+        enable = true;
+        openFirewall = true;
+        settings.media_dir= [ "/srv/minidlna/" ];
+      };
+    }
+    {
       environment.systemPackages = with pkgs; [
         (pass.withExtensions (exts: [ exts.pass-otp ]))
         pinentry-curses
@@ -1695,7 +1730,6 @@ in
     {
       environment.systemPackages = [
         pkgs.gwenview
-        pkgs.dolphin
         pkgs.filelight
         pkgs.shared-mime-info
       ];
@@ -1729,7 +1763,18 @@ in
       ];
     }
     {
-      environment.systemPackages = with pkgs; [ xournalpp  masterpdfeditor qpdfview sioyek evince adobe-reader pdftk ];  # unstable.sioyek fails tzz
+      environment.systemPackages = with pkgs; [ xournalpp  masterpdfeditor qpdfview sioyek evince adobe-reader pdftk scribus ];  # unstable.sioyek fails tzz
+    }
+    {
+      environment.systemPackages = [
+        pkgs.weylus
+      ];
+      networking.firewall.allowedTCPPorts = [ 1701 9001 ];  # syncthing as well, and FTP; and 5000 for vispr
+      users.groups.uinput = {};
+      users.users.moritz.extraGroups = [ "uinput" ];
+      services.udev.extraRules = ''
+        KERNEL=="uinput", MODE="0660", GROUP="uinput", OPTIONS+="static_node=uinput"
+      '';
     }
     {
       programs.slock.enable = true;
@@ -1759,13 +1804,10 @@ in
       environment.systemPackages = [ pkgs.tor-browser-bundle-bin ];
     }
     {
-      environment.systemPackages = [ pkgs.steam-run ];
-    }
-    {
     
       environment.systemPackages = with pkgs; [
         #haskellPackages.pandoc
-        jabref
+        # jabref
         nixpkgs-2009.pandoc
         nixpkgs-2009.haskellPackages.pandoc-crossref  # broken...
         nixpkgs-2009.haskellPackages.pandoc-citeproc  # broken...
@@ -1776,14 +1818,14 @@ in
       environment.systemPackages = [ pkgs.supercollider ];
     }
     {
-       virtualisation.virtualbox.host.enable = true;
+       # virtualisation.virtualbox.host.enable = true;
        users.extraGroups.vboxusers.members = [ "moritz" ];
        nixpkgs.config.allowUnfree = true;
        virtualisation.virtualbox.host.enableExtensionPack = true;
     }
     {
       environment.systemPackages = with pkgs; [
-        qt5Full
+        # qt5Full
         aria
         fd
         wmctrl
@@ -1791,7 +1833,7 @@ in
         nodePackages.npm
         mupdf
       ];
-      environment.variables.QT_QPA_PLATFORM_PLUGIN_PATH = "${pkgs.qt5.qtbase.bin.outPath}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";
+      environment.variables.QT_QPA_PLATFORM_PLUGIN_PATH = "${pkgs.qt5.qtbase.bin.outPath}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";  # need to rerun 'spacemacs/force-init-spacemacs-env' after QT updates...
     }
     {
       environment.systemPackages =
@@ -1827,6 +1869,7 @@ in
           '';
           } ); in
         [
+        betaflight-configurator
         miraclecast
         xcolor
         vlc
@@ -1849,7 +1892,7 @@ in
         autorandr
         libnotify
         feh
-        
+    
         # kdenlive  # fails in current unstable
         audacity
         ytmdesktop
@@ -1863,10 +1906,12 @@ in
         gimp-with-plugins
     
         mplayer
+        mpv
         smplayer
         lm_sensors
         tcl
         pymol
+        ruby
     
         # Used by naga setup
         xdotool # required by eaf
@@ -1874,6 +1919,9 @@ in
     }
     {
       environment.systemPackages = [ pkgs.niv ];
+    }
+    {
+      environment.systemPackages = [ pkgs.hugo ];
     }
     {
     services.flatpak.enable = true;
@@ -1920,8 +1968,46 @@ in
       environment.systemPackages = [ pkgs.qmk ];  # TODO might need unstable
     }
     {
-      environment.systemPackages = [
-        pkgs.conda
+      environment.systemPackages =
+        let conda_shell_kernel_commands = pkgs.writeScript "guided_environment" ''
+          #!${pkgs.stdenv.shell}
+          conda activate ag_binding_diffusion
+    
+          LOG=/tmp/guided_environ_kernel_output
+          SYMLINK=/tmp/guided_protein_diffusion_kernel.json
+          if [ -L $SYMLINK ]; then
+            echo "Warning: Removing symlink to old kernel."
+            rm $SYMLINK
+          fi
+    
+          # Redirect the output of the first command to the named pipe and run it in the background
+          jupyter kernel --kernel=python 2> $LOG &
+    
+          PATTERN='/[.a-z0-9/\-]\+.json'
+          while ! grep -q "$PATTERN" $LOG; do sleep 0.2; done
+          target=$(grep -o $PATTERN $LOG)
+          echo $target
+          ln -s $target $SYMLINK
+    
+          wait
+          rm $SYMLINK
+        '';
+        conda_shell_env_cmd = pkgs.writeScript "guided_environment" ''
+          #!${pkgs.stdenv.shell}
+          conda activate ag_binding_diffusion
+          $@
+        '';
+        kernel_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_kernel" ''
+          /run/current-system/sw/bin/conda-shell ${conda_shell_kernel_commands}  # TODO conda-shell should be provided via a nix variable
+        '';
+        repl_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_repl" ''
+          /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "python $@"  # TODO conda-shell should be provided via a nix variable
+        '';
+        cmd_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_cmd" ''
+          /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "$@"  # TODO conda-shell should be provided via a nix variable
+        '';
+      in [
+        pkgs.conda kernel_wrapper repl_wrapper cmd_wrapper
       ];
     }
     {
@@ -1941,6 +2027,13 @@ in
     {
       programs.fish.enable = true;
       users.defaultUserShell = pkgs.fish;
+      
+      environment.systemPackages = [
+        pkgs.any-nix-shell
+      ];
+      programs.fish.promptInit = ''
+        any-nix-shell fish --info-right | source
+      '';
     }
     {
       environment.systemPackages = [
@@ -1961,8 +2054,8 @@ in
         let python = (with pkgs; python3.withPackages (python-packages: with python-packages;
           let opencvGtk = opencv4.override (old : { enableGtk2 = true; enableGStreamer = true; });
               eaf-deps = [
-                pyqt5 sip
-                pyqtwebengine
+                # pyqt5 sip
+                # pyqtwebengine
                 epc lxml
                 # eaf-file-browser
                 qrcode
@@ -1987,6 +2080,8 @@ in
               ];
           in orger-pkgs ++ eaf-deps ++ [
           # gseapy
+          pymol
+          umap-learn
           icecream
           plotly
           pytorch
@@ -1997,10 +2092,10 @@ in
           black
           pandas
           XlsxWriter
-          opencvGtk
+          # opencvGtk
           openpyxl
           biopython
-          # scikitlearn
+          scikitlearn
           wandb
           imageio
           matplotlib
@@ -2039,7 +2134,7 @@ in
           xdg
           epc
           importmagic
-          # jupyterlab
+          jupyterlab
           jupyter_console
           ipykernel
           pyperclip
@@ -2065,7 +2160,8 @@ in
         #pkgs.zlib.dev
         # nur-no-pkgs.repos.moritzschaefer.python3Packages.cytoflow
       ];
-      # environment.variables.LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${stdenv.cc.cc.lib}/lib/libstdc++.so.6";  # TODO doesnt work anymore because of libgl 
+      # Adding libstdc++ to LD_LIB_PATH to fix some python imports (https://nixos.wiki/wiki/Packaging/Quirks_and_Caveats) # TODO might not work anymore because of libgl?
+      environment.variables.LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${stdenv.cc.cc.lib}/lib";  # for file libstdc++.so.6
     }
     {
       environment.systemPackages = with pkgs; [ clojure leiningen ];
@@ -2145,6 +2241,7 @@ in
         gnumake
     
       ];
+      environment.variables.SNAKEMAKE_CONDA_PREFIX = "/home/moritz/.conda";
       # environment.variables.NPM_CONFIG_PREFIX = "$HOME/.npm-global";
       # environment.variables.PATH = "$HOME/.npm-global/bin:$PATH";
     }

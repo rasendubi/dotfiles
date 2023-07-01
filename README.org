@@ -206,15 +206,17 @@ Make this repository flake-compatible:
           # hosts = ["MoritzSchaefer"];
           # mkHost = hostname:
             home-manager.lib.homeManagerConfiguration {
-              configuration = { ... }: {
-                nixpkgs.config.allowUnfree = true;
-                nixpkgs.overlays = self.overlays;
-                imports = [(import ./.config/nixpkgs/home.nix)];
-              };
-              system = "x86_64-linux";
-              username = "moritz";
-              homeDirectory = "/home/moritz";
-              inherit pkgs;
+              pkgs = nixpkgs.legacyPackages.${system};
+              # nixpkgs.config.allowUnfree = true;
+              # nixpkgs.overlays = self.overlays;
+              modules = [ ./.config/nixpkgs/home.nix {
+                home = {
+                  username = "moritz";
+                  homeDirectory = "/home/moritz";
+                  stateVersion = "18.09";
+                };
+                }
+              ];
             };
         # in nixpkgs.lib.genAttrs hosts mkHost;
     };
@@ -291,13 +293,21 @@ Make this repository flake-compatible:
 }
 #+end_src
 
-** Cachix
-# deactivated due to restricted mode (error: access to path '/etc/nixos/cachix.nix' is forbidden in restricted mode)
-# #+name: nixos-section
+** Caching
+#+name: nixos-section
 #+begin_src nix
 {
-  environment.systemPackages = [ pkgs.cachix ];
-  imports = [ /etc/nixos/cachix.nix ];
+  nix = {
+    settings = {
+      substituters = [
+        "https://nix-community.cachix.org"
+        "https://cache.nixos.org/"
+      ];
+      trusted-public-keys = [
+        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      ];
+    };
+  };
 }
 #+end_src
 
@@ -642,12 +652,13 @@ Thinkpad X1 Extreme gen 4
       hardware.nvidia.prime.offload.enable = lib.mkForce false;
       hardware.nvidia.prime.sync.enable = lib.mkForce true;
       hardware.nvidia.powerManagement.finegrained = lib.mkForce false;
+      hardware.nvidia.powerManagement.enable = lib.mkForce false;
     };
   };
 
   environment.systemPackages = [ pkgs.linuxPackages.nvidia_x11 ];
   boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod" "sdhci_pci" ];
-  boot.blacklistedKernelModules = [ "nouveau" "nvidia_drm" "nvidia_modeset" "nvidia" ];
+  # boot.blacklistedKernelModules = [ "nouveau" "nvidia_drm" "nvidia_modeset" "nvidia" ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
@@ -1141,7 +1152,7 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
   services.avahi = {
     enable = true;
     interfaces = [];
-    openFirewall = false;
+    openFirewall = true;
     publish = {
       addresses = true;
       workstation = true;
@@ -1858,7 +1869,7 @@ Redshift blocks some blue light (making screen more red), which should improve m
   services.redshift = {
     enable = true;
     brightness.night = "1";
-    temperature.night = 2600;
+    temperature.night = 2800;
   };
 
   location.provider = "geoclue2";
@@ -2007,6 +2018,18 @@ Here go applications (almost) every normal user needs.
   programs.kdeconnect.enable = true;
 }
 #+end_src
+** DLNA
+#+name: nixos-section
+#+begin_src nix
+{
+  services.minidlna = {
+    enable = true;
+    openFirewall = true;
+    settings.media_dir= [ "/srv/minidlna/" ];
+  };
+}
+#+end_src
+
 ** Matrix Chat
 #+name: nixos-section-unused
 #+begin_src nix
@@ -2039,7 +2062,6 @@ I don't use full KDE but some apps are definitely nice.
 {
   environment.systemPackages = [
     pkgs.gwenview
-    pkgs.dolphin
     pkgs.filelight
     pkgs.shared-mime-info
   ];
@@ -2114,9 +2136,24 @@ map k scroll down
 #+name: nixos-section
 #+begin_src nix
 {
-  environment.systemPackages = with pkgs; [ xournalpp  masterpdfeditor qpdfview sioyek evince adobe-reader pdftk ];  # unstable.sioyek fails tzz
+  environment.systemPackages = with pkgs; [ xournalpp  masterpdfeditor qpdfview sioyek evince adobe-reader pdftk scribus ];  # unstable.sioyek fails tzz
 }
 #+END_SRC
+** Drawing
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [
+    pkgs.weylus
+  ];
+  networking.firewall.allowedTCPPorts = [ 1701 9001 ];  # syncthing as well, and FTP; and 5000 for vispr
+  users.groups.uinput = {};
+  users.users.moritz.extraGroups = [ "uinput" ];
+  services.udev.extraRules = ''
+    KERNEL=="uinput", MODE="0660", GROUP="uinput", OPTIONS+="static_node=uinput"
+  '';
+}
+#+end_src
 ** Screen locking
 *** Slock
 [[http://tools.suckless.org/slock/][Slock]] is a simple X display locker and should probably not crash as xscreensaver does.
@@ -2176,10 +2213,21 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 #+end_src
 
 ** Steam
-#+name: nixos-section
+#+name: machine-mopad
 #+begin_src nix
 {
-  environment.systemPackages = [ pkgs.steam-run ];
+  environment.systemPackages = [ pkgs.steam-run pkgs.steam ];
+  hardware.opengl.driSupport32Bit = true;
+  hardware.opengl.extraPackages32 = with pkgs.pkgsi686Linux; [ libva vaapiIntel];
+  hardware.pulseaudio.support32Bit = true;
+  programs.steam.package = pkgs.steam.override {
+    extraLibraries = pkgs: (with config.hardware.opengl;
+      if pkgs.hostPlatform.is64bit
+      then [ package ] ++ extraPackages
+      else [ package32 ] ++ extraPackages32)
+      ++ [ pkgs.libxcrypt ];
+  };
+
 }
 #+end_src
 
@@ -2199,7 +2247,7 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 
   environment.systemPackages = with pkgs; [
     #haskellPackages.pandoc
-    jabref
+    # jabref
     nixpkgs-2009.pandoc
     nixpkgs-2009.haskellPackages.pandoc-crossref  # broken...
     nixpkgs-2009.haskellPackages.pandoc-citeproc  # broken...
@@ -2219,7 +2267,7 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 #+name: nixos-section
 #+begin_src nix
 {
-   virtualisation.virtualbox.host.enable = true;
+   # virtualisation.virtualbox.host.enable = true;
    users.extraGroups.vboxusers.members = [ "moritz" ];
    nixpkgs.config.allowUnfree = true;
    virtualisation.virtualbox.host.enableExtensionPack = true;
@@ -2232,7 +2280,7 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 #+begin_src nix
 {
   environment.systemPackages = with pkgs; [
-    qt5Full
+    # qt5Full
     aria
     fd
     wmctrl
@@ -2240,7 +2288,7 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
     nodePackages.npm
     mupdf
   ];
-  environment.variables.QT_QPA_PLATFORM_PLUGIN_PATH = "${pkgs.qt5.qtbase.bin.outPath}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";
+  environment.variables.QT_QPA_PLATFORM_PLUGIN_PATH = "${pkgs.qt5.qtbase.bin.outPath}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";  # need to rerun 'spacemacs/force-init-spacemacs-env' after QT updates...
 }
 #+END_SRC
 ** Other applications
@@ -2282,6 +2330,7 @@ Don't require additional setup.
       '';
       } ); in
     [
+    betaflight-configurator
     miraclecast
     xcolor
     vlc
@@ -2304,7 +2353,7 @@ Don't require additional setup.
     autorandr
     libnotify
     feh
-    
+
     # kdenlive  # fails in current unstable
     audacity
     ytmdesktop
@@ -2318,10 +2367,12 @@ Don't require additional setup.
     gimp-with-plugins
 
     mplayer
+    mpv
     smplayer
     lm_sensors
     tcl
     pymol
+    ruby
 
     # Used by naga setup
     xdotool # required by eaf
@@ -2360,6 +2411,14 @@ CLOSED: [2021-07-14 Wed 12:52]
 #+begin_src nix
 {
   environment.systemPackages = [ pkgs.niv ];
+}
+#+end_src
+
+** Website
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [ pkgs.hugo ];
 }
 #+end_src
 
@@ -2456,16 +2515,56 @@ Start emacs as a daemon:
 #+name: nixos-section
 #+begin_src nix
 {
-  environment.systemPackages = [
-    pkgs.conda
+  environment.systemPackages =
+    let conda_shell_kernel_commands = pkgs.writeScript "guided_environment" ''
+      #!${pkgs.stdenv.shell}
+      conda activate ag_binding_diffusion
+
+      LOG=/tmp/guided_environ_kernel_output
+      SYMLINK=/tmp/guided_protein_diffusion_kernel.json
+      if [ -L $SYMLINK ]; then
+        echo "Warning: Removing symlink to old kernel."
+        rm $SYMLINK
+      fi
+
+      # Redirect the output of the first command to the named pipe and run it in the background
+      jupyter kernel --kernel=python 2> $LOG &
+
+      PATTERN='/[.a-z0-9/\-]\+.json'
+      while ! grep -q "$PATTERN" $LOG; do sleep 0.2; done
+      target=$(grep -o $PATTERN $LOG)
+      echo $target
+      ln -s $target $SYMLINK
+
+      wait
+      rm $SYMLINK
+    '';
+    conda_shell_env_cmd = pkgs.writeScript "guided_environment" ''
+      #!${pkgs.stdenv.shell}
+      conda activate ag_binding_diffusion
+      $@
+    '';
+    kernel_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_kernel" ''
+      /run/current-system/sw/bin/conda-shell ${conda_shell_kernel_commands}  # TODO conda-shell should be provided via a nix variable
+    '';
+    repl_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_repl" ''
+      /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "python $@"  # TODO conda-shell should be provided via a nix variable
+    '';
+    cmd_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_cmd" ''
+      /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "$@"  # TODO conda-shell should be provided via a nix variable
+    '';
+  in [
+    pkgs.conda kernel_wrapper repl_wrapper cmd_wrapper
   ];
 }
 #+end_src
 
 #+name: flake-overlays
 #+begin_src nix
-  (_self: _super: { conda = _super.conda.override { extraPkgs = [ _super.which ]; }; })  # this is an overlay
+  (_self: _super: { conda = _super.conda.override { extraPkgs = [ _super.which _super.libxcrypt ]; }; })  # this is an overlay
 #+end_src
+
+
 
 ** rxvt-unicode
 I use urxvt as my terminal emulator:
@@ -2562,6 +2661,13 @@ URxvt*color15:    #d0d0d0
 {
   programs.fish.enable = true;
   users.defaultUserShell = pkgs.fish;
+  
+  environment.systemPackages = [
+    pkgs.any-nix-shell
+  ];
+  programs.fish.promptInit = ''
+    any-nix-shell fish --info-right | source
+  '';
 }
 #+end_src
 *** Vi key bindings
@@ -2699,6 +2805,7 @@ Use =C-a= as a prefix.
 set -g prefix C-a
 unbind-key C-b
 bind-key C-a send-prefix
+
 #+end_src
 
 Move windows (tabs) around. Stealed from [[https://til.hashrocket.com/posts/6vz1uo5bxv-move-window-tab-in-tmux][here]].
@@ -2761,8 +2868,8 @@ set-window-option -g automatic-rename
     let python = (with pkgs; python3.withPackages (python-packages: with python-packages;
       let opencvGtk = opencv4.override (old : { enableGtk2 = true; enableGStreamer = true; });
           eaf-deps = [
-            pyqt5 sip
-            pyqtwebengine
+            # pyqt5 sip
+            # pyqtwebengine
             epc lxml
             # eaf-file-browser
             qrcode
@@ -2787,6 +2894,8 @@ set-window-option -g automatic-rename
           ];
       in orger-pkgs ++ eaf-deps ++ [
       # gseapy
+      pymol
+      umap-learn
       icecream
       plotly
       pytorch
@@ -2797,10 +2906,10 @@ set-window-option -g automatic-rename
       black
       pandas
       XlsxWriter
-      opencvGtk
+      # opencvGtk
       openpyxl
       biopython
-      # scikitlearn
+      scikitlearn
       wandb
       imageio
       matplotlib
@@ -2839,7 +2948,7 @@ set-window-option -g automatic-rename
       xdg
       epc
       importmagic
-      # jupyterlab
+      jupyterlab
       jupyter_console
       ipykernel
       pyperclip
@@ -2865,7 +2974,8 @@ set-window-option -g automatic-rename
     #pkgs.zlib.dev
     # nur-no-pkgs.repos.moritzschaefer.python3Packages.cytoflow
   ];
-  # environment.variables.LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${stdenv.cc.cc.lib}/lib/libstdc++.so.6";  # TODO doesnt work anymore because of libgl 
+  # Adding libstdc++ to LD_LIB_PATH to fix some python imports (https://nixos.wiki/wiki/Packaging/Quirks_and_Caveats) # TODO might not work anymore because of libgl?
+  environment.variables.LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${stdenv.cc.cc.lib}/lib";  # for file libstdc++.so.6
 }
 #+end_src
 *** Package overlay
@@ -3622,6 +3732,7 @@ set-window-option -g automatic-rename
     gnumake
 
   ];
+  environment.variables.SNAKEMAKE_CONDA_PREFIX = "/home/moritz/.conda";
   # environment.variables.NPM_CONFIG_PREFIX = "$HOME/.npm-global";
   # environment.variables.PATH = "$HOME/.npm-global/bin:$PATH";
 }

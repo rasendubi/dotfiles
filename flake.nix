@@ -171,7 +171,7 @@
           #   config = { allowUnfree = true; };
           # };
         })
-        (_self: _super: { conda = _super.conda.override { extraPkgs = [ _super.which ]; }; })  # this is an overlay
+        (_self: _super: { conda = _super.conda.override { extraPkgs = [ _super.which _super.libxcrypt ]; }; })  # this is an overlay
         # TODO override R package  (openssl)
         ( let
             myOverride = rec {
@@ -773,15 +773,17 @@
           # hosts = ["MoritzSchaefer"];
           # mkHost = hostname:
             home-manager.lib.homeManagerConfiguration {
-              configuration = { ... }: {
-                nixpkgs.config.allowUnfree = true;
-                nixpkgs.overlays = self.overlays;
-                imports = [(import ./.config/nixpkgs/home.nix)];
-              };
-              system = "x86_64-linux";
-              username = "moritz";
-              homeDirectory = "/home/moritz";
-              inherit pkgs;
+              pkgs = nixpkgs.legacyPackages.${system};
+              # nixpkgs.config.allowUnfree = true;
+              # nixpkgs.overlays = self.overlays;
+              modules = [ ./.config/nixpkgs/home.nix {
+                home = {
+                  username = "moritz";
+                  homeDirectory = "/home/moritz";
+                  stateVersion = "18.09";
+                };
+                }
+              ];
             };
         # in nixpkgs.lib.genAttrs hosts mkHost;
     };

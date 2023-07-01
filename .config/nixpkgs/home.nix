@@ -4,6 +4,7 @@
     enable = true;
     # TODO this is simultaneously handled globally.. -.-
     defaultApplications = {
+      "inode/directory" = [ "org.xfce.Thunar.desktop" ];
       "application/pdf" = [ "emacsclient.desktop" ];
       "x-scheme-handler/org-protocol" = [ "org-protocol.desktop" ];
       "x-scheme-handler/msteams" = [ "teams.desktop" ];
@@ -11,6 +12,8 @@
       "image/svg+xml" = [ "org.inkscape.Inkscape.desktop" ];
       "x-scheme-handler/http" = [ "org.qutebrowser.qutebrowser.desktop" ];
       "x-scheme-handler/https" = [ "org.qutebrowser.qutebrowser.desktop" ];
+
+
     };
   };
   # targets.genericLinux.enable = true;
@@ -81,13 +84,13 @@ Keywords=pulseaudio;tray;system tray;applet;volume;'';
 # }; in
 home.packages =   with pkgs; [
     #xpdf # this is an insecure package. an exception is in config.nix
-    dolphin
     tmux
     xdotool
     xss-lock
     (pass.withExtensions (exts: [ exts.pass-otp ]))
     acpilight
 
+    mcfly
     minicom
     firefox
     google-chrome
@@ -96,7 +99,7 @@ home.packages =   with pkgs; [
     ripgrep
     pavucontrol
 
-    google-play-music-desktop-player
+    # google-play-music-desktop-player
 
     inconsolata
     dejavu_fonts
@@ -166,9 +169,10 @@ home.packages =   with pkgs; [
       eval (direnv hook fish)
       fish_vi_key_bindings
 
-      set SNAKEMAKE_CONDA_PREFIX /home/moritz/.conda
 
       set fish_color_autosuggestion brblue
+
+      mcfly init fish | source
     '';
   };
   # programs.bash = {
