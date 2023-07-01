@@ -1150,7 +1150,7 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
 {
   services.avahi = {
     enable = true;
-    interfaces = [];
+   allowInterfaces = [ "wlp9s0" "tun0" ];  # TODO how to add "all"?
     openFirewall = true;
     publish = {
       addresses = true;
@@ -1316,20 +1316,18 @@ Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
 #+begin_src nix
 {
   services.dnsmasq = {
-    enable = true;
+    enable = false;
 
     # These are used in addition to resolv.conf
-    servers = [
-      "8.8.8.8"
-      "8.8.4.4"
-    ];
-
-    extraConfig = ''
-      listen-address=127.0.0.1
-      cache-size=1000
-
-      no-negcache
-    '';
+    settings = {
+      servers = [
+        "8.8.8.8"
+        "8.8.4.4"
+      ];
+      listenAddress = "127.0.0.1";
+      cacheSize = 1000;
+      noNegcache = true;
+    };
   };
 }
 #+end_src
