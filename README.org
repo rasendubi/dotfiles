@@ -2552,17 +2552,17 @@ Start emacs as a daemon:
     conda_shell_env_cmd = pkgs.writeScript "guided_environment" ''
       #!${pkgs.stdenv.shell}
       conda activate ag_binding_diffusion
-      $@
+      "$@"
     '';
     kernel_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_kernel" ''
-      /run/current-system/sw/bin/conda-shell ${conda_shell_kernel_commands}  # TODO conda-shell should be provided via a nix variable
-    '';
+      /run/current-system/sw/bin/conda-shell ${conda_shell_kernel_commands}  
+    '';  # TODO conda-shell should be provided via a nix variable
     repl_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_repl" ''
-      /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "python $@"  # TODO conda-shell should be provided via a nix variable
-    '';
+      /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "python" "$@"
+    '';  # TODO conda-shell should be provided via a nix variable
     cmd_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_cmd" ''
-      /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "$@"  # TODO conda-shell should be provided via a nix variable
-    '';
+      /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "$@"
+    ''; # TODO conda-shell should be provided via a nix variable
   in [
     pkgs.conda kernel_wrapper repl_wrapper cmd_wrapper
   ];
