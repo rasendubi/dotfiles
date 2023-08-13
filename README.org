@@ -1704,7 +1704,41 @@ Increase sudo timeout
 }
 #+end_src
 
-** TODO Login manager / display manager / Window manager
+** DONE Login manager / display manager / Window manager
+I needed to hack this to emacs29, because emacs28 failed with my org-mode config. The overlay and code block below can be trashed with version 23.11 (when emacs 29 is default)
+
+#+name: flake-overlays
+#+begin_src nix
+  (_self: _super: { emacs = _super.emacs29; exwm-emacs = ((_super.emacsPackagesFor _super.emacs29).emacsWithPackages (epkgs: with epkgs; [ emacsql-sqlite _super.imagemagick _super.escrotum vterm exwm ])); })  # emasc.withPackages is not available :((((
+#+end_src
+
+
+# temorary to enable emacs29
+#+name: nixos-section
+#+begin_src nix
+{
+  services.emacs.package = pkgs.emacs29;
+  services.xserver.windowManager.session = let
+  loadScript = pkgs.writeText "emacs-exwm-load" ''
+    (require 'exwm)
+    ;; most of it is now in .spacemacs.d/lisp/exwm.el
+    (require 'exwm-systemtray)
+    (require 'exwm-randr)
+    ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "HDMI1" 2 "DP2" 3 "eDP1" 4 "HDMI1" 5 "DP2"))
+    ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "eDP1" 2 "HDMI1" 3 "eDP1" 4 "eDP1" 5 "eDP1"))
+    ;; (exwm-randr-enable)
+    (exwm-systemtray-enable)
+    (exwm-enable)
+  ''; in [{
+    name = "exwm";
+    start = ''
+      ${pkgs.exwm-emacs}/bin/emacs -l ${loadScript}
+    '';
+  } ];
+  environment.systemPackages = [ pkgs.exwm-emacs ];
+}
+#+end_src
+
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1721,7 +1755,7 @@ Increase sudo timeout
     };
     windowManager = {
       exwm = {
-        enable = true;
+        enable = false;
         extraPackages = epkgs: with epkgs; [ emacsql-sqlite pkgs.imagemagick pkgs.escrotum epkgs.vterm ];  # unfortunately, adding zmq and jupyter here, didn't work so I had to install them manually (i.e. compiling emacs-zmq)
         # I only managed to compile emacs-zmq once (~/emacs.d/elpa/27.1/develop/zmq-.../emacs-zmq.so). I just copied it from there to mobook
         enableDefaultConfig = false;  # todo disable and enable loadScript
