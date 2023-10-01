@@ -975,81 +975,28 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
 #+end_src
 ** Network mounts
 
-#+name: nixos-section-unused
+#+name: nixos-section
 #+begin_src nix
 {
   environment.systemPackages = [
     pkgs.sshfs
   ];
 
-# https://releases.nixos.org/nix-dev/2016-September/021763.html  TODO not working :/
-  fileSystems."/mnt/cclab_server" = let
-    sshAsUser = user: 
-      pkgs.writeScript "ssh_as_${user}" ''
-        exec ${pkgs.sudo}/bin/sudo -i -u ${user} \
-          ${pkgs.openssh}/bin/ssh $@
-      '';
-  in {
-    # device = "sshfs#schamori@mhs-cclab-srv001.ethz.ch:/";
-    fsType = "fuse";
-    device = "${pkgs.sshfsFuse}/bin/sshfs#schamori@mhs-cclab-srv001.ethz.ch:/";
-    options = [
-            "noauto" "_netdev" "allow_other" "x-gvfs-hide" #"reconnect"  # "x-systemd.automount" 
-            "ServerAliveInterval=5" "ServerAliveCountMax=1"
-            "uid=30925" "gid=100" "umask=0"   # TODO comment if fails
-            "ssh_command=${sshAsUser "moritz"}"
-          ];
+  fileSystems."/mnt/muwhpc" = {
+    device = "//msc-smb.hpc.meduniwien.ac.at/mschae83";
+    fsType = "cifs";
+    options = [  # TODO requires credentials file /home/moritz/credentials.txt
+      "username=mschae83"
+      "domain=smb"
+      "credentials=/home/moritz/muwhpc_credentials.txt"
+      "vers=3"
+      "sec=ntlmssp"
+      "cache=strict"
+      "noserverino"
+      "nodev"
+      "noexec"
+    ];
   };
-  
-  # https://soultrace.net/mount-network-share-after-boot/ <- more beautiful
-  networking.networkmanager.dispatcherScripts = [
-    {
-      source = pkgs.writeText "mountHook" ''
-        if [ "$2" != "vpn-up" ]; then
-            logger "exit: event $2 != vpn-up"
-            exit
-        fi
-        mount /mnt/cclab_nas
-        # mount /mnt/cclab_server
-        logger "Mounted cclab_nas"
-      '';
-      type = "basic";
-    }
-    {
-      source = pkgs.writeText "umountHook" ''
-        if [ "$2" != "vpn-pre-down" ]; then
-            logger "exit: event $2 != vpn-pre-down"
-            exit
-        fi
-        umount -a -l -t cifs
-        umount /mnt/cclab_server
-        logger "Unmounted cclab_nas"
-      '';
-      type = "pre-down";
-    }
-  ];
-  
-  systemd.services.suspend-disconnect = {
-    description = "Disconnect VPN before suspend";
-    wantedBy = [ "systemd-suspend.service" ];
-    before = [ "systemd-suspend.service" ];
-    script = ''
-      /run/current-system/sw/bin/nmcli con down id VPN\ ETHZ 2> /tmp/suspend
-    '';
-    serviceConfig.Type = "oneshot";
-  };
-  # systemd.services.tun-connect = {
-  #   wants = [ "sys-devices-virtual-net-tun0.device" ];
-  #   after = [ "sys-devices-virtual-net-tun0.device" ];
-  #   requires = [];
-  #   services.systemd-logind.environment.SYSTEMD_LOG_LEVEL
-  #   requires
-  #   script = ''
-  #   echo "cte" > /tmp/vpn
-  #   mount /mnt/cclab_nas
-  #   '';
-  # };
-  # powerManagement.powerDownCommands = "\"fusermount -u /home/moritz/sshfs \"\n\"echo ieie > /tmp/testt\"";  # doesn't work (at least not without reboot..)
 }
 #+end_src
 
