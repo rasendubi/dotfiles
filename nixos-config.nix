@@ -695,6 +695,29 @@ in
       ];
     }
     {
+      environment.systemPackages = [
+        pkgs.sshfs
+      ];
+    
+      fileSystems."/mnt/muwhpc" = {
+        device = "//msc-smb.hpc.meduniwien.ac.at/mschae83";
+        fsType = "cifs";
+        options = [  # TODO requires credentials file /home/moritz/credentials.txt
+          "username=mschae83"
+          "domain=smb"
+          "credentials=/home/moritz/muwhpc_credentials.txt"
+          "vers=3"
+          "sec=ntlmssp"
+          "cache=strict"
+          "noserverino"
+          "nodev"
+          "noexec"
+          "nofail"
+          "_netdev"
+        ];
+      };
+    }
+    {
       system.autoUpgrade.enable = true;
     }
     {
