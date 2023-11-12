@@ -695,28 +695,18 @@ in
       ];
     }
     {
-      environment.systemPackages = [
-        pkgs.sshfs
-      ];
-    
-      fileSystems."/mnt/muwhpc" = {
-        device = "//msc-smb.hpc.meduniwien.ac.at/mschae83";
-        fsType = "cifs";
-        options = [  # TODO requires credentials file /home/moritz/credentials.txt
-          "username=mschae83"
-          "domain=smb"
-          "credentials=/home/moritz/muwhpc_credentials.txt"
-          "vers=3"
-          "sec=ntlmssp"
-          "cache=strict"
-          "noserverino"
-          "nodev"
-          "noexec"
-          "nofail"
-          "_netdev"
-        ];
+      services.autofs = {
+        enable = true;
+        timeout = 30;  # very low
+        autoMaster = let
+      mapConf = pkgs.writeText "auto" ''
+       server    credentials=/home/moritz/muwhpc_credentials.txt,cache=strict,_netdev    ://msc-smb.hpc.meduniwien.ac.at/mschae83'';
+      in ''
+        /auto file:${mapConf}
+      '';
       };
     }
+    # noperm,rw,vers=3,vers=3,sec=ntlmssp,noserverino,nodev,noexec,nofail
     {
       system.autoUpgrade.enable = true;
     }
