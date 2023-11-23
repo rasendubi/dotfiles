@@ -982,23 +982,33 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
     pkgs.sshfs
   ];
 
+
   fileSystems."/mnt/muwhpc" = {
     device = "//msc-smb.hpc.meduniwien.ac.at/mschae83";
     fsType = "cifs";
     options = [  # TODO requires credentials file /home/moritz/credentials.txt
       "username=mschae83"
-      "domain=smb"
       "credentials=/home/moritz/muwhpc_credentials.txt"
+      "domain=smb"
+      "x-systemd.automount"
+      "noauto"
+      "uid=1000"
+      "x-systemd.idle-timeout=60,x-systemd.device-timeout=5s,x-systemd.mount-timeout=5s"
+    ];
+  };
+}
+
+#+end_src
+*** excluded
+      "vers=1.0"
+      "nounix"
+*** stuff that didn't work
       "vers=3"
       "sec=ntlmssp"
       "cache=strict"
       "noserverino"
       "nodev"
       "noexec"
-    ];
-  };
-}
-#+end_src
 
 ** Updates
 #+name: nixos-section
