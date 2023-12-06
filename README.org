@@ -62,9 +62,6 @@ in
     (import "${inputs.musnix}")
     {
     
-      nixpkgs.config.allowUnfree = true;
-      nixpkgs.config.allowBroken = true;
-
       # The NixOS release to be compatible with for stateful data such as databases.
       system.stateVersion = "20.03";
     }
@@ -102,7 +99,7 @@ Make this repository flake-compatible:
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-23.05";
+      ref = "nixos-23.11";
     };
     nixpkgs-2009 = {
       type = "github";
@@ -145,7 +142,7 @@ Make this repository flake-compatible:
       type = "github";
       owner = "nix-community";
       repo = "home-manager";
-      ref = "release-23.05";
+      ref = "release-23.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     musnix = {
@@ -1074,13 +1071,14 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
 #+name: nixos-section
 #+begin_src nix
 {
+  nix.optimise.automatic = true;
   nix.gc.automatic = true;
   nix.gc.options = "--delete-generations +12";
 }
 #+end_src
 
 ** "Nice" permissions
-#+name: nixos-section
+#+name: nixos-section-unused
 #+begin_src nix
 {
   security.pam.loginLimits = [{ # http://www.linux-pam.org/Linux-PAM-html/sag-pam_limits.html
@@ -1098,6 +1096,7 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
   ];
 }
 #+end_src
+
 * Services
 ** NetworkManager
 #+name: nixos-section
@@ -1275,7 +1274,7 @@ Update [[https://linux.die.net/man/1/locate][locate]] database daily.
 }
 #+end_src
 ** SSH
-#+name: nixos-section-unused
+#+name: nixos-section
 #+begin_src nix
 {
   services.openssh = {
@@ -1361,7 +1360,7 @@ Enable firewall. This blocks all ports (for ingress traffic) and pings.
 #+name: nixos-section
 #+begin_src nix
 {
-  virtualisation.virtualbox.host.enable = true;
+  virtualisation.virtualbox.host.enable = false;  # slow compile times
   virtualisation.docker.enable = true;
   virtualisation.docker.enableNvidia = true;
   
@@ -1503,7 +1502,6 @@ Automatic USB stick mounting
 #+end_src
 
 ** Cron
-*** Add new files to wiki
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1629,7 +1627,7 @@ passwordeval \"pass imap.gmail.com/<<email>>\"
 #+end_src
 ** notmuch
 Notmuch is used for tagging.
-#+name: nixos-section
+#+name: nixos-section-unused
 #+begin_src nix
 {
   environment.systemPackages = [
@@ -1688,16 +1686,17 @@ Increase sudo timeout
 }
 #+end_src
 
-** DONE Login manager / display manager / Window manager
+** TODO Login manager / display manager / Window manager
 I needed to hack this to emacs29, because emacs28 failed with my org-mode config. The overlay and code block below can be trashed with version 23.11 (when emacs 29 is default)
 
 #+name: flake-overlays
 #+begin_src nix
   (_self: _super: { emacs = _super.emacs29; exwm-emacs = ((_super.emacsPackagesFor _super.emacs29).emacsWithPackages (epkgs: with epkgs; [ emacsql-sqlite _super.imagemagick _super.escrotum vterm exwm ])); })  # emasc.withPackages is not available :((((
+
 #+end_src
 
+# temorary to enable emacs29 <- note. Maybe this is not necessary :) # nixpkgs.config.packageOverrides = pkgs:   <- this might be an alternative..
 
-# temorary to enable emacs29
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1723,6 +1722,16 @@ I needed to hack this to emacs29, because emacs28 failed with my org-mode config
 }
 #+end_src
 
+
+#+name: nixos-section-unused  # did not work
+#+begin_src nix
+{
+  nixpkgs.config.packageOverrides = pkgs: {
+  emacs = pkgs.emacs29.override { gtk = pkgs.gtk3; };
+  };
+}
+#+end_src
+
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1739,7 +1748,7 @@ I needed to hack this to emacs29, because emacs28 failed with my org-mode config
     };
     windowManager = {
       exwm = {
-        enable = false;
+        enable = false;  # TODO enable upon 23.11
         extraPackages = epkgs: with epkgs; [ emacsql-sqlite pkgs.imagemagick pkgs.escrotum epkgs.vterm ];  # unfortunately, adding zmq and jupyter here, didn't work so I had to install them manually (i.e. compiling emacs-zmq)
         # I only managed to compile emacs-zmq once (~/emacs.d/elpa/27.1/develop/zmq-.../emacs-zmq.so). I just copied it from there to mobook
         enableDefaultConfig = false;  # todo disable and enable loadScript
@@ -1786,7 +1795,7 @@ These packages are used by my awesome wm setup:
 #+end_src
 ** Notification Manager
 https://github.com/bsag/nixos-config/blob/330e34c40aba37664bbc20550bf4dd427f0e4788/configuration.nix
-#+name: nixos-section
+#+name: nixos-section-unused  # apparently Xfce notify daeemon is already started
 #+begin_src nix
 {
   environment.systemPackages = with pkgs; [
@@ -1869,6 +1878,15 @@ https://nixos.wiki/wiki/Keyboard_Layout_Customization
   #   Option "HorizScrollDelta" "-100"
   #   Option "Resolution" "370"
   # '';
+}
+#+end_src
+
+*** Mouse
+#+name: nixos-section
+#+begin_src nix
+{
+  hardware.logitech.wireless.enable = true;
+  hardware.logitech.wireless.enableGraphical = true;
 }
 #+end_src
 
@@ -2046,7 +2064,7 @@ Here go applications (almost) every normal user needs.
 #+end_src
 
 ** Matrix Chat
-#+name: nixos-section-unused
+#+name: nixos-section
 #+begin_src nix
 {
   environment.systemPackages = with pkgs; [
@@ -2101,6 +2119,16 @@ Google Chrome used to be my default browser and I still use it from time to time
   programs.browserpass.enable = true;
   environment.systemPackages = [
     pkgs.google-chrome
+  ];
+}
+#+end_src
+*** Microsoft Edge
+
+#+name: nixos-section
+#+begin_src nix
+{
+  environment.systemPackages = [
+    pkgs.microsoft-edge
   ];
 }
 #+end_src
@@ -2286,12 +2314,11 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 {
    # virtualisation.virtualbox.host.enable = true;
    users.extraGroups.vboxusers.members = [ "moritz" ];
-   nixpkgs.config.allowUnfree = true;
    virtualisation.virtualbox.host.enableExtensionPack = true;
 }
 #+END_SRC
 
-** EAF
+** EAF & Node
 
 #+name: nixos-section
 #+begin_src nix
@@ -2301,15 +2328,16 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
     aria
     fd
     wmctrl
-    nodejs
-    nodePackages.npm
+    unstable.nodejs_20
+    unstable.nodePackages_latest.npm
+    unstable.nodePackages_latest.eslint  # required for cellxgene
     mupdf
   ];
   environment.variables.QT_QPA_PLATFORM_PLUGIN_PATH = "${pkgs.qt5.qtbase.bin.outPath}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";  # need to rerun 'spacemacs/force-init-spacemacs-env' after QT updates...
 }
 #+END_SRC
 ** Davinci
-#+name: nixos-section
+#+name: nixos-section-unused  # (failed installing)
 #+begin_src nix
 { 
   environment.systemPackages = [
@@ -2359,8 +2387,10 @@ Don't require additional setup.
       } ); in
     [
     betaflight-configurator
+    # spotdl
     miraclecast
     xcolor
+    xorg.xgamma
     vlc
     aria
     jetbrains.pycharm-community
@@ -2368,7 +2398,7 @@ Don't require additional setup.
     jmtpfs
     qbittorrent
     unstable.blender
-    teams
+    # teams
     discord
     inkscape
     arandr
@@ -2401,9 +2431,12 @@ Don't require additional setup.
     tcl
     pymol
     ruby
+    vscode
+    tesseract
 
     # Used by naga setup
     xdotool # required by eaf
+    lsof
   ];
 }
 #+end_src
@@ -2567,29 +2600,36 @@ Start emacs as a daemon:
       wait
       rm $SYMLINK
     '';
-    conda_shell_env_cmd = pkgs.writeScript "guided_environment" ''
+    conda_command = pkgs.writeScript "guided_environment" ''
       #!${pkgs.stdenv.shell}
-      conda activate ag_binding_diffusion
+      conda "$@"
+    '';
+    conda_shell_protenv_cmd = pkgs.writeScript "guided_environment" ''
+      #!${pkgs.stdenv.shell}
+      conda activate single-cellm
       "$@"
     '';
     kernel_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_kernel" ''
-      /run/current-system/sw/bin/conda-shell ${conda_shell_kernel_commands}  
+      /run/current-system/sw/bin/conda-shell ${conda_shell_kernel_commands}
+    '';  # TODO conda-shell should be provided via a nix variable
+    conda_wrapper = pkgs.writeShellScriptBin "conda" ''
+      /run/current-system/sw/bin/conda-shell ${conda_command} "$@"
     '';  # TODO conda-shell should be provided via a nix variable
     repl_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_repl" ''
-      /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "python" "$@"
+      /run/current-system/sw/bin/conda-shell ${conda_shell_protenv_cmd} "python" "$@"
     '';  # TODO conda-shell should be provided via a nix variable
     cmd_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_cmd" ''
-      /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "$@"
+      /run/current-system/sw/bin/conda-shell ${conda_shell_protenv_cmd} "$@"
     ''; # TODO conda-shell should be provided via a nix variable
   in [
-    pkgs.conda kernel_wrapper repl_wrapper cmd_wrapper
+    pkgs.conda kernel_wrapper repl_wrapper cmd_wrapper conda_wrapper
   ];
 }
 #+end_src
 
 #+name: flake-overlays
 #+begin_src nix
-  (_self: _super: { conda = _super.conda.override { extraPkgs = [ _super.which _super.libxcrypt ]; }; })  # this is an overlay
+  (_self: _super: { conda = _super.conda.override { extraPkgs = [ _super.libffi_3_3 _super.libffi _super.which _super.libxcrypt ]; }; })  # this is an overlay
 #+end_src
 
 
@@ -2920,7 +2960,8 @@ set-window-option -g automatic-rename
             datasets  # for twint (twitter)
             twint
           ];
-      in orger-pkgs ++ eaf-deps ++ [
+          # orger-pkgs ++   # temporarily disabled because of github installation issue
+      in eaf-deps ++ [
       # gseapy
       pymol
       umap-learn
@@ -2995,7 +3036,7 @@ set-window-option -g automatic-rename
     pkgs.rPackages.orca  # required for plotly
     pkgs.pipenv
     pip
-    pkgs.nodePackages.pyright
+    pkgs.unstable.nodePackages_latest.pyright
     python-lsp-server
     selenium
     # pkgs.zlib
@@ -3003,7 +3044,7 @@ set-window-option -g automatic-rename
     # nur-no-pkgs.repos.moritzschaefer.python3Packages.cytoflow
   ];
   # Adding libstdc++ to LD_LIB_PATH to fix some python imports (https://nixos.wiki/wiki/Packaging/Quirks_and_Caveats) # TODO might not work anymore because of libgl?
-  environment.variables.LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${stdenv.cc.cc.lib}/lib";  # for file libstdc++.so.6
+  # environment.variables.LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${stdenv.cc.cc.lib}/lib";  # for file libstdc++.so.6  # TODO disabled after 23.11 because it was buggy
 }
 #+end_src
 *** Package overlay
@@ -3636,7 +3677,7 @@ set-window-option -g automatic-rename
 }
 #+end_src
 ** ESPHome
-#+name: nixos-section-unused
+#+name: nixos-section
 #+begin_src nix
 {
   environment.systemPackages = [ pkgs.unstable.esphome ];  # 1.15.0 fixes bug
@@ -3710,7 +3751,7 @@ set-window-option -g automatic-rename
     cookiecutter
     nix-index
     tmux
-    unstable.gpu-burn
+    # gpu-burn
     gdrive
     tldr
     nmap
@@ -3758,9 +3799,11 @@ set-window-option -g automatic-rename
 
     cmake
     gnumake
+    jq
 
   ];
   environment.variables.SNAKEMAKE_CONDA_PREFIX = "/home/moritz/.conda";
+  environment.variables.SNAKEMAKE_PROFILE = "default";
   # environment.variables.NPM_CONFIG_PREFIX = "$HOME/.npm-global";
   # environment.variables.PATH = "$HOME/.npm-global/bin:$PATH";
 }
@@ -3852,7 +3895,7 @@ fi
       internalInterfaces = [ "wg0" ];
     };
     firewall.allowedUDPPorts = [ 51820 ];
-    firewall.allowedTCPPorts = [ 51821 8384 21 5000 ];  # syncthing as well, and FTP; and 5000 for vispr
+    firewall.allowedTCPPorts = [ 51821 8384 21 5000 8086 ];  # syncthing as well, and FTP; and 5000 for vispr; and influxdb2
   };
   
   services.nscd.enable = true;
