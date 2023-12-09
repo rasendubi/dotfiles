@@ -1045,10 +1045,11 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
 }
 #+end_src
 
-** Hibernate on battery low
+** Hibernate on battery low and warn at 10%
 #+name: nixos-section
 #+begin_src nix
 {
+  environment.systemPackages = with pkgs; [ libnotify ];
   systemd.timers.hibernate-on-low-battery = {
     wantedBy = [ "multi-user.target" ];
     timerConfig = {
@@ -1060,6 +1061,17 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
     let
       battery-level-sufficient = pkgs.writeShellScriptBin
         "battery-level-sufficient" ''
+        #!/bin/bash
+
+        # set environment to allow notify-send to work
+        export XAUTHORITY="/home/moritz/.Xauthority"
+        export DISPLAY=":0"
+        export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/1000/bus"
+        export PATH="${pkgs.dbus}/bin:$PATH"
+
+        if [ $(cat /sys/class/power_supply/BAT0/capacity) -le 10 ]; then
+          ${pkgs.sudo}/bin/sudo -E -u moritz  ${pkgs.libnotify}/bin/notify-send -t 2500 "Low Battery" "Your battery is below 10%, please plug in your charger."
+        fi
         test "$(cat /sys/class/power_supply/BAT0/status)" != Discharging \
           || test "$(cat /sys/class/power_supply/BAT0/capacity)" -ge 5
       '';
