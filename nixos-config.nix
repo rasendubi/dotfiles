@@ -999,9 +999,9 @@ in
         enable = true;
         systemCronJobs = [
           # Add new files to wiki
-          "0 0 * * 0      moritz    . /etc/profile; cd /home/moritz/wiki/; ${pkgs.git}/bin/git add .; ${pkgs.git}/bin/git commit -m 'Weekly checkpoint' 2>&1 >> /tmp/git_out"
+          "0 0 * * 0      moritz    ${pkgs.bash}/bin/bash -c '. /etc/profile; cd /home/moritz/wiki/; ${pkgs.git}/bin/git add .; ${pkgs.git}/bin/git commit -m \"Weekly checkpoint\"' >> /tmp/git_out 2>&1"
           # Download paperpile citations
-          "* * * * 0      moritz    . /etc/profile; cd /home/moritz/wiki/papers; wget --content-disposition -N https://paperpile.com/eb/ghEynTRTJb >> download_paperpile_log"
+          "* * * * 0      moritz    ${pkgs.bash}/bin/bash -c '. /etc/profile; cd /home/moritz/wiki/papers; wget --content-disposition -N https://paperpile.com/eb/ghEynTRTJb' >> download_paperpile_log 2>&1"
         ];
       };
     }
