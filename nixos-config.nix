@@ -143,7 +143,7 @@ let
             internalInterfaces = [ "wg0" ];
           };
           firewall.allowedUDPPorts = [ 51820 ];
-          firewall.allowedTCPPorts = [ 51821 8384 21 5000 ];  # syncthing as well, and FTP; and 5000 for vispr
+          firewall.allowedTCPPorts = [ 51821 8384 21 5000 8086 ];  # syncthing as well, and FTP; and 5000 for vispr; and influxdb2
         };
         
         services.nscd.enable = true;
@@ -152,7 +152,7 @@ let
         services.openssh = {
           enable = true;
           permitRootLogin = "yes";
-          passwordAuthentication = true;
+          settings.PasswordAuthentication = true;
         };
       }
       {
@@ -250,21 +250,6 @@ let
         }; 
       }
       
-      {
-        virtualisation.oci-containers = {
-          backend = "podman";
-          containers.homeassistant = {
-            volumes = [ "home-assistant:/config" ];
-            environment.TZ = "Europe/Berlin";
-            image = "ghcr.io/home-assistant/home-assistant:stable";  # Warning: if the tag does not change, the image will not be updated
-            extraOptions = [
-              "--network=host"
-              "--device=/dev/ttyACM0:/dev/ttyACM0"  # Example, change this to match your own hardware
-              "--device=/dev/ttyUSB0:/dev/ttyUSB0"  # Example, change this to match your own hardware
-            ];
-          };
-        };
-      }
       {
         networking.firewall.extraCommands = ''iptables -t raw -A OUTPUT -p udp -m udp --dport 137 -j CT --helper netbios-ns'';
         services.samba = {
@@ -458,6 +443,8 @@ let
         imports = [
           (import "${inputs.nixos-hardware}/lenovo/thinkpad/p1/3th-gen")
           (import "${inputs.nixos-hardware}/lenovo/thinkpad/p1/3th-gen/nvidia.nix")
+          (import "${inputs.nixos-hardware}/lenovo/thinkpad/x1-extreme/gen4/default.nix")  # implies cpu/inel and laptop/ssd
+          (import "${inputs.nixos-hardware}/common/pc/laptop")  # tlp.enable = true
           (import "${inputs.nixos-hardware}/common/gpu/nvidia/prime.nix")  # default: offload
           inputs.nixpkgs.nixosModules.notDetected
         ];
@@ -467,10 +454,10 @@ let
         # hardware.opengl.enable = true;
         # services.xserver.videoDrivers = [ "nvidia" ];
         # hardware.bumblebee.enable = false;
-        
+      
         services.hardware.bolt.enable = true;
         hardware.nvidia.powerManagement.enable = true;
-        hardware.nvidia.powerManagement.finegrained = true;
+        hardware.nvidia.powerManagement.finegrained = false;   # TODO is this good or bad?
         hardware.nvidia.prime = {
           # Bus ID of the Intel GPU.
           intelBusId = lib.mkDefault "PCI:0:2:0";
@@ -633,9 +620,6 @@ in
     (import "${inputs.musnix}")
     {
     
-      nixpkgs.config.allowUnfree = true;
-      nixpkgs.config.allowBroken = true;
-
       # The NixOS release to be compatible with for stateful data such as databases.
       system.stateVersion = "20.03";
     }
@@ -683,6 +667,27 @@ in
       ];
     }
     {
+      services.hardware.bolt.enable = true;
+      services.udev.extraRules = ''
+        # Remove NVIDIA USB xHCI Host Controller devices, if present
+        ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{remove}="1"
+    
+        # Remove NVIDIA USB Type-C UCSI devices, if present
+        ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c8000", ATTR{remove}="1"
+    
+        # Remove NVIDIA Audio devices, if present
+        ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{remove}="1"
+    
+        # Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
+        ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
+        ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
+    
+        # Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
+        ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
+        ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
+        '';
+    }
+    {
       hardware.bluetooth.enable = true;
       hardware.bluetooth.powerOnBoot = false;
       services.blueman.enable = true;
@@ -699,28 +704,27 @@ in
         pkgs.sshfs
       ];
     
+      age.secrets.muwhpc.file = /home/moritz/nixos-config/secrets/muwhpc.age;
       fileSystems."/mnt/muwhpc" = {
         device = "//msc-smb.hpc.meduniwien.ac.at/mschae83";
         fsType = "cifs";
-        options = [  # TODO requires credentials file /home/moritz/credentials.txt
+        options = [
           "username=mschae83"
+          "credentials=${config.age.secrets.muwhpc.path}"
           "domain=smb"
-          "credentials=/home/moritz/muwhpc_credentials.txt"
-          "vers=3"
-          "sec=ntlmssp"
-          "cache=strict"
-          "noserverino"
-          "nodev"
-          "noexec"
-          "nofail"
-          "_netdev"
+          "x-systemd.automount"
+          "noauto"
+          "uid=1000"
+          "x-systemd.idle-timeout=60,x-systemd.device-timeout=5s,x-systemd.mount-timeout=5s"
         ];
       };
     }
+    
     {
       system.autoUpgrade.enable = true;
     }
     {
+      environment.systemPackages = with pkgs; [ libnotify ];
       systemd.timers.hibernate-on-low-battery = {
         wantedBy = [ "multi-user.target" ];
         timerConfig = {
@@ -732,6 +736,17 @@ in
         let
           battery-level-sufficient = pkgs.writeShellScriptBin
             "battery-level-sufficient" ''
+            #!/bin/bash
+    
+            # set environment to allow notify-send to work
+            export XAUTHORITY="/home/moritz/.Xauthority"
+            export DISPLAY=":0"
+            export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/1000/bus"
+            export PATH="${pkgs.dbus}/bin:$PATH"
+    
+            if [ $(cat /sys/class/power_supply/BAT0/capacity) -le 10 ]; then
+              ${pkgs.sudo}/bin/sudo -E -u moritz  ${pkgs.libnotify}/bin/notify-send -t 2500 "Low Battery" "Your battery is below 10%, please plug in your charger."
+            fi
             test "$(cat /sys/class/power_supply/BAT0/status)" != Discharging \
               || test "$(cat /sys/class/power_supply/BAT0/capacity)" -ge 5
           '';
@@ -743,23 +758,9 @@ in
           };
     }
     {
+      nix.optimise.automatic = true;
       nix.gc.automatic = true;
       nix.gc.options = "--delete-generations +12";
-    }
-    {
-      security.pam.loginLimits = [{ # http://www.linux-pam.org/Linux-PAM-html/sag-pam_limits.html
-        "domain" = "moritz";  # or group @users
-        "type" = "-";
-        "item" = "nice";
-        "value" = "-18";
-      }
-      # {  # disabled for testing. check if everything works fine after reboot...
-      #   "domain" = "moritz";  # or group @users
-      #   "type" = "-";
-      #   "item" = "priority";
-      #   "value" = "-10";
-      # }
-      ];
     }
     {
       networking = {
@@ -886,6 +887,13 @@ in
       };
     }
     {
+      services.openssh = {
+        enable = true;
+        settings.PasswordAuthentication = false;
+      };
+      users.users.moritz.openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMc+scl71X7g21XFygTNB3onyGuION89iHSUw0eYcN2H mail+macbook@moritzs.de" ];
+    }
+    {
       services.dnsmasq = {
         enable = false;
     
@@ -926,7 +934,7 @@ in
       };
     }
     {
-      virtualisation.virtualbox.host.enable = true;
+      virtualisation.virtualbox.host.enable = false;  # slow compile times
       virtualisation.docker.enable = true;
       virtualisation.docker.enableNvidia = true;
       
@@ -990,7 +998,10 @@ in
       services.cron = {
         enable = true;
         systemCronJobs = [
-          "* * * * 0      moritz    . /etc/profile; cd /home/moritz/wiki/; ${pkgs.git}/bin/git add .; ${pkgs.git}/bin/git commit -m 'Weekly checkpoint' 2>&1 >> /tmp/git_out"
+          # Add new files to wiki
+          "0 0 * * 0      moritz    . /etc/profile; cd /home/moritz/wiki/; ${pkgs.git}/bin/git add .; ${pkgs.git}/bin/git commit -m 'Weekly checkpoint' 2>&1 >> /tmp/git_out"
+          # Download paperpile citations
+          "* * * * 0      moritz    . /etc/profile; cd /home/moritz/wiki/papers; wget --content-disposition -N https://paperpile.com/eb/ghEynTRTJb >> download_paperpile_log"
         ];
       };
     }
@@ -1004,10 +1015,42 @@ in
         pkgs.msmtp
       ];
     }
+    # TODO also the awk script is for google calendar, maybe I should try to find an office365-specific script
+    # TODO also, filter either ical or org for events older than last month (otherwise org-agenda has to work so much more...)
     {
-      environment.systemPackages = [
-        pkgs.notmuch
-      ];
+      environment.systemPackages = with pkgs; [ wget gawk gnugrep ];
+    
+      age.secrets.mcUrl.file = /home/moritz/nixos-config/secrets/mcUrl.age;
+      age.secrets.gcUrl.file = /home/moritz/nixos-config/secrets/gcUrl.age;
+      systemd.services.ics2org = let
+        scriptPath = "/home/moritz/wiki/calendar-sync/ical2org.awk";
+        mcIcsPath = "/home/moritz/wiki/calendar-sync/mc_office365.ics";
+        gcIcsPath = "/home/moritz/wiki/calendar-sync/gc_office365.ics";
+        orgPath = "/home/moritz/wiki/calendar-sync/calendars.org";
+        # mcUrlFile = config.age.secrets.mcUrl.path;
+        # gcUrlFile = config.age.secrets.gcUrl.path;
+         in {
+        description = "Convert .ics to .org";
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+        };
+        script = ''
+          ${pkgs.wget}/bin/wget https://raw.githubusercontent.com/msherry/ical2org/master/ical2org.awk -O ${scriptPath}
+          ${pkgs.wget}/bin/wget `cat ${config.age.secrets.mcUrl.path}` -O ${mcIcsPath}
+          ${pkgs.wget}/bin/wget `cat ${config.age.secrets.gcUrl.path}` -O ${gcIcsPath}
+          ${pkgs.gawk}/bin/gawk -f ${scriptPath} ${mcIcsPath} | ${pkgs.gnugrep}/bin/grep -v 'CLOCK:' > ${orgPath}
+          ${pkgs.gawk}/bin/gawk -f ${scriptPath} ${gcIcsPath} | ${pkgs.gnugrep}/bin/grep -v 'CLOCK:' >> ${orgPath}
+        '';
+      };
+    
+      systemd.timers.ics2org = {
+        description = "Run ics2org every 5 minutes";
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnUnitActiveSec = "5m";
+        };
+      };
     }
     {
       i18n.supportedLocales = [ "en_US.UTF-8/UTF-8" ];
@@ -1019,6 +1062,27 @@ in
       security.sudo.extraConfig = ''
         Defaults        timestamp_timeout=120
       '';
+    }
+    {
+      services.emacs.package = pkgs.emacs29;
+      services.xserver.windowManager.session = let
+      loadScript = pkgs.writeText "emacs-exwm-load" ''
+        (require 'exwm)
+        ;; most of it is now in .spacemacs.d/lisp/exwm.el
+        (require 'exwm-systemtray)
+        (require 'exwm-randr)
+        ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "HDMI1" 2 "DP2" 3 "eDP1" 4 "HDMI1" 5 "DP2"))
+        ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "eDP1" 2 "HDMI1" 3 "eDP1" 4 "eDP1" 5 "eDP1"))
+        ;; (exwm-randr-enable)
+        (exwm-systemtray-enable)
+        (exwm-enable)
+      ''; in [{
+        name = "exwm";
+        start = ''
+          ${pkgs.exwm-emacs}/bin/emacs -l ${loadScript}
+        '';
+      } ];
+      environment.systemPackages = [ pkgs.exwm-emacs ];
     }
     {
       services.xserver = {
@@ -1034,7 +1098,7 @@ in
         };
         windowManager = {
           exwm = {
-            enable = true;
+            enable = false;  # TODO enable upon 23.11
             extraPackages = epkgs: with epkgs; [ emacsql-sqlite pkgs.imagemagick pkgs.escrotum epkgs.vterm ];  # unfortunately, adding zmq and jupyter here, didn't work so I had to install them manually (i.e. compiling emacs-zmq)
             # I only managed to compile emacs-zmq once (~/emacs.d/elpa/27.1/develop/zmq-.../emacs-zmq.so). I just copied it from there to mobook
             enableDefaultConfig = false;  # todo disable and enable loadScript
@@ -1074,19 +1138,6 @@ in
       ];
     }
     {
-      environment.systemPackages = with pkgs; [
-        dunst
-      ];
-      systemd.user.services."dunst" = {
-        enable = true;
-        description = "";
-        wantedBy = [ "default.target" ];
-        serviceConfig.Restart = "always";
-        serviceConfig.RestartSec = 2;
-        serviceConfig.ExecStart = "${pkgs.dunst}/bin/dunst";
-      };
-    }
-    {
       services.xserver.layout = "de,de,us";
       services.xserver.xkbVariant = "bone,,";
       services.xserver.xkbOptions= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp,altwin:swap_lalt_lwin";
@@ -1117,6 +1168,10 @@ in
       #   Option "HorizScrollDelta" "-100"
       #   Option "Resolution" "370"
       # '';
+    }
+    {
+      hardware.logitech.wireless.enable = true;
+      hardware.logitech.wireless.enableGraphical = true;
     }
     {
       services.redshift = {
@@ -1151,7 +1206,7 @@ in
         fontDir.enable = true;
         enableGhostscriptFonts = false;
     
-        fonts = with pkgs; [
+        packages = with pkgs; [
           corefonts
           inconsolata
           dejavu_fonts
@@ -1219,6 +1274,12 @@ in
     }
     {
       environment.systemPackages = with pkgs; [
+        mirage-im
+        element-desktop
+      ];
+    }
+    {
+      environment.systemPackages = with pkgs; [
         (pass.withExtensions (exts: [ exts.pass-otp ]))
         pinentry-curses
         pinentry-qt
@@ -1245,7 +1306,12 @@ in
     }
     {
       environment.systemPackages = [
-        (pkgs.firefox.override { extraNativeMessagingHosts = [ pkgs.passff-host ]; })
+        pkgs.microsoft-edge
+      ];
+    }
+    {
+      environment.systemPackages = [
+        (pkgs.firefox.override { nativeMessagingHosts = [ pkgs.passff-host ]; })
       ];
     }
     {
@@ -1321,7 +1387,6 @@ in
     {
        # virtualisation.virtualbox.host.enable = true;
        users.extraGroups.vboxusers.members = [ "moritz" ];
-       nixpkgs.config.allowUnfree = true;
        virtualisation.virtualbox.host.enableExtensionPack = true;
     }
     {
@@ -1330,16 +1395,12 @@ in
         aria
         fd
         wmctrl
-        nodejs
-        nodePackages.npm
+        unstable.nodejs_20
+        unstable.nodePackages_latest.npm
+        unstable.nodePackages_latest.eslint  # required for cellxgene
         mupdf
       ];
       environment.variables.QT_QPA_PLATFORM_PLUGIN_PATH = "${pkgs.qt5.qtbase.bin.outPath}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";  # need to rerun 'spacemacs/force-init-spacemacs-env' after QT updates...
-    }
-    { 
-      environment.systemPackages = [
-        pkgs.davinci-resolve
-      ];
     }
     {
       environment.systemPackages =
@@ -1376,8 +1437,10 @@ in
           } ); in
         [
         betaflight-configurator
+        # spotdl
         miraclecast
         xcolor
+        xorg.xgamma
         vlc
         aria
         jetbrains.pycharm-community
@@ -1385,7 +1448,7 @@ in
         jmtpfs
         qbittorrent
         unstable.blender
-        teams
+        # teams
         discord
         inkscape
         arandr
@@ -1418,9 +1481,12 @@ in
         tcl
         pymol
         ruby
+        vscode
+        tesseract
     
         # Used by naga setup
         xdotool # required by eaf
+        lsof
       ];
     }
     {
@@ -1498,22 +1564,29 @@ in
           wait
           rm $SYMLINK
         '';
-        conda_shell_env_cmd = pkgs.writeScript "guided_environment" ''
+        conda_command = pkgs.writeScript "guided_environment" ''
           #!${pkgs.stdenv.shell}
-          conda activate ag_binding_diffusion
+          conda "$@"
+        '';
+        conda_shell_protenv_cmd = pkgs.writeScript "guided_environment" ''
+          #!${pkgs.stdenv.shell}
+          conda activate single-cellm
           "$@"
         '';
         kernel_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_kernel" ''
-          /run/current-system/sw/bin/conda-shell ${conda_shell_kernel_commands}  
+          /run/current-system/sw/bin/conda-shell ${conda_shell_kernel_commands}
+        '';  # TODO conda-shell should be provided via a nix variable
+        conda_wrapper = pkgs.writeShellScriptBin "conda" ''
+          /run/current-system/sw/bin/conda-shell ${conda_command} "$@"
         '';  # TODO conda-shell should be provided via a nix variable
         repl_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_repl" ''
-          /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "python" "$@"
+          /run/current-system/sw/bin/conda-shell ${conda_shell_protenv_cmd} "python" "$@"
         '';  # TODO conda-shell should be provided via a nix variable
         cmd_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_cmd" ''
-          /run/current-system/sw/bin/conda-shell ${conda_shell_env_cmd} "$@"
+          /run/current-system/sw/bin/conda-shell ${conda_shell_protenv_cmd} "$@"
         ''; # TODO conda-shell should be provided via a nix variable
       in [
-        pkgs.conda kernel_wrapper repl_wrapper cmd_wrapper
+        pkgs.conda kernel_wrapper repl_wrapper cmd_wrapper conda_wrapper
       ];
     }
     {
@@ -1523,7 +1596,7 @@ in
     }
     {
       fonts = {
-        fonts = with pkgs; [
+        packages = with pkgs; [
           powerline-fonts
           terminus_font
     
@@ -1584,7 +1657,8 @@ in
                 datasets  # for twint (twitter)
                 twint
               ];
-          in orger-pkgs ++ eaf-deps ++ [
+              # orger-pkgs ++   # temporarily disabled because of github installation issue
+          in eaf-deps ++ [
           # gseapy
           pymol
           umap-learn
@@ -1659,7 +1733,7 @@ in
         pkgs.rPackages.orca  # required for plotly
         pkgs.pipenv
         pip
-        pkgs.nodePackages.pyright
+        pkgs.unstable.nodePackages_latest.pyright
         python-lsp-server
         selenium
         # pkgs.zlib
@@ -1667,7 +1741,7 @@ in
         # nur-no-pkgs.repos.moritzschaefer.python3Packages.cytoflow
       ];
       # Adding libstdc++ to LD_LIB_PATH to fix some python imports (https://nixos.wiki/wiki/Packaging/Quirks_and_Caveats) # TODO might not work anymore because of libgl?
-      environment.variables.LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${stdenv.cc.cc.lib}/lib";  # for file libstdc++.so.6
+      # environment.variables.LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${stdenv.cc.cc.lib}/lib";  # for file libstdc++.so.6  # TODO disabled after 23.11 because it was buggy
     }
     {
       environment.systemPackages = with pkgs; [ clojure leiningen ];
@@ -1689,6 +1763,59 @@ in
       ];
     }
     {
+      environment.systemPackages = [ pkgs.unstable.esphome ];  # 1.15.0 fixes bug
+     
+      # from https://raw.githubusercontent.com/platformio/platformio-core/master/scripts/99-platformio-udev.rules
+      # QinHeng Electronics HL-340 USB-Serial adapter
+      services.udev.extraRules = ''
+        #  CP210X USB UART
+        ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
+    
+        # FT231XS USB UART
+        ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6015", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
+    
+        # Prolific Technology, Inc. PL2303 Serial Port
+        ATTRS{idVendor}=="067b", ATTRS{idProduct}=="2303", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
+    
+        # QinHeng Electronics HL-340 USB-Serial adapter
+        ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
+    
+        # Arduino boards
+        ATTRS{idVendor}=="2341", ATTRS{idProduct}=="[08][02]*", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
+        ATTRS{idVendor}=="2a03", ATTRS{idProduct}=="[08][02]*", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
+    
+        # Arduino SAM-BA
+        ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="6124", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{MTP_NO_PROBE}="1"
+    
+        # Digistump boards
+        ATTRS{idVendor}=="16d0", ATTRS{idProduct}=="0753", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
+    
+        # Maple with DFU
+        ATTRS{idVendor}=="1eaf", ATTRS{idProduct}=="000[34]", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
+    
+        # USBtiny
+        ATTRS{idProduct}=="0c9f", ATTRS{idVendor}=="1781", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
+    
+        # USBasp V2.0
+        ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="05dc", MODE:="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
+    
+        # Teensy boards
+        ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="04[789B]?", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
+        ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="04[789A]?", ENV{MTP_NO_PROBE}="1"
+        SUBSYSTEMS=="usb", ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="04[789ABCD]?", MODE:="0666"
+        KERNEL=="ttyACM*", ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="04[789B]?", MODE:="0666"
+    
+        #TI Stellaris Launchpad
+        ATTRS{idVendor}=="1cbe", ATTRS{idProduct}=="00fd", MODE="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
+    
+        #TI MSP430 Launchpad
+        ATTRS{idVendor}=="0451", ATTRS{idProduct}=="f432", MODE="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
+    
+        #GD32V DFU Bootloader
+        ATTRS{idVendor}=="28e9", ATTRS{idProduct}=="0189", MODE="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"
+        '';
+    }
+    {
       environment.systemPackages = [ pkgs.arduino ];
       users.users.moritz.extraGroups = [ "dialout" ];
     }
@@ -1697,7 +1824,7 @@ in
         cookiecutter
         nix-index
         tmux
-        unstable.gpu-burn
+        # gpu-burn
         gdrive
         tldr
         nmap
@@ -1745,9 +1872,11 @@ in
     
         cmake
         gnumake
+        jq
     
       ];
       environment.variables.SNAKEMAKE_CONDA_PREFIX = "/home/moritz/.conda";
+      environment.variables.SNAKEMAKE_PROFILE = "default";
       # environment.variables.NPM_CONFIG_PREFIX = "$HOME/.npm-global";
       # environment.variables.PATH = "$HOME/.npm-global/bin:$PATH";
     }

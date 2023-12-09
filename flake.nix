@@ -8,7 +8,7 @@
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-23.05";
+      ref = "nixos-23.11";
     };
     nixpkgs-2009 = {
       type = "github";
@@ -51,9 +51,10 @@
       type = "github";
       owner = "nix-community";
       repo = "home-manager";
-      ref = "release-23.05";
+      ref = "release-23.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    agenix.url = "github:ryantm/agenix";
     musnix = {
       type = "github";
       owner = "musnix";
@@ -63,7 +64,7 @@
   };
   
 # nixpkgs-local
-  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, musnix }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, agenix, musnix }@inputs:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
@@ -90,6 +91,11 @@
                 { nixpkgs = { inherit pkgs;  }; }
                 (import ./nixos-config.nix)
                 { nixpkgs.overlays = [ nur.overlay ]; }
+                agenix.nixosModules.default
+                {
+                  environment.systemPackages = [ agenix.packages.${system}.default ];
+                  age.identityPaths = [ "/home/moritz/.ssh/id_ed25519_agenix" ];
+                }
               ];
               specialArgs = { inherit name inputs; };
             };
@@ -172,7 +178,9 @@
           #   config = { allowUnfree = true; };
           # };
         })
-        (_self: _super: { conda = _super.conda.override { extraPkgs = [ _super.which _super.libxcrypt ]; }; })  # this is an overlay
+        (_self: _super: { emacs = _super.emacs29; exwm-emacs = ((_super.emacsPackagesFor _super.emacs29).emacsWithPackages (epkgs: with epkgs; [ emacsql-sqlite _super.imagemagick _super.escrotum vterm exwm ])); })  # emasc.withPackages is not available :((((
+        
+        (_self: _super: { conda = _super.conda.override { extraPkgs = [ _super.libffi_3_3 _super.libffi _super.which _super.libxcrypt ]; }; })  # this is an overlay
         # TODO override R package  (openssl)
         ( let
             myOverride = rec {
