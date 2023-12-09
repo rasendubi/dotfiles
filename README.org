@@ -1,7 +1,6 @@
 This is a fork! What comes below was only partially written by myself and it is super awesome.
 I followed this blog post to adapt the config-repo to my needs: https://gist.github.com/domenkozar/b3c945035af53fa816e0ac460f1df853
 
-
 There are still a lot of manual steps involved:
 1. install basic nixos (see gist above)
 2. add flakes support, change to desired hostname
@@ -185,6 +184,7 @@ Make this repository flake-compatible:
                 agenix.nixosModules.default
                 {
                   environment.systemPackages = [ agenix.packages.${system}.default ];
+                  age.identityPaths = [ "/home/moritz/.ssh/id_ed25519_agenix" ];
                 }
               ];
               specialArgs = { inherit name inputs; };
@@ -1009,13 +1009,13 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
     pkgs.sshfs
   ];
 
-
+  age.secrets.muwhpc.file = /home/moritz/nixos-config/secrets/muwhpc.age;
   fileSystems."/mnt/muwhpc" = {
     device = "//msc-smb.hpc.meduniwien.ac.at/mschae83";
     fsType = "cifs";
-    options = [  # TODO requires credentials file /home/moritz/credentials.txt
+    options = [
       "username=mschae83"
-      "credentials=/home/moritz/muwhpc_credentials.txt"
+      "credentials=${config.age.secrets.muwhpc.path}"
       "domain=smb"
       "x-systemd.automount"
       "noauto"
@@ -1670,8 +1670,7 @@ Here's a basic NixOS configuration that should do what you're asking for. This c
 # TODO also, filter either ical or org for events older than last month (otherwise org-agenda has to work so much more...)
 {
   environment.systemPackages = with pkgs; [ wget gawk gnugrep ];
-  
-  age.identityPaths = [ "/home/moritz/.ssh/id_ed25519" ];
+
   age.secrets.mcUrl.file = /home/moritz/nixos-config/secrets/mcUrl.age;
   age.secrets.gcUrl.file = /home/moritz/nixos-config/secrets/gcUrl.age;
   systemd.services.ics2org = let
@@ -3928,7 +3927,6 @@ if [ ! -e "$DEST/.config/fish/functions/fisher.fish" ]; then
     esac
 fi
 #+end_src
-* Private                                                             :crypt-:
 * Homeserver
 ** Networking
 #+name: machine-moxps

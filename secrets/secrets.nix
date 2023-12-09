@@ -1,9 +1,7 @@
 let
-  user1 = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID6pr4scU4r6j2BSTUve5TURkECF2Jy+GUr4QvRbB2cq";
+  user1 = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAdJcJ2IxX5QdkZSXiQgCwOnBVsU2oXJCmUmPxUxhixW";
   users = [ user1 ];
   systems = [  ];
-in
-{
-  "mcUrl.age".publicKeys = users;
-  "gcUrl.age".publicKeys = users;
-}
+  urls = [ "mcUrl.age" "gcUrl.age" "muwhpc.age" ];
+in builtins.listToAttrs (map (url: { name = url; value = { inherit url; publicKeys = users; }; }) urls)
+
