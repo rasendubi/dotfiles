@@ -145,6 +145,7 @@ Make this repository flake-compatible:
       ref = "release-23.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    agenix.url = "github:ryantm/agenix";
     musnix = {
       type = "github";
       owner = "musnix";
@@ -154,7 +155,7 @@ Make this repository flake-compatible:
   };
   
 # nixpkgs-local
-  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, musnix }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, agenix, musnix }@inputs:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
@@ -181,6 +182,10 @@ Make this repository flake-compatible:
                 { nixpkgs = { inherit pkgs;  }; }
                 (import ./nixos-config.nix)
                 { nixpkgs.overlays = [ nur.overlay ]; }
+                agenix.nixosModules.default
+                {
+                  environment.systemPackages = [ agenix.packages.${system}.default ];
+                }
               ];
               specialArgs = { inherit name inputs; };
             };
@@ -1656,6 +1661,52 @@ exclude_tags=deleted;spam;muted;
 [crypto]
 gpg_path=gpg2
 #+end_src
+** MS office365 calendar
+Here's a basic NixOS configuration that should do what you're asking for. This configuration assumes that you have =wget= and =gawk= installed on your system. If not, you should add them to your =environment.systemPackages=.
+
+#+name: nixos-section
+#+begin_src nix
+# TODO also the awk script is for google calendar, maybe I should try to find an office365-specific script
+# TODO also, filter either ical or org for events older than last month (otherwise org-agenda has to work so much more...)
+{
+  environment.systemPackages = with pkgs; [ wget gawk gnugrep ];
+  
+  age.identityPaths = [ "/home/moritz/.ssh/id_ed25519" ];
+  age.secrets.mcUrl.file = /home/moritz/nixos-config/secrets/mcUrl.age;
+  age.secrets.gcUrl.file = /home/moritz/nixos-config/secrets/gcUrl.age;
+  systemd.services.ics2org = let
+    scriptPath = "/home/moritz/wiki/calendar-sync/ical2org.awk";
+    mcIcsPath = "/home/moritz/wiki/calendar-sync/mc_office365.ics";
+    gcIcsPath = "/home/moritz/wiki/calendar-sync/gc_office365.ics";
+    orgPath = "/home/moritz/wiki/calendar-sync/calendars.org";
+    # mcUrlFile = config.age.secrets.mcUrl.path;
+    # gcUrlFile = config.age.secrets.gcUrl.path;
+     in {
+    description = "Convert .ics to .org";
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+    };
+    script = ''
+      ${pkgs.wget}/bin/wget https://raw.githubusercontent.com/msherry/ical2org/master/ical2org.awk -O ${scriptPath}
+      ${pkgs.wget}/bin/wget `cat ${config.age.secrets.mcUrl.path}` -O ${mcIcsPath}
+      ${pkgs.wget}/bin/wget `cat ${config.age.secrets.gcUrl.path}` -O ${gcIcsPath}
+      ${pkgs.gawk}/bin/gawk -f ${scriptPath} ${mcIcsPath} | ${pkgs.gnugrep}/bin/grep -v 'CLOCK:' > ${orgPath}
+      ${pkgs.gawk}/bin/gawk -f ${scriptPath} ${gcIcsPath} | ${pkgs.gnugrep}/bin/grep -v 'CLOCK:' >> ${orgPath}
+    '';
+  };
+
+  systemd.timers.ics2org = {
+    description = "Run ics2org every 5 minutes";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnUnitActiveSec = "5m";
+    };
+  };
+}
+#+end_src
+
+Also, please note that this configuration is for a user service and timer. If you want to run this as a system service and timer, you should remove =.user= from =systemd.user.services.ics2org= and =systemd.user.timers.ics2org=, and add =wantedBy = [ "multi-user.target" ];= to the service configuration.
 * Environment
 ** General
 

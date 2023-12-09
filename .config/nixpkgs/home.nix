@@ -10,9 +10,8 @@
       "x-scheme-handler/msteams" = [ "teams.desktop" ];
       "image/png" = [ "org.inkscape.Inkscape.desktop" ];  # annoyiiiing
       "image/svg+xml" = [ "org.inkscape.Inkscape.desktop" ];
-      "x-scheme-handler/http" = [ "org.qutebrowser.qutebrowser.desktop" ];
-      "x-scheme-handler/https" = [ "org.qutebrowser.qutebrowser.desktop" ];
-
+      "x-scheme-handler/http" = [ "google-chrome.desktop" ];
+      "x-scheme-handler/https" = [ "google-chrome.desktop" ];
 
     };
   };
@@ -87,7 +86,7 @@ home.packages =   with pkgs; [
     # tmux
     xdotool
     xss-lock
-    (pass.withExtensions (exts: [ exts.pass-otp ]))
+    # (pass.withExtensions (exts: [ exts.pass-otp ]))  # use the global version
     acpilight
 
     mcfly
@@ -152,6 +151,7 @@ home.packages =   with pkgs; [
       l = "ls -lhrta";
       clip = "xclip -selection clipboard";
       muwvpn = "pass show Wien/meduniwien.ac.at/mschae83 | sudo openconnect --passwd-on-stdin --user mschae83 --authgroup _CeMM_exkl.Journale vpn.meduniwien.ac.at";
+      feh = "feh --scale-down --action \"cp %F ~/tmp/feh_selections/\" --bg-fill";
     };
     shellInit = ''
       set -gx PATH $HOME/bin $PATH
@@ -184,6 +184,9 @@ home.packages =   with pkgs; [
       eval (direnv hook fish)
       fish_vi_key_bindings
 
+      function save_history --on-event fish_postexec
+          history --save
+      end
 
       set fish_color_autosuggestion brblue
 
