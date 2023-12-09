@@ -400,14 +400,13 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
 
   nix.maxJobs = lib.mkDefault 8;
 
-  # TODO enable and check
-  # services.undervolt = {
-  #   enable = true;
-  #   coreOffset = 0;
-  #   gpuOffset = 0;
-  #   # coreOffset = -125;
-  #   # gpuOffset = -75;
-  # };
+  services.undervolt = {
+    enable = true;
+    # coreOffset = 0;
+    # gpuOffset = 0;
+    coreOffset = -125;
+    gpuOffset = -75;
+  };
   powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
   powerManagement.enable = true;
 
@@ -487,32 +486,8 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
 #+end_src
 
 ***** Nvidia eGPU
-#+name: nixos-section
-#+begin_src nix
-{
-  services.hardware.bolt.enable = true;
-  services.udev.extraRules = ''
-    # Remove NVIDIA USB xHCI Host Controller devices, if present
-    ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{remove}="1"
 
-    # Remove NVIDIA USB Type-C UCSI devices, if present
-    ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c8000", ATTR{remove}="1"
-
-    # Remove NVIDIA Audio devices, if present
-    ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{remove}="1"
-
-    # Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
-    ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
-    ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
-
-    # Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
-    ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
-    ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
-    '';
-}
-#+end_src
-
-#+name: nixos-section-unused
+#+name: nixos-moxps
 #+begin_src nix
 {
   system.nixos.tags = [ "with-nvidia-egpu" ];
@@ -525,7 +500,6 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
   #     exec -a "$0" "$@"
   #   '';
   # in [ nvidia-offload ]; 
-  # boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11 ];
   # Nvidia stuff (https://discourse.nixos.org/t/how-to-use-nvidia-prime-offload-to-run-the-x-server-on-the-integrated-board/9091/13)
   boot.extraModprobeConfig = "options nvidia \"NVreg_DynamicPowerManagement=0x02\"\n";
   services.hardware.bolt.enable = true;
@@ -566,14 +540,14 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
     ];
     extraPackages32 = [ pkgs.linuxPackages.nvidia_x11.lib32 ];
   };
-  
+
   services.xserver = {
     displayManager = {
       lightdm.enable = false;
       gdm.enable = true;
     };
   };
-  
+
 }
 #+end_src
 
