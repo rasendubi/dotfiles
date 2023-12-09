@@ -1514,14 +1514,16 @@ Automatic USB stick mounting
   services.cron = {
     enable = true;
     systemCronJobs = [
-      "* * * * 0      moritz    . /etc/profile; cd /home/moritz/wiki/; ${pkgs.git}/bin/git add .; ${pkgs.git}/bin/git commit -m 'Weekly checkpoint' 2>&1 >> /tmp/git_out"
+      # Add new files to wiki
+      "0 0 * * 0      moritz    . /etc/profile; cd /home/moritz/wiki/; ${pkgs.git}/bin/git add .; ${pkgs.git}/bin/git commit -m 'Weekly checkpoint' 2>&1 >> /tmp/git_out"
+      # Download paperpile citations
+      "* * * * 0      moritz    . /etc/profile; cd /home/moritz/wiki/papers; wget --content-disposition -N https://paperpile.com/eb/ghEynTRTJb >> download_paperpile_log"
     ];
   };
 }
 #+end_src
 
-
-* Mail setup
+* Office setup
 ** Mbsync
 I use mbsync to sync my accounts and make them available offline.
 #+name: nixos-section
