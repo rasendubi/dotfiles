@@ -1284,7 +1284,7 @@ Update [[https://linux.die.net/man/1/locate][locate]] database daily.
 {
   services.openssh = {
     enable = true;
-    passwordAuthentication = false;
+    settings.PasswordAuthentication = false;
   };
   users.users.moritz.openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMc+scl71X7g21XFygTNB3onyGuION89iHSUw0eYcN2H mail+macbook@moritzs.de" ];
 }
@@ -1993,7 +1993,7 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
     fontDir.enable = true;
     enableGhostscriptFonts = false;
 
-    fonts = with pkgs; [
+    packages = with pkgs; [
       corefonts
       inconsolata
       dejavu_fonts
@@ -2188,7 +2188,7 @@ I use Firefox Quantum as my default browser now.
 #+begin_src nix
 {
   environment.systemPackages = [
-    (pkgs.firefox.override { extraNativeMessagingHosts = [ pkgs.passff-host ]; })
+    (pkgs.firefox.override { nativeMessagingHosts = [ pkgs.passff-host ]; })
   ];
 }
 #+end_src
@@ -2733,7 +2733,7 @@ I use Terminus font.
 #+begin_src nix
 {
   fonts = {
-    fonts = with pkgs; [
+    packages = with pkgs; [
       powerline-fonts
       terminus_font
 
@@ -3953,7 +3953,7 @@ fi
   services.openssh = {
     enable = true;
     permitRootLogin = "yes";
-    passwordAuthentication = true;
+    settings.PasswordAuthentication = true;
   };
 }
 #+end_src
