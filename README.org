@@ -4139,20 +4139,30 @@ fi
 #+end_src
 ** Homeassistant
 #+name: machine-moxps
+
+influxdb2 was initialized manually:
+username: moritz, password: moritzsch
+Organization: HomeAssistant
+Bucket Home Assistant
+
 #+begin_src nix
 {
   virtualisation.oci-containers = {
-    backend = "podman";
+    # backend = "podman";
     containers.homeassistant = {
-      volumes = [ "home-assistant:/config" ];
+      volumes = [ "/var/lib/hass:/config" ];
       environment.TZ = "Europe/Berlin";
+      ports = [ "0.0.0.0:8123:8123" ];
       image = "ghcr.io/home-assistant/home-assistant:stable";  # Warning: if the tag does not change, the image will not be updated
       extraOptions = [
-        "--network=host"
-        "--device=/dev/ttyACM0:/dev/ttyACM0"  # Example, change this to match your own hardware
-        "--device=/dev/ttyUSB0:/dev/ttyUSB0"  # Example, change this to match your own hardware
+        # "--network=host"
+        # "--device=/dev/ttyACM0:/dev/ttyACM0"  # Example, change this to match your own hardware
+        # "--device=/dev/ttyUSB0:/dev/ttyUSB0"  # Example, change this to match your own hardware
       ];
     };
+  };
+  services.influxdb2 = {
+    enable = true;
   };
 }
 #+end_src
