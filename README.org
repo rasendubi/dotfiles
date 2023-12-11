@@ -618,6 +618,17 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
   environment.variables.XCURSOR_SIZE = "64";
 }
 #+end_src
+**** Prevent sleeping on lid close
+#+name: nixos-section
+#+begin_src nix
+{
+  services.upower.ignoreLid = true;
+  services.logind = {
+    lidSwitchExternalPower = "ignore";
+  };
+}
+#+end_src
+
 *** mopad
 Thinkpad X1 Extreme gen 4
 
