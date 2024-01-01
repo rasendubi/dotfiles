@@ -2,16 +2,19 @@
 {
   xdg.mimeApps = {
     enable = true;
-    # TODO this is simultaneously handled globally.. -.-
     defaultApplications = {
       "inode/directory" = [ "org.xfce.Thunar.desktop" ];
       "application/pdf" = [ "emacsclient.desktop" ];
       "x-scheme-handler/org-protocol" = [ "org-protocol.desktop" ];
       "x-scheme-handler/msteams" = [ "teams.desktop" ];
-      "image/png" = [ "org.inkscape.Inkscape.desktop" ];  # annoyiiiing
+      "image/png" = [ "feh.desktop" "org.inkscape.Inkscape.desktop" ];  # annoyiiiing
       "image/svg+xml" = [ "org.inkscape.Inkscape.desktop" ];
       "x-scheme-handler/http" = [ "google-chrome.desktop" ];
       "x-scheme-handler/https" = [ "google-chrome.desktop" ];
+      "x-scheme-handler/about" = [ "google-chrome.desktop" ];  # Added
+      "x-scheme-handler/unknown" = [ "google-chrome.desktop" ];  # Added
+      "image/jpeg" = [ "feh.desktop" "gimp.desktop" ];  # Added
+      "video/mp4" = [ "vlc.desktop" ];  # Added
 
     };
   };
@@ -91,8 +94,8 @@ home.packages =   with pkgs; [
 
     mcfly
     minicom
-    firefox
-    google-chrome
+    # firefox
+    # google-chrome
     arandr
     escrotum
     ripgrep
@@ -375,7 +378,5 @@ home.packages =   with pkgs; [
   };
 
   services.network-manager-applet.enable = true;
-
-
 }
 
