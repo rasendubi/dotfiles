@@ -70,8 +70,9 @@
       pkgs = import nixpkgs {
         inherit system;
         overlays = self.overlays;
-        config = { allowUnfree = true;  
+        config = { allowUnfree = true;
                     allowBroken = true;
+                    nvidia.acceptLicense = true;
                     permittedInsecurePackages = [
                       "adobe-reader-9.5.5"
                       "qtwebkit-5.212.0-alpha4"
@@ -126,7 +127,7 @@
             inherit system;
             overlays = self.overlays; # .${system};
         
-            config = { allowUnfree = true;  allowBroken = true; };
+            config = { allowUnfree = true;  allowBroken = true; nvidia.acceptLicense = true; };
           };
           nixpkgs-2009 = import inputs.nixpkgs-2009 {
             inherit system;

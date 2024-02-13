@@ -182,7 +182,10 @@ home.packages =   with pkgs; [
           end
       end
 
-      add_ssh_keys
+      if [ (hostname) = "mopad" ]
+          add_ssh_keys
+      end
+
 
       eval (direnv hook fish)
       fish_vi_key_bindings

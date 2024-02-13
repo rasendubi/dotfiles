@@ -7,7 +7,7 @@ let
           (import "${inputs.nixos-hardware}/common/cpu/intel")
           (import "${inputs.nixos-hardware}/common/cpu/intel/kaby-lake")
           (import "${inputs.nixos-hardware}/common/pc/laptop")  # tlp.enable = true
-          # (import "${inputs.nixos-hardware}/common/pc/laptop/acpi_call.nix")  # tlp.enable = true
+          (import "${inputs.nixos-hardware}/common/pc/laptop/acpi_call.nix")  # tlp.enable = true
           (import "${inputs.nixos-hardware}/common/pc/laptop/ssd")
           inputs.nixpkgs.nixosModules.notDetected
         ];
@@ -38,8 +38,7 @@ let
         #   ];
         # };
       
-      
-        nix.maxJobs = lib.mkDefault 8;
+        nix.settings.max-jobs = lib.mkDefault 8;
       
         services.undervolt = {
           enable = true;
@@ -53,19 +52,46 @@ let
       
       }
       {
-        system.nixos.tags = [ "with-intel" ];
-        services.xserver.videoDrivers = [ "intel" ];  # modesetting didn't help
-        hardware.nvidiaOptimus.disable = true;
-        boot.blacklistedKernelModules = [ "nouveau" "nvidia" ];  # bbswitch
-        
+        system.nixos.tags = [ "no-xserver-datacenter" ];
+      
+        boot.extraModulePackages = with config.boot.kernelPackages; [ acpi_call bbswitch ];
+      
         # https://github.com/NixOS/nixpkgs/issues/94315 <- from here. bugfix for this: https://discourse.nixos.org/t/update-to-21-05-breaks-opengl-because-of-dependency-on-glibc-2-31/14218 note, that there are multiple occurences of this
         # hardware.opengl.package = pkgs.nixpkgs-2009.mesa_drivers;
-        services.xserver = {
-          displayManager = {
-            lightdm.enable = false;
-            gdm.enable = true;
-          };
-        };
+        services.xserver.enable = false;
+        hardware.nvidia.datacenter.enable = true;
+        services.hardware.bolt.enable = true;
+        hardware.nvidia.open = true;  # required for eGPU
+      
+        hardware.nvidia.package = (pkgs.unstable.linuxPackagesFor config.boot.kernelPackages.kernel).nvidiaPackages.dc_535;
+      
+        # "pkgs.os-specific.linux.nvidia_x11.production";  # alternative: stable
+      
+        boot.blacklistedKernelModules = [ "nouveau" ];  # bbswitch
+        hardware.nvidia.nvidiaPersistenced = true;  # disconnect crashes
+      
+        hardware.opengl.enable = true;  # needed for nvidia-docker
+        services.getty.autologinUser = "moritz";
+      
+        hardware.nvidia.powerManagement.enable = false;
+        # services.udev.extraRules = ''
+        #   # Remove NVIDIA USB xHCI Host Controller devices, if present
+        #   ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{remove}="1"
+      
+        #   # Remove NVIDIA USB Type-C UCSI devices, if present
+        #   ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c8000", ATTR{remove}="1"
+      
+        #   # Remove NVIDIA Audio devices, if present
+        #   ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{remove}="1"
+      
+        #   # Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
+        #   ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
+        #   ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
+      
+        #   # Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
+        #   ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
+        #   ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
+        # '';
       }
       {
         fileSystems."/" =
@@ -103,7 +129,7 @@ let
             options = [ "nofail" ];
           };
       # 2.5" SSD ugreen
-        fileSystems."/mnt/sdd2tb" =
+        fileSystems."/mnt/ssd2tb" =
           { device = "/dev/disk/by-uuid/44d8f482-0ab4-4184-8941-1cf3969c298c";
             fsType = "ext4";
             options = [ "nofail" ];
@@ -122,6 +148,12 @@ let
         environment.variables.XCURSOR_SIZE = "64";
       }
       {
+        services.upower.ignoreLid = true;
+        services.logind = {
+          lidSwitchExternalPower = "ignore";
+        };
+      }
+      {
         musnix = {
           # Find this value with `lspci | grep -i audio` (per the musnix readme).
           # PITFALL: This is the id of the built-in soundcard.
@@ -130,11 +162,18 @@ let
         };
       }
       {
+        services.minidlna = {
+          enable = true;
+          openFirewall = true;
+          settings.media_dir= [ "/mnt/ssd2tb/Media/Filme" ];
+        };
+      }
+      {
         networking = {
           hostName = "moxps";
           useDHCP = false;
           interfaces.eth0.useDHCP = true;
-          wireless.enable = false; 
+          wireless.enable = false;
           networkmanager.enable = true;
           nat = {  # NAT
             enable = true;
@@ -150,8 +189,10 @@ let
       
         services.openssh = {
           enable = true;
-          permitRootLogin = "yes";
-          settings.PasswordAuthentication = true;
+          settings = {
+            PermitRootLogin = "yes";
+            PasswordAuthentication = false;
+          };
         };
       }
       {
@@ -250,6 +291,64 @@ let
       }
       
       {
+        virtualisation.oci-containers = {
+          # backend = "podman";
+          containers.homeassistant = {
+            volumes = [ "/var/lib/hass:/config" ];
+            environment.TZ = "Europe/Berlin";
+            ports = [ "0.0.0.0:8123:8123" ];
+            image = "ghcr.io/home-assistant/home-assistant:stable";  # Warning: if the tag does not change, the image will not be updated
+            extraOptions = [
+              # "--network=host"
+              # "--device=/dev/ttyACM0:/dev/ttyACM0"  # Example, change this to match your own hardware
+              # "--device=/dev/ttyUSB0:/dev/ttyUSB0"  # Example, change this to match your own hardware
+            ];
+          };
+        };
+        services.influxdb2 = {
+          enable = true;
+        };
+      }
+      {
+        services.borgbackup.jobs =
+          let common-excludes = [
+                # Largest cache dirs
+                "*/venv"
+                "*/.venv"
+                "*/.conda"
+              ];
+              borg-dirs = {
+                wiki="/home/moritz/wiki";
+                wiki_git="/home/moritz/wiki_git";
+                media="/mnt/ssd2tb/Media";
+                # moxps-home="/home/moritz";
+                var-lib="/var/lib";
+                var-backup="/var/backup";  # maybe postgresql
+              };
+              basicBorgJob = name: {
+                encryption.mode = "none";
+                # environment.BORG_RSH = "ssh -o 'StrictHostKeyChecking=no' -i /home/moritz/.ssh/id_ed25519";
+                environment.BORG_UNKNOWN_UNENCRYPTED_REPO_ACCESS_IS_OK = "yes";
+                extraCreateArgs = "--verbose --stats --checkpoint-interval 600";
+                repo = "/mnt/hdd3tb/borg/${name}";
+                compression = "zstd,1";
+                startAt = "daily";  # this means "*-*-* 00:00:00"
+                user = if builtins.match "^/var" name != null then "root" else "moritz";
+                prune.keep = {
+                  within = "1d"; # Keep all archives from the last day
+                  daily = 7;
+                  weekly = 4;
+                  monthly = 6; # half a year monthly
+                  yearly = -1; # every year one backup forever (maybe I should change this at some point?)
+                };
+              };
+        in builtins.mapAttrs (name: value:
+          basicBorgJob name // rec {
+            paths = value;
+            exclude = map (x: paths + "/" + x) common-excludes;
+          }) borg-dirs;
+      }
+      {
         networking.firewall.extraCommands = ''iptables -t raw -A OUTPUT -p udp -m udp --dport 137 -j CT --helper netbios-ns'';
         services.samba = {
           enable = true;
@@ -270,7 +369,7 @@ let
           '';
           #shares = {
             #nas = {
-              #"path" = "/mnt/sdd2tb";
+              #"path" = "/mnt/ssd2tb";
               #"guest ok" = "yes";
               #"read only" = "no";
             #};
@@ -462,7 +561,7 @@ let
           intelBusId = lib.mkDefault "PCI:0:2:0";
           # Bus ID of the NVIDIA GPU.
           nvidiaBusId = lib.mkDefault "PCI:1:0:0";
-          
+      
         };
       
         specialisation = {
@@ -618,7 +717,6 @@ in
     # (import "${inputs.nixpkgs-local}/nixos/modules/services/printing/cupsd.nix")
     (import "${inputs.musnix}")
     {
-    
       # The NixOS release to be compatible with for stateful data such as databases.
       system.stateVersion = "20.03";
     }
@@ -693,9 +791,28 @@ in
           "x-systemd.automount"
           "noauto"
           "uid=1000"
-          "x-systemd.idle-timeout=60,x-systemd.device-timeout=5s,x-systemd.mount-timeout=5s"
+          "x-systemd.idle-timeout=60"
+          "x-systemd.device-timeout=5s"
+          "x-systemd.mount-timeout=5s"
         ];
       };
+      # mount command fils unfortunately
+      # age.secrets.cemm.file = /home/moritz/nixos-config/secrets/cemm.age;
+      # fileSystems."/mnt/cemm" = {
+      #   device = "//int.cemm.at/files";
+      #   fsType = "cifs";
+      #   options = [
+      #     "username=mschaefer"
+      #     "credentials=${config.age.secrets.cemm.path}"
+      #     # "domain=int.cemm.at"  # CEMMINT
+      #     "x-systemd.automount"
+      #     "noauto"
+      #     "uid=1000"
+      #     "x-systemd.idle-timeout=60"
+      #     "x-systemd.device-timeout=5s"
+      #     "x-systemd.mount-timeout=5s"
+      #   ];
+      # };
     }
     
     {
@@ -722,8 +839,8 @@ in
             export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/1000/bus"
             export PATH="${pkgs.dbus}/bin:$PATH"
     
-            if [ $(cat /sys/class/power_supply/BAT0/capacity) -le 10 ]; then
-              ${pkgs.sudo}/bin/sudo -E -u moritz  ${pkgs.libnotify}/bin/notify-send -t 2500 "Low Battery" "Your battery is below 10%, please plug in your charger."
+            if [ $(cat /sys/class/power_supply/BAT0/capacity) -le 20 ]; then
+              ${pkgs.sudo}/bin/sudo -E -u moritz  ${pkgs.libnotify}/bin/notify-send -u critical "Low Battery" "Your battery is below 20%, please plug in your charger."
             fi
             test "$(cat /sys/class/power_supply/BAT0/status)" != Discharging \
               || test "$(cat /sys/class/power_supply/BAT0/capacity)" -ge 5
@@ -863,13 +980,6 @@ in
         enable = true;
         localuser = "moritz";
       };
-    }
-    {
-      services.openssh = {
-        enable = true;
-        settings.PasswordAuthentication = false;
-      };
-      users.users.moritz.openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMc+scl71X7g21XFygTNB3onyGuION89iHSUw0eYcN2H mail+macbook@moritzs.de" ];
     }
     {
       services.dnsmasq = {
@@ -1065,7 +1175,6 @@ in
     {
       services.xserver = {
         # desktopManager.gnome3.enable = true;
-        enable = true;
         displayManager = {
           startx.enable = false;
           autoLogin = {  # if errors, then disable again
@@ -1109,6 +1218,7 @@ in
     }
     {
       environment.systemPackages = [
+        pkgs.khoj
         pkgs.wmname
         pkgs.xclip
         pkgs.escrotum
@@ -1156,6 +1266,10 @@ in
         enable = true;
         brightness.night = "1";
         temperature.night = 2800;
+        extraOptions = [
+          "-l manual"
+          "-l 0.0:0.0"
+        ];
       };
     
       location.provider = "geoclue2";
@@ -1242,13 +1356,6 @@ in
     }
     {
       programs.kdeconnect.enable = true;
-    }
-    {
-      services.minidlna = {
-        enable = true;
-        openFirewall = true;
-        settings.media_dir= [ "/srv/minidlna/" ];
-      };
     }
     {
       environment.systemPackages = with pkgs; [
@@ -1548,7 +1655,7 @@ in
         '';
         conda_shell_protenv_cmd = pkgs.writeScript "guided_environment" ''
           #!${pkgs.stdenv.shell}
-          conda activate single-cellm
+          conda activate ag_binding_diffusion
           "$@"
         '';
         kernel_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_kernel" ''

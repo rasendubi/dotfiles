@@ -60,7 +60,6 @@ in
     # (import "${inputs.nixpkgs-local}/nixos/modules/services/printing/cupsd.nix")
     (import "${inputs.musnix}")
     {
-    
       # The NixOS release to be compatible with for stateful data such as databases.
       system.stateVersion = "20.03";
     }
@@ -160,8 +159,9 @@ Make this repository flake-compatible:
       pkgs = import nixpkgs {
         inherit system;
         overlays = self.overlays;
-        config = { allowUnfree = true;  
+        config = { allowUnfree = true;
                     allowBroken = true;
+                    nvidia.acceptLicense = true;
                     permittedInsecurePackages = [
                       "adobe-reader-9.5.5"
                       "qtwebkit-5.212.0-alpha4"
@@ -233,7 +233,7 @@ Make this repository flake-compatible:
       inherit system;
       overlays = self.overlays; # .${system};
       
-      config = { allowUnfree = true;  allowBroken = true; };
+      config = { allowUnfree = true;  allowBroken = true; nvidia.acceptLicense = true; };
     };
     nixpkgs-2009 = import inputs.nixpkgs-2009 {
       inherit system;
@@ -366,7 +366,7 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
     (import "${inputs.nixos-hardware}/common/cpu/intel")
     (import "${inputs.nixos-hardware}/common/cpu/intel/kaby-lake")
     (import "${inputs.nixos-hardware}/common/pc/laptop")  # tlp.enable = true
-    # (import "${inputs.nixos-hardware}/common/pc/laptop/acpi_call.nix")  # tlp.enable = true
+    (import "${inputs.nixos-hardware}/common/pc/laptop/acpi_call.nix")  # tlp.enable = true
     (import "${inputs.nixos-hardware}/common/pc/laptop/ssd")
     inputs.nixpkgs.nixosModules.notDetected
   ];
@@ -397,8 +397,7 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
   #   ];
   # };
 
-
-  nix.maxJobs = lib.mkDefault 8;
+  nix.settings.max-jobs = lib.mkDefault 8;
 
   services.undervolt = {
     enable = true;
@@ -413,7 +412,7 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
 }
 #+end_src
 ***** Intel only
-#+name: machine-moxps
+#+name: machine-moxps-unused
 #+begin_src nix
 {
   system.nixos.tags = [ "with-intel" ];
@@ -424,9 +423,10 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
   # https://github.com/NixOS/nixpkgs/issues/94315 <- from here. bugfix for this: https://discourse.nixos.org/t/update-to-21-05-breaks-opengl-because-of-dependency-on-glibc-2-31/14218 note, that there are multiple occurences of this
   # hardware.opengl.package = pkgs.nixpkgs-2009.mesa_drivers;
   services.xserver = {
+    enable = false;
     displayManager = {
       lightdm.enable = false;
-      gdm.enable = true;
+      gdm.enable = false;
     };
   };
 }
@@ -468,7 +468,7 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
     ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
     '';
   services.xserver.videoDrivers = [ "nvidia" ];
-  
+
   hardware.nvidia.modesetting.enable = lib.mkDefault true;
   hardware.nvidia.optimus_prime.enable = lib.mkDefault true;  # warning: The option `hardware.nvidia.optimus_prime.enable' defined in `<unknown-file>' has been renamed to `hardware.nvidia.prime.sync.enable'.
   hardware.nvidia.prime.nvidiaBusId = lib.mkDefault "PCI:1:0:0";
@@ -486,23 +486,36 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
 #+end_src
 
 ***** Nvidia eGPU
+This strongly mimics
+/home/moritz/Projects/nixpkgs/nixos/modules/hardware/video/nvidia.nix
 
-#+name: nixos-moxps
+TODO try with xserver (nvidia displayer driver) and with datacenter. both with open driver. I need to get a working version before I go "wild"
+
+****** xserver
+#+name: machine-moxps-unused
 #+begin_src nix
 {
-  system.nixos.tags = [ "with-nvidia-egpu" ];
-  # environment.systemPackages = let
-  #   nvidia-offload = pkgs.writeShellScriptBin "nvidia-offload" ''
-  #     export __NV_PRIME_RENDER_OFFLOAD=1
-  #     export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
-  #     export __GLX_VENDOR_LIBRARY_NAME=nvidia
-  #     export __VK_LAYER_NV_optimus=NVIDIA_only
-  #     exec -a "$0" "$@"
-  #   '';
-  # in [ nvidia-offload ]; 
-  # Nvidia stuff (https://discourse.nixos.org/t/how-to-use-nvidia-prime-offload-to-run-the-x-server-on-the-integrated-board/9091/13)
-  boot.extraModprobeConfig = "options nvidia \"NVreg_DynamicPowerManagement=0x02\"\n";
+  services.xserver.videoDrivers = [ "nvidia" ];
+  hardware.nvidia.prime.nvidiaBusId = lib.mkDefault "PCI:1:0:0";
+  hardware.nvidia.prime.intelBusId = lib.mkDefault "PCI:0:2:0";
+  hardware.nvidia.prime.offload.enable = true;
+
+  services.xserver.enable = true;
   services.hardware.bolt.enable = true;
+  hardware.nvidia.open = true;  # required for eGPU maybe?
+
+  # config.boot.kernelPackages.nvidiaPackages
+  hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.production;
+  # "pkgs.os-specific.linux.nvidia_x11.production";  # alternative: stable
+
+  boot.blacklistedKernelModules = [ "nouveau" ];  # bbswitch
+  hardware.nvidia.nvidiaPersistenced = true;  # powerdown crashes the eGPU
+
+  hardware.opengl.enable = true;  # needed for nvidia-docker
+  services.getty.autologinUser = "moritz";
+
+  hardware.nvidia.powerManagement.enable = false;
+
   services.udev.extraRules = ''
     # Remove NVIDIA USB xHCI Host Controller devices, if present
     ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{remove}="1"
@@ -521,13 +534,120 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
     ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
     ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
     '';
+}
+#+end_src
+
+****** datacenter
+#+name: machine-moxps
+#+begin_src nix
+{
+  system.nixos.tags = [ "no-xserver-datacenter" ];
+
+  # https://github.com/NixOS/nixpkgs/issues/94315 <- from here. bugfix for this: https://discourse.nixos.org/t/update-to-21-05-breaks-opengl-because-of-dependency-on-glibc-2-31/14218 note, that there are multiple occurences of this
+  # hardware.opengl.package = pkgs.nixpkgs-2009.mesa_drivers;
+  services.xserver.enable = false;
+  hardware.nvidia.datacenter.enable = true;
+  services.hardware.bolt.enable = true;
+  hardware.nvidia.open = true;  # required for eGPU
+
+  hardware.nvidia.package = (pkgs.unstable.linuxPackagesFor config.boot.kernelPackages.kernel).nvidiaPackages.dc_535;
+
+  # "pkgs.os-specific.linux.nvidia_x11.production";  # alternative: stable
+
+  boot.blacklistedKernelModules = [ "nouveau" ];  # bbswitch
+  hardware.nvidia.nvidiaPersistenced = true;  # disconnect crashes
+
+  hardware.opengl.enable = true;  # needed for nvidia-docker
+  services.getty.autologinUser = "moritz";
+
+  hardware.nvidia.powerManagement.enable = false;
+  # services.udev.extraRules = ''
+  #   # Remove NVIDIA USB xHCI Host Controller devices, if present
+  #   ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{remove}="1"
+
+  #   # Remove NVIDIA USB Type-C UCSI devices, if present
+  #   ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c8000", ATTR{remove}="1"
+
+  #   # Remove NVIDIA Audio devices, if present
+  #   ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{remove}="1"
+
+  #   # Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
+  #   ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
+  #   ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
+
+  #   # Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
+  #   ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
+  #   ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
+  # '';
+}
+#+end_src
+
+****** manual
+#+name: machine-moxps-unused
+#+begin_src nix
+{
+  system.nixos.tags = [ "with-nvidia-egpu" ];
+  # environment.systemPackages = let
+  #   nvidia-offload = pkgs.writeShellScriptBin "nvidia-offload" ''
+  #     export __NV_PRIME_RENDER_OFFLOAD=1
+  #     export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
+  #     export __GLX_VENDOR_LIBRARY_NAME=nvidia
+  #     export __VK_LAYER_NV_optimus=NVIDIA_only
+  #     exec -a "$0" "$@"
+  #   '';
+  # in [ nvidia-offload ]; 
+  # Nvidia stuff (https://discourse.nixos.org/t/how-to-use-nvidia-prime-offload-to-run-the-x-server-on-the-integrated-board/9091/13)
+  # boot.extraModprobeConfig = "options nvidia \"NVreg_DynamicPowerManagement=0x02\"\n";
+  services.hardware.bolt.enable = true;
+
+  # systemd.tmpfiles.rules =
+  #   lib.optional config.virtualisation.docker.enableNvidia
+  #     "L+ /run/nvidia-docker/bin - - - - ${nvidia_x11.bin}/origBin";
+
+  services.udev.extraRules = ''
+    # Remove NVIDIA USB xHCI Host Controller devices, if present
+    ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{remove}="1"
+
+    # Remove NVIDIA USB Type-C UCSI devices, if present
+    ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c8000", ATTR{remove}="1"
+
+    # Remove NVIDIA Audio devices, if present
+    ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{remove}="1"
+
+    # Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
+    ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
+    ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
+
+    # Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
+    ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
+    ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
+
+
+    # Create /dev/nvidia-uvm when the nvidia-uvm module is loaded.
+    KERNEL=="nvidia", RUN+="${pkgs.runtimeShell} -c 'mknod -m 666 /dev/nvidiactl c 195 255'"
+    KERNEL=="nvidia", RUN+="${pkgs.runtimeShell} -c 'for i in $$(cat /proc/driver/nvidia/gpus/*/information | grep Minor | cut -d \  -f 4); do mknod -m 666 /dev/nvidia$${i} c 195 $${i}; done'"
+    KERNEL=="nvidia_modeset", RUN+="${pkgs.runtimeShell} -c 'mknod -m 666 /dev/nvidia-modeset c 195 254'"
+    KERNEL=="nvidia_uvm", RUN+="${pkgs.runtimeShell} -c 'mknod -m 666 /dev/nvidia-uvm c $$(grep nvidia-uvm /proc/devices | cut -d \  -f 1) 0'"
+    KERNEL=="nvidia_uvm", RUN+="${pkgs.runtimeShell} -c 'mknod -m 666 /dev/nvidia-uvm-tools c $$(grep nvidia-uvm /proc/devices | cut -d \  -f 1) 1'"
+    '';
   # hardware.opengl.package = pkgs.nixpkgs-2009.mesa_drivers;
   services.xserver.videoDrivers = [ "intel" ];
-  boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11 ];
-  boot.blacklistedKernelModules = [ "nouveau" "nvidia_drm" "nvidia_modeset" "nvidia" ];
-  environment.systemPackages = [ pkgs.linuxPackages.nvidia_x11 ]; # packages
-  hardware.nvidia.package = pkgs.os-specific.linux.nvidia_x11.production;  # alternative: stable 
+  boot.extraModulePackages = [ pkgs.linuxPackages.nvidia_x11.open ];  # .open added
+
+  boot.blacklistedKernelModules = [ "nouveau" "nvidia_drm" "nvidia_modeset" "nvidia" "nvidiafb" ];
+  boot.extraModprobeConfig = ''
+    softdep nvidia post: nvidia-uvm
+  '';
+  environment.systemPackages = [ pkgs.linuxPackages.nvidia_x11.bin ]; # packages # .bin added
+  
+  hardware.firmware = [ pkgs.linuxPackages.nvidia_x11.firmware ];
+  
+  boot.kernelParams = [ "nvidia.NVreg_OpenRmEnableUnsupportedGpus=1" ];
+  
+  # hardware.nvidia.package = pkgs.os-specific.linux.nvidia_x11.production;  # alternative: stable 
   # /home/moritz/Projects/nixpkgs/pkgs/os-specific/linux/nvidia-x11/default.nix <- add version 450
+  hardware.nvidia.open = true;
+  # hardware.nvidia.datacenter.enable = true;
   hardware.opengl = {
     enable = true;
     driSupport = true;
@@ -594,7 +714,7 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
       options = [ "nofail" ];
     };
 # 2.5" SSD ugreen
-  fileSystems."/mnt/sdd2tb" =
+  fileSystems."/mnt/ssd2tb" =
     { device = "/dev/disk/by-uuid/44d8f482-0ab4-4184-8941-1cf3969c298c";
       fsType = "ext4";
       options = [ "nofail" ];
@@ -619,7 +739,7 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
 }
 #+end_src
 **** Prevent sleeping on lid close
-#+name: nixos-section
+#+name: machine-moxps
 #+begin_src nix
 {
   services.upower.ignoreLid = true;
@@ -987,6 +1107,8 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
 #+end_src
 ** Network mounts
 
+For background, see this thread: https://discourse.nixos.org/t/seeking-assistance-with-old-exwm-emacs-version-after-23-11-update/36607/4
+
 #+name: nixos-section
 #+begin_src nix
 {
@@ -1005,9 +1127,28 @@ Install ntfs-3g to mount ntfs volumes in read-write mode.
       "x-systemd.automount"
       "noauto"
       "uid=1000"
-      "x-systemd.idle-timeout=60,x-systemd.device-timeout=5s,x-systemd.mount-timeout=5s"
+      "x-systemd.idle-timeout=60"
+      "x-systemd.device-timeout=5s"
+      "x-systemd.mount-timeout=5s"
     ];
   };
+  # mount command fails unfortunately. Use Thunar instead
+  # age.secrets.cemm.file = /home/moritz/nixos-config/secrets/cemm.age;
+  # fileSystems."/mnt/cemm" = {
+  #   device = "//int.cemm.at/files";
+  #   fsType = "cifs";
+  #   options = [
+  #     "username=mschaefer"
+  #     "credentials=${config.age.secrets.cemm.path}"
+  #     # "domain=int.cemm.at"  # CEMMINT
+  #     "x-systemd.automount"
+  #     "noauto"
+  #     "uid=1000"
+  #     "x-systemd.idle-timeout=60"
+  #     "x-systemd.device-timeout=5s"
+  #     "x-systemd.mount-timeout=5s"
+  #   ];
+  # };
 }
 
 #+end_src
@@ -1786,7 +1927,6 @@ I needed to hack this to emacs29, because emacs28 failed with my org-mode config
 {
   services.xserver = {
     # desktopManager.gnome3.enable = true;
-    enable = true;
     displayManager = {
       startx.enable = false;
       autoLogin = {  # if errors, then disable again
@@ -2101,13 +2241,13 @@ Here go applications (almost) every normal user needs.
 }
 #+end_src
 ** DLNA
-#+name: nixos-section
+#+name: machine-moxps
 #+begin_src nix
 {
   services.minidlna = {
     enable = true;
     openFirewall = true;
-    settings.media_dir= [ "/srv/minidlna/" ];
+    settings.media_dir= [ "/mnt/ssd2tb/Media/Filme" ];
   };
 }
 #+end_src
@@ -2495,7 +2635,7 @@ CLOSED: [2021-07-14 Wed 12:52]
 - State "CANCELLED"  from              [2021-07-14 Wed 12:52] \\
   this is done by home.nix
 :END:
-# WARNING: This is also defined in my home.nix
+# WARNING: This is defined in my home.nix
 #+name: nixos-section-unused
 #+begin_src nix
 {
@@ -3951,8 +4091,10 @@ fi
 
   services.openssh = {
     enable = true;
-    permitRootLogin = "yes";
-    settings.PasswordAuthentication = true;
+    settings = {
+      PermitRootLogin = "yes";
+      PasswordAuthentication = false;
+    };
   };
 }
 #+end_src
@@ -4123,13 +4265,13 @@ fi
 }
 #+end_src
 ** Homeassistant
-#+name: machine-moxps
 
 influxdb2 was initialized manually:
 username: moritz, password: moritzsch
 Organization: HomeAssistant
 Bucket Home Assistant
 
+#+name: machine-moxps
 #+begin_src nix
 {
   virtualisation.oci-containers = {
@@ -4153,7 +4295,7 @@ Bucket Home Assistant
 #+end_src
 
 ** Borg
-#+name: machine-moxps-unused TODO
+#+name: machine-moxps
 #+begin_src nix
 {
   services.borgbackup.jobs =
@@ -4164,11 +4306,12 @@ Bucket Home Assistant
           "*/.conda"
         ];
         borg-dirs = {
-          wiki="/mnt/sdd2tb/wiki";
-          media="/mnt/sdd2tb/Media";
-          pi-home="/home/moritz";
+          wiki="/home/moritz/wiki";
+          wiki_git="/home/moritz/wiki_git";
+          media="/mnt/ssd2tb/Media";
+          # moxps-home="/home/moritz";
           var-lib="/var/lib";
-          var-backup="/var/backup";  # for now only postgresql
+          var-backup="/var/backup";  # maybe postgresql
         };
         basicBorgJob = name: {
           encryption.mode = "none";
@@ -4178,7 +4321,7 @@ Bucket Home Assistant
           repo = "/mnt/hdd3tb/borg/${name}";
           compression = "zstd,1";
           startAt = "daily";  # this means "*-*-* 00:00:00"
-          user = "moritz";
+          user = if builtins.match "^/var" name != null then "root" else "moritz";
           prune.keep = {
             within = "1d"; # Keep all archives from the last day
             daily = 7;
@@ -4229,7 +4372,7 @@ Bucket Home Assistant
     '';
     #shares = {
       #nas = {
-        #"path" = "/mnt/sdd2tb";
+        #"path" = "/mnt/ssd2tb";
         #"guest ok" = "yes";
         #"read only" = "no";
       #};
