@@ -1248,6 +1248,7 @@ For background, see this thread: https://discourse.nixos.org/t/seeking-assistanc
   networking = {
     hostName = name;
 
+    firewall.checkReversePath = false;  # required for wireguard (potential security risk. see https://nixos.wiki/wiki/WireGuard#Setting_up_WireGuard_with_NetworkManager for details)
     networkmanager = {
       enable = true;
       plugins = [
@@ -4075,17 +4076,18 @@ fi
     hostName = "moxps";
     useDHCP = false;
     interfaces.eth0.useDHCP = true;
-    wireless.enable = false; 
+    interfaces.wlp2s0.useDHCP = true;
+    wireless.enable = false;
     networkmanager.enable = true;
-    nat = {  # NAT
+    nat = {  # NAT for wireguard
       enable = true;
-      externalInterface = "wlan0";
+      externalInterface = "wlp2s0";
       internalInterfaces = [ "wg0" ];
     };
     firewall.allowedUDPPorts = [ 51820 ];
     firewall.allowedTCPPorts = [ 51821 8384 21 5000 8086 ];  # syncthing as well, and FTP; and 5000 for vispr; and influxdb2
   };
-  
+
   services.nscd.enable = true;
   systemd.services.sshd.wantedBy = pkgs.lib.mkForce [ "multi-user.target" ];
 
@@ -4102,6 +4104,7 @@ fi
 #+name: machine-moxps
 #+begin_src nix
 {
+  age.secrets.server_wireguard_private.file = "/home/moritz/nixos-config/secrets/wireguard_server_private_key.age";
   networking.wireguard.interfaces = {
     # "wg0" is the network interface name. You can name the interface arbitrarily.
     wg0 = {
@@ -4114,12 +4117,12 @@ fi
       # This allows the wireguard server to route your traffic to the internet and hence be like a VPN
       # For this to work you have to set the dnsserver IP of your router (or dnsserver of choice) in your clients
       postSetup = ''
-        ${pkgs.iptables}/bin/iptables -t nat -A POSTROUTING -s 10.100.0.0/24 -o eth0 -j MASQUERADE
+        ${pkgs.iptables}/bin/iptables -t nat -A POSTROUTING -s 10.100.0.0/24 -o wlp2s0 -j MASQUERADE
       '';
 
       # This undoes the above command
       postShutdown = ''
-        ${pkgs.iptables}/bin/iptables -t nat -D POSTROUTING -s 10.100.0.0/24 -o eth0 -j MASQUERADE
+        ${pkgs.iptables}/bin/iptables -t nat -D POSTROUTING -s 10.100.0.0/24 -o wlp2s0 -j MASQUERADE
       '';
 
       # Path to the private key file.
@@ -4127,15 +4130,21 @@ fi
       # Note: The private key can also be included inline via the privateKey option,
       # but this makes the private key world-readable; thus, using privateKeyFile is
       # recommended.
-      privateKeyFile = "/home/moritz/.wireguard/private_key";
-
+      # TODO use age
+      privateKeyFile = config.age.secrets.server_wireguard_private.path;
+      # server public key is KYF+BBuoY7dNYswft+vhlNrAKjAkMIMYnkhBbHcH7Dw=
       peers = [
         # List of allowed peers.
-        { # Feel free to give a meaning full name
+        { # Phone
           # Public key of the peer (not a file path).
-          publicKey = "jt+CtENSgKth7oXAmbb/jEyhtovwIz1RJIp5eWXIkz8=";
+          publicKey = "iHSpBC8syb+vybBX02aDuIL16uyWfoMbljInRtvuEzU=";
           # List of IPs assigned to this peer within the tunnel subnet. Used to configure routing.
           allowedIPs = [ "10.100.0.2/32" ];
+        }
+        { # Mopad
+          publicKey = "zdDbsCZd65as6OwRlT/PgfgDju9LwpjRhpCRIrfMhWU=";
+          # List of IPs assigned to this peer within the tunnel subnet. Used to configure routing.
+          allowedIPs = [ "10.100.0.3/32" ];
         }
       ];
     };
