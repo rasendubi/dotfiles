@@ -400,7 +400,7 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
   nix.settings.max-jobs = lib.mkDefault 8;
 
   services.undervolt = {
-    enable = true;
+    enable = false;  # disabled because it doesn't work anymore after BIOS upgrade
     # coreOffset = 0;
     # gpuOffset = 0;
     coreOffset = -125;
@@ -543,6 +543,8 @@ TODO try with xserver (nvidia displayer driver) and with datacenter. both with o
 {
   system.nixos.tags = [ "no-xserver-datacenter" ];
 
+  boot.extraModulePackages = with config.boot.kernelPackages; [ acpi_call bbswitch ];
+
   # https://github.com/NixOS/nixpkgs/issues/94315 <- from here. bugfix for this: https://discourse.nixos.org/t/update-to-21-05-breaks-opengl-because-of-dependency-on-glibc-2-31/14218 note, that there are multiple occurences of this
   # hardware.opengl.package = pkgs.nixpkgs-2009.mesa_drivers;
   services.xserver.enable = false;
@@ -561,24 +563,6 @@ TODO try with xserver (nvidia displayer driver) and with datacenter. both with o
   services.getty.autologinUser = "moritz";
 
   hardware.nvidia.powerManagement.enable = false;
-  # services.udev.extraRules = ''
-  #   # Remove NVIDIA USB xHCI Host Controller devices, if present
-  #   ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{remove}="1"
-
-  #   # Remove NVIDIA USB Type-C UCSI devices, if present
-  #   ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c8000", ATTR{remove}="1"
-
-  #   # Remove NVIDIA Audio devices, if present
-  #   ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{remove}="1"
-
-  #   # Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
-  #   ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
-  #   ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
-
-  #   # Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
-  #   ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
-  #   ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
-  # '';
 }
 #+end_src
 
@@ -745,6 +729,31 @@ TODO try with xserver (nvidia displayer driver) and with datacenter. both with o
   services.upower.ignoreLid = true;
   services.logind = {
     lidSwitchExternalPower = "ignore";
+  };
+}
+#+end_src
+
+**** Initialization script
+
+#+name: nixos-section
+#+begin_src nix
+{
+  boot.kernelModules = [ "acpi_call" "bbswitch" ];
+
+  systemd.services.server_init = {
+    description = "";
+
+    wantedBy = [ "multi-user.target" ];
+    after = [ "docker.service" ]; # Ensure server_init starts after Docker
+    requires = [ "docker.service" ]; # Require Docker service to start successfully
+    script = ''
+      echo -n "0000:01:00.0" | tee /sys/bus/pci/drivers/nvidia/unbind || true
+      echo OFF | tee /proc/acpi/bbswitch
+      /run/current-system/sw/bin/nvidia-smi -pm 1
+      cd /home/moritz/Projects/cellwhisperer/hosting/home
+      echo 1 | tee /sys/class/backlight/intel_backlight/brightness
+    '';
+    serviceConfig.Type = "oneshot";
   };
 }
 #+end_src
@@ -1171,7 +1180,9 @@ For background, see this thread: https://discourse.nixos.org/t/seeking-assistanc
 }
 #+end_src
 
-** Hibernate on battery low and warn at 10%
+** Hibernate on battery low and warn at 20%
+
+# TODO could/should have used upower
 #+name: nixos-section
 #+begin_src nix
 {
