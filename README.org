@@ -4155,15 +4155,17 @@ fi
 #+name: machine-moxps
 #+begin_src nix
 {
+  age.secrets.duckdns_password.file = "/home/moritz/nixos-config/secrets/duckdns_password.age";
   services.ddclient = {
     enable = true;
     domains = [ "moritzs.duckdns.org" ];
     protocol = "duckdns";
     server = "www.duckdns.org";
     username = "nouser";
-    passwordFile = "/root/duckdns_password";
+    passwordFile = config.age.secrets.duckdns_password.path;
   };
 
+  # TODO I might need nginx to setup letsencrypt (see monix)
 }
 #+end_src
 ** FTP server
