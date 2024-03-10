@@ -1282,6 +1282,8 @@ For background, see this thread: https://discourse.nixos.org/t/seeking-assistanc
   ];
 }
 #+end_src
+
+
 ** Avahi
 #+name: nixos-section
 #+begin_src nix
@@ -1430,6 +1432,9 @@ Update [[https://linux.die.net/man/1/locate][locate]] database daily.
 #+end_src
 ** SSH
 #+name: nixos-section
+
+Needs to be enabled so we have the public key (for agenix).
+
 #+begin_src nix
 {
   services.openssh = {
@@ -2635,8 +2640,7 @@ Don't require additional setup.
     vscode
     tesseract
 
-    # Used by naga setup
-    xdotool # required by eaf
+    dotool
     lsof
   ];
 }
