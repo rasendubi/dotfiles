@@ -670,16 +670,26 @@ TODO try with xserver (nvidia displayer driver) and with datacenter. both with o
     };
 
   swapDevices =
-    [ { device = "/dev/disk/by-uuid/9eca5b06-730e-439f-997b-512a614ccce0"; }
+    [
+      { device = "/dev/disk/by-uuid/9eca5b06-730e-439f-997b-512a614ccce0"; }
+      { device = "/swapfile"; } # size = 48 * 1024 (48G)
     ];
 
+  boot.initrd.kernelModules = [ "mmc_core" ];  # TODO try with USB stick first! https://medium.com/@geis/using-a-raw-usb-device-to-unlock-a-luks-volume-on-nixos-193406ee7474
+  boot.initrd.systemd.enable = true;
 
   boot.initrd.luks.devices = {
     cryptkey.device = "/dev/disk/by-uuid/ccd19ab7-0e4d-4df4-8912-b87139de56af";
+    anopassphrasekey = {
+         device = "/dev/disk/by-id/mmc-SD02G_0x6035b72d";  # TODO try without
+         allowDiscards = true;
+         keyFileSize = 4096;
+         keyFile = "/dev/mmcblk0";
+    };
     cryptroot = {
       device="/dev/disk/by-uuid/88242cfe-48a1-44d2-a29b-b55e6f05d3d3";
       keyFile="/dev/mapper/cryptkey";
-      };
+    };
     cryptswap = {
       device="/dev/disk/by-uuid/f6fa3573-44a9-41cc-bab7-da60d21e27b3";
       keyFile="/dev/mapper/cryptkey";
@@ -722,7 +732,7 @@ TODO try with xserver (nvidia displayer driver) and with datacenter. both with o
   environment.variables.XCURSOR_SIZE = "64";
 }
 #+end_src
-**** Prevent sleeping on lid close
+**** TODO Prevent sleeping on lid close
 #+name: machine-moxps
 #+begin_src nix
 {
@@ -733,9 +743,10 @@ TODO try with xserver (nvidia displayer driver) and with datacenter. both with o
 }
 #+end_src
 
+TODO switch off/on display on lid close
 **** Initialization script
 
-#+name: nixos-section
+#+name: machine-moxps
 #+begin_src nix
 {
   boot.kernelModules = [ "acpi_call" "bbswitch" ];
@@ -1171,7 +1182,34 @@ For background, see this thread: https://discourse.nixos.org/t/seeking-assistanc
       "noserverino"
       "nodev"
       "noexec"
-
+*** rclone
+#+name: machine-mopad
+#+begin_src nix
+{
+  systemd.services.gdrive_mount = let mountdir = "/mnt/gdrive"; in {
+    description = "mount gdrive dirs";
+    after = [ "network.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      ExecStartPre = "/run/current-system/sw/bin/mkdir -p ${mountdir}";
+      ExecStart = ''
+          ${pkgs.rclone}/bin/rclone mount gdrive: ${mountdir} \
+              --dir-cache-time 48h \
+              --vfs-cache-max-age 48h \
+              --vfs-read-chunk-size 10M \
+              --vfs-read-chunk-size-limit 512M \
+              --buffer-size 512M
+      '';
+      ExecStop = "/run/wrappers/bin/fusermount -u ${mountdir}";
+      Type = "notify";
+      Restart = "always";
+      RestartSec = "10s";
+      Environment = [ "PATH=/run/wrappers/bin:$PATH" ];
+      User = "moritz";
+    };
+  };
+}
+#+end_src
 ** Updates
 #+name: nixos-section
 #+begin_src nix
@@ -1206,11 +1244,14 @@ For background, see this thread: https://discourse.nixos.org/t/seeking-assistanc
         export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/1000/bus"
         export PATH="${pkgs.dbus}/bin:$PATH"
 
-        if [ $(cat /sys/class/power_supply/BAT0/capacity) -le 10 ]; then
-          ${pkgs.sudo}/bin/sudo -E -u moritz  ${pkgs.libnotify}/bin/notify-send -t 2500 "Low Battery" "Your battery is below 10%, please plug in your charger."
+        capacity=$(cat /sys/class/power_supply/BAT0/capacity)
+        status=$(cat /sys/class/power_supply/BAT0/status)
+
+        if [ "$capacity" -le 20 ] && [ "$status" = "Discharging" ]; then
+          ${pkgs.sudo}/bin/sudo -E -u moritz  ${pkgs.libnotify}/bin/notify-send -t 4000 "Low Battery" "Your battery is below 20%, please plug in your charger."
         fi
         test "$(cat /sys/class/power_supply/BAT0/status)" != Discharging \
-          || test "$(cat /sys/class/power_supply/BAT0/capacity)" -ge 5
+          || test "$(cat /sys/class/power_supply/BAT0/capacity)" -ge 10
       '';
     in
       {
@@ -1496,9 +1537,12 @@ I use OneDrive from my job
 #+name: nixos-section
 #+begin_src nix
 {
-  services.onedrive = {
-    enable = true;
-  };
+  # services.onedrive = {
+  #   enable = true;
+  # };
+  environment.systemPackages = [
+    pkgs.onedrivegui
+  ];
 }
 #+end_src
 ** Firewall
@@ -1662,7 +1706,7 @@ Automatic USB stick mounting
 #+end_src
 
 ** Cron
-#+name: nixos-section
+#+name: machine-mopad
 #+begin_src nix
 {
   # Enable cron service
@@ -1987,11 +2031,12 @@ I needed to hack this to emacs29, because emacs28 failed with my org-mode config
 }
 #+end_src
 
-These packages are used by my awesome wm setup:
+These packages are used by my desktop setup
 #+name: nixos-section
 #+begin_src nix
 {
   environment.systemPackages = [
+    pkgs.khoj
     pkgs.wmname
     pkgs.xclip
     pkgs.escrotum
@@ -2100,15 +2145,21 @@ https://nixos.wiki/wiki/Keyboard_Layout_Customization
 Redshift adjusts the color temperature of the screen according to the position of the sun.
 
 Blue light blocks [[https://en.wikipedia.org/wiki/Melatonin][melatonin]] (sleep harmone) secretion, so you feel less sleepy when you stare at computer screen.
-Redshift blocks some blue light (making screen more red), which should improve melatonin secretion and restore sleepiness (which is a good thing).
+`Redshift` blocks some blue light (making screen more red), which should improve melatonin secretion and sleepiness (which is a good thing).
 
-#+name: nixos-section
+NOTE: I disabled it because it doesn't allow time control. seasons (sunrise, sunset) shouldn't matter actually
+
+#+name: nixos-section-unused
 #+begin_src nix
 {
   services.redshift = {
     enable = true;
     brightness.night = "1";
     temperature.night = 2800;
+    extraOptions = [
+      "-l manual"
+      "-l 0.0:0.0"
+    ];
   };
 
   location.provider = "geoclue2";
@@ -2200,6 +2251,7 @@ This one seems to determine chrome
 #+begin_src nix
 {
   services.xserver.dpi = 140;  # was 130, 
+  services.xserver.upscaleDefaultCursor = true;
 }
 #+end_src
 
@@ -2604,6 +2656,7 @@ Don't require additional setup.
     jmtpfs
     qbittorrent
     unstable.blender
+    rclone
     # teams
     discord
     inkscape
@@ -2784,7 +2837,7 @@ Start emacs as a daemon:
   environment.systemPackages =
     let conda_shell_kernel_commands = pkgs.writeScript "guided_environment" ''
       #!${pkgs.stdenv.shell}
-      conda activate ag_binding_diffusion
+      conda activate base
 
       LOG=/tmp/guided_environ_kernel_output
       SYMLINK=/tmp/guided_protein_diffusion_kernel.json
@@ -2811,7 +2864,7 @@ Start emacs as a daemon:
     '';
     conda_shell_protenv_cmd = pkgs.writeScript "guided_environment" ''
       #!${pkgs.stdenv.shell}
-      conda activate single-cellm
+      conda activate base
       "$@"
     '';
     kernel_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_kernel" ''
@@ -3205,6 +3258,7 @@ set-window-option -g automatic-rename
       # json-rpc
       # service-factory
       debugpy
+      faster-whisper
 
       fritzconnection
       # jupyter
@@ -3220,8 +3274,7 @@ set-window-option -g automatic-rename
       # pybedtools
       pybigwig
       xdg
-      epc
-      importmagic
+      # importmagic epc  # disabled because it runs ages during startup of emacs
       jupyterlab
       jupyter_console
       ipykernel
@@ -4223,25 +4276,6 @@ fi
 }
 #+end_src
 
-** deCONZ
-#+name: machine-moxps
-#+begin_src nix
-{
-  config.virtualisation.oci-containers.containers = {
-    deconz = {
-      image = "deconzcommunity/deconz";
-      ports = [ "0.0.0.0:8124:80" "0.0.0.0:8125:443" ];
-      extraOptions = [ "--device=/dev/ttyUSB0:/dev/ttyUSB0:rwm"  "--expose" "5900" "--expose" "6080"];  # I think the exposes can be deleted
-      volumes = [
-       "/var/lib/deconz:/opt/deCONZ"
-        "/etc/localtime:/etc/localtime:ro"
-      ];
-    };
-  }; 
-}
-
-#+end_src
-
 ** Pihole
 #+name: machine-moxps-unused
 #+begin_src nix
@@ -4290,7 +4324,7 @@ fi
   };
 }
 #+end_src
-** Homeassistant
+** Homeassistant & DeConz
 
 influxdb2 was initialized manually:
 username: moritz, password: moritzsch
@@ -4302,25 +4336,98 @@ Bucket Home Assistant
 {
   virtualisation.oci-containers = {
     # backend = "podman";
-    containers.homeassistant = {
-      volumes = [ "/var/lib/hass:/config" ];
-      environment.TZ = "Europe/Berlin";
-      ports = [ "0.0.0.0:8123:8123" ];
-      image = "ghcr.io/home-assistant/home-assistant:stable";  # Warning: if the tag does not change, the image will not be updated
-      extraOptions = [
-        # "--network=host"
-        # "--device=/dev/ttyACM0:/dev/ttyACM0"  # Example, change this to match your own hardware
-        # "--device=/dev/ttyUSB0:/dev/ttyUSB0"  # Example, change this to match your own hardware
-      ];
+    containers = {
+      homeassistant = {
+        volumes = [ "/var/lib/hass:/config" ];
+        environment.TZ = "Europe/Berlin";
+        ports = [ "0.0.0.0:8123:8123" ];
+        hostname = "homeassistant";
+        image = "ghcr.io/home-assistant/home-assistant:stable";  # Warning: if the tag does not change, the image will not be updated
+        extraOptions = [
+          "--network=hass"
+          # "--device=/dev/ttyACM0:/dev/ttyACM0"  # Example, change this to match your own hardware
+          # "--device=/dev/ttyUSB0:/dev/ttyUSB0"  # Example, change this to match your own hardware
+        ];
+      };
+      deconz = {
+        image = "deconzcommunity/deconz";
+        ports = [ "0.0.0.0:8124:80" "0.0.0.0:8125:443" ];
+        extraOptions = [ "--device=/dev/ttyUSB0:/dev/ttyUSB0:rwm"  "--expose" "5900" "--expose" "6080" "--network=hass" ];  # I think the exposes can be deleted
+        volumes = [
+          "/var/lib/deconz:/opt/deCONZ"
+          "/etc/localtime:/etc/localtime:ro"
+        ];
+      };
+      wyoming-whisper = {
+        image = "rhasspy/wyoming-whisper";
+        ports = [ "0.0.0.0:10300:10300" ];
+        extraOptions = ["--network=hass"];
+        hostname = "wyoming-whisper";
+        volumes = [
+          "/var/lib/wyoming-whisper:/data"
+        ];
+        cmd = [ "--model" "base" ];  #  tiny-int8, timy, base-int8, base, and small-int8
+      };
+      wyoming-piper = {
+        image = "rhasspy/wyoming-piper";
+        ports = [ "0.0.0.0:10200:10200" ];
+        extraOptions = ["--network=hass"];
+        hostname = "wyoming-piper";
+        volumes = [
+          "/var/lib/wyoming-piper:/data"
+        ];
+        cmd = [ "--voice" "en_US-lessac-medium" ];
+      };
+      openwakeword = {
+        image = "rhasspy/wyoming-openwakeword";
+        extraOptions = ["--network=hass"];
+        hostname = "openwakeword";
+        volumes = [
+          "/var/lib/openwakeword:/data"
+          # "./wakeword:/custom"
+          # "/etc/timezone:/etc/timezone:ro"  # nonexistent on our system
+          "/etc/localtime:/etc/localtime:ro"
+        ];
+        environment.TZ = "Europe/Vienna";
+        cmd = [ "--preload-model" "ok_nabu"];  #  "--custom-model-dir" "/custom" 
+      };
+      # TODO improve by adding configs here: https://github.com/rhasspy/wyoming-satellite (e.g. audio enhancements)
+      wyoming-satellite = {
+        image = "satellite";  # TODO reference the dockerfile here /home/moritz/wyoming-satellite/Dockerfile
+        ports = [ "0.0.0.0:10700:10700" ];
+        hostname = "wyoming-satellite";
+        extraOptions = [
+          "--network=hass"
+          "--device=/dev/snd:/dev/snd"
+          "--group-add=audio"
+        ];
+        cmd = [
+          "--name" "living_room"
+          "--mic-command" "arecord -D plughw:1,0 -r 16000 -c 1 -f S16_LE -t raw"
+          "--snd-command" "aplay -D plughw:0,0 -r 22050 -c 1 -f S16_LE -t raw"
+          # "--debug"
+        ];
+      };
+    };
+  };
+}
+#+end_src
+      
+
     };
   };
   services.influxdb2 = {
     enable = true;
   };
+
 }
 #+end_src
 
 ** Borg
+
+TODO 1: make sure that sdd2b is accessible (i.e. mounted)
+TODO 2: make sure to remount the two things if they drop out!
+
 #+name: machine-moxps
 #+begin_src nix
 {
@@ -4406,4 +4513,75 @@ Bucket Home Assistant
   };
 }
 #+end_src
+
+** Smart Glass parsing
+#+name: machine-moxps
+#+begin_src nix
+{
+  environment.systemPackages = with pkgs; [
+    openai-whisper
+    openai-whisper-cpp
+    whisper-ctranslate2
+  ];
+
+  systemd.services.smart-glass-parsing = {
+    description = "Smart Glass MP4 Parsing";
+    after = [ "network.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "simple";
+      ExecStart = let
+        script = pkgs.writeShellScript "smart-glass-parsing" ''
+        #!/bin/sh
+        set -e
+          VIDEO_DIRECTORY="$HOME/Smart Glasses"
+          TARGET_DIRECTORY="$HOME/wiki/video_notes"
+          ORG_MODE_FILE="$HOME/wiki/gtd/video_notes.org"
+          for file in "$VIDEO_DIRECTORY"/*.mp4; do
+            [ -e "$file" ] || continue
+            base_name=$(basename "$file" .mp4)  # this is something like 20240407_202217_959eea70.txt
+            txt_file="$TARGET_DIRECTORY/$base_name.txt"
+            if [ ! -f "$txt_file" ]; then
+              ${pkgs.whisper-ctranslate2}/bin/whisper-ctranslate2 --model base.en -f txt --compute_type int8 --threads 4 --logprob_threshold 0.2  --no_speech_threshold 0.3 -f txt -o $TARGET_DIRECTORY "$file"
+              # append to the org mode file
+              echo "* TODO [[file:$file][$base_name]]" >> "$ORG_MODE_FILE"
+              echo "#+created_at: $(date +"[%Y-%m-%d %a %H:%M]")" >> "$ORG_MODE_FILE"
+              echo ":PROPERTIES:" >> "$ORG_MODE_FILE"
+              echo ":VIDEO_CREATED: $(echo $base_name | sed -E 's/([0-9]{4})([0-9]{2})([0-9]{2})_([0-9]{2})([0-9]{2})([0-9]{2})_.*/[\1-\2-\3 \4:\5:\6]/')" >> "$ORG_MODE_FILE"
+              echo ":VIDEO_FILE: $file" >> "$ORG_MODE_FILE"
+              echo ":END:" >> "$ORG_MODE_FILE"
+              cat "$txt_file" >> "$ORG_MODE_FILE"
+              echo "" >> "$ORG_MODE_FILE"
+            fi
+          done
+        '';
+      in "${script}";
+      User = "moritz";
+      Restart = "no";
+    };
+  };
+  systemd.paths.smart-glass-watcher = {
+    description = "Watch Smart Glasses Video Directory for New Files";
+    pathConfig = {
+      PathExistsGlob = "/home/moritz/Smart Glasses/*.mp4";
+      Unit = "smart-glass-parsing.service";
+    };
+    wantedBy = [ "multi-user.target" ];
+  };
+}
+#+end_src
+
+** TODO Update nginx certbot
+
+Need to run
+docker compose run --rm certbot renew
+docker compose exec nginx nginx -s reload
+
+within /home/moritz/Projects/cellwhisperer/hosting/home/docker-compose.yml
+
+#+name: nixos-section
+#+begin_src nix
+
+#+end_src
+
 

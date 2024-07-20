@@ -41,7 +41,7 @@ let
         nix.settings.max-jobs = lib.mkDefault 8;
       
         services.undervolt = {
-          enable = true;
+          enable = false;  # disabled because it doesn't work anymore after BIOS upgrade
           # coreOffset = 0;
           # gpuOffset = 0;
           coreOffset = -125;
@@ -74,24 +74,6 @@ let
         services.getty.autologinUser = "moritz";
       
         hardware.nvidia.powerManagement.enable = false;
-        # services.udev.extraRules = ''
-        #   # Remove NVIDIA USB xHCI Host Controller devices, if present
-        #   ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{remove}="1"
-      
-        #   # Remove NVIDIA USB Type-C UCSI devices, if present
-        #   ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c8000", ATTR{remove}="1"
-      
-        #   # Remove NVIDIA Audio devices, if present
-        #   ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{remove}="1"
-      
-        #   # Enable runtime PM for NVIDIA VGA/3D controller devices on driver bind
-        #   ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
-        #   ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
-      
-        #   # Disable runtime PM for NVIDIA VGA/3D controller devices on driver unbind
-        #   ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="on"
-        #   ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="on"
-        # '';
       }
       {
         fileSystems."/" =
@@ -105,16 +87,26 @@ let
           };
       
         swapDevices =
-          [ { device = "/dev/disk/by-uuid/9eca5b06-730e-439f-997b-512a614ccce0"; }
+          [
+            { device = "/dev/disk/by-uuid/9eca5b06-730e-439f-997b-512a614ccce0"; }
+            { device = "/swapfile"; } # size = 48 * 1024 (48G)
           ];
       
+        boot.initrd.kernelModules = [ "mmc_core" ];  # TODO try with USB stick first! https://medium.com/@geis/using-a-raw-usb-device-to-unlock-a-luks-volume-on-nixos-193406ee7474
+        boot.initrd.systemd.enable = true;
       
         boot.initrd.luks.devices = {
           cryptkey.device = "/dev/disk/by-uuid/ccd19ab7-0e4d-4df4-8912-b87139de56af";
+          anopassphrasekey = {
+               device = "/dev/disk/by-id/mmc-SD02G_0x6035b72d";  # TODO try without
+               allowDiscards = true;
+               keyFileSize = 4096;
+               keyFile = "/dev/mmcblk0";
+          };
           cryptroot = {
             device="/dev/disk/by-uuid/88242cfe-48a1-44d2-a29b-b55e6f05d3d3";
             keyFile="/dev/mapper/cryptkey";
-            };
+          };
           cryptswap = {
             device="/dev/disk/by-uuid/f6fa3573-44a9-41cc-bab7-da60d21e27b3";
             keyFile="/dev/mapper/cryptkey";
@@ -154,6 +146,25 @@ let
         };
       }
       {
+        boot.kernelModules = [ "acpi_call" "bbswitch" ];
+      
+        systemd.services.server_init = {
+          description = "";
+      
+          wantedBy = [ "multi-user.target" ];
+          after = [ "docker.service" ]; # Ensure server_init starts after Docker
+          requires = [ "docker.service" ]; # Require Docker service to start successfully
+          script = ''
+            echo -n "0000:01:00.0" | tee /sys/bus/pci/drivers/nvidia/unbind || true
+            echo OFF | tee /proc/acpi/bbswitch
+            /run/current-system/sw/bin/nvidia-smi -pm 1
+            cd /home/moritz/Projects/cellwhisperer/hosting/home
+            echo 1 | tee /sys/class/backlight/intel_backlight/brightness
+          '';
+          serviceConfig.Type = "oneshot";
+        };
+      }
+      {
         musnix = {
           # Find this value with `lspci | grep -i audio` (per the musnix readme).
           # PITFALL: This is the id of the built-in soundcard.
@@ -173,17 +184,18 @@ let
           hostName = "moxps";
           useDHCP = false;
           interfaces.eth0.useDHCP = true;
+          interfaces.wlp2s0.useDHCP = true;
           wireless.enable = false;
           networkmanager.enable = true;
-          nat = {  # NAT
+          nat = {  # NAT for wireguard
             enable = true;
-            externalInterface = "wlan0";
+            externalInterface = "wlp2s0";
             internalInterfaces = [ "wg0" ];
           };
           firewall.allowedUDPPorts = [ 51820 ];
           firewall.allowedTCPPorts = [ 51821 8384 21 5000 8086 ];  # syncthing as well, and FTP; and 5000 for vispr; and influxdb2
         };
-        
+      
         services.nscd.enable = true;
         systemd.services.sshd.wantedBy = pkgs.lib.mkForce [ "multi-user.target" ];
       
@@ -196,6 +208,7 @@ let
         };
       }
       {
+        age.secrets.server_wireguard_private.file = "/home/moritz/nixos-config/secrets/wireguard_server_private_key.age";
         networking.wireguard.interfaces = {
           # "wg0" is the network interface name. You can name the interface arbitrarily.
           wg0 = {
@@ -208,12 +221,12 @@ let
             # This allows the wireguard server to route your traffic to the internet and hence be like a VPN
             # For this to work you have to set the dnsserver IP of your router (or dnsserver of choice) in your clients
             postSetup = ''
-              ${pkgs.iptables}/bin/iptables -t nat -A POSTROUTING -s 10.100.0.0/24 -o eth0 -j MASQUERADE
+              ${pkgs.iptables}/bin/iptables -t nat -A POSTROUTING -s 10.100.0.0/24 -o wlp2s0 -j MASQUERADE
             '';
       
             # This undoes the above command
             postShutdown = ''
-              ${pkgs.iptables}/bin/iptables -t nat -D POSTROUTING -s 10.100.0.0/24 -o eth0 -j MASQUERADE
+              ${pkgs.iptables}/bin/iptables -t nat -D POSTROUTING -s 10.100.0.0/24 -o wlp2s0 -j MASQUERADE
             '';
       
             # Path to the private key file.
@@ -221,30 +234,38 @@ let
             # Note: The private key can also be included inline via the privateKey option,
             # but this makes the private key world-readable; thus, using privateKeyFile is
             # recommended.
-            privateKeyFile = "/home/moritz/.wireguard/private_key";
-      
+            # TODO use age
+            privateKeyFile = config.age.secrets.server_wireguard_private.path;
+            # server public key is KYF+BBuoY7dNYswft+vhlNrAKjAkMIMYnkhBbHcH7Dw=
             peers = [
               # List of allowed peers.
-              { # Feel free to give a meaning full name
+              { # Phone
                 # Public key of the peer (not a file path).
-                publicKey = "jt+CtENSgKth7oXAmbb/jEyhtovwIz1RJIp5eWXIkz8=";
+                publicKey = "iHSpBC8syb+vybBX02aDuIL16uyWfoMbljInRtvuEzU=";
                 # List of IPs assigned to this peer within the tunnel subnet. Used to configure routing.
                 allowedIPs = [ "10.100.0.2/32" ];
+              }
+              { # Mopad
+                publicKey = "zdDbsCZd65as6OwRlT/PgfgDju9LwpjRhpCRIrfMhWU=";
+                # List of IPs assigned to this peer within the tunnel subnet. Used to configure routing.
+                allowedIPs = [ "10.100.0.3/32" ];
               }
             ];
           };
         };
       }
       {
+        age.secrets.duckdns_password.file = "/home/moritz/nixos-config/secrets/duckdns_password.age";
         services.ddclient = {
           enable = true;
           domains = [ "moritzs.duckdns.org" ];
           protocol = "duckdns";
           server = "www.duckdns.org";
           username = "nouser";
-          passwordFile = "/root/duckdns_password";
+          passwordFile = config.age.secrets.duckdns_password.path;
         };
       
+        # TODO I might need nginx to setup letsencrypt (see monix)
       }
       {
         # FTP server
@@ -277,36 +298,81 @@ let
         };
       }
       {
-        config.virtualisation.oci-containers.containers = {
-          deconz = {
-            image = "deconzcommunity/deconz";
-            ports = [ "0.0.0.0:8124:80" "0.0.0.0:8125:443" ];
-            extraOptions = [ "--device=/dev/ttyUSB0:/dev/ttyUSB0:rwm"  "--expose" "5900" "--expose" "6080"];  # I think the exposes can be deleted
-            volumes = [
-             "/var/lib/deconz:/opt/deCONZ"
-              "/etc/localtime:/etc/localtime:ro"
-            ];
-          };
-        }; 
-      }
-      
-      {
         virtualisation.oci-containers = {
           # backend = "podman";
-          containers.homeassistant = {
-            volumes = [ "/var/lib/hass:/config" ];
-            environment.TZ = "Europe/Berlin";
-            ports = [ "0.0.0.0:8123:8123" ];
-            image = "ghcr.io/home-assistant/home-assistant:stable";  # Warning: if the tag does not change, the image will not be updated
-            extraOptions = [
-              # "--network=host"
-              # "--device=/dev/ttyACM0:/dev/ttyACM0"  # Example, change this to match your own hardware
-              # "--device=/dev/ttyUSB0:/dev/ttyUSB0"  # Example, change this to match your own hardware
-            ];
+          containers = {
+            homeassistant = {
+              volumes = [ "/var/lib/hass:/config" ];
+              environment.TZ = "Europe/Berlin";
+              ports = [ "0.0.0.0:8123:8123" ];
+              hostname = "homeassistant";
+              image = "ghcr.io/home-assistant/home-assistant:stable";  # Warning: if the tag does not change, the image will not be updated
+              extraOptions = [
+                "--network=hass"
+                # "--device=/dev/ttyACM0:/dev/ttyACM0"  # Example, change this to match your own hardware
+                # "--device=/dev/ttyUSB0:/dev/ttyUSB0"  # Example, change this to match your own hardware
+              ];
+            };
+            deconz = {
+              image = "deconzcommunity/deconz";
+              ports = [ "0.0.0.0:8124:80" "0.0.0.0:8125:443" ];
+              extraOptions = [ "--device=/dev/ttyUSB0:/dev/ttyUSB0:rwm"  "--expose" "5900" "--expose" "6080" "--network=hass" ];  # I think the exposes can be deleted
+              volumes = [
+                "/var/lib/deconz:/opt/deCONZ"
+                "/etc/localtime:/etc/localtime:ro"
+              ];
+            };
+            wyoming-whisper = {
+              image = "rhasspy/wyoming-whisper";
+              ports = [ "0.0.0.0:10300:10300" ];
+              extraOptions = ["--network=hass"];
+              hostname = "wyoming-whisper";
+              volumes = [
+                "/var/lib/wyoming-whisper:/data"
+              ];
+              cmd = [ "--model" "base" ];  #  tiny-int8, timy, base-int8, base, and small-int8
+            };
+            wyoming-piper = {
+              image = "rhasspy/wyoming-piper";
+              ports = [ "0.0.0.0:10200:10200" ];
+              extraOptions = ["--network=hass"];
+              hostname = "wyoming-piper";
+              volumes = [
+                "/var/lib/wyoming-piper:/data"
+              ];
+              cmd = [ "--voice" "en_US-lessac-medium" ];
+            };
+            openwakeword = {
+              image = "rhasspy/wyoming-openwakeword";
+              extraOptions = ["--network=hass"];
+              hostname = "openwakeword";
+              volumes = [
+                "/var/lib/openwakeword:/data"
+                # "./wakeword:/custom"
+                # "/etc/timezone:/etc/timezone:ro"  # nonexistent on our system
+                "/etc/localtime:/etc/localtime:ro"
+              ];
+              environment.TZ = "Europe/Vienna";
+              cmd = [ "--preload-model" "ok_nabu"];  #  "--custom-model-dir" "/custom" 
+            };
+            # TODO improve by adding configs here: https://github.com/rhasspy/wyoming-satellite (e.g. audio enhancements)
+            wyoming-satellite = {
+              image = "satellite";  # TODO reference the dockerfile here /home/moritz/wyoming-satellite/Dockerfile
+              ports = [ "0.0.0.0:10700:10700" ];
+              hostname = "wyoming-satellite";
+              extraOptions = [
+                "--network=hass"
+                "--device=/dev/snd:/dev/snd"
+                "--group-add=audio"
+              ];
+              cmd = [
+                "--name" "living_room"
+                "--mic-command" "arecord -D plughw:1,0 -r 16000 -c 1 -f S16_LE -t raw"
+                "--snd-command" "aplay -D plughw:0,0 -r 22050 -c 1 -f S16_LE -t raw"
+                # "--debug"
+              ];
+            };
           };
-        };
-        services.influxdb2 = {
-          enable = true;
         };
       }
       {
@@ -374,6 +440,58 @@ let
               #"read only" = "no";
             #};
           #};
+        };
+      }
+      {
+        environment.systemPackages = with pkgs; [
+          openai-whisper
+          openai-whisper-cpp
+          whisper-ctranslate2
+        ];
+      
+        systemd.services.smart-glass-parsing = {
+          description = "Smart Glass MP4 Parsing";
+          after = [ "network.target" ];
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            Type = "simple";
+            ExecStart = let
+              script = pkgs.writeShellScript "smart-glass-parsing" ''
+              #!/bin/sh
+              set -e
+                VIDEO_DIRECTORY="$HOME/Smart Glasses"
+                TARGET_DIRECTORY="$HOME/wiki/video_notes"
+                ORG_MODE_FILE="$HOME/wiki/gtd/video_notes.org"
+                for file in "$VIDEO_DIRECTORY"/*.mp4; do
+                  [ -e "$file" ] || continue
+                  base_name=$(basename "$file" .mp4)  # this is something like 20240407_202217_959eea70.txt
+                  txt_file="$TARGET_DIRECTORY/$base_name.txt"
+                  if [ ! -f "$txt_file" ]; then
+                    ${pkgs.whisper-ctranslate2}/bin/whisper-ctranslate2 --model base.en -f txt --compute_type int8 --threads 4 --logprob_threshold 0.2  --no_speech_threshold 0.3 -f txt -o $TARGET_DIRECTORY "$file"
+                    # append to the org mode file
+                    echo "* TODO [[file:$file][$base_name]]" >> "$ORG_MODE_FILE"
+                    echo "#+created_at: $(date +"[%Y-%m-%d %a %H:%M]")" >> "$ORG_MODE_FILE"
+                    echo ":PROPERTIES:" >> "$ORG_MODE_FILE"
+                    echo ":VIDEO_CREATED: $(echo $base_name | sed -E 's/([0-9]{4})([0-9]{2})([0-9]{2})_([0-9]{2})([0-9]{2})([0-9]{2})_.*/[\1-\2-\3 \4:\5:\6]/')" >> "$ORG_MODE_FILE"
+                    echo ":VIDEO_FILE: $file" >> "$ORG_MODE_FILE"
+                    echo ":END:" >> "$ORG_MODE_FILE"
+                    cat "$txt_file" >> "$ORG_MODE_FILE"
+                    echo "" >> "$ORG_MODE_FILE"
+                  fi
+                done
+              '';
+            in "${script}";
+            User = "moritz";
+            Restart = "no";
+          };
+        };
+        systemd.paths.smart-glass-watcher = {
+          description = "Watch Smart Glasses Video Directory for New Files";
+          pathConfig = {
+            PathExistsGlob = "/home/moritz/Smart Glasses/*.mp4";
+            Unit = "smart-glass-parsing.service";
+          };
+          wantedBy = [ "multi-user.target" ];
         };
       }
     ];
@@ -561,7 +679,7 @@ let
           intelBusId = lib.mkDefault "PCI:0:2:0";
           # Bus ID of the NVIDIA GPU.
           nvidiaBusId = lib.mkDefault "PCI:1:0:0";
-      
+          
         };
       
         specialisation = {
@@ -627,6 +745,30 @@ let
       
       
       {
+        systemd.services.gdrive_mount = let mountdir = "/mnt/gdrive"; in {
+          description = "mount gdrive dirs";
+          after = [ "network.target" ];
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            ExecStartPre = "/run/current-system/sw/bin/mkdir -p ${mountdir}";
+            ExecStart = ''
+                ${pkgs.rclone}/bin/rclone mount gdrive: ${mountdir} \
+                    --dir-cache-time 48h \
+                    --vfs-cache-max-age 48h \
+                    --vfs-read-chunk-size 10M \
+                    --vfs-read-chunk-size-limit 512M \
+                    --buffer-size 512M
+            '';
+            ExecStop = "/run/wrappers/bin/fusermount -u ${mountdir}";
+            Type = "notify";
+            Restart = "always";
+            RestartSec = "10s";
+            Environment = [ "PATH=/run/wrappers/bin:$PATH" ];
+            User = "moritz";
+          };
+        };
+      }
+      {
         networking.firewall.extraCommands = ''iptables -t raw -A OUTPUT -p udp -m udp --dport 137 -j CT --helper netbios-ns'';
         services.gvfs.enable = true;
         services.samba = {
@@ -672,6 +814,18 @@ let
         };
       }
       {
+        # Enable cron service
+        services.cron = {
+          enable = true;
+          systemCronJobs = [
+            # Add new files to wiki
+            "0 0 * * 0      moritz    ${pkgs.bash}/bin/bash -c '. /etc/profile; cd /home/moritz/wiki/; ${pkgs.git}/bin/git add .; ${pkgs.git}/bin/git commit -m \"Weekly checkpoint\"' >> /tmp/git_out 2>&1"
+            # Download paperpile citations
+            "* * * * 0      moritz    ${pkgs.bash}/bin/bash -c '. /etc/profile; cd /home/moritz/wiki/papers; wget --content-disposition -N https://paperpile.com/eb/ghEynTRTJb' >> download_paperpile_log 2>&1"
+          ];
+        };
+      }
+      {
         systemd.services.fix-enter-iso3 = {
           script = ''
             /run/current-system/sw/bin/setkeycodes 0x1c 58  # enter 
@@ -683,6 +837,7 @@ let
       }
       {
         services.xserver.dpi = 140;  # was 130, 
+        services.xserver.upscaleDefaultCursor = true;
       }
       {
         environment.systemPackages = [ pkgs.steam-run pkgs.steam ];
@@ -796,7 +951,7 @@ in
           "x-systemd.mount-timeout=5s"
         ];
       };
-      # mount command fils unfortunately
+      # mount command fails unfortunately. Use Thunar instead
       # age.secrets.cemm.file = /home/moritz/nixos-config/secrets/cemm.age;
       # fileSystems."/mnt/cemm" = {
       #   device = "//int.cemm.at/files";
@@ -839,11 +994,14 @@ in
             export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/1000/bus"
             export PATH="${pkgs.dbus}/bin:$PATH"
     
-            if [ $(cat /sys/class/power_supply/BAT0/capacity) -le 20 ]; then
-              ${pkgs.sudo}/bin/sudo -E -u moritz  ${pkgs.libnotify}/bin/notify-send -u critical "Low Battery" "Your battery is below 20%, please plug in your charger."
+            capacity=$(cat /sys/class/power_supply/BAT0/capacity)
+            status=$(cat /sys/class/power_supply/BAT0/status)
+    
+            if [ "$capacity" -le 20 ] && [ "$status" = "Discharging" ]; then
+              ${pkgs.sudo}/bin/sudo -E -u moritz  ${pkgs.libnotify}/bin/notify-send -t 4000 "Low Battery" "Your battery is below 20%, please plug in your charger."
             fi
             test "$(cat /sys/class/power_supply/BAT0/status)" != Discharging \
-              || test "$(cat /sys/class/power_supply/BAT0/capacity)" -ge 5
+              || test "$(cat /sys/class/power_supply/BAT0/capacity)" -ge 10
           '';
         in
           {
@@ -861,6 +1019,7 @@ in
       networking = {
         hostName = name;
     
+        firewall.checkReversePath = false;  # required for wireguard (potential security risk. see https://nixos.wiki/wiki/WireGuard#Setting_up_WireGuard_with_NetworkManager for details)
         networkmanager = {
           enable = true;
           plugins = [
@@ -1008,9 +1167,12 @@ in
       };
     }
     {
-      services.onedrive = {
-        enable = true;
-      };
+      # services.onedrive = {
+      #   enable = true;
+      # };
+      environment.systemPackages = [
+        pkgs.onedrivegui
+      ];
     }
     {
       networking.firewall = {
@@ -1080,18 +1242,6 @@ in
       services.logind.extraConfig = ''
         HandlePowerKey=suspend
       '';
-    }
-    {
-      # Enable cron service
-      services.cron = {
-        enable = true;
-        systemCronJobs = [
-          # Add new files to wiki
-          "0 0 * * 0      moritz    ${pkgs.bash}/bin/bash -c '. /etc/profile; cd /home/moritz/wiki/; ${pkgs.git}/bin/git add .; ${pkgs.git}/bin/git commit -m \"Weekly checkpoint\"' >> /tmp/git_out 2>&1"
-          # Download paperpile citations
-          "* * * * 0      moritz    ${pkgs.bash}/bin/bash -c '. /etc/profile; cd /home/moritz/wiki/papers; wget --content-disposition -N https://paperpile.com/eb/ghEynTRTJb' >> download_paperpile_log 2>&1"
-        ];
-      };
     }
     {
       environment.systemPackages = [
@@ -1260,29 +1410,6 @@ in
     {
       hardware.logitech.wireless.enable = true;
       hardware.logitech.wireless.enableGraphical = true;
-    }
-    {
-      services.redshift = {
-        enable = true;
-        brightness.night = "1";
-        temperature.night = 2800;
-        extraOptions = [
-          "-l manual"
-          "-l 0.0:0.0"
-        ];
-      };
-    
-      location.provider = "geoclue2";
-      
-      systemd.services.resume-redshift-restart = {
-        description = "Restart redshift after resume to workaround bug not reacting after suspend/resume";
-        wantedBy = [ "sleep.target" ];
-        after = [ "systemd-suspend.service" "systemd-hybrid-sleep.service" "systemd-hibernate.service" ];
-        script = ''
-          /run/current-system/sw/bin/systemctl restart --machine=moritz@.host --user redshift
-        '';
-        serviceConfig.Type = "oneshot";
-      };
     }
     {
       hardware.acpilight.enable = true;
@@ -1533,6 +1660,7 @@ in
         jmtpfs
         qbittorrent
         unstable.blender
+        rclone
         # teams
         discord
         inkscape
@@ -1569,8 +1697,7 @@ in
         vscode
         tesseract
     
-        # Used by naga setup
-        xdotool # required by eaf
+        dotool
         lsof
       ];
     }
@@ -1628,7 +1755,7 @@ in
       environment.systemPackages =
         let conda_shell_kernel_commands = pkgs.writeScript "guided_environment" ''
           #!${pkgs.stdenv.shell}
-          conda activate ag_binding_diffusion
+          conda activate base
     
           LOG=/tmp/guided_environ_kernel_output
           SYMLINK=/tmp/guided_protein_diffusion_kernel.json
@@ -1655,7 +1782,7 @@ in
         '';
         conda_shell_protenv_cmd = pkgs.writeScript "guided_environment" ''
           #!${pkgs.stdenv.shell}
-          conda activate ag_binding_diffusion
+          conda activate base
           "$@"
         '';
         kernel_wrapper = pkgs.writeShellScriptBin "guided_prot_diff_kernel" ''
@@ -1782,6 +1909,7 @@ in
           # json-rpc
           # service-factory
           debugpy
+          faster-whisper
     
           fritzconnection
           # jupyter
@@ -1797,8 +1925,7 @@ in
           # pybedtools
           pybigwig
           xdg
-          epc
-          importmagic
+          # importmagic epc  # disabled because it runs ages during startup of emacs
           jupyterlab
           jupyter_console
           ipykernel
@@ -1965,5 +2092,6 @@ in
       # environment.variables.NPM_CONFIG_PREFIX = "$HOME/.npm-global";
       # environment.variables.PATH = "$HOME/.npm-global/bin:$PATH";
     }
+    
   ] ++ machine-config;
 }

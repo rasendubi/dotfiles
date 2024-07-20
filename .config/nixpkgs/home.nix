@@ -154,7 +154,7 @@ home.packages =   with pkgs; [
       l = "ls -lhrta";
       clip = "xclip -selection clipboard";
       muwvpn = "pass show Wien/meduniwien.ac.at/mschae83 | sudo openconnect --passwd-on-stdin --user mschae83 --authgroup _CeMM_exkl.Journale vpn.meduniwien.ac.at";
-      feh = "feh --scale-down --action \"cp %F ~/tmp/feh_selections/\" --bg-fill";
+      feh = "feh --scale-down --action \"cp %F ~/tmp/feh_selections/\"";
     };
     shellInit = ''
       set -gx PATH $HOME/bin $PATH
@@ -192,6 +192,12 @@ home.packages =   with pkgs; [
 
       function save_history --on-event fish_postexec
           history --save
+      end
+
+      function cp_from_muw --description 'Copy file with prompt if destination exists'
+          set src /mnt/muwhpc/(string replace "/home/moritz/Projects/" "" -- (realpath $argv[1]))
+          set dest $argv[1]
+          cp -i $src $dest
       end
 
       set fish_color_autosuggestion brblue
