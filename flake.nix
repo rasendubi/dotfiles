@@ -8,7 +8,7 @@
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-23.11";
+      ref = "nixos-24.05";
     };
     nixpkgs-2009 = {
       type = "github";
@@ -51,7 +51,7 @@
       type = "github";
       owner = "nix-community";
       repo = "home-manager";
-      ref = "release-23.11";
+      ref = "release-24.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     agenix.url = "github:ryantm/agenix";
@@ -75,6 +75,7 @@
                     nvidia.acceptLicense = true;
                     permittedInsecurePackages = [
                       "adobe-reader-9.5.5"
+                      "python3.11-youtube-dl-2021.12.17"
                       "qtwebkit-5.212.0-alpha4"
                       "openjdk-18+36"
                       "python-2.7.18.6"
@@ -179,8 +180,6 @@
           #   config = { allowUnfree = true; };
           # };
         })
-        (_self: _super: { emacs = _super.emacs29; exwm-emacs = ((_super.emacsPackagesFor _super.emacs29).emacsWithPackages (epkgs: with epkgs; [ emacsql-sqlite _super.imagemagick _super.escrotum vterm exwm ])); })  # emasc.withPackages is not available :((((
-        
         (_self: _super: { conda = _super.conda.override { extraPkgs = [ _super.libffi_3_3 _super.libffi _super.which _super.libxcrypt ]; }; })  # this is an overlay
         # TODO override R package  (openssl)
         ( let

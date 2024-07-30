@@ -97,7 +97,7 @@ Make this repository flake-compatible:
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-23.11";
+      ref = "nixos-24.05";
     };
     nixpkgs-2009 = {
       type = "github";
@@ -140,7 +140,7 @@ Make this repository flake-compatible:
       type = "github";
       owner = "nix-community";
       repo = "home-manager";
-      ref = "release-23.11";
+      ref = "release-24.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     agenix.url = "github:ryantm/agenix";
@@ -164,6 +164,7 @@ Make this repository flake-compatible:
                     nvidia.acceptLicense = true;
                     permittedInsecurePackages = [
                       "adobe-reader-9.5.5"
+                      "python3.11-youtube-dl-2021.12.17"
                       "qtwebkit-5.212.0-alpha4"
                       "openjdk-18+36"
                       "python-2.7.18.6"
@@ -720,7 +721,7 @@ TODO try with xserver (nvidia displayer driver) and with datacenter. both with o
 #+name: machine-moxps
 #+begin_src nix
 {
-  services.xserver.libinput = {
+  services.libinput = {
     enable = true;
     touchpad.accelSpeed = "0.7";
   };
@@ -1338,7 +1339,7 @@ For background, see this thread: https://discourse.nixos.org/t/seeking-assistanc
       workstation = true;
       enable = true;
     };
-    nssmdns = true;
+    nssmdns4 = true;
   };
 }
 #+end_src
@@ -1940,65 +1941,54 @@ Increase sudo timeout
 ** TODO Login manager / display manager / Window manager
 I needed to hack this to emacs29, because emacs28 failed with my org-mode config. The overlay and code block below can be trashed with version 23.11 (when emacs 29 is default)
 
-#+name: flake-overlays
-#+begin_src nix
-  (_self: _super: { emacs = _super.emacs29; exwm-emacs = ((_super.emacsPackagesFor _super.emacs29).emacsWithPackages (epkgs: with epkgs; [ emacsql-sqlite _super.imagemagick _super.escrotum vterm exwm ])); })  # emasc.withPackages is not available :((((
-
-#+end_src
+# #+name: flake-overlays
+# #+begin_src nix
+#   (_self: _super: { emacs = _super.emacs29; exwm-emacs = ((_super.emacsPackagesFor _super.emacs29).emacsWithPackages (epkgs: with epkgs; [ emacsql-sqlite _super.imagemagick _super.escrotum vterm exwm ])); })  # emasc.withPackages is not available :((((
+# #+end_src
 
 # temorary to enable emacs29 <- note. Maybe this is not necessary :) # nixpkgs.config.packageOverrides = pkgs:   <- this might be an alternative..
 
-#+name: nixos-section
-#+begin_src nix
-{
-  services.emacs.package = pkgs.emacs29;
-  services.xserver.windowManager.session = let
-  loadScript = pkgs.writeText "emacs-exwm-load" ''
-    (require 'exwm)
-    ;; most of it is now in .spacemacs.d/lisp/exwm.el
-    (require 'exwm-systemtray)
-    (require 'exwm-randr)
-    ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "HDMI1" 2 "DP2" 3 "eDP1" 4 "HDMI1" 5 "DP2"))
-    ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "eDP1" 2 "HDMI1" 3 "eDP1" 4 "eDP1" 5 "eDP1"))
-    ;; (exwm-randr-enable)
-    (exwm-systemtray-enable)
-    (exwm-enable)
-  ''; in [{
-    name = "exwm";
-    start = ''
-      ${pkgs.exwm-emacs}/bin/emacs -l ${loadScript}
-    '';
-  } ];
-  environment.systemPackages = [ pkgs.exwm-emacs ];
-}
-#+end_src
-
-
-#+name: nixos-section-unused  # did not work
-#+begin_src nix
-{
-  nixpkgs.config.packageOverrides = pkgs: {
-  emacs = pkgs.emacs29.override { gtk = pkgs.gtk3; };
-  };
-}
-#+end_src
+# #+name: nixos-section
+# #+begin_src nix
+# {
+  # services.emacs.package = pkgs.emacs29;
+  # services.xserver.windowManager.session = let
+  # loadScript = pkgs.writeText "emacs-exwm-load" ''
+    # (require 'exwm)
+    # ;; most of it is now in .spacemacs.d/lisp/exwm.el
+    # (require 'exwm-systemtray)
+    # (require 'exwm-randr)
+    # ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "HDMI1" 2 "DP2" 3 "eDP1" 4 "HDMI1" 5 "DP2"))
+    # ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "eDP1" 2 "HDMI1" 3 "eDP1" 4 "eDP1" 5 "eDP1"))
+    # ;; (exwm-randr-enable)
+    # (exwm-systemtray-enable)
+    # (exwm-enable)
+  # ''; in [{
+    # name = "exwm";
+    # start = ''
+      # ${pkgs.exwm-emacs}/bin/emacs -l ${loadScript}
+    # '';
+  # } ];
+  # environment.systemPackages = [ pkgs.exwm-emacs ];
+# }
+# #+end_src
+# 
 
 #+name: nixos-section
 #+begin_src nix
 {
-  services.xserver = {
-    # desktopManager.gnome3.enable = true;
-    displayManager = {
-      startx.enable = false;
-      autoLogin = {  # if errors, then disable again
-        user = "moritz";
-        enable = true;
-      };
-      defaultSession = "none+exwm";  # Firefox works more fluently with plasma5+exwm instead of "none+exwm". or does it??
+  services.displayManager = {
+    autoLogin = {
+      user = "moritz";
+      enable = true;
     };
+    defaultSession = "none+exwm";  # Firefox works more fluently with plasma5+exwm instead of "none+exwm". or does it??
+  };
+  services.xserver = {
+    displayManager.startx.enable = false;
     windowManager = {
       exwm = {
-        enable = false;  # TODO enable upon 23.11
+        enable = true;
         extraPackages = epkgs: with epkgs; [ emacsql-sqlite pkgs.imagemagick pkgs.escrotum epkgs.vterm ];  # unfortunately, adding zmq and jupyter here, didn't work so I had to install them manually (i.e. compiling emacs-zmq)
         # I only managed to compile emacs-zmq once (~/emacs.d/elpa/27.1/develop/zmq-.../emacs-zmq.so). I just copied it from there to mobook
         enableDefaultConfig = false;  # todo disable and enable loadScript
@@ -2006,6 +1996,7 @@ I needed to hack this to emacs29, because emacs28 failed with my org-mode config
         loadScript = ''
           (require 'exwm)
           ;; most of it is now in .spacemacs.d/lisp/exwm.el
+          (setq exwm-workspace-number 8)
           (require 'exwm-systemtray)
           (require 'exwm-randr)
           ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "HDMI1" 2 "DP2" 3 "eDP1" 4 "HDMI1" 5 "DP2"))
@@ -2036,7 +2027,7 @@ These packages are used by my desktop setup
 #+begin_src nix
 {
   environment.systemPackages = [
-    pkgs.khoj
+    # pkgs.khoj
     pkgs.wmname
     pkgs.xclip
     pkgs.escrotum
@@ -2084,9 +2075,9 @@ https://github.com/bsag/nixos-config/blob/330e34c40aba37664bbc20550bf4dd427f0e47
 #+name: nixos-section
 #+begin_src nix
 {
-  services.xserver.layout = "de,de,us";
-  services.xserver.xkbVariant = "bone,,";
-  services.xserver.xkbOptions= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp,altwin:swap_lalt_lwin";
+  services.xserver.xkb.layout = "de,de,us";
+  services.xserver.xkb.variant = "bone,,";
+  services.xserver.xkb.options= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp,altwin:swap_lalt_lwin";
 
   environment.systemPackages = [ pkgs.xorg.xmodmap ];
 
@@ -2273,7 +2264,7 @@ Here go applications (almost) every normal user needs.
   programs.gnupg.agent = {
     enable = true;
     enableSSHSupport = false;
-    pinentryFlavor = "qt";
+    pinentryPackage = pkgs.pinentry-qt;
   };
 
   # is it no longer needed?
@@ -2326,7 +2317,6 @@ Here go applications (almost) every normal user needs.
 #+begin_src nix
 {
   environment.systemPackages = with pkgs; [
-    mirage-im
     element-desktop
   ];
 }
@@ -2597,7 +2587,7 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 ** Davinci
 #+name: nixos-section-unused  # (failed installing)
 #+begin_src nix
-{ 
+{
   environment.systemPackages = [
     pkgs.davinci-resolve
   ];
@@ -2673,7 +2663,6 @@ Don't require additional setup.
 
     # kdenlive  # fails in current unstable
     audacity
-    ytmdesktop
     tdesktop # Telegram
     signal-cli # Signal
     signal-desktop # Signal

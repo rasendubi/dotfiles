@@ -128,7 +128,7 @@ let
           };
       }
       {
-        services.xserver.libinput = {
+        services.libinput = {
           enable = true;
           touchpad.accelSpeed = "0.7";
         };
@@ -1051,7 +1051,7 @@ in
           workstation = true;
           enable = true;
         };
-        nssmdns = true;
+        nssmdns4 = true;
       };
     }
     {
@@ -1302,40 +1302,18 @@ in
       '';
     }
     {
-      services.emacs.package = pkgs.emacs29;
-      services.xserver.windowManager.session = let
-      loadScript = pkgs.writeText "emacs-exwm-load" ''
-        (require 'exwm)
-        ;; most of it is now in .spacemacs.d/lisp/exwm.el
-        (require 'exwm-systemtray)
-        (require 'exwm-randr)
-        ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "HDMI1" 2 "DP2" 3 "eDP1" 4 "HDMI1" 5 "DP2"))
-        ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "eDP1" 2 "HDMI1" 3 "eDP1" 4 "eDP1" 5 "eDP1"))
-        ;; (exwm-randr-enable)
-        (exwm-systemtray-enable)
-        (exwm-enable)
-      ''; in [{
-        name = "exwm";
-        start = ''
-          ${pkgs.exwm-emacs}/bin/emacs -l ${loadScript}
-        '';
-      } ];
-      environment.systemPackages = [ pkgs.exwm-emacs ];
-    }
-    {
-      services.xserver = {
-        # desktopManager.gnome3.enable = true;
-        displayManager = {
-          startx.enable = false;
-          autoLogin = {  # if errors, then disable again
-            user = "moritz";
-            enable = true;
-          };
-          defaultSession = "none+exwm";  # Firefox works more fluently with plasma5+exwm instead of "none+exwm". or does it??
+      services.displayManager = {
+        autoLogin = {
+          user = "moritz";
+          enable = true;
         };
+        defaultSession = "none+exwm";  # Firefox works more fluently with plasma5+exwm instead of "none+exwm". or does it??
+      };
+      services.xserver = {
+        displayManager.startx.enable = false;
         windowManager = {
           exwm = {
-            enable = false;  # TODO enable upon 23.11
+            enable = true;
             extraPackages = epkgs: with epkgs; [ emacsql-sqlite pkgs.imagemagick pkgs.escrotum epkgs.vterm ];  # unfortunately, adding zmq and jupyter here, didn't work so I had to install them manually (i.e. compiling emacs-zmq)
             # I only managed to compile emacs-zmq once (~/emacs.d/elpa/27.1/develop/zmq-.../emacs-zmq.so). I just copied it from there to mobook
             enableDefaultConfig = false;  # todo disable and enable loadScript
@@ -1343,6 +1321,7 @@ in
             loadScript = ''
               (require 'exwm)
               ;; most of it is now in .spacemacs.d/lisp/exwm.el
+              (setq exwm-workspace-number 8)
               (require 'exwm-systemtray)
               (require 'exwm-randr)
               ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "HDMI1" 2 "DP2" 3 "eDP1" 4 "HDMI1" 5 "DP2"))
@@ -1350,6 +1329,7 @@ in
               ;; (exwm-randr-enable)
               (exwm-systemtray-enable)
               (exwm-enable)
+              (exwm-randr-mode)
             '';
           };
           stumpwm.enable = false;
@@ -1368,7 +1348,7 @@ in
     }
     {
       environment.systemPackages = [
-        pkgs.khoj
+        # pkgs.khoj
         pkgs.wmname
         pkgs.xclip
         pkgs.escrotum
@@ -1376,9 +1356,9 @@ in
       ];
     }
     {
-      services.xserver.layout = "de,de,us";
-      services.xserver.xkbVariant = "bone,,";
-      services.xserver.xkbOptions= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp,altwin:swap_lalt_lwin";
+      services.xserver.xkb.layout = "de,de,us";
+      services.xserver.xkb.variant = "bone,,";
+      services.xserver.xkb.options= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp,altwin:swap_lalt_lwin";
     
       environment.systemPackages = [ pkgs.xorg.xmodmap ];
     
@@ -1458,7 +1438,7 @@ in
       programs.gnupg.agent = {
         enable = true;
         enableSSHSupport = false;
-        pinentryFlavor = "qt";
+        pinentryPackage = pkgs.pinentry-qt;
       };
     
       # is it no longer needed?
@@ -1486,7 +1466,6 @@ in
     }
     {
       environment.systemPackages = with pkgs; [
-        mirage-im
         element-desktop
       ];
     }
@@ -1677,7 +1656,6 @@ in
     
         # kdenlive  # fails in current unstable
         audacity
-        ytmdesktop
         tdesktop # Telegram
         signal-cli # Signal
         signal-desktop # Signal
