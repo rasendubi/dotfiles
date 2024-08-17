@@ -58,7 +58,6 @@ in
   # disabledModules = [ "services/printing/cupsd.nix" ]; 
   imports = [
     # (import "${inputs.nixpkgs-local}/nixos/modules/services/printing/cupsd.nix")
-    (import "${inputs.musnix}")
     {
       # The NixOS release to be compatible with for stateful data such as databases.
       system.stateVersion = "20.03";
@@ -144,16 +143,10 @@ Make this repository flake-compatible:
       inputs.nixpkgs.follows = "nixpkgs";
     };
     agenix.url = "github:ryantm/agenix";
-    musnix = {
-      type = "github";
-      owner = "musnix";
-      repo = "musnix";
-      flake = false;
-    };
   };
   
 # nixpkgs-local
-  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, agenix, musnix }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, agenix }@inputs:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
@@ -1399,55 +1392,9 @@ Also, Pulseaudio is a requirement for Firefox Quantum.
   security.sudo.extraConfig = ''
     moritz  ALL=(ALL) NOPASSWD: ${pkgs.systemd}/bin/systemctl
     '';
-  musnix = {
-    enable = true;
-    alsaSeq.enable = false;
-
-    # If I build with either of these, I get a PREEMPT error, much like
-    #   https://github.com/musnix/musnix/issues/100
-    # kernel.realtime = true;
-    # kernel.optimize = true;
-
-    # das_watchdog.enable = true;
-      # I don't think this does anything without the realtime kernel.
-
-    # magic to me
-    rtirq = {
-      # highList = "snd_hrtimer";
-      resetAll = 1;
-      prioLow = 0;
-      enable = true;
-      nameList = "rtc0 snd";
-    };
-  };
-    
-
 }
 #+end_src
 
-#+name: machine-moxps
-#+begin_src nix
-{
-  musnix = {
-    # Find this value with `lspci | grep -i audio` (per the musnix readme).
-    # PITFALL: This is the id of the built-in soundcard.
-    #   When I start using the external one, change it.
-    soundcardPciId = "00:1f.3";
-  };
-}
-#+end_src
-
-#+name: machine-mobook
-#+begin_src nix
-{
-  musnix = {
-    # Find this value with `lspci | grep -i audio` (per the musnix readme).
-    # PITFALL: This is the id of the built-in soundcard.
-    #   When I start using the external one, change it.
-    soundcardPciId = "00:1b.0";  # 00:1b.0 or 00:03.0
-  };
-}
-#+end_src
 
 #+name: machine-mopad
 #+begin_src nix
