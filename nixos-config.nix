@@ -632,7 +632,7 @@ let
         };
       }
       {
-        services.xserver.libinput = {
+        services.libinput = {
           enable = true;
           touchpad.accelSpeed = "0.7";
         };
@@ -672,7 +672,7 @@ let
         # hardware.bumblebee.enable = false;
       
         services.hardware.bolt.enable = true;
-        hardware.nvidia.powerManagement.enable = true;
+        hardware.nvidia.powerManagement.enable = true;  # might be buggy (https://github.com/NVIDIA/open-gpu-kernel-modules/issues/472)
         hardware.nvidia.powerManagement.finegrained = false;   # TODO is this good or bad?
         hardware.nvidia.prime = {
           # Bus ID of the Intel GPU.
@@ -681,6 +681,7 @@ let
           nvidiaBusId = lib.mkDefault "PCI:1:0:0";
           
         };
+        hardware.nvidia.open = true;
       
         specialisation = {
           sync-gpu.configuration = {
@@ -726,20 +727,20 @@ let
             lightdm.enable = true;
             # gdm.enable = true;
           };
-          libinput = {
-            enable = true;
-            touchpad.accelSpeed = "0.7";
+        };
+        services.libinput = {
+          enable = true;
+          touchpad.accelSpeed = "0.7";
       
-            # disabling mouse acceleration
-            # mouse = {
-            #   accelProfile = "flat";
-            # };
+          # disabling mouse acceleration
+          # mouse = {
+          #   accelProfile = "flat";
+          # };
       
-            # # disabling touchpad acceleration
-            # touchpad = {
-            #   accelProfile = "flat";
-            # };
-          };
+          # # disabling touchpad acceleration
+          # touchpad = {
+          #   accelProfile = "flat";
+          # };
         };
       }
       
@@ -767,6 +768,11 @@ let
             User = "moritz";
           };
         };
+      }
+      {
+        boot.extraModprobeConfig =''  # https://github.com/NixOS/nixpkgs/issues/330685#issuecomment-2279718903
+          options snd-hda-intel dmic_detect=0
+        '';
       }
       {
         networking.firewall.extraCommands = ''iptables -t raw -A OUTPUT -p udp -m udp --dport 137 -j CT --helper netbios-ns'';
@@ -823,6 +829,46 @@ let
             # Download paperpile citations
             "* * * * 0      moritz    ${pkgs.bash}/bin/bash -c '. /etc/profile; cd /home/moritz/wiki/papers; wget --content-disposition -N https://paperpile.com/eb/ghEynTRTJb' >> download_paperpile_log 2>&1"
           ];
+        };
+      }
+      # TODO also the awk script is for google calendar, maybe I should try to find an office365-specific script.
+      # TODO I modified that script such that it does not adjust the time zone (because it was broken: the ical file indicates the wrong timezone but the correct time!). ( return 0 in parse_timezone_offset
+      # TODO also, filter either ical or org for events older than last month (otherwise org-agenda has to work so much more...)
+      # TODO note: I disabled syncthing wiki syncing o the `calendar-sync` folder (ignore/exception)
+      {
+        environment.systemPackages = with pkgs; [ wget gawk gnugrep ];
+      
+        age.secrets.mcUrl.file = /home/moritz/nixos-config/secrets/mcUrl.age;
+        age.secrets.gcUrl.file = /home/moritz/nixos-config/secrets/gcUrl.age;
+        systemd.services.ics2org = let
+          scriptPath = "/home/moritz/wiki/calendar-sync/ical2org.awk";
+          mcIcsPath = "/home/moritz/wiki/calendar-sync/mc_office365.ics";
+          gcIcsPath = "/home/moritz/wiki/calendar-sync/gc_office365.ics";
+          orgPath = "/home/moritz/wiki/calendar-sync/calendars.org";
+          # mcUrlFile = config.age.secrets.mcUrl.path;
+          # gcUrlFile = config.age.secrets.gcUrl.path;
+           in {
+          description = "Convert .ics to .org";
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+          };
+          script = ''
+            # not redownloading the script, because the time-zone adaptation is broken (see TODO above)
+            # ${pkgs.wget}/bin/wget https://raw.githubusercontent.com/msherry/ical2org/master/ical2org.awk -O ${scriptPath}
+            ${pkgs.wget}/bin/wget `cat ${config.age.secrets.mcUrl.path}` -O ${mcIcsPath}
+            ${pkgs.wget}/bin/wget `cat ${config.age.secrets.gcUrl.path}` -O ${gcIcsPath}
+            ${pkgs.gawk}/bin/gawk -f ${scriptPath} ${mcIcsPath} | ${pkgs.gnugrep}/bin/grep -v 'CLOCK:' > ${orgPath}
+            ${pkgs.gawk}/bin/gawk -f ${scriptPath} ${gcIcsPath} | ${pkgs.gnugrep}/bin/grep -v 'CLOCK:' >> ${orgPath}
+          '';
+        };
+      
+        systemd.timers.ics2org = {
+          description = "Run ics2org every 5 minutes";
+          wantedBy = [ "timers.target" ];
+          timerConfig = {
+            OnUnitActiveSec = "5m";
+          };
         };
       }
       {
@@ -1055,6 +1101,17 @@ in
       };
     }
     {
+      # TODO enable instead of pulseaudio
+      # security.rtkit.enable = true;
+      # services.pipewire = {
+      #   enable = true;
+      #   alsa.enable = true;
+      #   alsa.support32Bit = true;
+      #   pulse.enable = true;
+      #   # If you want to use JACK applications, uncomment this
+      #   jack.enable = true;
+      # };
+    
       hardware.pulseaudio = {
         enable = true;
         support32Bit = true;
@@ -1093,7 +1150,7 @@ in
         moritz  ALL=(ALL) NOPASSWD: ${pkgs.systemd}/bin/systemctl
         '';
       musnix = {
-        enable = true;
+        enable = false;  # disabling to check 
         alsaSeq.enable = false;
     
         # If I build with either of these, I get a PREEMPT error, much like
@@ -1253,43 +1310,6 @@ in
         pkgs.msmtp
       ];
     }
-    # TODO also the awk script is for google calendar, maybe I should try to find an office365-specific script
-    # TODO also, filter either ical or org for events older than last month (otherwise org-agenda has to work so much more...)
-    {
-      environment.systemPackages = with pkgs; [ wget gawk gnugrep ];
-    
-      age.secrets.mcUrl.file = /home/moritz/nixos-config/secrets/mcUrl.age;
-      age.secrets.gcUrl.file = /home/moritz/nixos-config/secrets/gcUrl.age;
-      systemd.services.ics2org = let
-        scriptPath = "/home/moritz/wiki/calendar-sync/ical2org.awk";
-        mcIcsPath = "/home/moritz/wiki/calendar-sync/mc_office365.ics";
-        gcIcsPath = "/home/moritz/wiki/calendar-sync/gc_office365.ics";
-        orgPath = "/home/moritz/wiki/calendar-sync/calendars.org";
-        # mcUrlFile = config.age.secrets.mcUrl.path;
-        # gcUrlFile = config.age.secrets.gcUrl.path;
-         in {
-        description = "Convert .ics to .org";
-        wantedBy = [ "multi-user.target" ];
-        serviceConfig = {
-          Type = "oneshot";
-        };
-        script = ''
-          ${pkgs.wget}/bin/wget https://raw.githubusercontent.com/msherry/ical2org/master/ical2org.awk -O ${scriptPath}
-          ${pkgs.wget}/bin/wget `cat ${config.age.secrets.mcUrl.path}` -O ${mcIcsPath}
-          ${pkgs.wget}/bin/wget `cat ${config.age.secrets.gcUrl.path}` -O ${gcIcsPath}
-          ${pkgs.gawk}/bin/gawk -f ${scriptPath} ${mcIcsPath} | ${pkgs.gnugrep}/bin/grep -v 'CLOCK:' > ${orgPath}
-          ${pkgs.gawk}/bin/gawk -f ${scriptPath} ${gcIcsPath} | ${pkgs.gnugrep}/bin/grep -v 'CLOCK:' >> ${orgPath}
-        '';
-      };
-    
-      systemd.timers.ics2org = {
-        description = "Run ics2org every 5 minutes";
-        wantedBy = [ "timers.target" ];
-        timerConfig = {
-          OnUnitActiveSec = "5m";
-        };
-      };
-    }
     {
       i18n.supportedLocales = [ "en_US.UTF-8/UTF-8" ];
     }
@@ -1302,6 +1322,8 @@ in
       '';
     }
     {
+    
+      boot.crashDump.enable = true;
       services.displayManager = {
         autoLogin = {
           user = "moritz";
@@ -1326,10 +1348,10 @@ in
               (require 'exwm-randr)
               ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "HDMI1" 2 "DP2" 3 "eDP1" 4 "HDMI1" 5 "DP2"))
               ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "eDP1" 2 "HDMI1" 3 "eDP1" 4 "eDP1" 5 "eDP1"))
-              ;; (exwm-randr-enable)
+              (exwm-randr-enable)  ;; for the old EXWM 0.28 version
               (exwm-systemtray-enable)
               (exwm-enable)
-              (exwm-randr-mode)
+              ;; (exwm-randr-mode)  ;; I think this would be for the new version
             '';
           };
           stumpwm.enable = false;
@@ -1462,7 +1484,7 @@ in
       ];
     }
     {
-      programs.kdeconnect.enable = true;
+      programs.kdeconnect.enable = false;  # segfaulted unfortunately. probably because it was also enabled in home.nix (https://discourse.nixos.org/t/kernel-panic-how-to-retrieve-logs/49983)
     }
     {
       environment.systemPackages = with pkgs; [
@@ -1592,6 +1614,12 @@ in
         mupdf
       ];
       environment.variables.QT_QPA_PLATFORM_PLUGIN_PATH = "${pkgs.qt5.qtbase.bin.outPath}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";  # need to rerun 'spacemacs/force-init-spacemacs-env' after QT updates...
+    }
+    {
+      programs.thunar.enable = true;
+      # discussed here: https://github.com/NixOS/nixpkgs/issues/61539
+      security.pam.services.emacs.enableGnomeKeyring = true;
+      services.gnome.gnome-keyring.enable = true;
     }
     {
       environment.systemPackages =
@@ -1923,7 +1951,7 @@ in
         pkgs.rPackages.orca  # required for plotly
         pkgs.pipenv
         pip
-        pkgs.unstable.nodePackages_latest.pyright
+        pkgs.pyright
         python-lsp-server
         selenium
         # pkgs.zlib

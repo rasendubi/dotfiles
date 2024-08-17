@@ -801,6 +801,7 @@ Thinkpad X1 Extreme gen 4
     nvidiaBusId = lib.mkDefault "PCI:1:0:0";
     
   };
+  hardware.nvidia.open = true;
 
   specialisation = {
     sync-gpu.configuration = {
@@ -846,20 +847,20 @@ Thinkpad X1 Extreme gen 4
       lightdm.enable = true;
       # gdm.enable = true;
     };
-    libinput = {
-      enable = true;
-      touchpad.accelSpeed = "0.7";
+  };
+  services.libinput = {
+    enable = true;
+    touchpad.accelSpeed = "0.7";
 
-      # disabling mouse acceleration
-      # mouse = {
-      #   accelProfile = "flat";
-      # };
+    # disabling mouse acceleration
+    # mouse = {
+    #   accelProfile = "flat";
+    # };
 
-      # # disabling touchpad acceleration
-      # touchpad = {
-      #   accelProfile = "flat";
-      # };
-    };
+    # # disabling touchpad acceleration
+    # touchpad = {
+    #   accelProfile = "flat";
+    # };
   };
 }
 #+end_src
@@ -1069,7 +1070,7 @@ Clickpad and DPI:
 #+name: machine-mobook
 #+begin_src nix
 {
-  services.xserver.libinput = {
+  services.libinput = {
     enable = true;
     touchpad.accelSpeed = "0.7";
   };
@@ -1350,6 +1351,17 @@ Also, Pulseaudio is a requirement for Firefox Quantum.
 #+name: nixos-section
 #+begin_src nix
 {
+  # TODO enable instead of pulseaudio
+  # security.rtkit.enable = true;
+  # services.pipewire = {
+  #   enable = true;
+  #   alsa.enable = true;
+  #   alsa.support32Bit = true;
+  #   pulse.enable = true;
+  #   # If you want to use JACK applications, uncomment this
+  #   jack.enable = true;
+  # };
+
   hardware.pulseaudio = {
     enable = true;
     support32Bit = true;
@@ -1434,6 +1446,15 @@ Also, Pulseaudio is a requirement for Firefox Quantum.
     #   When I start using the external one, change it.
     soundcardPciId = "00:1b.0";  # 00:1b.0 or 00:03.0
   };
+}
+#+end_src
+
+#+name: machine-mopad
+#+begin_src nix
+{
+  boot.extraModprobeConfig =''  # https://github.com/NixOS/nixpkgs/issues/330685#issuecomment-2279718903
+    options snd-hda-intel dmic_detect=0
+  '';
 }
 #+end_src
 ** Printing
@@ -1946,6 +1967,7 @@ I needed to hack this to emacs29, because emacs28 failed with my org-mode config
 #   (_self: _super: { emacs = _super.emacs29; exwm-emacs = ((_super.emacsPackagesFor _super.emacs29).emacsWithPackages (epkgs: with epkgs; [ emacsql-sqlite _super.imagemagick _super.escrotum vterm exwm ])); })  # emasc.withPackages is not available :((((
 # #+end_src
 
+# NOTE would be necessary to get the newest version of exwm. But I can just wait for 24.11
 # temorary to enable emacs29 <- note. Maybe this is not necessary :) # nixpkgs.config.packageOverrides = pkgs:   <- this might be an alternative..
 
 # #+name: nixos-section
@@ -1977,6 +1999,8 @@ I needed to hack this to emacs29, because emacs28 failed with my org-mode config
 #+name: nixos-section
 #+begin_src nix
 {
+
+  boot.crashDump.enable = true;
   services.displayManager = {
     autoLogin = {
       user = "moritz";
@@ -2001,9 +2025,10 @@ I needed to hack this to emacs29, because emacs28 failed with my org-mode config
           (require 'exwm-randr)
           ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "HDMI1" 2 "DP2" 3 "eDP1" 4 "HDMI1" 5 "DP2"))
           ;; (setq exwm-randr-workspace-monitor-plist '(0 "eDP1" 1 "eDP1" 2 "HDMI1" 3 "eDP1" 4 "eDP1" 5 "eDP1"))
-          ;; (exwm-randr-enable)
+          (exwm-randr-enable)  ;; for the old EXWM 0.28 version
           (exwm-systemtray-enable)
           (exwm-enable)
+          ;; (exwm-randr-mode)  ;; I think this would be for the new version
         '';
       };
       stumpwm.enable = false;
@@ -3283,7 +3308,7 @@ set-window-option -g automatic-rename
     pkgs.rPackages.orca  # required for plotly
     pkgs.pipenv
     pip
-    pkgs.unstable.nodePackages_latest.pyright
+    pkgs.pyright
     python-lsp-server
     selenium
     # pkgs.zlib
