@@ -55,16 +55,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     agenix.url = "github:ryantm/agenix";
-    musnix = {
-      type = "github";
-      owner = "musnix";
-      repo = "musnix";
-      flake = false;
-    };
   };
   
 # nixpkgs-local
-  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, agenix, musnix }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, agenix }@inputs:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
@@ -85,7 +79,7 @@
     in {
       nixosConfigurations =
         let
-          hosts = ["moxps" "mobook" "mopad"];
+          hosts = ["moxps" "mobook" "mopad" "moair"];
           mkHost = name:
             nixpkgs.lib.nixosSystem {
               system = "x86_64-linux";

@@ -50,6 +50,8 @@ let
         powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
         powerManagement.enable = true;
       
+        # The NixOS release to be compatible with for stateful data such as databases.
+        system.stateVersion = "20.03";
       }
       {
         system.nixos.tags = [ "no-xserver-datacenter" ];
@@ -162,14 +164,6 @@ let
             echo 1 | tee /sys/class/backlight/intel_backlight/brightness
           '';
           serviceConfig.Type = "oneshot";
-        };
-      }
-      {
-        musnix = {
-          # Find this value with `lspci | grep -i audio` (per the musnix readme).
-          # PITFALL: This is the id of the built-in soundcard.
-          #   When I start using the external one, change it.
-          soundcardPciId = "00:1f.3";
         };
       }
       {
@@ -594,13 +588,16 @@ let
       
         powerManagement.enable = true;
         powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
-        
+      
         services.mbpfan = {
           enable = true;
           lowTemp = 60;
           highTemp = 67;
           maxTemp = 84;
         };
+      
+        # The NixOS release to be compatible with for stateful data such as databases.
+        system.stateVersion = "20.03";
       }
       {
         fileSystems."/boot" =
@@ -641,14 +638,6 @@ let
         #   package = pkgs.vanilla-dmz;
         #   size = 64;
         # };
-      }
-      {
-        musnix = {
-          # Find this value with `lspci | grep -i audio` (per the musnix readme).
-          # PITFALL: This is the id of the built-in soundcard.
-          #   When I start using the external one, change it.
-          soundcardPciId = "00:1b.0";  # 00:1b.0 or 00:03.0
-        };
       }
       {
         services.xserver.dpi = 200;
@@ -742,6 +731,8 @@ let
           #   accelProfile = "flat";
           # };
         };
+        # The NixOS release to be compatible with for stateful data such as databases.
+        system.stateVersion = "20.03";
       }
       
       
@@ -900,6 +891,82 @@ let
       
       }
     ];
+    moair = [
+      {
+        imports = [
+          ./apple-silicon-support # modified
+          inputs.nixpkgs.nixosModules.notDetected
+        ];
+      
+        # Use the systemd-boot EFI boot loader.
+        boot.loader.systemd-boot.enable = true;
+        boot.loader.efi.canTouchEfiVariables = false; # modified
+        boot.initrd.availableKernelModules = [ "usb_storage" ];
+      
+        fileSystems."/" =
+          { device = "/dev/disk/by-uuid/e24c4ea5-1dd7-4b80-ac54-d6f87e72b3a6";
+            fsType = "ext4";
+          };
+      
+        fileSystems."/boot" =
+          { device = "/dev/disk/by-uuid/0747-1012";
+            fsType = "vfat";
+            options = [ "fmask=0022" "dmask=0022" ];
+          };
+      
+        swapDevices = [ ];
+      
+      
+        # Reference Asahi/Apple data path (required for flake)
+        hardware.asahi.peripheralFirmwareDirectory = ./firmware;
+        # Optionally disable their extraction
+        # hardware.asahi.extractPeripheralFirmware = false;
+      
+        # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
+        # (the default) this is the recommended approach. When using systemd-networkd it's
+        # still possible to use this option, but it's recommended to use it in conjunction
+        # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
+        networking.useDHCP = lib.mkDefault true;
+        # networking.interfaces.wlan0.useDHCP = lib.mkDefault true;
+      
+        networking.hostName = "moair"; # Define your hostname.
+        # Pick only one of the below networking options.
+        networking.wireless.iwd = {
+          enable = true;
+          settings.General.EnableNetworkConfiguration = true;
+        };
+        # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
+        networking.networkmanager.enable = true;  # Easiest to use and most distros use this by default.
+      
+      
+        nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
+      
+        services.xserver = {
+          enable = true;
+          displayManager = {
+            lightdm.enable = true;
+          };
+        };
+        services.libinput = {
+          enable = true;
+          touchpad.accelSpeed = "0.7";
+      
+          # disabling mouse acceleration
+          # mouse = {
+          #   accelProfile = "flat";
+          # };
+      
+          # # disabling touchpad acceleration
+          # touchpad = {
+          #   accelProfile = "flat";
+          # };
+        };
+        # For more information, see `man configuration.nix` or https://nixos.org/manual/nixos/stable/options#opt-system.stateVersion .
+        system.stateVersion = "24.11"; # Do not change!
+      }
+      
+      
+    ];
   };
   # nur-no-pkgs = import (builtins.fetchTarball {
   #   url = "https://github.com/nix-community/NUR/archive/master.tar.gz";
@@ -916,10 +983,7 @@ in
   # disabledModules = [ "services/printing/cupsd.nix" ]; 
   imports = [
     # (import "${inputs.nixpkgs-local}/nixos/modules/services/printing/cupsd.nix")
-    (import "${inputs.musnix}")
     {
-      # The NixOS release to be compatible with for stateful data such as databases.
-      system.stateVersion = "20.03";
     }
 
     {
@@ -1149,29 +1213,6 @@ in
       security.sudo.extraConfig = ''
         moritz  ALL=(ALL) NOPASSWD: ${pkgs.systemd}/bin/systemctl
         '';
-      musnix = {
-        enable = false;  # disabling to check 
-        alsaSeq.enable = false;
-    
-        # If I build with either of these, I get a PREEMPT error, much like
-        #   https://github.com/musnix/musnix/issues/100
-        # kernel.realtime = true;
-        # kernel.optimize = true;
-    
-        # das_watchdog.enable = true;
-          # I don't think this does anything without the realtime kernel.
-    
-        # magic to me
-        rtirq = {
-          # highList = "snd_hrtimer";
-          resetAll = 1;
-          prioLow = 0;
-          enable = true;
-          nameList = "rtc0 snd";
-        };
-      };
-        
-    
     }
     {
       services.printing.enable = true;

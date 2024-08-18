@@ -42,6 +42,9 @@ let
     mopad = [
       <<machine-mopad>>
     ];
+    moair = [
+      <<machine-moair>>
+    ];
   };
   # nur-no-pkgs = import (builtins.fetchTarball {
   #   url = "https://github.com/nix-community/NUR/archive/master.tar.gz";
@@ -59,8 +62,6 @@ in
   imports = [
     # (import "${inputs.nixpkgs-local}/nixos/modules/services/printing/cupsd.nix")
     {
-      # The NixOS release to be compatible with for stateful data such as databases.
-      system.stateVersion = "20.03";
     }
 
     <<nixos-section>>
@@ -167,7 +168,7 @@ Make this repository flake-compatible:
     in {
       nixosConfigurations =
         let
-          hosts = ["moxps" "mobook" "mopad"];
+          hosts = ["moxps" "mobook" "mopad" "moair"];
           mkHost = name:
             nixpkgs.lib.nixosSystem {
               system = "x86_64-linux";
@@ -403,6 +404,8 @@ This is my Dell XPS 15. Only use Intel OR Nvidia
   powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
   powerManagement.enable = true;
 
+  # The NixOS release to be compatible with for stateful data such as databases.
+  system.stateVersion = "20.03";
 }
 #+end_src
 ***** Intel only
@@ -855,6 +858,8 @@ Thinkpad X1 Extreme gen 4
     #   accelProfile = "flat";
     # };
   };
+  # The NixOS release to be compatible with for stateful data such as databases.
+  system.stateVersion = "20.03";
 }
 #+end_src
 
@@ -1015,13 +1020,16 @@ This is my late 2013 MBP.
 
   powerManagement.enable = true;
   powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
-  
+
   services.mbpfan = {
     enable = true;
     lowTemp = 60;
     highTemp = 67;
     maxTemp = 84;
   };
+
+  # The NixOS release to be compatible with for stateful data such as databases.
+  system.stateVersion = "20.03";
 }
 #+end_src
 
@@ -1074,6 +1082,114 @@ Clickpad and DPI:
   # };
 }
 #+end_src
+*** moair
+
+#+name: machine-moair
+#+begin_src nix
+{
+  imports = [
+    ./apple-silicon-support # modified
+    inputs.nixpkgs.nixosModules.notDetected
+  ];
+
+  # Use the systemd-boot EFI boot loader.
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = false; # modified
+  boot.initrd.availableKernelModules = [ "usb_storage" ];
+
+  fileSystems."/" =
+    { device = "/dev/disk/by-uuid/e24c4ea5-1dd7-4b80-ac54-d6f87e72b3a6";
+      fsType = "ext4";
+    };
+
+  fileSystems."/boot" =
+    { device = "/dev/disk/by-uuid/0747-1012";
+      fsType = "vfat";
+      options = [ "fmask=0022" "dmask=0022" ];
+    };
+
+  swapDevices = [ ];
+
+
+  # Reference Asahi/Apple data path (required for flake)
+  hardware.asahi.peripheralFirmwareDirectory = ./firmware;
+  # Optionally disable their extraction
+  # hardware.asahi.extractPeripheralFirmware = false;
+
+  # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
+  # (the default) this is the recommended approach. When using systemd-networkd it's
+  # still possible to use this option, but it's recommended to use it in conjunction
+  # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
+  networking.useDHCP = lib.mkDefault true;
+  # networking.interfaces.wlan0.useDHCP = lib.mkDefault true;
+
+  networking.hostName = "moair"; # Define your hostname.
+  # Pick only one of the below networking options.
+  networking.wireless.iwd = {
+    enable = true;
+    settings.General.EnableNetworkConfiguration = true;
+  };
+  # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
+  networking.networkmanager.enable = true;  # Easiest to use and most distros use this by default.
+
+
+  nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
+
+  services.xserver = {
+    enable = true;
+    displayManager = {
+      lightdm.enable = true;
+    };
+  };
+  services.libinput = {
+    enable = true;
+    touchpad.accelSpeed = "0.7";
+
+    # disabling mouse acceleration
+    # mouse = {
+    #   accelProfile = "flat";
+    # };
+
+    # # disabling touchpad acceleration
+    # touchpad = {
+    #   accelProfile = "flat";
+    # };
+  };
+  # For more information, see `man configuration.nix` or https://nixos.org/manual/nixos/stable/options#opt-system.stateVersion .
+  system.stateVersion = "24.11"; # Do not change!
+}
+#+end_src
+
+
+Cursor
+#+name: machine-moair
+#+begin_src nix
+{
+  services.xserver.displayManager.sessionCommands = ''
+    xsetroot -cursor_name left_ptr
+  '';
+}
+#+end_src nix
+
+related: https://discourse.nixos.org/t/how-to-fix-cursor-size/2938
+
+#+name: machine-moair
+#+begin_src nix
+{
+  services.xserver.displayManager.lightdm.greeters.gtk.cursorTheme = {
+    name = "Vanilla-DMZ";
+    package = pkgs.vanilla-dmz;
+    size = 64; # was 64
+  };
+  xsession.pointerCursor = {
+      package = pkgs.vanilla-dmz; # pkgs.gnome.adwaita-icon-theme;
+      name = "Vanilla-DMZ";
+      size = 64;
+  };
+  environment.variables.XCURSOR_SIZE = "64";
+}
+#+end_src nix
+
 ** Local packages
 As a responsible NixOS user, I refuse to install software blindly with =sudo make install=. That's why I must write my own nix-expressions.
 *** Custom Input font
@@ -1834,10 +1950,12 @@ gpg_path=gpg2
 ** MS office365 calendar
 Here's a basic NixOS configuration that should do what you're asking for. This configuration assumes that you have =wget= and =gawk= installed on your system. If not, you should add them to your =environment.systemPackages=.
 
-#+name: nixos-section
+#+name: machine-mopad
 #+begin_src nix
-# TODO also the awk script is for google calendar, maybe I should try to find an office365-specific script
+# TODO also the awk script is for google calendar, maybe I should try to find an office365-specific script.
+# TODO I modified that script such that it does not adjust the time zone (because it was broken: the ical file indicates the wrong timezone but the correct time!). ( return 0 in parse_timezone_offset
 # TODO also, filter either ical or org for events older than last month (otherwise org-agenda has to work so much more...)
+# TODO note: I disabled syncthing wiki syncing o the `calendar-sync` folder (ignore/exception)
 {
   environment.systemPackages = with pkgs; [ wget gawk gnugrep ];
 
