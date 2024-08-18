@@ -788,7 +788,7 @@ Thinkpad X1 Extreme gen 4
   # hardware.bumblebee.enable = false;
 
   services.hardware.bolt.enable = true;
-  hardware.nvidia.powerManagement.enable = true;
+  hardware.nvidia.powerManagement.enable = true;  # might be buggy (https://github.com/NVIDIA/open-gpu-kernel-modules/issues/472)
   hardware.nvidia.powerManagement.finegrained = false;   # TODO is this good or bad?
   hardware.nvidia.prime = {
     # Bus ID of the Intel GPU.
@@ -1975,7 +1975,8 @@ Here's a basic NixOS configuration that should do what you're asking for. This c
       Type = "oneshot";
     };
     script = ''
-      ${pkgs.wget}/bin/wget https://raw.githubusercontent.com/msherry/ical2org/master/ical2org.awk -O ${scriptPath}
+      # not redownloading the script, because the time-zone adaptation is broken (see TODO above)
+      # ${pkgs.wget}/bin/wget https://raw.githubusercontent.com/msherry/ical2org/master/ical2org.awk -O ${scriptPath}
       ${pkgs.wget}/bin/wget `cat ${config.age.secrets.mcUrl.path}` -O ${mcIcsPath}
       ${pkgs.wget}/bin/wget `cat ${config.age.secrets.gcUrl.path}` -O ${gcIcsPath}
       ${pkgs.gawk}/bin/gawk -f ${scriptPath} ${mcIcsPath} | ${pkgs.gnugrep}/bin/grep -v 'CLOCK:' > ${orgPath}
@@ -2387,7 +2388,7 @@ Here go applications (almost) every normal user needs.
 #+name: nixos-section
 #+begin_src nix
 {
-  programs.kdeconnect.enable = true;
+  programs.kdeconnect.enable = false;  # segfaulted unfortunately. probably because it was also enabled in home.nix (https://discourse.nixos.org/t/kernel-panic-how-to-retrieve-logs/49983)
 }
 #+end_src
 ** DLNA
@@ -2683,7 +2684,16 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
   ];
 }
 #+end_src
-
+** Thunar
+#+name: nixos-section
+#+begin_src nix
+{
+  programs.thunar.enable = true;
+  # discussed here: https://github.com/NixOS/nixpkgs/issues/61539
+  security.pam.services.emacs.enableGnomeKeyring = true;
+  services.gnome.gnome-keyring.enable = true;
+}
+#+end_src
 
 ** Other applications
 Don't require additional setup.
@@ -2910,6 +2920,9 @@ Start emacs as a daemon:
 #+end_src
 
 ** Conda
+
+TODO: only provide a single command for `base`
+
 #+name: nixos-section
 #+begin_src nix
 {
