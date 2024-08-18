@@ -55,10 +55,16 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     agenix.url = "github:ryantm/agenix";
+    apple-silicon = {
+      url = "github:tpwrules/nixos-apple-silicon";
+
+      # this line prevents fetching two versions of nixpkgs:
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   
 # nixpkgs-local
-  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, agenix }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, agenix, apple-silicon }@inputs:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {

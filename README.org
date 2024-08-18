@@ -144,10 +144,16 @@ Make this repository flake-compatible:
       inputs.nixpkgs.follows = "nixpkgs";
     };
     agenix.url = "github:ryantm/agenix";
+    apple-silicon = {
+      url = "github:tpwrules/nixos-apple-silicon";
+
+      # this line prevents fetching two versions of nixpkgs:
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   
 # nixpkgs-local
-  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, agenix }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, agenix, apple-silicon }@inputs:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
@@ -1088,9 +1094,15 @@ Clickpad and DPI:
 #+begin_src nix
 {
   imports = [
-    ./apple-silicon-support # modified
+    # apple-silicon hardware support
+    inputs.apple-silicon.nixosModules.apple-silicon-support
+
+    # (import "${inputs.apple-silicon}/")
     inputs.nixpkgs.nixosModules.notDetected
   ];
+
+  nixpkgs.overlays = [ inputs.apple-silicon.overlays.apple-silicon-overlay ];
+
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
@@ -1109,6 +1121,16 @@ Clickpad and DPI:
     };
 
   swapDevices = [ ];
+
+  # # backlight control
+  # programs.light.enable = true;  
+  # services.actkbd = {
+  #   enable = true;
+  #   bindings = [
+  #     { keys = [ 225 ]; events = [ "key" ]; command = "/run/current-system/sw/bin/light -A 10"; }
+  #     { keys = [ 224 ]; events = [ "key" ]; command = "/run/current-system/sw/bin/light -U 10"; }
+  #   ];
+  # };
 
 
   # Reference Asahi/Apple data path (required for flake)

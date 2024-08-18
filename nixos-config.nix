@@ -894,9 +894,15 @@ let
     moair = [
       {
         imports = [
-          ./apple-silicon-support # modified
+          # apple-silicon hardware support
+          inputs.apple-silicon.nixosModules.apple-silicon-support
+      
+          # (import "${inputs.apple-silicon}/")
           inputs.nixpkgs.nixosModules.notDetected
         ];
+      
+        nixpkgs.overlays = [ inputs.apple-silicon.overlays.apple-silicon-overlay ];
+      
       
         # Use the systemd-boot EFI boot loader.
         boot.loader.systemd-boot.enable = true;
@@ -915,6 +921,16 @@ let
           };
       
         swapDevices = [ ];
+      
+        # # backlight control
+        # programs.light.enable = true;  
+        # services.actkbd = {
+        #   enable = true;
+        #   bindings = [
+        #     { keys = [ 225 ]; events = [ "key" ]; command = "/run/current-system/sw/bin/light -A 10"; }
+        #     { keys = [ 224 ]; events = [ "key" ]; command = "/run/current-system/sw/bin/light -U 10"; }
+        #   ];
+        # };
       
       
         # Reference Asahi/Apple data path (required for flake)

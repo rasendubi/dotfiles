@@ -133,7 +133,7 @@ home.packages =   with pkgs; [
   # services.emacs.enable = true;
 
   services.lorri.enable = true;
-  services.kdeconnect.enable = true;
+  services.kdeconnect.enable = false;  # segfaulted unfortunately. probably because it was also in nixos-config.nix (https://discourse.nixos.org/t/kernel-panic-how-to-retrieve-logs/49983)
 
   programs.browserpass = {
     enable = true;
