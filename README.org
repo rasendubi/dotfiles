@@ -155,7 +155,7 @@ Make this repository flake-compatible:
 # nixpkgs-local
   outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, agenix, apple-silicon }@inputs:
     let
-      system = "x86_64-linux";
+      system = "aarch64-linux";
       pkgs = import nixpkgs {
         inherit system;
         overlays = self.overlays;
@@ -177,7 +177,7 @@ Make this repository flake-compatible:
           hosts = ["moxps" "mobook" "mopad" "moair"];
           mkHost = name:
             nixpkgs.lib.nixosSystem {
-              system = "x86_64-linux";
+              system = "aarch64-linux";
               modules = [
                 { nixpkgs = { inherit pkgs;  }; }
                 (import ./nixos-config.nix)
@@ -192,7 +192,7 @@ Make this repository flake-compatible:
             };
         in nixpkgs.lib.genAttrs hosts mkHost;
 
-      packages.x86_64-linux =
+      packages.aarch64-linux =
         let
           mergePackages = nixpkgs.lib.foldr nixpkgs.lib.mergeAttrs {};
         in
@@ -201,7 +201,7 @@ Make this repository flake-compatible:
           ];
 
       overlays = [
-        (_self: _super: self.packages.x86_64-linux)
+        (_self: _super: self.packages.aarch64-linux)
         <<flake-overlays>>
       ];
 
@@ -1132,9 +1132,8 @@ Clickpad and DPI:
   #   ];
   # };
 
-
   # Reference Asahi/Apple data path (required for flake)
-  hardware.asahi.peripheralFirmwareDirectory = ./firmware;
+  hardware.asahi.peripheralFirmwareDirectory = /etc/nixos/firmware;
   # Optionally disable their extraction
   # hardware.asahi.extractPeripheralFirmware = false;
 
@@ -1484,8 +1483,10 @@ Also, Pulseaudio is a requirement for Firefox Quantum.
 {
   # TODO enable instead of pulseaudio
   # security.rtkit.enable = true;
-  # services.pipewire = {
-  #   enable = true;
+  services.pipewire = {
+    enable = true;
+    pulse.enable = true;
+  };
   #   alsa.enable = true;
   #   alsa.support32Bit = true;
   #   pulse.enable = true;
@@ -1493,13 +1494,13 @@ Also, Pulseaudio is a requirement for Firefox Quantum.
   #   jack.enable = true;
   # };
 
-  hardware.pulseaudio = {
-    enable = true;
-    support32Bit = true;
-    zeroconf.discovery.enable = true;
-    systemWide = false;
-    package = pkgs.pulseaudioFull; # .override { jackaudioSupport = true; };  # need "full" for bluetooth
-  };
+  # hardware.pulseaudio = {
+  #   enable = true;
+  #   support32Bit = true;
+  #   zeroconf.discovery.enable = true;
+  #   systemWide = false;
+  #   package = pkgs.pulseaudioFull; # .override { jackaudioSupport = true; };  # need "full" for bluetooth
+  # };
 
   environment.systemPackages = with pkgs; [ pavucontrol libjack2 jack2 qjackctl jack2Full jack_capture
   gst_all_1.gstreamer
@@ -1554,7 +1555,7 @@ https://nixos.wiki/wiki/Printing
   '';
   services.printing.drivers = with pkgs; [
     gutenprint
-    gutenprintBin
+    # gutenprintBin  # not aarch64
     samsung-unified-linux-driver
     splix
     canon-cups-ufr2
@@ -1673,10 +1674,10 @@ Enable firewall. This blocks all ports (for ingress traffic) and pings.
 {
   virtualisation.virtualbox.host.enable = false;  # slow compile times
   virtualisation.docker.enable = true;
-  virtualisation.docker.enableNvidia = true;
-  
+  # virtualisation.docker.enableNvidia = true;  # TODO 
+
   systemd.enableUnifiedCgroupHierarchy = false;  # workaround https://github.com/NixOS/nixpkgs/issues/127146
-  hardware.opengl.driSupport32Bit = true;
+  # hardware.opengl.driSupport32Bit = true;
   environment.systemPackages = [
     pkgs.docker-compose
     pkgs.qemu_kvm
@@ -2181,6 +2182,7 @@ https://github.com/bsag/nixos-config/blob/330e34c40aba37664bbc20550bf4dd427f0e47
     '';
     wantedBy = [ "multi-user.target" ];
   };
+  services.xserver.xkb.options= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp,altwin:swap_lalt_lwin";
 }
 #+end_src
 *** Layouts
@@ -2190,7 +2192,6 @@ https://github.com/bsag/nixos-config/blob/330e34c40aba37664bbc20550bf4dd427f0e47
 {
   services.xserver.xkb.layout = "de,de,us";
   services.xserver.xkb.variant = "bone,,";
-  services.xserver.xkb.options= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp,altwin:swap_lalt_lwin";
 
   environment.systemPackages = [ pkgs.xorg.xmodmap ];
 
@@ -2198,6 +2199,23 @@ https://github.com/bsag/nixos-config/blob/330e34c40aba37664bbc20550bf4dd427f0e47
   console.useXkbConfig = true;
 }
 #+end_src
+
+#+name: machine-mopad
+#+begin_src nix
+{
+  services.xserver.xkb.options= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp,altwin:swap_lalt_lwin";
+}
+#+end_src
+
+#+name: machine-moair
+#+begin_src nix
+{
+  services.xserver.xkb.options= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp";
+}
+#+end_src
+
+
+
 **** TODO on normal keyboards I might want to deactivate mod5-locking (see links)
 https://askubuntu.com/questions/41213/what-does-key-to-choose-5th-level-in-gnome-keyboard-properties-do
 [[file:~/nixos-config/README.org::nixos-section][nixos-section]] <- continue here
