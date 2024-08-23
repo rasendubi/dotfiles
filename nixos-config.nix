@@ -1194,21 +1194,12 @@ in
       services.pipewire = {
         enable = true;
         pulse.enable = true;
-      };
       #   alsa.enable = true;
       #   alsa.support32Bit = true;
       #   pulse.enable = true;
       #   # If you want to use JACK applications, uncomment this
       #   jack.enable = true;
-      # };
-    
-      # hardware.pulseaudio = {
-      #   enable = true;
-      #   support32Bit = true;
-      #   zeroconf.discovery.enable = true;
-      #   systemWide = false;
-      #   package = pkgs.pulseaudioFull; # .override { jackaudioSupport = true; };  # need "full" for bluetooth
-      # };
+      };
     
       environment.systemPackages = with pkgs; [ pavucontrol libjack2 jack2 qjackctl jack2Full jack_capture
       gst_all_1.gstreamer
@@ -1403,6 +1394,7 @@ in
         windowManager = {
           exwm = {
             enable = true;
+            
             extraPackages = epkgs: with epkgs; [ emacsql-sqlite pkgs.imagemagick pkgs.escrotum epkgs.vterm ];  # unfortunately, adding zmq and jupyter here, didn't work so I had to install them manually (i.e. compiling emacs-zmq)
             # I only managed to compile emacs-zmq once (~/emacs.d/elpa/27.1/develop/zmq-.../emacs-zmq.so). I just copied it from there to mobook
             enableDefaultConfig = false;  # todo disable and enable loadScript
@@ -1736,6 +1728,22 @@ in
       ];
     }
     {
+      xdg.mime.defaultApplications = {
+          "inode/directory" = [ "org.xfce.Thunar.desktop" ];
+          "application/pdf" = [ "emacsclient.desktop" ];
+          "x-scheme-handler/org-protocol" = [ "org-protocol.desktop" ];
+          "x-scheme-handler/msteams" = [ "teams.desktop" ];
+          "image/png" = [ "feh.desktop" "org.inkscape.Inkscape.desktop" ]; 
+          "image/svg+xml" = [ "org.inkscape.Inkscape.desktop" ];
+          "x-scheme-handler/http" = [ "chromium.desktop" ];
+          "x-scheme-handler/https" = [ "chromium.desktop" ];
+          "x-scheme-handler/about" = [ "chromium.desktop" ];  # Added
+          "x-scheme-handler/unknown" = [ "chromium.desktop" ];  # Added
+          "image/jpeg" = [ "feh.desktop" "gimp.desktop" ];  # Added
+          "video/mp4" = [ "vlc.desktop" ];  # Added
+      };
+    }
+    {
       environment.systemPackages = [ pkgs.niv ];
     }
     {
@@ -1845,7 +1853,6 @@ in
         packages = with pkgs; [
           powerline-fonts
           terminus_font
-    
         ];
       };
     }
