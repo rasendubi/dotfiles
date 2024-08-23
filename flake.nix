@@ -66,7 +66,7 @@
 # nixpkgs-local
   outputs = { self, nixpkgs, nixpkgs-moritz, nixpkgs-2009, nixpkgs-unstable, nixos-hardware, home-manager, nur, agenix, apple-silicon }@inputs:
     let
-      system = "x86_64-linux";
+      system = "aarch64-linux";
       pkgs = import nixpkgs {
         inherit system;
         overlays = self.overlays;
@@ -88,7 +88,7 @@
           hosts = ["moxps" "mobook" "mopad" "moair"];
           mkHost = name:
             nixpkgs.lib.nixosSystem {
-              system = "x86_64-linux";
+              system = "aarch64-linux";
               modules = [
                 { nixpkgs = { inherit pkgs;  }; }
                 (import ./nixos-config.nix)
@@ -103,7 +103,7 @@
             };
         in nixpkgs.lib.genAttrs hosts mkHost;
 
-      packages.x86_64-linux =
+      packages.aarch64-linux =
         let
           mergePackages = nixpkgs.lib.foldr nixpkgs.lib.mergeAttrs {};
         in
@@ -122,12 +122,12 @@
           ];
 
       overlays = [
-        (_self: _super: self.packages.x86_64-linux)
+        (_self: _super: self.packages.aarch64-linux)
         (final: prev: {
           unstable = import inputs.nixpkgs-unstable {
             inherit system;
             overlays = self.overlays; # .${system};
-        
+            
             config = { allowUnfree = true;  allowBroken = true; nvidia.acceptLicense = true; };
           };
           nixpkgs-2009 = import inputs.nixpkgs-2009 {
@@ -135,7 +135,7 @@
             overlays = self.overlays; # .${system};
             config = { allowUnfree = true; };
           };
-        
+          
           # mkNvidiaContainerPkg = { name, containerRuntimePath, configTemplate, additionalPaths ? [] }:
           #   let
           #     nvidia-container-runtime = pkgs.callPackage "${inputs.nixpkgs}/pkgs/applications/virtualization/nvidia-container-runtime" {
@@ -152,7 +152,7 @@
           #       })
           #     ] ++ additionalPaths;
           #   };
-        
+          
           # nvidia-docker = pkgs.mkNvidiaContainerPkg {
           #   name = "nvidia-docker";
           #   containerRuntimePath = "${pkgs.docker}/libexec/docker/runc";

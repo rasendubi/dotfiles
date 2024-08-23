@@ -871,6 +871,10 @@ let
           '';
           wantedBy = [ "multi-user.target" ];
         };
+        services.xserver.xkb.options= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp,altwin:swap_lalt_lwin";
+      }
+      {
+        services.xserver.xkb.options= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp,altwin:swap_lalt_lwin";
       }
       {
         services.xserver.dpi = 140;  # was 130, 
@@ -932,9 +936,8 @@ let
         #   ];
         # };
       
-      
         # Reference Asahi/Apple data path (required for flake)
-        hardware.asahi.peripheralFirmwareDirectory = ./firmware;
+        hardware.asahi.peripheralFirmwareDirectory = /etc/nixos/firmware;
         # Optionally disable their extraction
         # hardware.asahi.extractPeripheralFirmware = false;
       
@@ -966,7 +969,9 @@ let
         services.libinput = {
           enable = true;
           touchpad.accelSpeed = "0.7";
-      
+          # mouse.disableWhileTyping = true;
+          touchpad.disableWhileTyping = true;
+          touchpad.tapping = false;
           # disabling mouse acceleration
           # mouse = {
           #   accelProfile = "flat";
@@ -982,6 +987,9 @@ let
       }
       
       
+      {
+        services.xserver.xkb.options= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp";
+      }
     ];
   };
   # nur-no-pkgs = import (builtins.fetchTarball {
@@ -1183,8 +1191,10 @@ in
     {
       # TODO enable instead of pulseaudio
       # security.rtkit.enable = true;
-      # services.pipewire = {
-      #   enable = true;
+      services.pipewire = {
+        enable = true;
+        pulse.enable = true;
+      };
       #   alsa.enable = true;
       #   alsa.support32Bit = true;
       #   pulse.enable = true;
@@ -1192,13 +1202,13 @@ in
       #   jack.enable = true;
       # };
     
-      hardware.pulseaudio = {
-        enable = true;
-        support32Bit = true;
-        zeroconf.discovery.enable = true;
-        systemWide = false;
-        package = pkgs.pulseaudioFull; # .override { jackaudioSupport = true; };  # need "full" for bluetooth
-      };
+      # hardware.pulseaudio = {
+      #   enable = true;
+      #   support32Bit = true;
+      #   zeroconf.discovery.enable = true;
+      #   systemWide = false;
+      #   package = pkgs.pulseaudioFull; # .override { jackaudioSupport = true; };  # need "full" for bluetooth
+      # };
     
       environment.systemPackages = with pkgs; [ pavucontrol libjack2 jack2 qjackctl jack2Full jack_capture
       gst_all_1.gstreamer
@@ -1237,7 +1247,7 @@ in
       '';
       services.printing.drivers = with pkgs; [
         gutenprint
-        gutenprintBin
+        # gutenprintBin  # not aarch64
         samsung-unified-linux-driver
         splix
         canon-cups-ufr2
@@ -1300,10 +1310,10 @@ in
     {
       virtualisation.virtualbox.host.enable = false;  # slow compile times
       virtualisation.docker.enable = true;
-      virtualisation.docker.enableNvidia = true;
-      
+      # virtualisation.docker.enableNvidia = true;  # TODO 
+    
       systemd.enableUnifiedCgroupHierarchy = false;  # workaround https://github.com/NixOS/nixpkgs/issues/127146
-      hardware.opengl.driSupport32Bit = true;
+      # hardware.opengl.driSupport32Bit = true;
       environment.systemPackages = [
         pkgs.docker-compose
         pkgs.qemu_kvm
@@ -1430,6 +1440,7 @@ in
         # pkgs.khoj
         pkgs.wmname
         pkgs.xclip
+        pkgs.clipit
         pkgs.escrotum
         pkgs.graphviz
       ];
@@ -1437,7 +1448,6 @@ in
     {
       services.xserver.xkb.layout = "de,de,us";
       services.xserver.xkb.variant = "bone,,";
-      services.xserver.xkb.options= "lv5:rwin_switch_lock,terminate:ctrl_alt_bksp,altwin:swap_lalt_lwin";
     
       environment.systemPackages = [ pkgs.xorg.xmodmap ];
     
@@ -1465,6 +1475,9 @@ in
       #   Option "HorizScrollDelta" "-100"
       #   Option "Resolution" "370"
       # '';
+      services.unclutter = {
+        enable = true;
+      };
     }
     {
       hardware.logitech.wireless.enable = true;
@@ -1571,12 +1584,8 @@ in
     {
       programs.browserpass.enable = true;
       environment.systemPackages = [
-        pkgs.google-chrome
-      ];
-    }
-    {
-      environment.systemPackages = [
-        pkgs.microsoft-edge
+        # pkgs.google-chrome  # not available for aarch64
+        pkgs.chromium
       ];
     }
     {
@@ -1596,11 +1605,11 @@ in
     }
     {
       environment.systemPackages = [
-        pkgs.zathura
+        # pkgs.zathura
       ];
     }
     {
-      environment.systemPackages = with pkgs; [ xournalpp  masterpdfeditor qpdfview sioyek evince adobe-reader pdftk scribus ];  # unstable.sioyek fails tzz
+      # environment.systemPackages = with pkgs; [ xournalpp  masterpdfeditor qpdfview sioyek evince adobe-reader pdftk scribus ];  # unstable.sioyek fails tzz
     }
     {
       environment.systemPackages = [
@@ -1627,18 +1636,9 @@ in
       ];
     }
     {
-      environment.systemPackages =
-        let wrapper = pkgs.writeScriptBin "spotify-highres" ''
-          #!${pkgs.stdenv.shell}
-          exec ${pkgs.spotify}/bin/spotify --force-device-scale-factor=2
-          '';
-      in
-         [ pkgs.spotify wrapper pkgs.playerctl ];
-    }
-    {
       services.tor.enable = false;
       services.tor.client.enable = false;
-      environment.systemPackages = [ pkgs.tor-browser-bundle-bin ];
+      # environment.systemPackages = [ pkgs.tor-browser-bundle-bin ];  # aarch64 not supported
     }
     {
     
@@ -1681,59 +1681,30 @@ in
     {
       environment.systemPackages =
         with pkgs;
-        let sparkleshare_fixed = sparkleshare.overrideAttrs ( oldAttrs: {
-          postInstall = ''
-            wrapProgram $out/bin/sparkleshare \
-                --set PATH ${symlinkJoin {
-                  name = "mono-path";
-                  paths = [
-                    coreutils
-                    bash
-                    git
-                    git-lfs
-                    glib
-                    mono
-                    openssh
-                    openssl
-                    xdg_utils
-                  ];
-                }}/bin \
-                --set MONO_GAC_PREFIX ${lib.concatStringsSep ":" [
-                  appindicator-sharp
-                  gtk-sharp-3_0
-                  webkit2-sharp
-                ]} \
-                --set LD_LIBRARY_PATH ${lib.makeLibraryPath [
-                  appindicator-sharp
-                  gtk-sharp-3_0.gtk3
-                  webkit2-sharp
-                  webkit2-sharp.webkitgtk
-                ]}
-          '';
-          } ); in
         [
-        betaflight-configurator
+        # betaflight-configurator  # TODO nwjs not supported for aarch64 -.-
         # spotdl
+        homesick
         miraclecast
         xcolor
         xorg.xgamma
         vlc
         aria
-        jetbrains.pycharm-community
+        # jetbrains.pycharm-community  # takes a lot of memeory
         obs-studio
         jmtpfs
         qbittorrent
         unstable.blender
         rclone
         # teams
-        discord
+        # discord  # no aarch64
         inkscape
         arandr
         dmenu
-        # soulseekqt
+        # # soulseekqt
         gnome3.cheese
         gnome3.gnome-screenshot
-        sparkleshare_fixed 
+        # sparkleshare_fixed 
         gnome3.gpaste
         autorandr
         libnotify
@@ -1741,14 +1712,14 @@ in
     
         # kdenlive  # fails in current unstable
         audacity
-        tdesktop # Telegram
+        # tdesktop # Telegram
         signal-cli # Signal
         signal-desktop # Signal
-        unstable.zoom-us
+        # unstable.zoom-us
         libreoffice
-        wineWowPackages.stable
-        # winetricks  # requires p7zip (which is unsafe...)
-        gimp-with-plugins
+        # wineWowPackages.stable
+        # # winetricks  # requires p7zip (which is unsafe...)
+        # gimp-with-plugins  # TODO 
     
         mplayer
         mpv
@@ -1881,13 +1852,16 @@ in
     {
       programs.fish.enable = true;
       users.defaultUserShell = pkgs.fish;
-      
+    
       environment.systemPackages = [
         pkgs.any-nix-shell
+        pkgs.mcfly
       ];
       programs.fish.promptInit = ''
         any-nix-shell fish --info-right | source
       '';
+    
+      # a lot more is configured in /home/moritz/.homesick/repos/dotfiles/home/.config/fish/config.fish (tracked with homesick)
     }
     {
       environment.systemPackages = [
@@ -1964,7 +1938,7 @@ in
           tqdm
           xlrd
           pyyaml
-          matplotlib-venn
+          # matplotlib-venn
           networkx
           statsmodels
           up-set-plot

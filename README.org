@@ -3,11 +3,11 @@ I followed this blog post to adapt the config-repo to my needs: https://gist.git
 
 There are still a lot of manual steps involved:
 1. install basic nixos (see gist above)
-2. add flakes support, change to desired hostname
+2. add flakes support, change to desired hostname, add moritz user
 3. install this nixos-config (pull moritzschaefer/nixos-config, run nixos-rebuild switch)
 4. Install spacemacs (clone git-spacemacs into ~/.emacs.d as described in the installation instructions of spacemacs README)
 5. connect syncthing
-6. sync wiki and secretdotfiles (for ssh config)
+6. sync wiki and .ssh keys (possibly via usb stick, what else?)
 7. get encrypted private key from secrets: https://snow-dev.com/posts/setup-pass-on-multiple-devices.html
 8. clone my passwords repo to have my pass-logins, transfer gpg-keys (https://www.hjdskes.nl/blog/pass/)
 9. clone my dotfiles and link them using homesick
@@ -1165,7 +1165,9 @@ Clickpad and DPI:
   services.libinput = {
     enable = true;
     touchpad.accelSpeed = "0.7";
-
+    # mouse.disableWhileTyping = true;
+    touchpad.disableWhileTyping = true;
+    touchpad.tapping = false;
     # disabling mouse acceleration
     # mouse = {
     #   accelProfile = "flat";
@@ -1486,21 +1488,12 @@ Also, Pulseaudio is a requirement for Firefox Quantum.
   services.pipewire = {
     enable = true;
     pulse.enable = true;
-  };
   #   alsa.enable = true;
   #   alsa.support32Bit = true;
   #   pulse.enable = true;
   #   # If you want to use JACK applications, uncomment this
   #   jack.enable = true;
-  # };
-
-  # hardware.pulseaudio = {
-  #   enable = true;
-  #   support32Bit = true;
-  #   zeroconf.discovery.enable = true;
-  #   systemWide = false;
-  #   package = pkgs.pulseaudioFull; # .override { jackaudioSupport = true; };  # need "full" for bluetooth
-  # };
+  };
 
   environment.systemPackages = with pkgs; [ pavucontrol libjack2 jack2 qjackctl jack2Full jack_capture
   gst_all_1.gstreamer
@@ -2102,6 +2095,7 @@ I needed to hack this to emacs29, because emacs28 failed with my org-mode config
     windowManager = {
       exwm = {
         enable = true;
+        
         extraPackages = epkgs: with epkgs; [ emacsql-sqlite pkgs.imagemagick pkgs.escrotum epkgs.vterm ];  # unfortunately, adding zmq and jupyter here, didn't work so I had to install them manually (i.e. compiling emacs-zmq)
         # I only managed to compile emacs-zmq once (~/emacs.d/elpa/27.1/develop/zmq-.../emacs-zmq.so). I just copied it from there to mobook
         enableDefaultConfig = false;  # todo disable and enable loadScript
@@ -2144,6 +2138,7 @@ These packages are used by my desktop setup
     # pkgs.khoj
     pkgs.wmname
     pkgs.xclip
+    pkgs.clipit
     pkgs.escrotum
     pkgs.graphviz
   ];
@@ -2251,6 +2246,9 @@ https://nixos.wiki/wiki/Keyboard_Layout_Customization
   #   Option "HorizScrollDelta" "-100"
   #   Option "Resolution" "370"
   # '';
+  services.unclutter = {
+    enable = true;
+  };
 }
 #+end_src
 
@@ -2497,17 +2495,8 @@ Google Chrome used to be my default browser and I still use it from time to time
 {
   programs.browserpass.enable = true;
   environment.systemPackages = [
-    pkgs.google-chrome
-  ];
-}
-#+end_src
-*** Microsoft Edge
-
-#+name: nixos-section
-#+begin_src nix
-{
-  environment.systemPackages = [
-    pkgs.microsoft-edge
+    # pkgs.google-chrome  # not available for aarch64
+    pkgs.chromium
   ];
 }
 #+end_src
@@ -2541,7 +2530,7 @@ I use Firefox Quantum as my default browser now.
 #+begin_src nix
 {
   environment.systemPackages = [
-    pkgs.zathura
+    # pkgs.zathura
   ];
 }
 #+end_src
@@ -2557,10 +2546,10 @@ map j scroll up
 map k scroll down
 #+end_src
 
-#+name: nixos-section
+#+name: nixos-section 
 #+begin_src nix
 {
-  environment.systemPackages = with pkgs; [ xournalpp  masterpdfeditor qpdfview sioyek evince adobe-reader pdftk scribus ];  # unstable.sioyek fails tzz
+  # environment.systemPackages = with pkgs; [ xournalpp  masterpdfeditor qpdfview sioyek evince adobe-reader pdftk scribus ];  # unstable.sioyek fails tzz
 }
 #+END_SRC
 ** Drawing
@@ -2614,7 +2603,7 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 }
 #+end_src
 ** Spotify
-#+name: nixos-section
+#+name: nixos-section-unused # aarch64 not supported
 #+begin_src nix
 {
   environment.systemPackages =
@@ -2632,7 +2621,7 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 {
   services.tor.enable = false;
   services.tor.client.enable = false;
-  environment.systemPackages = [ pkgs.tor-browser-bundle-bin ];
+  # environment.systemPackages = [ pkgs.tor-browser-bundle-bin ];  # aarch64 not supported
 }
 #+end_src
 
@@ -2743,59 +2732,30 @@ Don't require additional setup.
 {
   environment.systemPackages =
     with pkgs;
-    let sparkleshare_fixed = sparkleshare.overrideAttrs ( oldAttrs: {
-      postInstall = ''
-        wrapProgram $out/bin/sparkleshare \
-            --set PATH ${symlinkJoin {
-              name = "mono-path";
-              paths = [
-                coreutils
-                bash
-                git
-                git-lfs
-                glib
-                mono
-                openssh
-                openssl
-                xdg_utils
-              ];
-            }}/bin \
-            --set MONO_GAC_PREFIX ${lib.concatStringsSep ":" [
-              appindicator-sharp
-              gtk-sharp-3_0
-              webkit2-sharp
-            ]} \
-            --set LD_LIBRARY_PATH ${lib.makeLibraryPath [
-              appindicator-sharp
-              gtk-sharp-3_0.gtk3
-              webkit2-sharp
-              webkit2-sharp.webkitgtk
-            ]}
-      '';
-      } ); in
     [
-    betaflight-configurator
+    # betaflight-configurator  # TODO nwjs not supported for aarch64 -.-
     # spotdl
+    homesick
     miraclecast
     xcolor
     xorg.xgamma
     vlc
     aria
-    jetbrains.pycharm-community
+    # jetbrains.pycharm-community  # takes a lot of memeory
     obs-studio
     jmtpfs
     qbittorrent
     unstable.blender
     rclone
     # teams
-    discord
+    # discord  # no aarch64
     inkscape
     arandr
     dmenu
-    # soulseekqt
+    # # soulseekqt
     gnome3.cheese
     gnome3.gnome-screenshot
-    sparkleshare_fixed 
+    # sparkleshare_fixed 
     gnome3.gpaste
     autorandr
     libnotify
@@ -2803,14 +2763,14 @@ Don't require additional setup.
 
     # kdenlive  # fails in current unstable
     audacity
-    tdesktop # Telegram
+    # tdesktop # Telegram
     signal-cli # Signal
     signal-desktop # Signal
-    unstable.zoom-us
+    # unstable.zoom-us
     libreoffice
-    wineWowPackages.stable
-    # winetricks  # requires p7zip (which is unsafe...)
-    gimp-with-plugins
+    # wineWowPackages.stable
+    # # winetricks  # requires p7zip (which is unsafe...)
+    # gimp-with-plugins  # TODO 
 
     mplayer
     mpv
@@ -2827,29 +2787,29 @@ Don't require additional setup.
   ];
 }
 #+end_src
-** CANCELLED Default applications
+** Default applications
 CLOSED: [2021-07-14 Wed 12:52]
 :LOGBOOK:
 - State "CANCELLED"  from              [2021-07-14 Wed 12:52] \\
   this is done by home.nix
 :END:
-# WARNING: This is defined in my home.nix
-#+name: nixos-section-unused
+#+name: nixos-section
 #+begin_src nix
 {
   xdg.mime.defaultApplications = {
-    "image/png" = "inkscape.desktop"; # this is wrong anyways
-    "image/svg+xml" = "inkscape.desktop"; # this is wrong anyways
-
-    "application/pdf" = "emacsclient.desktop";
-    "x-scheme-handler/org-protocol" = "org-protocol.desktop";
-    "text/html" = "google-chrome.desktop";
-    "x-scheme-handler/http" = "google-chrome.desktop";
-    "x-scheme-handler/https" = "google-chrome.desktop";
-    "x-scheme-handler/about" = "google-chrome.desktop";
-    "x-scheme-handler/unknown" = "google-chrome.desktop";
+      "inode/directory" = [ "org.xfce.Thunar.desktop" ];
+      "application/pdf" = [ "emacsclient.desktop" ];
+      "x-scheme-handler/org-protocol" = [ "org-protocol.desktop" ];
+      "x-scheme-handler/msteams" = [ "teams.desktop" ];
+      "image/png" = [ "feh.desktop" "org.inkscape.Inkscape.desktop" ]; 
+      "image/svg+xml" = [ "org.inkscape.Inkscape.desktop" ];
+      "x-scheme-handler/http" = [ "chromium.desktop" ];
+      "x-scheme-handler/https" = [ "chromium.desktop" ];
+      "x-scheme-handler/about" = [ "chromium.desktop" ];  # Added
+      "x-scheme-handler/unknown" = [ "chromium.desktop" ];  # Added
+      "image/jpeg" = [ "feh.desktop" "gimp.desktop" ];  # Added
+      "video/mp4" = [ "vlc.desktop" ];  # Added
   };
-  # environment.variables.XDG_CONFIG_DIRS = [ "/etc/xdg" ]; # we should probably have this in NixOS by default
 }
 #+end_src
 
@@ -3076,7 +3036,6 @@ I use Terminus font.
     packages = with pkgs; [
       powerline-fonts
       terminus_font
-
     ];
   };
 }
@@ -3119,13 +3078,16 @@ URxvt*color15:    #d0d0d0
 {
   programs.fish.enable = true;
   users.defaultUserShell = pkgs.fish;
-  
+
   environment.systemPackages = [
     pkgs.any-nix-shell
+    pkgs.mcfly
   ];
   programs.fish.promptInit = ''
     any-nix-shell fish --info-right | source
   '';
+
+  # a lot more is configured in /home/moritz/.homesick/repos/dotfiles/home/.config/fish/config.fish (tracked with homesick)
 }
 #+end_src
 *** Vi key bindings
@@ -3382,7 +3344,7 @@ set-window-option -g automatic-rename
       tqdm
       xlrd
       pyyaml
-      matplotlib-venn
+      # matplotlib-venn
       networkx
       statsmodels
       up-set-plot
