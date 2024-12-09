@@ -63,6 +63,7 @@
 
 (require 'modus-themes)
 (require 'modus-operandi-theme)
+(require 'modus-vivendi-theme)
 
 (setq modus-themes-italic-constructs t)
 (setq modus-themes-bold-constructs t)
@@ -103,13 +104,15 @@
      `(isearch ((,c (:inherit modus-themes-search-success))))
      `(query-replace ((,c :inherit modus-theme-intense-yellow)))
 
+     ;; `(org-level-1 ((,c :inherit modus-themes-heading-1 :height 1.2 :background ,bg-cyan-subtle)))
+
      ;; Make TODOs bold
      `(org-todo ((,c :foreground ,magenta-warmer
                      :weight bold)))
      ;; `(org-table ((,c (:foreground ,fg-special-cold :inherit nil))))
 
      ;; Make tags stand out
-     `(org-tag ((,c :foreground ,fg-main :background ,bg-yellow-intense)))
+     ;; `(org-tag ((,c :weight bold :foreground nil :background nil)))
 
      ;; dim done items
      `(org-done ((,c :foreground ,fg-alt)))

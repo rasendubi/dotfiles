@@ -9,20 +9,20 @@
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixpkgs-unstable";
+      ref = "nixos-24.11";
     };
 
     nixpkgs-stable = {
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-21.05";
+      ref = "nixos-24.11";
     };
     home-manager = {
       type = "github";
       owner = "rycee";
       repo = "home-manager";
-      ref = "master";
+      ref = "release-24.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     darwin = {
@@ -63,7 +63,10 @@
         let mkPkgs = system: import inputs.nixpkgs {
               inherit system;
               overlays = self.overlays.${system};
-              config = { allowUnfree = true; input-fonts.acceptLicense = true; };
+              config = {
+                allowUnfree = true;
+                input-fonts.acceptLicense = true;
+              };
             };
         in genAttrs systems mkPkgs;
 
@@ -194,6 +197,9 @@
                 };
               });
               programs.mbsync.extraConfig = lib.mkForce "";
+              programs.notmuch.extraConfig = {
+                index."header.Sender" = "Sender";
+              };
             }
             {
               programs.emacs = {
@@ -438,7 +444,32 @@
               '';
             }
             {
+              home.packages = [
+                pkgs.imagemagick
+                # latex for displaying fragments in org-mode
+                (pkgs.texlive.combine {
+                  inherit (pkgs.texlive)
+                    scheme-small
+                    dvipng
+                    dvisvgm
+                    mhchem # chemistry
+                    tikz-cd # category theory diagrams
+                    # required for org export
+                    wrapfig
+                    capt-of
+                  ;
+                })
+                pkgs.ghostscript
+              ];
+            }
+            {
               home.packages = [ pkgs.graphviz ];
+            }
+            {
+              home.packages = [
+                pkgs.findutils
+                pkgs.gawk
+              ];
             }
             {
               # Store mails in ~/Mail
@@ -564,7 +595,7 @@
             {
               home.file.".mailcap".text = ''
                 text/html; firefox %s
-                application/pdf; zathura %s
+                application/pdf; open %s
               '';
             }
             {
@@ -572,15 +603,9 @@
             }
             {
               home.packages = [
-                pkgs.stable.yubikey-manager
-                pkgs.stable.yubikey-personalization
-                # pkgs.yubikey-personalization-gui
+                pkgs.yubikey-manager
+                pkgs.yubikey-personalization
               ];
-            
-              # services.udev.packages = [
-              #   pkgs.yubikey-personalization
-              #   pkgs.libu2f-host
-              # ];
             }
             {
               home.packages = [
@@ -593,6 +618,17 @@
                 enable = true;
                 browsers = ["firefox" "chrome"];
               };
+            }
+            {
+              home.packages = [
+                pkgs.age
+                pkgs.age-plugin-yubikey
+              ];
+            }
+            {
+              home.packages = [
+                pkgs.passage
+              ];
             }
             {
               home.packages = pkgs.lib.linux-only [
@@ -623,7 +659,8 @@
                 (pkgs.lib.linux-only pkgs.tdesktop) # Telegram
                 pkgs.feh
             
-                pkgs.mplayer
+                # mesa is broken on macOS
+                (pkgs.lib.linux-only pkgs.mplayer)
                 (pkgs.lib.linux-only pkgs.smplayer)
               ];
             }
@@ -841,6 +878,8 @@
                   rebase.autostash = true;
                   rerere.enabled = true;
                   advice.detachedHead = false;
+            
+                  init.defaultBranch = "main";
                 };
               };
             }
@@ -886,7 +925,7 @@
               };
             }
             {
-              # home.packages = [ pkgs.racket ];
+              programs.git.extraConfig.github.name = "rasendubi";
             }
             {
               home.packages = [ pkgs.plantuml ];
@@ -954,8 +993,8 @@
                         # })
                         # Enable rounded window with no decoration
                         (pkgs.fetchpatch {
-                          url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-28/no-titlebar-and-round-corners.patch";
-                          sha256 = "sha256-RYdjAf1c43Elh7ad4kujPnrCX8qY7ZWxufJfCc0QW00=";
+                          url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-29/round-undecorated-frame.patch";
+                          sha256 = "sha256-uYIxNTyfbprx5mCqMNFVrBcLeo+8e21qmBE3lpcnd+4=";
                         })
                         # Make emacs aware of OS-level light/dark mode
                         (pkgs.fetchpatch {
@@ -978,6 +1017,7 @@
                 emacs-packages = (epkgs:
                   (with epkgs.melpaPackages; [
               
+                    activity-watch-mode
                     aggressive-indent
                     atomic-chrome
                     avy
@@ -999,7 +1039,6 @@
                     doom-modeline
                     dtrt-indent
                     edit-indirect
-                    # eglot
                     el-patch
                     elpy
                     emojify
@@ -1018,10 +1057,12 @@
                     flycheck-inline
                     flycheck-jest
                     flycheck-rust
+                    forge
                     forth-mode
                     general
                     go-mode
                     google-translate
+                    gptel
                     graphviz-dot-mode
                     groovy-mode
                     haskell-mode
@@ -1072,12 +1113,11 @@
                     smex
                     spaceline
                     svelte-mode
+                    swift-mode
                     terraform-mode
                     tide
                     toc-org
                     typescript-mode
-                    # undo-fu
-                    use-package
                     visual-fill-column
                     vterm
                     vue-mode
@@ -1132,14 +1172,14 @@
                       pname = "org-fc";
                       version = "20201121";
                       src = pkgs.fetchFromGitHub {
-                        owner = "rasendubi";
-                        repo = "org-fc";
-                        rev = "35ec13fd0412cd17cbf0adba7533ddf0998d1a90";
-                        sha256 = "sha256-2h1dIR7WHYFsLZ/0D4HgkoNDxKQy+v3OaiiCwToynvU=";
-                        # owner = "l3kn";
+                        # owner = "rasendubi";
                         # repo = "org-fc";
-                        # rev = "f1a872b53b173b3c319e982084f333987ba81261";
-                        # sha256 = "sha256-s2Buyv4YVrgyxWDkbz9xA8LoBNr+BPttUUGTV5m8cpM=";
+                        # rev = "35ec13fd0412cd17cbf0adba7533ddf0998d1a90";
+                        # sha256 = "sha256-2h1dIR7WHYFsLZ/0D4HgkoNDxKQy+v3OaiiCwToynvU=";
+                        owner = "l3kn";
+                        repo = "org-fc";
+                        rev = "cc191458a991138bdba53328690a569b8b563502";
+                        sha256 = "sha256-wzMSgS4iZfpKOICqQQuQYNPb2h7i4tTWsMs7mVmgBt8=";
                       };
                       packageRequires = [
                         epkgs.elpaPackages.org
@@ -1174,7 +1214,7 @@
                       pypkgs.virtualenv
                     ]))
               
-                    (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science ru uk]))
+                    (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science uk]))
               
                     # latex for displaying fragments in org-mode
                     (pkgs.texlive.combine {
@@ -1198,7 +1238,7 @@
                   org = super.elpaPackages.org;
                 };
               
-                emacs-final = ((pkgs.emacsPackagesFor emacs-base).overrideScope' overrides).emacsWithPackages emacs-packages;
+                emacs-final = ((pkgs.emacsPackagesFor emacs-base).overrideScope overrides).emacsWithPackages emacs-packages;
               
               in {
                 my-emacs = emacs-final // {
@@ -1218,7 +1258,7 @@
                     name = "input-mono-${old.version}.zip";
                     extension = ".zip";
                     url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
-                    sha256 = "sha256-vYwbel6yDrhKHv+rZGID5NPUhXw17mA18uUv8r+IhYM=";
+                    sha256 = "sha256-fvrRbSb5nxqwFhZULqpQf9QmiPDP9rWBUfn1chPahuQ=";
               
                     stripRoot = false;
               
@@ -1285,7 +1325,6 @@
           imports = [
             {
               nix = {
-                package = pkgs.nixFlakes;
                 extraOptions = ''
                   experimental-features = nix-command flakes
                 '';
@@ -1314,18 +1353,6 @@
             
               system.stateVersion = 4;
             }
-            ({ lib, config, ... }: {
-              system.activationScripts.applications.text = lib.mkForce ''
-                # Set up applications.
-                echo "setting up ~/Applications..." >&2
-                mkdir -p ~/Applications
-                if [ ! -e ~/Applications/Nix\ Apps -o -L ~/Applications/Nix\ Apps ]; then
-                  ln -sfn ${config.system.build.applications}/Applications ~/Applications/Nix\ Apps
-                else
-                  echo "warning: ~/Applications/Nix Apps is not owned by nix-darwin, skipping App linking..." >&2
-                fi
-              '';
-            })
             {
               users.users.rasen = {
                 description = "Oleksii Shmalko";
@@ -1388,6 +1415,7 @@
                     "Emacs" ~
                     "Slack" ~
                     "Telegram" ~
+                    "Arc" ~
                   ]
                   default < lcmd - l [
                     * : yabai -m window --focus east
@@ -1395,9 +1423,6 @@
                   ]
                 '';
               };
-            }
-            {
-              environment.systemPackages = [ pkgs.jdk ];
             }
             {
               environment.systemPackages = [ pkgs.syncthing ];

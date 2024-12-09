@@ -285,7 +285,7 @@ The following goes to ~flake.nix~ file.
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixpkgs-unstable";
+      ref = "nixos-24.11";
     };
 
     <<flake-inputs>>
@@ -312,7 +312,10 @@ The following goes to ~flake.nix~ file.
         let mkPkgs = system: import inputs.nixpkgs {
               inherit system;
               overlays = self.overlays.${system};
-              config = { allowUnfree = true; input-fonts.acceptLicense = true; };
+              config = {
+                allowUnfree = true;
+                input-fonts.acceptLicense = true;
+              };
             };
         in genAttrs systems mkPkgs;
 
@@ -342,7 +345,6 @@ Nix flakes are still an experimental feature, so you need the following in NixOS
 #+begin_src nix
 {
   nix = {
-    package = pkgs.nixFlakes;
     extraOptions = ''
       experimental-features = nix-command flakes
     '';
@@ -355,7 +357,6 @@ For nix-darwin systems:
 #+begin_src nix
 {
   nix = {
-    package = pkgs.nixFlakes;
     extraOptions = ''
       experimental-features = nix-command flakes
     '';
@@ -363,7 +364,7 @@ For nix-darwin systems:
 }
 #+end_src
 
-For non-NixOS system, install ~nixFlakes~ and put the following into =~/.config/nix/nix.conf=.
+For non-NixOS system, put the following into =~/.config/nix/nix.conf=.
 #+begin_src conf :tangle no
 experimental-features = nix-command flakes
 #+end_src
@@ -378,7 +379,7 @@ nixpkgs-stable = {
   type = "github";
   owner = "NixOS";
   repo = "nixpkgs";
-  ref = "nixos-21.05";
+  ref = "nixos-24.11";
 };
 #+end_src
 
@@ -429,7 +430,7 @@ home-manager = {
   type = "github";
   owner = "rycee";
   repo = "home-manager";
-  ref = "master";
+  ref = "release-24.11";
   inputs.nixpkgs.follows = "nixpkgs";
 };
 #+end_src
@@ -571,25 +572,6 @@ in {
 
   system.stateVersion = 4;
 }
-#+end_src
-
-*** Fix linking applications
-[[https://github.com/LnL7/nix-darwin/pull/226/files][LnL7/nix-darwin#226 Disable taking control of ~/Applications folder by berbiche]]
-
-#+name: darwin-section
-#+begin_src nix
-({ lib, config, ... }: {
-  system.activationScripts.applications.text = lib.mkForce ''
-    # Set up applications.
-    echo "setting up ~/Applications..." >&2
-    mkdir -p ~/Applications
-    if [ ! -e ~/Applications/Nix\ Apps -o -L ~/Applications/Nix\ Apps ]; then
-      ln -sfn ${config.system.build.applications}/Applications ~/Applications/Nix\ Apps
-    else
-      echo "warning: ~/Applications/Nix Apps is not owned by nix-darwin, skipping App linking..." >&2
-    fi
-  '';
-})
 #+end_src
 
 And enable this in home-manager ([[https://github.com/nix-community/home-manager/blob/master/modules/targets/darwin/linkapps.nix][home-manager/linkapps.nix at master · nix-community/home-manager · GitHub]]):
@@ -861,6 +843,7 @@ org-clock.1s.sh
         "Emacs" ~
         "Slack" ~
         "Telegram" ~
+        "Arc" ~
       ]
       default < lcmd - l [
         ,* : yabai -m window --focus east
@@ -1025,6 +1008,9 @@ bayraktar = {
     };
   });
   programs.mbsync.extraConfig = lib.mkForce "";
+  programs.notmuch.extraConfig = {
+    index."header.Sender" = "Sender";
+  };
 }
 #+end_src
 
@@ -1070,8 +1056,8 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
           # })
           # Enable rounded window with no decoration
           (pkgs.fetchpatch {
-            url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-28/no-titlebar-and-round-corners.patch";
-            sha256 = "sha256-RYdjAf1c43Elh7ad4kujPnrCX8qY7ZWxufJfCc0QW00=";
+            url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-29/round-undecorated-frame.patch";
+            sha256 = "sha256-uYIxNTyfbprx5mCqMNFVrBcLeo+8e21qmBE3lpcnd+4=";
           })
           # Make emacs aware of OS-level light/dark mode
           (pkgs.fetchpatch {
@@ -1094,6 +1080,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
   emacs-packages = (epkgs:
     (with epkgs.melpaPackages; [
 
+      activity-watch-mode
       aggressive-indent
       atomic-chrome
       avy
@@ -1133,10 +1120,12 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       flycheck-inline
       flycheck-jest
       flycheck-rust
+      forge
       forth-mode
       general
       go-mode
       google-translate
+      gptel
       graphviz-dot-mode
       groovy-mode
       haskell-mode
@@ -1187,11 +1176,11 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       smex
       spaceline
       svelte-mode
+      swift-mode
       terraform-mode
       tide
       toc-org
       typescript-mode
-      use-package
       visual-fill-column
       vterm
       vue-mode
@@ -1246,14 +1235,14 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
         pname = "org-fc";
         version = "20201121";
         src = pkgs.fetchFromGitHub {
-          owner = "rasendubi";
-          repo = "org-fc";
-          rev = "35ec13fd0412cd17cbf0adba7533ddf0998d1a90";
-          sha256 = "sha256-2h1dIR7WHYFsLZ/0D4HgkoNDxKQy+v3OaiiCwToynvU=";
-          # owner = "l3kn";
+          # owner = "rasendubi";
           # repo = "org-fc";
-          # rev = "f1a872b53b173b3c319e982084f333987ba81261";
-          # sha256 = "sha256-s2Buyv4YVrgyxWDkbz9xA8LoBNr+BPttUUGTV5m8cpM=";
+          # rev = "35ec13fd0412cd17cbf0adba7533ddf0998d1a90";
+          # sha256 = "sha256-2h1dIR7WHYFsLZ/0D4HgkoNDxKQy+v3OaiiCwToynvU=";
+          owner = "l3kn";
+          repo = "org-fc";
+          rev = "cc191458a991138bdba53328690a569b8b563502";
+          sha256 = "sha256-wzMSgS4iZfpKOICqQQuQYNPb2h7i4tTWsMs7mVmgBt8=";
         };
         packageRequires = [
           epkgs.elpaPackages.org
@@ -1288,7 +1277,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
         pypkgs.virtualenv
       ]))
 
-      (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science ru uk]))
+      (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science uk]))
 
       # latex for displaying fragments in org-mode
       (pkgs.texlive.combine {
@@ -1312,7 +1301,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
     org = super.elpaPackages.org;
   };
 
-  emacs-final = ((pkgs.emacsPackagesFor emacs-base).overrideScope' overrides).emacsWithPackages emacs-packages;
+  emacs-final = ((pkgs.emacsPackagesFor emacs-base).overrideScope overrides).emacsWithPackages emacs-packages;
 
 in {
   my-emacs = emacs-final // {
@@ -1576,6 +1565,8 @@ Disable usage of emacs internal archives. (~.emacs.d/early-init.el~)
 ** General (package)
 I use [[https://github.com/noctuid/general.el][general]] to define my keybindings. (emacs-lisp)
 #+begin_src emacs-lisp
+<<before-general>>
+
 (use-package general)
 
 ;; Definer for my leader
@@ -1921,13 +1912,13 @@ Fix whitespaces on file save.
   (setq google-translate-show-phonetic t)
 
   (setq google-translate-default-source-language "en"
-        google-translate-default-target-language "ru")
+        google-translate-default-target-language "ua")
 
-  (setq google-translate-translation-directions-alist '(("en" . "ru") ("ru" . "en")))
+  (setq google-translate-translation-directions-alist '(("en" . "ua") ("ua" . "en")))
   ;; auto-toggle input method
   (setq google-translate-input-method-auto-toggling t
         google-translate-preferable-input-methods-alist '((nil . ("en"))
-                                                          (russian-computer . ("ru")))))
+                                                          (ukrainian-computer . ("ua")))))
 #+end_src
 ** tab-bar-mode
 New in Emacs 27.
@@ -2921,21 +2912,19 @@ direnv allows having per-directory environment configuration. You can think of a
 }
 #+end_src
 
-Enable Emacs integration. (emacs-lisp)
-#+begin_src emacs-lisp
-(use-package direnv
-  :after exec-path-from-shell
-  :config
-  (direnv-mode))
-#+end_src
+# Enable Emacs integration. (emacs-lisp)
+# #+begin_src emacs-lisp
+# (use-package direnv
+#   :after exec-path-from-shell
+#   :config
+#   (direnv-mode))
+# #+end_src
 
 Better (?) direnv integration via [[https://github.com/purcell/envrc][purcell/envrc]]. (emacs-lisp)
 #+begin_src emacs-lisp
 (use-package envrc
-  :disabled t
   :after exec-path-from-shell
-  :config
-  (envrc-global-mode))
+  :hook (after-init . envrc-global-mode))
 #+end_src
 ** VirtualBox
 #+name: nixos-section
@@ -3266,9 +3255,6 @@ I use [[https://github.com/GhostText/GhostText][GhostText]] firefox extension.
    undo-fu-only-redo))
 
 (use-package evil
-  :init
-  (setq evil-want-integration t
-        evil-want-keybinding nil)
   :custom
   (evil-undo-system 'undo-redo)
   :config
@@ -3411,6 +3397,14 @@ Now, remap =C-x= to =RET=. (Because =C-x= is used for decrementing numbers.)
 #+end_src
 ** evil-collection
 evil-collection is a collection of evil bindings for different modes.
+
+These variables need to be set before evil loads (which seems to be required by =general=) or shortly after. So the following needs to be placed before general:
+#+name: before-general
+#+begin_src emacs-lisp
+(setq evil-want-integration t
+      evil-want-keybinding nil)
+#+end_src
+
 #+begin_src emacs-lisp
 (require 'warnings)
 (add-to-list 'warning-suppress-types '(evil-collection))
@@ -3422,15 +3416,18 @@ evil-collection is a collection of evil bindings for different modes.
         evil-want-keybinding nil)
   :config
   (defun rasen/rotate-keys (_mode mode-keymaps &rest _rest)
-    (evil-collection-translate-key 'normal mode-keymaps
-      "k" "j"
-      "j" "k"
-      "gk" "gj"
-      "gj" "gk"
-      (kbd "M-j") (kbd "M-k")
-      (kbd "M-k") (kbd "M-j")
-      "." ";"
-      ";" "."))
+    ;; (evil-collection-translate-key 'normal mode-keymaps
+    ;;   "k" "j"
+    ;;   "j" "k"
+    ;;   "gk" "gj"
+    ;;   "gj" "gk"
+    ;;   (kbd "C-j") (kbd "C-k")
+    ;;   (kbd "C-k") (kbd "C-j")
+    ;;   (kbd "M-j") (kbd "M-k")
+    ;;   (kbd "M-k") (kbd "M-j")
+    ;;   "." ";"
+    ;;   ";" ".")
+    )
   (add-hook 'evil-collection-setup-hook #'rasen/rotate-keys)
 
   (setq evil-collection-mode-list
@@ -3443,6 +3440,7 @@ evil-collection is a collection of evil bindings for different modes.
           ;; keymap
           ;; notmuch
           magit
+          forge
           python
           racer
           restclient
@@ -3452,7 +3450,10 @@ evil-collection is a collection of evil bindings for different modes.
           which-key
           xref))
 
-  (setq evil-collection-magit-use-y-for-yank t)
+  (setq evil-collection-magit-use-y-for-yank t
+        evil-collection-magit-state 'normal)
+
+  (evil-collection-init)
 
   ;; Evilify magit-blame.
   (general-def 'normal magit-blame-read-only-mode-map
@@ -3465,7 +3466,6 @@ evil-collection is a collection of evil bindings for different modes.
 
   (general-def magit-blame-read-only-mode-map "SPC" nil) ;; expose my leader
 
-  (require 'evil-collection-magit)
   (general-def
     :states `(,evil-collection-magit-state visual)
     :keymaps 'magit-status-mode-map
@@ -3474,10 +3474,7 @@ evil-collection is a collection of evil bindings for different modes.
     "gj"   #'magit-section-backward
     "gk"   #'magit-section-forward
     "j"    #'evil-previous-visual-line
-    "k"    #'evil-next-visual-line
-    )
-
-  (evil-collection-init))
+    "k"    #'evil-next-visual-line))
 #+end_src
 ** evil-surrond
 #+begin_src emacs-lisp
@@ -3769,7 +3766,9 @@ Import =org-expiry= for =org-expiry-insert-created=---this inserts =CREATED= pro
 #+begin_src emacs-lisp
 (require 'org-expiry)
 (setq org-expiry-inactive-timestamps t)
-(org-expiry-insinuate)
+;; The next line was required but it fails with error now. Still works
+;; somehow.
+;; (org-expiry-insinuate)
 #+end_src
 
 Schedule task for today and mark it NEXT.
@@ -4757,6 +4756,30 @@ Load more languages:
                              '((shell . t)))
 #+end_src
 ** Latex preview
+Install imagemagick and latex:
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.packages = [
+    pkgs.imagemagick
+    # latex for displaying fragments in org-mode
+    (pkgs.texlive.combine {
+      inherit (pkgs.texlive)
+        scheme-small
+        dvipng
+        dvisvgm
+        mhchem # chemistry
+        tikz-cd # category theory diagrams
+        # required for org export
+        wrapfig
+        capt-of
+      ;
+    })
+    pkgs.ghostscript
+  ];
+}
+#+end_src
+
 #+name: org-config
 #+begin_src emacs-lisp
 (setq org-latex-packages-alist
@@ -5051,6 +5074,7 @@ Actual style is overridden in Color theme section.
 (use-package org-roam
   :after org
   :diminish
+  :autoload (org-roam-db-update-file)
   :general
   (s-leader-def
     "n r" #'org-roam-buffer-toggle
@@ -5227,11 +5251,11 @@ Show slip box and path within file. e.g., =(life) My file > sub-note=.
 #+begin_src emacs-lisp :tangle no
 (setq org-roam-node-display-template "${hierarchy:*} ${tags:10}")
 
-(cl-defmethod org-roam-node-filetitle ((node org-roam-node))
+(defun org-roam-node-filetitle (node)
   "Return the file TITLE for the node."
   (org-roam-get-keyword "TITLE" (org-roam-node-file node)))
 
-(cl-defmethod org-roam-node-hierarchy ((node org-roam-node))
+(defun org-roam-node-hierarchy (node)
   "Return the hierarchy for the node."
   (let ((title (org-roam-node-title node))
         (olp (org-roam-node-olp node))
@@ -5244,10 +5268,32 @@ Show slip box and path within file. e.g., =(life) My file > sub-note=.
      (if (> level 1) (concat (string-join olp " > ") " > "))
      title)))
 
-(cl-defmethod org-roam-node-directories ((node org-roam-node))
+(defun org-roam-node-directories (node)
   (if-let ((dirs (file-name-directory (file-relative-name (org-roam-node-file node) org-roam-directory))))
       (string-join (f-split dirs) "/")
     nil))
+
+;; (cl-defmethod org-roam-node-filetitle ((node org-roam-node))
+;;   "Return the file TITLE for the node."
+;;   (org-roam-get-keyword "TITLE" (org-roam-node-file node)))
+
+;; (cl-defmethod org-roam-node-hierarchy ((node org-roam-node))
+;;   "Return the hierarchy for the node."
+;;   (let ((title (org-roam-node-title node))
+;;         (olp (org-roam-node-olp node))
+;;         (level (org-roam-node-level node))
+;;         (directories (org-roam-node-directories node))
+;;         (filetitle (org-roam-node-filetitle node)))
+;;     (concat
+;;      (if directories (format "(%s) " directories))
+;;      (if (> level 0) (concat filetitle " > "))
+;;      (if (> level 1) (concat (string-join olp " > ") " > "))
+;;      title)))
+
+;; (cl-defmethod org-roam-node-directories ((node org-roam-node))
+;;   (if-let ((dirs (file-name-directory (file-relative-name (org-roam-node-file node) org-roam-directory))))
+;;       (string-join (f-split dirs) "/")
+;;     nil))
 #+end_src
 *** org-roam-buffer
 Configure org-roam-buffer (buffer with backlinks).
@@ -5771,6 +5817,17 @@ Generate Table of Contents for this file.
 ** org-fc
 Flashcards/spaced repetition system for org-mode. It works with many files better than org-drill (and many files is what I have with org-roam).
 
+Install required dependencies:
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.packages = [
+    pkgs.findutils
+    pkgs.gawk
+  ];
+}
+#+end_src
+
 #+begin_src emacs-lisp
 (use-package org-fc
   :config
@@ -5781,29 +5838,32 @@ Flashcards/spaced repetition system for org-mode. It works with many files bette
 
   ;; (setq org-fc-stats-review-min-box 2)
 
-  (el-patch-defun org-fc-index-flatten-card (card)
-    "Flatten CARD into a list of positions.
-Relevant data from the card is included in each position
-element."
-    (mapcar
-     (lambda (pos)
-       (list
-        :filetitle (plist-get card :filetitle)
-        :tags (plist-get card :tags)
-        :path (plist-get card :path)
-        :id (plist-get card :id)
-        (el-patch-add :suspended (plist-get card :suspended))
-        :type (plist-get card :type)
-        :due (plist-get pos :due)
-        :position (plist-get pos :position)))
-     (plist-get card :positions)))
+  ;;   (el-patch-defun org-fc-index-flatten-card (card)
+  ;;     "Flatten CARD into a list of positions.
+  ;; Relevant data from the card is included in each position
+  ;; element."
+  ;;     (mapcar
+  ;;      (lambda (pos)
+  ;;        (list
+  ;;         :filetitle (plist-get card :filetitle)
+  ;;         :tags (plist-get card :tags)
+  ;;         :path (plist-get card :path)
+  ;;         :id (plist-get card :id)
+  ;;         (el-patch-add :suspended (plist-get card :suspended))
+  ;;         :type (plist-get card :type)
+  ;;         :due (plist-get pos :due)
+  ;;         :position (plist-get pos :position)))
+  ;;      (plist-get card :positions)))
+
+  (defun rasen/org-fc-index-positions (cards)
+    (mapcan (lambda (card) (org-fc-index-flatten-card card)) cards))
 
   (defun rasen/org-fc-upcoming-histogram (&optional context)
     "Draw a histogram of upcoming review."
     (interactive (list (org-fc-select-context)))
     (let* ((positions (seq-filter (lambda (x)
                                     (not (plist-get x :suspended)))
-                                  (org-fc-index-positions (org-fc-index (or context 'all)))))
+                                  (rasen/org-fc-index-positions (org-fc-index (or context 'all)))))
            (total (length positions))
            (sorted (seq-sort
                     (lambda (x y) (time-less-p
@@ -5875,7 +5935,7 @@ element."
   <<org-fc-review-todos>>)
 #+end_src
 
-** org-fc review todos
+** COMMENT org-fc review todos
 My modifications to support reviewing arbitrary todo lists with spaced repetition.
 #+name: org-fc-review-todos
 #+begin_src emacs-lisp
@@ -6560,8 +6620,8 @@ Temporary workaround:
 #+begin_src nix
 {
   home.packages = [
-    pkgs.stable.yubikey-manager
-    pkgs.stable.yubikey-personalization
+    pkgs.yubikey-manager
+    pkgs.yubikey-personalization
   ];
 }
 #+end_src
@@ -6596,6 +6656,35 @@ Integration with Emacs. (emacs-lisp)
 (use-package pass
   :commands (pass))
 #+end_src
+
+Enable auth-source–pass integration.
+#+begin_src emacs-lisp
+(use-package auth-source
+  :config
+  (auth-source-pass-enable))
+#+end_src
+** Age
+
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.packages = [
+    pkgs.age
+    pkgs.age-plugin-yubikey
+  ];
+}
+#+end_src
+** Passage
+
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.packages = [
+    pkgs.passage
+  ];
+}
+#+end_src
+
 ** KDE apps
 I don't use full KDE but some apps are definitely nice.
 #+name: home-manager-section
@@ -6646,10 +6735,18 @@ KDE apps might have issues with mime types without this:
     (pkgs.lib.linux-only pkgs.tdesktop) # Telegram
     pkgs.feh
 
-    pkgs.mplayer
+    # mesa is broken on macOS
+    (pkgs.lib.linux-only pkgs.mplayer)
     (pkgs.lib.linux-only pkgs.smplayer)
   ];
 }
+#+end_src
+** ActivityWatcher
+Emacs mode:
+#+begin_src emacs-lisp
+(use-package activity-watch-mode
+  :config
+  (global-activity-watch-mode))
 #+end_src
 * Development
 ** Vim
@@ -6760,6 +6857,8 @@ vterm is a terminal emulator using libvterm. Which allows running it within Emac
     "<return>" nil
     "RET" nil)
   (general-def 'normal 'vterm-mode-map
+    "j" #'evil-previous-line
+    "k" #'evil-collection-vterm-next-line
     "RET" nil)
   (general-def 'insert 'vterm-mode-map
     "<f1>" #'vterm--self-insert
@@ -7093,6 +7192,8 @@ For home-manager. (~<<home-manager-section>>~)
       rebase.autostash = true;
       rerere.enabled = true;
       advice.detachedHead = false;
+
+      init.defaultBranch = "main";
     };
   };
 }
@@ -7170,6 +7271,12 @@ Magit is a cool emacs interface to git. (emacs-lisp)
   )
 #+end_src
 
+Use global git. (~<<magit-config>>~)
+#+name: magit-config
+#+begin_src emacs-lisp
+(setq magit-git-executable "git")
+#+end_src
+
 Do not put files into trash can. Delete them for real. (~<<magit-config>>~)
 #+name: magit-config
 #+begin_src emacs-lisp
@@ -7192,18 +7299,21 @@ Use =q= to quit transient buffers.
 **** Custom commands
 ***** git push HEAD ...
 Add a magit command to push =HEAD= into a specified ref. Bound to ~p h~.
-#+name: magit-config
 #+begin_src emacs-lisp
-(defun rasen/magit-push-head (target args)
-  "Push HEAD to a branch read in the minibuffer."
-  (interactive
-   (list (magit-read-remote-branch "Push HEAD to"
-                                   nil nil nil 'confirm)
-         (magit-push-arguments)))
-  (magit-git-push "HEAD" target args))
+(use-package magit-push
+  :after magit
+  :config
+  ;; (require 'magit-push)
+  (defun rasen/magit-push-head (target args)
+    "Push HEAD to a branch read in the minibuffer."
+    (interactive
+     (list (magit-read-remote-branch "Push HEAD to"
+                                     nil nil nil 'confirm)
+           (magit-push-arguments)))
+    (magit-git-push "HEAD" target args))
 
-(transient-insert-suffix 'magit-push 'magit-push-other
-  '(1 "h" "HEAD" rasen/magit-push-head))
+  (transient-insert-suffix 'magit-push 'magit-push-other
+    '(1 "h" "HEAD" rasen/magit-push-head)))
 #+end_src
 
 ***** git fetch origin/master && git checkout origin/master
@@ -7240,6 +7350,21 @@ Show commit signatures in log. (~<<magit-config>>~)
 #+name: magit-config
 #+begin_src emacs-lisp
 (setq magit-log-arguments '("--graph" "--decorate" "--show-signature" "-n256"))
+#+end_src
+*** forge
+Forge is an extension to magit that allows working with GitHub/GitLab.
+
+#+begin_src emacs-lisp
+(use-package forge
+  :after magit)
+#+end_src
+
+Configure my username in ~.gitconfig~.
+#+name: home-manager-section
+#+begin_src nix
+{
+  programs.git.extraConfig.github.name = "rasendubi";
+}
 #+end_src
 *** git-commit
 git-commit is emacs mode for editing commit messages. (emacs-lisp)
@@ -7462,7 +7587,15 @@ LSP is Language Server Protocol. Some languages support it usually provide bette
   :commands lsp-ui-mode)
 
 (use-package eglot
-  :hook ((rust-mode) . eglot-ensure))
+  :hook ((rust-mode) . eglot-ensure)
+  :config
+  (general-def 'normal eglot-mode-map
+    "SPC e" nil
+    "SPC e r" #'eglot-rename
+    "SPC e e" #'eglot-code-actions)
+  (general-def 'normal "SPC e" nil)
+  (general-def 'normal "SPC e r" nil)
+  (general-def 'normal "SPC e e" nil))
 #+end_src
 *** Commenting
 #+begin_src emacs-lisp
@@ -7494,13 +7627,13 @@ LSP is Language Server Protocol. Some languages support it usually provide bette
   ;; can supply all the fields.
   ;;
   ;; Note that it is not always desirable because some snippets don't
-  ;; have extra fields, so switching to insert state has not sense.
+  ;; have extra fields, so switching to insert state has no sense.
   ;; In order for the switch to kick in, set `rasen/evil-state'
   ;; expand-env to "insert" like this:
   ;;
   ;; # expand-env: ((rasen/evil-state "insert"))
   (defun rasen/yas-before-expand-snippet ()
-    (when (not (string-or-null-p snippet))
+    (when (and (boundp 'snippet) (not (string-or-null-p snippet)))
       (let ((state (car (alist-get 'rasen/evil-state (yas--template-expand-env snippet)))))
         (when (and (equal state "insert") (evil-visual-state-p))
           (let ((beg evil-visual-beginning)
@@ -7748,15 +7881,6 @@ Pretty self-explaining.
   (add-hook 'rust-mode-hook (lambda () (setq-local fill-column 100)))
   (add-hook 'rust-mode-hook #'rust-enable-format-on-save))
 
-(use-package racer
-  :after rust-mode
-  :commands racer-mode
-  :diminish racer-mode
-  :config
-  (setq racer-rust-src-path nil) ; Nix manages that
-  (add-hook 'rust-mode-hook #'racer-mode)
-  (add-hook 'racer-mode-hook #'eldoc-mode))
-
 (use-package flycheck-rust
   :after rust-mode
   :config
@@ -7765,7 +7889,24 @@ Pretty self-explaining.
 *** Go
 #+begin_src emacs-lisp
 (use-package go-mode
-  :mode ("\\.go$" . go-mode))
+  :mode ("\\.go$" . go-mode)
+  ;; :gfhook #'rasen/eglot-format-on-save-hook
+  ;; :ghook #'eglot-ensure
+  ;; :hook
+  ;; (go-mode . #'rasen/eglot-format-on-save)
+  :config
+  ;; (remove-hook 'go-mode #'go-mode)
+
+  (require 'eglot)
+  (defun rasen/eglot-format-on-save ()
+    (interactive)
+    (add-hook 'before-save-hook #'eglot-format-buffer))
+  (defun rasen/eglot-disable-format-on-save ()
+    (interactive)
+    (remove-hook 'before-save-hook #'eglot-format-buffer))
+  (defun rasen/go-enable-format-on-save ()
+    (interactive)
+    (add-hook 'go-mode-hook #'rasen/eglot-format-on-save)))
 #+end_src
 *** C/C++
 **** Doxygen
@@ -7904,13 +8045,16 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
   ;; Do not show vertical guides in python code
   (setq elpy-modules (delq 'elpy-module-highlight-indentation elpy-modules))
 
+  ;; (setq elpy-modules (delq 'elpy-module-pyvenv elpy-modules))
+  ;; (setq elpy-modules (delq 'elpy-module-django elpy-modules))
+
   ;; Do not use flymake (flycheck will kick in instead)
   (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
 
   ;; Use python3 (instead of python2)
-  (setq flycheck-python-flake8-executable "python3"
-        flycheck-python-pycompile-executable "python3"
-        flycheck-python-pylint-executable "python3")
+  ;; (setq flycheck-python-flake8-executable "python3"
+  ;;       flycheck-python-pycompile-executable "python3"
+  ;;       flycheck-python-pylint-executable "python3")
 
   (elpy-enable))
 #+end_src
@@ -8668,6 +8812,7 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Go
 #+begin_src emacs-lisp :tangle .emacs.d/early-init.el
 (require 'modus-themes)
 (require 'modus-operandi-theme)
+(require 'modus-vivendi-theme)
 
 (setq modus-themes-italic-constructs t)
 (setq modus-themes-bold-constructs t)
@@ -8708,13 +8853,15 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Go
      `(isearch ((,c (:inherit modus-themes-search-success))))
      `(query-replace ((,c :inherit modus-theme-intense-yellow)))
 
+     ;; `(org-level-1 ((,c :inherit modus-themes-heading-1 :height 1.2 :background ,bg-cyan-subtle)))
+
      ;; Make TODOs bold
      `(org-todo ((,c :foreground ,magenta-warmer
                      :weight bold)))
      ;; `(org-table ((,c (:foreground ,fg-special-cold :inherit nil))))
 
      ;; Make tags stand out
-     `(org-tag ((,c :foreground ,fg-main :background ,bg-yellow-intense)))
+     ;; `(org-tag ((,c :weight bold :foreground nil :background nil)))
 
      ;; dim done items
      `(org-done ((,c :foreground ,fg-alt)))
