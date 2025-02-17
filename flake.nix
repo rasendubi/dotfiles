@@ -1100,8 +1100,6 @@
                     lua-mode
                     magit
                     markdown-mode
-                    meow
-                    meow-tree-sitter
                     modus-themes
                     nix-mode
                     nix-sandbox

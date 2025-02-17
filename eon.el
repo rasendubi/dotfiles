@@ -224,6 +224,13 @@
                                     ("\\ \\" org-roam-node-find)
                                     ("\\ n" rasen/org-roam-new-node)
 
+                                    ;; TODO:
+                                    ;; - find place for kill-whole-line
+                                    ;; - C-c
+                                    ;; - eglot-code-action eglot-rename
+                                    ;; - save mark, save window config (?)
+                                    ;; - save buffer / some buffer
+
                                     ("'" eon-mark)))
   (define-key eon-motion-state-map (kbd from) (eval `(eon--wrap-kbd ,@target))))
 

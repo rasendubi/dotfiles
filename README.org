@@ -1152,8 +1152,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       lua-mode
       magit
       markdown-mode
-      meow
-      meow-tree-sitter
       modus-themes
       nix-mode
       nix-sandbox
@@ -1695,370 +1693,6 @@ I use a custom modal mode.
    ("i" rasen/dwim-end-of-line-paragraph)
    ("I" rasen/dwim-end-of-line-paragraph :first '(rasen/shift-translate))))
 #+end_src
-** Meow
-#+begin_src emacs-lisp
-(use-package meow
-  :disabled t
-  :config
-
-  (defun rasen/cheatsheet ()
-    (interactive)
-    (message "
-comment-dwim        SPC m ;
-eval-expression     SPC m :
-magit-status        SPC c s, SPC p m
-delete-blank-lines  SPC x o
-"))
-
-  (define-key global-map (kbd "<f1> <f1>") #'rasen/cheatsheet)
-
-  (defun rasen/temp-buffer ()
-    (interactive)
-    (switch-to-buffer (make-temp-name "new")))
-
-  (defun rasen/meow-mark-paragraph (arg)
-    (interactive "p")
-    (meow-mark-thing 'paragraph 'paragraph (< arg 0)))
-
-  (defun rasen/meow-next-paragraph (arg)
-    (interactive "p")
-    (meow-next-thing 'paragraph 'paragraph arg))
-
-  (defun rasen/meow-back-paragraph (arg)
-    (interactive "p")
-    (meow-next-thing 'paragraph 'paragraph (- arg)))
-
-  (defun rasen/meow-begin-of-buffer ()
-    (interactive)
-    (meow-beginning-of-thing 'buffer))
-  (defun rasen/meow-end-of-buffer ()
-    (interactive)
-    (meow-end-of-thing 'buffer))
-
-
-  (defun rasen/meow-kill-char (arg)
-    (interactive "p")
-    (meow-kill-thing 'char arg))
-
-  ;; https://github.com/meow-edit/meow/issues/506#issuecomment-1722205293
-  (defun rasen/meow-word ()
-    "Expand word/symbol under cursor."
-    (interactive)
-    (if (and (use-region-p)
-             (equal (car (region-bounds))
-                    (bounds-of-thing-at-point 'word)))
-        (progn
-          (when (string-match-p
-                 (or (car regexp-search-ring) "")
-                 (buffer-substring (region-beginning) (region-end)))
-            (pop regexp-search-ring))
-          (meow-mark-symbol 1))
-      (progn
-        (when (and (mark)
-                   (equal (car (region-bounds))
-                          (bounds-of-thing-at-point 'symbol)))
-          (meow-pop-selection))
-        (meow-mark-word 1))))
-
-  (defun meow-insert-for-yank-advice (orig-fn str)
-    "Advice for `insert-for-yank' function to correctly insert lines."
-    ;; (when meow--trim-yank
-    ;;   (set 'str (string-trim-right str "\n")))
-    (if (and (not (eq (point) (+ 1 (line-end-position 0))))
-             (string-match-p "^.+\n$" str))
-        (progn
-          (beginning-of-line 2)
-          (meow--set-mark nil nil t)
-          (funcall orig-fn str)
-          ;; back from last \n
-          (backward-char))
-      (funcall orig-fn str)))
-
-  (defun rasen/meow-yank ()
-    "Similar to `meow-yank' but yank lines on the next line."
-    (interactive)
-    (advice-add 'insert-for-yank :around #'meow-insert-for-yank-advice)
-    (meow-yank)
-    (activate-mark)
-    (setq deactivate-mark nil)
-    (meow--select (meow--make-selection 'line (mark) (point)))
-    (advice-remove 'insert-for-yank #'meow-insert-for-yank-advice))
-
-  (defun rasen/meow-yank-pop ()
-    (interactive)
-    (advice-add 'insert-for-yank :around #'meow-insert-for-yank-advice)
-    (meow-yank-pop)
-    (advice-remove 'insert-for-yank #'meow-insert-for-yank-advice))
-
-  (defun rasen/save-line ()
-    "Save current line."
-    (interactive)
-    (save-mark-and-excursion
-      (meow-line 1)
-      (meow-save)
-      (meow--remove-expand-highlights)))
-
-  (defun rasen/duplicate ()
-    (interactive)
-    (if (region-active-p)
-        (save-mark-and-excursion
-          (meow-save)
-          (meow-yank)
-          (setq deactivate-mark nil))
-      (rasen/save-line)
-      (meow-yank)
-      (meow-bounds-of-thing 'line)
-      (setq deactivate-mark nil)))
-
-  (defun rasen/meow-save ()
-    "Same as `meow-save' but keeps the mark active."
-    (interactive)
-    (save-mark-and-excursion
-      (meow-save))
-    (setq deactivate-mark nil))
-
-  (defun rasen/meow-setup-next ()
-    ;; (setq meow-use-cursor-position-hack t)
-    (setq meow-use-clipboard t)
-    (setq meow-keypad-self-insert-undefined nil)
-
-    (setq meow-selection-command-fallback
-	  '((meow-change . meow-change-char)
-	    (meow-kill . rasen/meow-kill-char)
-	    (meow-cancel-selection . keyboard-quit)
-	    (meow-pop-selection . meow-pop-grab)
-	    (meow-beacon-change . meow-beacon-change-char)
-	    (meow-expand . meow-digit-argument)
-            (rasen/meow-save . rasen/save-line)))
-
-    (defun rasen/keep-selection (&rest r)
-      (setq deactivate-mark nil))
-
-    ;; So I can do ,, .. for beginning/end of line
-    (add-to-list 'meow-char-thing-table (cons ?, 'parameter))
-    (add-to-list 'meow-char-thing-table (cons ?. 'line))
-    ;; << / >> to select inner/bounds of line
-    (add-to-list 'meow-char-thing-table (cons ?< 'line))
-    (add-to-list 'meow-char-thing-table (cons ?> 'line))
-
-    (meow-define-keys 'motion
-      '("e" . meow-next)
-      '("u" . meow-prev)
-      '("n" . meow-left)
-      '("o" . meow-right)
-      '("N" . meow-left-expand)
-      '("O" . meow-right-expand)
-      '("m" . rasen/meow-save)
-      '("<escape>" . ignore))
-
-    (meow-define-keys 'leader
-      ;; SPC j/k will run the original command in MOTION state.
-      '("u" . "H-u")
-      '("e" . "H-e")
-      '("n" . "H-n")
-      '("o" . "H-o")
-      ;; Use SPC (0-9) for digit arguments.
-      '("1" . meow-digit-argument)
-      '("2" . meow-digit-argument)
-      '("3" . meow-digit-argument)
-      '("4" . meow-digit-argument)
-      '("5" . meow-digit-argument)
-      '("6" . meow-digit-argument)
-      '("7" . meow-digit-argument)
-      '("8" . meow-digit-argument)
-      '("9" . meow-digit-argument)
-      '("0" . meow-digit-argument)
-      '("f" . find-file)
-      '("b" . switch-to-buffer)
-      '("p" . "C-x p")  ; project
-      '("SPC" . save-buffer)
-      ;; '("j" . join-line)
-      ;; '(";" . eval-expression)
-      )
-
-    (meow-define-keys 'insert
-      '("C-w" . meow-backward-kill-word)
-      '("TAB" . nil))
-
-    (meow-define-keys 'normal
-      '("0" . meow-expand-0)
-      '("9" . meow-expand-9)
-      '("8" . meow-expand-8)
-      '("7" . meow-expand-7)
-      '("6" . meow-expand-6)
-      '("5" . meow-expand-5)
-      '("4" . meow-expand-4)
-      '("3" . meow-expand-3)
-      '("2" . meow-expand-2)
-      '("1" . meow-expand-1)
-      '("-" . negative-argument)
-      '("=" . meow-indent)
-
-      '("u" . meow-prev)
-      '("U" . meow-prev-expand)
-      '("n" . meow-left)
-      '("N" . meow-left-expand)
-      '("e" . meow-next)
-      '("E" . meow-next-expand)
-      '("o" . meow-right)
-      '("O" . meow-right-expand)
-      '("f" . meow-back-word)
-      '("F" . meow-back-symbol)
-      '("p" . meow-next-word)
-      '("P" . meow-next-symbol)
-      '("y" . rasen/meow-back-paragraph)
-      '("i" . rasen/meow-next-paragraph)
-      '("Y" . rasen/meow-begin-of-buffer)
-      '("I" . rasen/meow-end-of-buffer)
-
-      '("q" . meow-cancel-selection)
-      '("Q" . meow-goto-line)
-      '("'" . meow-reverse)
-      '("\"" . meow-pop-selection)
-
-      ;; '("(" . insert-parentheses)
-      ;; '("{" . insert-pair)
-      ;; '("<" . insert-pair)
-
-      '("w" . rasen/meow-word)
-      '("W" . rasen/meow-mark-paragraph)
-      ;; '("W" . meow-mark-symbol)
-      '("r" . meow-line)
-      '("R" . meow-join)
-      ;; '("b" . meow-block)
-      '("D" . meow-to-block)
-      ;; '("j" . meow-join)
-      ;; '("[" . meow-beginning-of-thing)
-      ;; '("]" . meow-end-of-thing)
-      ;; '("," . meow-inner-of-thing)
-      ;; '("." . meow-bounds-of-thing)
-      '("," . meow-beginning-of-thing)
-      '("." . meow-end-of-thing)
-      '("<" . meow-inner-of-thing)
-      '(">" . meow-bounds-of-thing)
-
-      '("]" . meow-find)
-      '("}" . meow-find-expand)
-      '("[" . meow-till)
-      '("{" . meow-till-expand)
-
-      '("k" . meow-visit)
-      '("K" . isearch-forward)
-      '("l" . meow-search)
-      '("L" . meow-pop-search)
-
-      '("h" . meow-kill)
-      '("H" . meow-kill-whole-line)
-      '("s" . meow-change)
-      ;; '("S" . surround)
-      '("t" . meow-append)
-      '("a" . meow-insert)
-      '("T" . meow-open-below)
-      '("A" . meow-open-above)
-      '("z" . meow-grab)
-
-      ;; '("z" . meow-undo)
-      ;; '("Z" . undo-redo)
-      '("g" . meow-undo)
-      '("G" . undo-redo)
-
-      '("x" . execute-extended-command)
-      '("X" . rasen/meow-kill-char)
-      (cons "RET" (lookup-key (current-global-map) (kbd "C-x")))
-
-      '("m" . rasen/meow-save)
-      '("c" . rasen/meow-yank)
-      '("C" . rasen/meow-yank-pop)
-      ;; '("M-c" . meow-yank-pop)
-      ;; '("C-c" . nil)
-      ;; '("C" . meow-sync-grab)
-      '("v" . meow-replace)
-      '("M-v" . meow-replace-pop)
-      '("V" . meow-swap-grab)
-
-      ;; comment-dwim
-      ;; '(";" . meow-comment)
-
-      '("<escape>" . ignore)
-      )
-
-    ;; (defun forward-vimlike-word (&optional arg)
-    ;;   "Alternate `forward-word'. Essentially the same idea as Vim's 'e'."
-    ;;   (interactive "^p")
-    ;;   (setq arg (or arg 1))
-    ;;   (cl-destructuring-bind (sign move-func char-func)
-    ;;       (if (>= arg 0)
-    ;;           '(1 skip-syntax-forward char-after)
-    ;;         '(-1 skip-syntax-backward char-before))
-    ;;     (with-syntax-table (standard-syntax-table)
-    ;;       (let ((distance sign))
-    ;;         (while (and distance (> (abs distance) 0) (> (* arg sign) 0))
-    ;;           (setq distance
-    ;;                 (when-let ((next-char (funcall char-func))
-    ;;                            (next-syntax (char-syntax next-char)))
-    ;;                   (cond ((eq next-syntax ?w)
-    ;;                          (funcall move-func "w"))
-    ;;                         ((eq next-syntax ?\ )
-    ;;                          (prog1
-    ;;                              (funcall move-func " ")
-    ;;                            (forward-vimlike-word sign)))
-    ;;                         (t
-    ;;                          (funcall move-func "^w ")))))
-    ;;           (setq arg (- arg sign)))
-    ;;         (and distance (> (abs distance) 0))))))
-
-    ;; (put 'vimlike-word 'forward-op #'forward-vimlike-word)
-    ;; (setq meow-word-thing 'vimlike-word)
-
-    )
-
-  (defun rasen/hiss-setup ()
-
-    (setq meow-select-on-insert t
-          meow-select-on-append t
-          meow-select-on-change t)
-
-    (setq meow-selection-command-fallback
-          '((meow-change . meow-insert)))
-
-    (let ((motion-keys `(("n" . ,(kbd "C-b"))
-                         ("N" . ,(kbd "C-S-b"))
-                         ("o" . ,(kbd "C-f"))
-                         ("O" . ,(kbd "C-S-f"))
-                         ("u" . ,(kbd "C-p"))
-                         ("U" . ,(kbd "C-S-p"))
-                         ("e" . ,(kbd "C-n"))
-                         ("E" . ,(kbd "C-S-n"))
-                         ("f" . ,(kbd "M-b"))
-                         ("F" . ,(kbd "M-S-b"))
-                         ("p" . ,(kbd "M-f"))
-                         ("P" . ,(kbd "M-S-f"))
-
-                         ("a" . ,(kbd "M-x")))))
-      (apply #'meow-define-keys 'motion motion-keys)
-      (apply #'meow-define-keys 'normal motion-keys))
-
-    (meow-define-keys 'normal
-      '("t" . meow-change) ; fallback to insert
-      )
-    )
-
-  (rasen/hiss-setup)
-  (meow-global-mode 1))
-
-(use-package expand-region
-  :config
-  (with-eval-after-load "meow"
-    (define-key meow-normal-state-keymap (kbd "d") #'er/expand-region)))
-#+end_src
-
-Tree sitter integration defines tree sitter "things" for meow.
-#+begin_src emacs-lisp
-(use-package meow-tree-sitter
-  :after meow
-  :config
-  (meow-tree-sitter-register-defaults))
-#+end_src
 ** Don't clutter system
 Save custom configuration in the =~/.emacs.d/custom.el= file so emacs does not clutter =init.el=.
 #+begin_src emacs-lisp
@@ -2272,7 +1906,6 @@ I use smex for improved =counsel-M-x= (show most frequently used commands first)
   ('read-expression-map
    "C-r"    #'counsel-expression-history)
   :config
-  (meow-leader-define-key '("/" . counsel-rg))
   ;; reset ivy initial inputs for counsel
   (setq-default ivy-initial-inputs-alist nil)
   (counsel-mode 1))
@@ -2598,12 +2231,8 @@ Common key bindings. (emacs-lisp)
 (exwm-input-set-key (kbd "s-j") (rasen/hard-way "s-u"))
 (exwm-input-set-key (kbd "s-k") (rasen/hard-way "s-e"))
 
-(with-eval-after-load "evil"
-  (exwm-input-set-key (kbd "s-s") #'evil-window-split)
-  (exwm-input-set-key (kbd "s-v") #'evil-window-vsplit))
-(with-eval-after-load "meow"
-  (exwm-input-set-key (kbd "s-s") #'split-window-below)
-  (exwm-input-set-key (kbd "s-v") #'split-window-right))
+(exwm-input-set-key (kbd "s-s") #'split-window-below)
+(exwm-input-set-key (kbd "s-v") #'split-window-right)
 
 (exwm-input-set-key (kbd "s-.") #'rasen/exwm-next-workspace)
 (exwm-input-set-key (kbd "s->") #'rasen/move-tab-other-frame) ;; s-S-.
@@ -2626,9 +2255,6 @@ Common key bindings. (emacs-lisp)
   ">" #'tab-bar-move-tab-to-frame
   "k" #'tab-bar-close-tab)
 
-(with-eval-after-load "meow"
-  (meow-leader-define-key '("t" . rasen/tab-map)))
-;; (s-leader-def "t" #'rasen/tab-map)
 (exwm-input-set-key (kbd "s-t") #'rasen/tab-map)
 
 (exwm-input-set-key (kbd "s-1") #'tab-bar-select-tab)
@@ -5943,15 +5569,6 @@ A function to create a new node without prompting for a title. Sometimes I want 
   (interactive)
   (rasen/org-roam-new-node "f"))
 
-(with-eval-after-load "meow"
-  (meow-leader-define-key
-   '("n" . nil)
-   '("n n" . rasen/org-roam-new-node)
-   '("n d" . rasen/org-roam-new-node-default)
-   '("n l" . rasen/org-roam-new-node-life)
-   '("n p" . rasen/org-roam-new-node-pulse)
-   '("n F" . rasen/org-roam-new-node-fluxon)))
-
 ;; (s-leader-def "n n" #'rasen/org-roam-new-node)
 ;; (s-leader-def "n d" #'rasen/org-roam-new-node-default)
 ;; (s-leader-def "n l" #'rasen/org-roam-new-node-life)
@@ -7271,19 +6888,6 @@ vterm is a terminal emulator using libvterm. Which allows running it within Emac
   ;;    "C-c C-z" #'evil-collection-vterm-toggle-send-escape
   ;;    "C-c z" #'evil-collection-vterm-toggle-send-escape)
 
-
-  ;; (with-eval-after-load "meow"
-  ;;   (define-key vterm-mode-map (kbd "C-n") nil)
-  ;;   (define-key vterm-mode-map (kbd "C-p") nil)
-  ;;   (define-key vterm-mode-map (kbd "C-b") nil)
-  ;;   (define-key vterm-mode-map (kbd "C-f") nil)
-
-  ;;   (let ((map (make-sparse-keymap)))
-  ;;     (set-keymap-parent map meow-normal-state-keymap)
-
-  ;;     (define-key map ))
-  ;;   ())
-
   (setq vterm-buffer-name-string "vterm %s"))
 #+end_src
 
@@ -7888,9 +7492,6 @@ Make '_' a part of words so that commands like =evil-forward-word-begin= work pr
    "<f5>"   #'projectile-run-project)
   :commands (projectile-project-name projectile-find-file)
   :diminish projectile-mode
-  :init
-  (meow-leader-define-key
-   '("u" . projectile-find-file))
   :config
   ;; Use the prefix arg if you want to change the compilation command
   (setq-default compilation-read-command nil)
@@ -8104,11 +7705,6 @@ LSP is Language Server Protocol. Some languages support it usually provide bette
 (use-package eglot
   :hook ((rust-mode) . eglot-ensure)
   :config
-  (with-eval-after-load "meow"
-    (meow-leader-define-key
-     '("e" . nil)
-     '("e e" . eglot-code-actions)
-     '("e r" . eglot-rename)))
   (with-eval-after-load "evil"
     (general-def 'normal eglot-mode-map
       "SPC e" nil
