@@ -192,7 +192,7 @@ in
           xhost +SI:localuser:$USER
           exec emacs
         '';
-          # exec ${pkgs.my-emacs}/bin/emacsclient -a "" -c
+        # exec ${pkgs.my-emacs}/bin/emacsclient -a "" -c
       };
       services.xserver.displayManager.lightdm.enable = true;
       # services.xserver.displayManager.startx.enable = true;
@@ -220,9 +220,6 @@ in
     {
       services.xserver.xkbOptions = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
       # services.xserver.xkbOptions = "grp:caps_toggle,grp_led:caps";
-    }
-    {
-      users.users.rasen.extraGroups = [ "input" ];
     }
     {
       networking = {

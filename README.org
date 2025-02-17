@@ -369,17 +369,17 @@ For non-NixOS system, put the following into =~/.config/nix/nix.conf=.
 experimental-features = nix-command flakes
 #+end_src
 
-** Stable packages
-For packages that are broken in nixpkgs-unstable, expose the latest stable channel as ~pkgs.stable~.
+** Unstable packages
+For packages that are not available in latest stable, expose the unstable channel as ~pkgs.unstable~.
 
 Add input:
 #+name: flake-inputs
 #+begin_src nix
-nixpkgs-stable = {
+nixpkgs-unstable = {
   type = "github";
   owner = "NixOS";
   repo = "nixpkgs";
-  ref = "nixos-24.11";
+  ref = "nixpkgs-unstable";
 };
 #+end_src
 
@@ -387,7 +387,7 @@ Add overlay:
 #+name: flake-overlays
 #+begin_src nix
 (final: prev: {
-  stable = import inputs.nixpkgs-stable {
+  unstable = import inputs.nixpkgs-unstable {
     inherit system;
     overlays = self.overlays.${system};
     config = { allowUnfree = true; };
@@ -461,7 +461,7 @@ Expose home-manager configurations.
 in {
   # Re-export common home-manager configuration to be reused between
   # NixOS module and standalone home-manager config.
-  lib.home-manager-common = { lib, pkgs, config, ... }: {
+  lib.home-manager-common = { name, lib, pkgs, config, ... }: {
     imports = [
       <<home-manager-section>>
     ];
@@ -519,7 +519,7 @@ Add nix-darwin to flake inputs.
 #+name: flake-inputs
 #+begin_src nix
 darwin = {
-  url = "github:lnl7/nix-darwin";
+  url = "github:lnl7/nix-darwin/nix-darwin-24.11";
   inputs.nixpkgs.follows = "nixpkgs";
 };
 #+end_src
@@ -803,6 +803,8 @@ org-clock.1s.sh
 }
 #+end_src
 
+Skhd integration to move between windows.
+
 [https://gist.github.com/ethan-leba/760054f36a2f7c144c6b06ab6458fae6]
 #+name: darwin-section
 #+begin_src nix
@@ -821,31 +823,28 @@ org-clock.1s.sh
       default < lcmd - 0x2A ; escaping
       escaping < lcmd - 0x2A ; default
 
-      # escaping < lcmd - k ~
+      # escaping < lcmd - e ~
 
       default < cmd + ctrl - r : yabai -m space --layout $(yabai -m query --spaces --space | jq -r 'if .type == "bsp" then "float" else "bsp" end')
-      default < lcmd + ctrl - h : yabai -m window --ratio rel:-0.05
-      default < lcmd + ctrl - l : yabai -m window --ratio rel:+0.05
-      default < lcmd + shift - h : yabai -m window --swap west
-      default < lcmd + shift - j : yabai -m window --swap north
-      default < lcmd + shift - k : yabai -m window --swap south
-      default < lcmd + shift - l : yabai -m window --swap east
-      default < lcmd - h [
+      # default < lcmd + ctrl - n : yabai -m window --ratio rel:-0.05
+      # default < lcmd + ctrl - o : yabai -m window --ratio rel:+0.05
+      default < lcmd + shift - n : yabai -m window --swap west
+      default < lcmd + shift - u : yabai -m window --swap north
+      default < lcmd + shift - e : yabai -m window --swap south
+      default < lcmd + shift - o : yabai -m window --swap east
+      default < lcmd - n [
         ,* : yabai -m window --focus west
         "Emacs" ~
       ]
-      default < lcmd - j [
+      default < lcmd - u [
         ,* : yabai -m window --focus north
         "Emacs" ~
       ]
-      default < lcmd - k [
+      default < lcmd - e [
         ,* : yabai -m window --focus south
         "Emacs" ~
-        "Slack" ~
-        "Telegram" ~
-        "Arc" ~
       ]
-      default < lcmd - l [
+      default < lcmd - o [
         ,* : yabai -m window --focus east
         "Emacs" ~
       ]
@@ -857,10 +856,15 @@ org-clock.1s.sh
 Emacs integration for yabai:
 #+begin_src emacs-lisp
 (defun yabai-move-on-error (direction move-fn)
+  "Execute `move-fn'. If that function errors, move yabai focus in the specified direction."
   (interactive)
   (condition-case nil
       (funcall move-fn)
-    (user-error (start-process "yabai" "*yabai*" "yabai" "-m" "window" "--focus" direction))))
+    (user-error (rasen/yabai-move direction))))
+
+(defun rasen/yabai-move (direction)
+  "Move yabai focus in the specified `direction'."
+  (start-process "yabai" "*yabai*" "yabai" "-m" "window" "--focus" direction))
 
 (defun yabai-windmove-left ()
   (interactive)
@@ -1095,6 +1099,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       company-box
       counsel
       counsel-projectile
+      dart-mode
       diff-hl
       diminish
       direnv
@@ -1114,6 +1119,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       evil-surround
       evil-swap-keys
       exec-path-from-shell
+      expand-region
       fish-completion
       fish-mode
       flycheck
@@ -1122,6 +1128,8 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       flycheck-rust
       forge
       forth-mode
+      just-mode
+      justl
       general
       go-mode
       google-translate
@@ -1144,6 +1152,8 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       lua-mode
       magit
       markdown-mode
+      meow
+      meow-tree-sitter
       modus-themes
       nix-mode
       nix-sandbox
@@ -1171,6 +1181,9 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       racket-mode
       restclient
       rjsx-mode
+      ryo-modal
+      god-mode
+      multiple-cursors
       rust-mode
       slime
       smex
@@ -1193,6 +1206,16 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       yaml-mode
       yasnippet
       zig-mode
+
+      corfu
+      cape
+      vertico
+      orderless
+      consult
+      embark
+      marginalia
+      smartparens
+      git-link
 
     ]) ++
     [
@@ -1562,7 +1585,17 @@ Disable usage of emacs internal archives. (~.emacs.d/early-init.el~)
 (setq package-archives nil)
 (setq package-enable-at-startup nil)
 #+end_src
+
+** Hard way
+Hard way: prohibit usage of keybindings I have more efficient bindings for.
+#+begin_src emacs-lisp
+(defmacro rasen/hard-way (key)
+  "Prohibit usage of a keybinding and redirect to use `key' instead."
+  `(lambda () (interactive) (error "Don't use this key! Use %s instead" ,key)))
+#+end_src
+
 ** General (package)
+
 I use [[https://github.com/noctuid/general.el][general]] to define my keybindings. (emacs-lisp)
 #+begin_src emacs-lisp
 <<before-general>>
@@ -1585,10 +1618,446 @@ I use [[https://github.com/noctuid/general.el][general]] to define my keybinding
   :non-normal-prefix "s-SPC"
   :global-prefix "s-SPC")
 
-(use-package evil
-  :config
+(s-leader-def "" nil)
+
+(with-eval-after-load "evil"
   ;; free-up prefix
   (s-leader-def :keymaps '(motion normal visual) "" nil))
+#+end_src
+
+** General keybindings
+
+I use a custom modal mode.
+
+#+begin_src emacs-lisp
+(use-package ryo-modal
+  :disabled t
+  :config
+  (with-eval-after-load 'org
+    (setq org-support-shift-select 'always))
+
+  (defun rasen/shift-translate ()
+    "Make the following commands behave as if shift-translated."
+    (interactive)
+    (setq this-command-keys-shift-translated t))
+
+  (defun rasen/dwim-beginning-of-line-paragraph ()
+    (interactive "^")
+    (let ((orig-point (point)))
+      (if (eq orig-point (line-beginning-position))
+          (backward-paragraph)
+        (back-to-indentation)
+        (when (= orig-point (point))
+          (move-beginning-of-line 1)))))
+
+  (defun rasen/extend-beginning-of-line-paragraph ()
+    (interactive)
+    (let ((this-command-keys-shift-translated t))
+      (call-interactively 'rasen/dwim-beginning-of-line-paragraph)))
+
+  (defun rasen/dwim-end-of-line-paragraph ()
+    (interactive "^")
+    (let ((orig-point (point)))
+      (if (eq orig-point (line-end-position))
+          (forward-paragraph)
+        (end-of-line))))
+  (defun rasen/extend-end-of-line-paragraph ()
+    (interactive)
+    (let ((this-command-keys-shift-translated t))
+      (call-interactively 'rasen/dwim-end-of-line-paragraph)))
+
+  (let ((keys
+         '(("n" "<left>")
+           ("N" "S-<left>")
+           ("o" "<right>")
+           ("O" "S-<right>")
+           ("u" "<up>")
+           ("U" "S-<up>")
+           ("e" "<down>")
+           ("E" "S-<down>")
+           ("f" "M-b")
+           ("F" "M-S-b")
+           ("p" "M-f")
+           ("P" "M-S-f"))))
+    (mapc (lambda (it)
+            (define-key ryo-modal-mode-map (kbd (car it)) (kbd (cadr it))))
+          keys))
+  (global-set-key (kbd "<escape>") (defun rasen/enable-ryo ()
+                                     (interactive)
+                                     (ryo-modal-mode 1)))
+
+  (define-key ryo-modal-mode-map (kbd "Y") nil)
+
+  (ryo-modal-keys
+   ("t" ryo-modal-mode)
+   ("y" rasen/dwim-beginning-of-line-paragraph)
+   ("Y" rasen/dwim-beginning-of-line-paragraph :first '(rasen/shift-translate))
+   ("i" rasen/dwim-end-of-line-paragraph)
+   ("I" rasen/dwim-end-of-line-paragraph :first '(rasen/shift-translate))))
+#+end_src
+** Meow
+#+begin_src emacs-lisp
+(use-package meow
+  :disabled t
+  :config
+
+  (defun rasen/cheatsheet ()
+    (interactive)
+    (message "
+comment-dwim        SPC m ;
+eval-expression     SPC m :
+magit-status        SPC c s, SPC p m
+delete-blank-lines  SPC x o
+"))
+
+  (define-key global-map (kbd "<f1> <f1>") #'rasen/cheatsheet)
+
+  (defun rasen/temp-buffer ()
+    (interactive)
+    (switch-to-buffer (make-temp-name "new")))
+
+  (defun rasen/meow-mark-paragraph (arg)
+    (interactive "p")
+    (meow-mark-thing 'paragraph 'paragraph (< arg 0)))
+
+  (defun rasen/meow-next-paragraph (arg)
+    (interactive "p")
+    (meow-next-thing 'paragraph 'paragraph arg))
+
+  (defun rasen/meow-back-paragraph (arg)
+    (interactive "p")
+    (meow-next-thing 'paragraph 'paragraph (- arg)))
+
+  (defun rasen/meow-begin-of-buffer ()
+    (interactive)
+    (meow-beginning-of-thing 'buffer))
+  (defun rasen/meow-end-of-buffer ()
+    (interactive)
+    (meow-end-of-thing 'buffer))
+
+
+  (defun rasen/meow-kill-char (arg)
+    (interactive "p")
+    (meow-kill-thing 'char arg))
+
+  ;; https://github.com/meow-edit/meow/issues/506#issuecomment-1722205293
+  (defun rasen/meow-word ()
+    "Expand word/symbol under cursor."
+    (interactive)
+    (if (and (use-region-p)
+             (equal (car (region-bounds))
+                    (bounds-of-thing-at-point 'word)))
+        (progn
+          (when (string-match-p
+                 (or (car regexp-search-ring) "")
+                 (buffer-substring (region-beginning) (region-end)))
+            (pop regexp-search-ring))
+          (meow-mark-symbol 1))
+      (progn
+        (when (and (mark)
+                   (equal (car (region-bounds))
+                          (bounds-of-thing-at-point 'symbol)))
+          (meow-pop-selection))
+        (meow-mark-word 1))))
+
+  (defun meow-insert-for-yank-advice (orig-fn str)
+    "Advice for `insert-for-yank' function to correctly insert lines."
+    ;; (when meow--trim-yank
+    ;;   (set 'str (string-trim-right str "\n")))
+    (if (and (not (eq (point) (+ 1 (line-end-position 0))))
+             (string-match-p "^.+\n$" str))
+        (progn
+          (beginning-of-line 2)
+          (meow--set-mark nil nil t)
+          (funcall orig-fn str)
+          ;; back from last \n
+          (backward-char))
+      (funcall orig-fn str)))
+
+  (defun rasen/meow-yank ()
+    "Similar to `meow-yank' but yank lines on the next line."
+    (interactive)
+    (advice-add 'insert-for-yank :around #'meow-insert-for-yank-advice)
+    (meow-yank)
+    (activate-mark)
+    (setq deactivate-mark nil)
+    (meow--select (meow--make-selection 'line (mark) (point)))
+    (advice-remove 'insert-for-yank #'meow-insert-for-yank-advice))
+
+  (defun rasen/meow-yank-pop ()
+    (interactive)
+    (advice-add 'insert-for-yank :around #'meow-insert-for-yank-advice)
+    (meow-yank-pop)
+    (advice-remove 'insert-for-yank #'meow-insert-for-yank-advice))
+
+  (defun rasen/save-line ()
+    "Save current line."
+    (interactive)
+    (save-mark-and-excursion
+      (meow-line 1)
+      (meow-save)
+      (meow--remove-expand-highlights)))
+
+  (defun rasen/duplicate ()
+    (interactive)
+    (if (region-active-p)
+        (save-mark-and-excursion
+          (meow-save)
+          (meow-yank)
+          (setq deactivate-mark nil))
+      (rasen/save-line)
+      (meow-yank)
+      (meow-bounds-of-thing 'line)
+      (setq deactivate-mark nil)))
+
+  (defun rasen/meow-save ()
+    "Same as `meow-save' but keeps the mark active."
+    (interactive)
+    (save-mark-and-excursion
+      (meow-save))
+    (setq deactivate-mark nil))
+
+  (defun rasen/meow-setup-next ()
+    ;; (setq meow-use-cursor-position-hack t)
+    (setq meow-use-clipboard t)
+    (setq meow-keypad-self-insert-undefined nil)
+
+    (setq meow-selection-command-fallback
+	  '((meow-change . meow-change-char)
+	    (meow-kill . rasen/meow-kill-char)
+	    (meow-cancel-selection . keyboard-quit)
+	    (meow-pop-selection . meow-pop-grab)
+	    (meow-beacon-change . meow-beacon-change-char)
+	    (meow-expand . meow-digit-argument)
+            (rasen/meow-save . rasen/save-line)))
+
+    (defun rasen/keep-selection (&rest r)
+      (setq deactivate-mark nil))
+
+    ;; So I can do ,, .. for beginning/end of line
+    (add-to-list 'meow-char-thing-table (cons ?, 'parameter))
+    (add-to-list 'meow-char-thing-table (cons ?. 'line))
+    ;; << / >> to select inner/bounds of line
+    (add-to-list 'meow-char-thing-table (cons ?< 'line))
+    (add-to-list 'meow-char-thing-table (cons ?> 'line))
+
+    (meow-define-keys 'motion
+      '("e" . meow-next)
+      '("u" . meow-prev)
+      '("n" . meow-left)
+      '("o" . meow-right)
+      '("N" . meow-left-expand)
+      '("O" . meow-right-expand)
+      '("m" . rasen/meow-save)
+      '("<escape>" . ignore))
+
+    (meow-define-keys 'leader
+      ;; SPC j/k will run the original command in MOTION state.
+      '("u" . "H-u")
+      '("e" . "H-e")
+      '("n" . "H-n")
+      '("o" . "H-o")
+      ;; Use SPC (0-9) for digit arguments.
+      '("1" . meow-digit-argument)
+      '("2" . meow-digit-argument)
+      '("3" . meow-digit-argument)
+      '("4" . meow-digit-argument)
+      '("5" . meow-digit-argument)
+      '("6" . meow-digit-argument)
+      '("7" . meow-digit-argument)
+      '("8" . meow-digit-argument)
+      '("9" . meow-digit-argument)
+      '("0" . meow-digit-argument)
+      '("f" . find-file)
+      '("b" . switch-to-buffer)
+      '("p" . "C-x p")  ; project
+      '("SPC" . save-buffer)
+      ;; '("j" . join-line)
+      ;; '(";" . eval-expression)
+      )
+
+    (meow-define-keys 'insert
+      '("C-w" . meow-backward-kill-word)
+      '("TAB" . nil))
+
+    (meow-define-keys 'normal
+      '("0" . meow-expand-0)
+      '("9" . meow-expand-9)
+      '("8" . meow-expand-8)
+      '("7" . meow-expand-7)
+      '("6" . meow-expand-6)
+      '("5" . meow-expand-5)
+      '("4" . meow-expand-4)
+      '("3" . meow-expand-3)
+      '("2" . meow-expand-2)
+      '("1" . meow-expand-1)
+      '("-" . negative-argument)
+      '("=" . meow-indent)
+
+      '("u" . meow-prev)
+      '("U" . meow-prev-expand)
+      '("n" . meow-left)
+      '("N" . meow-left-expand)
+      '("e" . meow-next)
+      '("E" . meow-next-expand)
+      '("o" . meow-right)
+      '("O" . meow-right-expand)
+      '("f" . meow-back-word)
+      '("F" . meow-back-symbol)
+      '("p" . meow-next-word)
+      '("P" . meow-next-symbol)
+      '("y" . rasen/meow-back-paragraph)
+      '("i" . rasen/meow-next-paragraph)
+      '("Y" . rasen/meow-begin-of-buffer)
+      '("I" . rasen/meow-end-of-buffer)
+
+      '("q" . meow-cancel-selection)
+      '("Q" . meow-goto-line)
+      '("'" . meow-reverse)
+      '("\"" . meow-pop-selection)
+
+      ;; '("(" . insert-parentheses)
+      ;; '("{" . insert-pair)
+      ;; '("<" . insert-pair)
+
+      '("w" . rasen/meow-word)
+      '("W" . rasen/meow-mark-paragraph)
+      ;; '("W" . meow-mark-symbol)
+      '("r" . meow-line)
+      '("R" . meow-join)
+      ;; '("b" . meow-block)
+      '("D" . meow-to-block)
+      ;; '("j" . meow-join)
+      ;; '("[" . meow-beginning-of-thing)
+      ;; '("]" . meow-end-of-thing)
+      ;; '("," . meow-inner-of-thing)
+      ;; '("." . meow-bounds-of-thing)
+      '("," . meow-beginning-of-thing)
+      '("." . meow-end-of-thing)
+      '("<" . meow-inner-of-thing)
+      '(">" . meow-bounds-of-thing)
+
+      '("]" . meow-find)
+      '("}" . meow-find-expand)
+      '("[" . meow-till)
+      '("{" . meow-till-expand)
+
+      '("k" . meow-visit)
+      '("K" . isearch-forward)
+      '("l" . meow-search)
+      '("L" . meow-pop-search)
+
+      '("h" . meow-kill)
+      '("H" . meow-kill-whole-line)
+      '("s" . meow-change)
+      ;; '("S" . surround)
+      '("t" . meow-append)
+      '("a" . meow-insert)
+      '("T" . meow-open-below)
+      '("A" . meow-open-above)
+      '("z" . meow-grab)
+
+      ;; '("z" . meow-undo)
+      ;; '("Z" . undo-redo)
+      '("g" . meow-undo)
+      '("G" . undo-redo)
+
+      '("x" . execute-extended-command)
+      '("X" . rasen/meow-kill-char)
+      (cons "RET" (lookup-key (current-global-map) (kbd "C-x")))
+
+      '("m" . rasen/meow-save)
+      '("c" . rasen/meow-yank)
+      '("C" . rasen/meow-yank-pop)
+      ;; '("M-c" . meow-yank-pop)
+      ;; '("C-c" . nil)
+      ;; '("C" . meow-sync-grab)
+      '("v" . meow-replace)
+      '("M-v" . meow-replace-pop)
+      '("V" . meow-swap-grab)
+
+      ;; comment-dwim
+      ;; '(";" . meow-comment)
+
+      '("<escape>" . ignore)
+      )
+
+    ;; (defun forward-vimlike-word (&optional arg)
+    ;;   "Alternate `forward-word'. Essentially the same idea as Vim's 'e'."
+    ;;   (interactive "^p")
+    ;;   (setq arg (or arg 1))
+    ;;   (cl-destructuring-bind (sign move-func char-func)
+    ;;       (if (>= arg 0)
+    ;;           '(1 skip-syntax-forward char-after)
+    ;;         '(-1 skip-syntax-backward char-before))
+    ;;     (with-syntax-table (standard-syntax-table)
+    ;;       (let ((distance sign))
+    ;;         (while (and distance (> (abs distance) 0) (> (* arg sign) 0))
+    ;;           (setq distance
+    ;;                 (when-let ((next-char (funcall char-func))
+    ;;                            (next-syntax (char-syntax next-char)))
+    ;;                   (cond ((eq next-syntax ?w)
+    ;;                          (funcall move-func "w"))
+    ;;                         ((eq next-syntax ?\ )
+    ;;                          (prog1
+    ;;                              (funcall move-func " ")
+    ;;                            (forward-vimlike-word sign)))
+    ;;                         (t
+    ;;                          (funcall move-func "^w ")))))
+    ;;           (setq arg (- arg sign)))
+    ;;         (and distance (> (abs distance) 0))))))
+
+    ;; (put 'vimlike-word 'forward-op #'forward-vimlike-word)
+    ;; (setq meow-word-thing 'vimlike-word)
+
+    )
+
+  (defun rasen/hiss-setup ()
+
+    (setq meow-select-on-insert t
+          meow-select-on-append t
+          meow-select-on-change t)
+
+    (setq meow-selection-command-fallback
+          '((meow-change . meow-insert)))
+
+    (let ((motion-keys `(("n" . ,(kbd "C-b"))
+                         ("N" . ,(kbd "C-S-b"))
+                         ("o" . ,(kbd "C-f"))
+                         ("O" . ,(kbd "C-S-f"))
+                         ("u" . ,(kbd "C-p"))
+                         ("U" . ,(kbd "C-S-p"))
+                         ("e" . ,(kbd "C-n"))
+                         ("E" . ,(kbd "C-S-n"))
+                         ("f" . ,(kbd "M-b"))
+                         ("F" . ,(kbd "M-S-b"))
+                         ("p" . ,(kbd "M-f"))
+                         ("P" . ,(kbd "M-S-f"))
+
+                         ("a" . ,(kbd "M-x")))))
+      (apply #'meow-define-keys 'motion motion-keys)
+      (apply #'meow-define-keys 'normal motion-keys))
+
+    (meow-define-keys 'normal
+      '("t" . meow-change) ; fallback to insert
+      )
+    )
+
+  (rasen/hiss-setup)
+  (meow-global-mode 1))
+
+(use-package expand-region
+  :config
+  (with-eval-after-load "meow"
+    (define-key meow-normal-state-keymap (kbd "d") #'er/expand-region)))
+#+end_src
+
+Tree sitter integration defines tree sitter "things" for meow.
+#+begin_src emacs-lisp
+(use-package meow-tree-sitter
+  :after meow
+  :config
+  (meow-tree-sitter-register-defaults))
 #+end_src
 ** Don't clutter system
 Save custom configuration in the =~/.emacs.d/custom.el= file so emacs does not clutter =init.el=.
@@ -1718,6 +2187,7 @@ Shamelessly stolen from https://github.com/purcell/emacs.d.
 ** ivy
 #+begin_src emacs-lisp
 (use-package ivy
+  :disabled t
   :demand
   :general
   (s-leader-def
@@ -1725,25 +2195,26 @@ Shamelessly stolen from https://github.com/purcell/emacs.d.
   :diminish ivy-mode
   :config
   <<ivy-config>>
+  (ivy-mode 1)
   )
 #+end_src
 
 Do not start input with =^= and ignore the case.
 #+name: ivy-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (setq-default ivy-initial-inputs-alist nil)
 (setq-default ivy-re-builders-alist '((t . ivy--regex-ignore-order)))
 #+end_src
 
 Do not show ~./~ and ~../~ during file name completion.
 #+name: ivy-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (setq-default ivy-extra-directories nil)
 #+end_src
 
 The normal =C-j= is not placed conveniently on Workman layout, so move its function to =C-e= (which is qwerty =k=).
 #+name: ivy-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (general-def 'ivy-minibuffer-map
   "C-e"   #'ivy-alt-done
   "C-M-e" #'ivy-immediate-done)
@@ -1751,47 +2222,45 @@ The normal =C-j= is not placed conveniently on Workman layout, so move its funct
 
 Evilify ivy-occur.
 #+name: ivy-config
-#+begin_src emacs-lisp
-(general-def
-  :keymaps '(ivy-occur-mode-map ivy-occur-grep-mode-map)
-  :states 'normal
-  "k"    #'ivy-occur-next-line
-  "j"    #'ivy-occur-previous-line
-  "C-n"  #'ivy-occur-next-line
-  "C-p"  #'ivy-occur-previous-line
-  "RET"  #'ivy-occur-press-and-switch
-  "TAB"  #'ivy-occur-press
-  "C-e"  #'ivy-occur-press-and-switch
-  "g r"  #'ivy-occur-revert-buffer
-  "g g"  #'evil-goto-first-line
-  "d"    #'ivy-occur-delete-candidate
-  "r"    #'read-only-mode
-  "a"    #'ivy-occur-read-action
-  "c"    #'ivy-occur-toggle-calling
-  "f"    #'ivy-occur-press
-  "o"    #'ivy-occur-dispatch
-  "q"    #'quit-window)
+#+begin_src emacs-lisp :tangle no
+(with-eval-after-load "evil"
+  (general-def
+    :keymaps '(ivy-occur-mode-map ivy-occur-grep-mode-map)
+    :states 'normal
+    "k"    #'ivy-occur-next-line
+    "j"    #'ivy-occur-previous-line
+    "C-n"  #'ivy-occur-next-line
+    "C-p"  #'ivy-occur-previous-line
+    "RET"  #'ivy-occur-press-and-switch
+    "TAB"  #'ivy-occur-press
+    "C-e"  #'ivy-occur-press-and-switch
+    "g r"  #'ivy-occur-revert-buffer
+    "g g"  #'evil-goto-first-line
+    "d"    #'ivy-occur-delete-candidate
+    "r"    #'read-only-mode
+    "a"    #'ivy-occur-read-action
+    "c"    #'ivy-occur-toggle-calling
+    "f"    #'ivy-occur-press
+    "o"    #'ivy-occur-dispatch
+    "q"    #'quit-window)
 
-(general-def 'normal 'ivy-occur-grep-mode-map
-  "w"    #'ivy-wgrep-change-to-wgrep-mode)
+  (general-def 'normal 'ivy-occur-grep-mode-map
+    "w"    #'ivy-wgrep-change-to-wgrep-mode))
 #+end_src
 
-Enable ivy.
-#+name: ivy-config
-#+begin_src emacs-lisp
-(ivy-mode 1)
-#+end_src
 ** smex
 I use smex for improved =counsel-M-x= (show most frequently used commands first).
 #+begin_src emacs-lisp
 (use-package smex
   :config
+  :disabled t
   (smex-initialize))
 #+end_src
 ** counsel
 #+begin_src emacs-lisp
 (use-package counsel
   :demand
+  :disabled t
   :diminish counsel-mode
   :general
   (s-leader-def
@@ -1803,6 +2272,7 @@ I use smex for improved =counsel-M-x= (show most frequently used commands first)
   ('read-expression-map
    "C-r"    #'counsel-expression-history)
   :config
+  (meow-leader-define-key '("/" . counsel-rg))
   ;; reset ivy initial inputs for counsel
   (setq-default ivy-initial-inputs-alist nil)
   (counsel-mode 1))
@@ -1819,7 +2289,6 @@ Install ripgrep (rg) to user environment:
 Jump anywhere with a few keystrokes in tree-like way.
 #+begin_src emacs-lisp
 (use-package avy
-  :bind
   :general
   ('motion
    "K"  #'avy-goto-char)
@@ -1831,6 +2300,7 @@ Jump anywhere with a few keystrokes in tree-like way.
 Use imenu to jump to symbols in the current buffer.
 #+begin_src emacs-lisp
 (use-package imenu-list
+  :disabled t
   :general
   (:keymaps 'imenu-list-major-mode-map
    :states 'normal
@@ -1838,18 +2308,16 @@ Use imenu to jump to symbols in the current buffer.
    "TAB"       #'imenu-list-display-entry
    "<backtab>" #'hs-toggle-hiding
    "g r"       #'imenu-list-refresh
-   "q"         #'imenu-list-quit-window))
-#+end_src
+   "q"         #'imenu-list-quit-window)
 
-#+begin_src emacs-lisp
-(defun rasen/imenu-or-list (arg)
-  "Invoke `counsel-imenu'. If prefix is provided, toggle imenu-list"
-  (interactive "P")
-  (if arg
-      (imenu-list-smart-toggle)
-    (counsel-imenu)))
+  (defun rasen/imenu-or-list (arg)
+    "Invoke `counsel-imenu'. If prefix is provided, toggle imenu-list"
+    (interactive "P")
+    (if arg
+        (imenu-list-smart-toggle)
+      (counsel-imenu)))
 
-(leader-def 'motion  "g" #'rasen/imenu-or-list)
+  (leader-def 'motion  "g" #'rasen/imenu-or-list))
 #+end_src
 ** wgrep
 Edit grep buffers and apply changes to the files.
@@ -1863,14 +2331,15 @@ A good mode to highlight whitespace issues (leading/trailing spaces/newlines) an
   :diminish (global-whitespace-mode
              whitespace-mode
              whitespace-newline-mode)
-  :hook (prog-mode . whitespace-mode)
+  ;; :hook (prog-mode . whitespace-mode)
   :config
   (setq-default whitespace-line-column 120
                 whitespace-style '(face
                                    tab-mark
                                    empty
                                    trailing
-                                   lines-tail)))
+                                   lines-tail))
+  (global-whitespace-mode))
 #+end_src
 ** whitespace-cleanup
 Fix whitespaces on file save.
@@ -1884,6 +2353,7 @@ Fix whitespaces on file save.
 [[https://github.com/justbur/emacs-which-key][which-key]] is a minor mode for Emacs that displays the key bindings following your currently entered incomplete command (a prefix) in a popup.
 #+begin_src emacs-lisp
 (use-package which-key
+  :disabled t
   :defer 2
   :diminish which-key-mode
   :config
@@ -1892,6 +2362,7 @@ Fix whitespaces on file save.
 ** Google translate
 #+begin_src emacs-lisp
 (use-package google-translate
+  :disabled t
   :general
   ('normal
    '(markdown-mode-map org-mode-map)
@@ -1951,19 +2422,21 @@ New in Emacs 27.
   (setq tab-bar-close-button-show nil
         tab-bar-new-button-show nil)
   ;; (tab-bar-mode)
-)
+  )
 #+end_src
 ** Highlight current line
 Highlight current line.
 #+begin_src emacs-lisp
-(global-hl-line-mode)
+(use-package emacs
+  :config
+  (global-hl-line-mode)
 
-;; The following trick with buffer-local `global-hl-line-mode` allows
-;; disabling hl-line-mode per-buffer
-(make-variable-buffer-local 'global-hl-line-mode)
-(defun rasen/disable-hl-line-mode ()
-  (interactive)
-  (setq global-hl-line-mode nil))
+  ;; The following trick with buffer-local `global-hl-line-mode` allows
+  ;; disabling hl-line-mode per-buffer
+  (make-variable-buffer-local 'global-hl-line-mode)
+  (defun rasen/disable-hl-line-mode ()
+    (interactive)
+    (setq global-hl-line-mode nil)))
 #+end_src
 ** Scrolling
 =scroll-margin= is a number of lines of margin at the top and bottom of a window. Scroll the window whenever point gets within this many lines of the top or bottom of the window. (=scroll-conservatively= should be greater than 100 to never recenter point. Value 1 helps, but eventually recenters cursor if you scroll too fast.)
@@ -2014,7 +2487,7 @@ NixOS has an EXWM module, but my feeling is that it's too limiting. (~<<nixos-se
       xhost +SI:localuser:$USER
       exec emacs
     '';
-      # exec ${pkgs.my-emacs}/bin/emacsclient -a "" -c
+    # exec ${pkgs.my-emacs}/bin/emacsclient -a "" -c
   };
   services.xserver.displayManager.lightdm.enable = true;
   # services.xserver.displayManager.startx.enable = true;
@@ -2079,6 +2552,7 @@ keys. This allows defining keys from any place in config."
 Common key bindings. (emacs-lisp)
 #+begin_src emacs-lisp
 (use-package evil
+  :disabled t
   :defer t
   :commands (evil-window-split
              evil-window-vsplit))
@@ -2097,7 +2571,7 @@ Common key bindings. (emacs-lisp)
 ;; despite the fact s-SPC binds to nil, EXWM will add s-SPC to
 ;; global prefix key.
 (exwm-input-set-key (kbd "s-SPC") nil)
-(exwm-input-set-key (kbd "s-x") #'counsel-M-x)
+(exwm-input-set-key (kbd "s-x") #'execute-extended-command)
 
 (exwm-input-set-key (kbd "s-R") #'exwm-reset)
 (exwm-input-set-key (kbd "s-Q") #'save-buffers-kill-terminal)
@@ -2105,7 +2579,7 @@ Common key bindings. (emacs-lisp)
                                   (interactive (list (read-shell-command "Run: ")))
                                   (rasen/start-command command)))
 (exwm-input-set-key (kbd "s-w") #'exwm-workspace-switch)
-(exwm-input-set-key (kbd "s-b") #'counsel-switch-buffer)
+(exwm-input-set-key (kbd "s-b") #'switch-to-buffer)
 (exwm-input-set-key (kbd "s-q") #'kill-this-buffer)
 
 (exwm-input-set-key (kbd "s-\\") #'exwm-input-toggle-keyboard)
@@ -2115,19 +2589,28 @@ Common key bindings. (emacs-lisp)
 ;; window management
 (exwm-input-set-key (kbd "s--") #'delete-other-windows)
 (exwm-input-set-key (kbd "s-0") #'delete-window)
-(exwm-input-set-key (kbd "s-h") #'yabai-windmove-left)
-(exwm-input-set-key (kbd "s-k") #'yabai-windmove-down)
-(exwm-input-set-key (kbd "s-j") #'yabai-windmove-up)
-(exwm-input-set-key (kbd "s-l") #'yabai-windmove-right)
-(exwm-input-set-key (kbd "s-s") #'evil-window-split)
-(exwm-input-set-key (kbd "s-v") #'evil-window-vsplit)
+(exwm-input-set-key (kbd "s-n") #'yabai-windmove-left)
+(exwm-input-set-key (kbd "s-e") #'yabai-windmove-down)
+(exwm-input-set-key (kbd "s-u") #'yabai-windmove-up)
+(exwm-input-set-key (kbd "s-o") #'yabai-windmove-right)
+(exwm-input-set-key (kbd "s-h") (rasen/hard-way "s-n"))
+(exwm-input-set-key (kbd "s-l") (rasen/hard-way "s-o"))
+(exwm-input-set-key (kbd "s-j") (rasen/hard-way "s-u"))
+(exwm-input-set-key (kbd "s-k") (rasen/hard-way "s-e"))
+
+(with-eval-after-load "evil"
+  (exwm-input-set-key (kbd "s-s") #'evil-window-split)
+  (exwm-input-set-key (kbd "s-v") #'evil-window-vsplit))
+(with-eval-after-load "meow"
+  (exwm-input-set-key (kbd "s-s") #'split-window-below)
+  (exwm-input-set-key (kbd "s-v") #'split-window-right))
 
 (exwm-input-set-key (kbd "s-.") #'rasen/exwm-next-workspace)
 (exwm-input-set-key (kbd "s->") #'rasen/move-tab-other-frame) ;; s-S-.
 
 (general-def
   :prefix-command 'rasen/tab-map
-  "t" #'tab-bar-mode
+  "T" #'tab-bar-mode
   "1" #'tab-bar-select-tab
   "2" #'tab-bar-select-tab
   "3" #'tab-bar-select-tab
@@ -2137,12 +2620,15 @@ Common key bindings. (emacs-lisp)
   "7" #'tab-bar-select-tab
   "8" #'tab-bar-select-tab
   "9" #'tab-bar-select-tab
-  "n" #'tab-bar-new-tab
-  "h" #'tab-bar-switch-to-prev-tab
-  "l" #'tab-bar-switch-to-next-tab
+  "t" #'tab-bar-new-tab
+  "n" #'tab-bar-switch-to-prev-tab
+  "o" #'tab-bar-switch-to-next-tab
   ">" #'tab-bar-move-tab-to-frame
   "k" #'tab-bar-close-tab)
-(s-leader-def "t" #'rasen/tab-map)
+
+(with-eval-after-load "meow"
+  (meow-leader-define-key '("t" . rasen/tab-map)))
+;; (s-leader-def "t" #'rasen/tab-map)
 (exwm-input-set-key (kbd "s-t") #'rasen/tab-map)
 
 (exwm-input-set-key (kbd "s-1") #'tab-bar-select-tab)
@@ -2253,7 +2739,8 @@ slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 *** EXWM integration
 Autostart ~xss-lock~ (emacs-lisp).
 #+begin_src emacs-lisp
-(rasen/autostart "xss-lock -n \"xset dpms force off\" slock")
+(when (eq system-type 'gnu/linux)
+  (rasen/autostart "xss-lock -n \"xset dpms force off\" slock"))
 #+end_src
 
 Bind ~s-M-l~ to lock screen immediately.
@@ -2281,7 +2768,7 @@ Use built-in EXWM system tray (emacs-lisp)
 (use-package exwm-systemtray
   :after exwm
   :config
-  (exwm-systemtray-enable))
+  (exwm-systemtray-mode))
 #+end_src
 ** Screenshots
 I use [[https://github.com/Roger/escrotum][Escrotum]] for screenshots.
@@ -2337,12 +2824,6 @@ It looks like this:
 #+DOWNLOADED: https://nic-west.com/images/workman.png @ 2020-06-13 02:39:31
 [[file:images/20200612233931-workman.png]]
 
-Even though I am a heavy user of Vim-like keybindings, I /didn't/ remap any keys to bring h/j/k/l to the home row—yes, they all are scattered around and I consider that a feature. (You shouldn't be using h/j/k/l anyway.)
-
-Though, there is one remapping that I actually do.
-If you look at the picture, you'll notice that j—which usually means “down”—is above k on keyboard.
-I could get my mind used to it, so I remap j↔k functions in all applications I use (Emacs, Vim, Firefox, Zathura).
-
 *** Keyboard layout
 Besides Workman, I use Ukrainian layout. I also use Russian symbols, but they are on the third level (~<<nixos-section>>~).
 #+name: nixos-section
@@ -2379,7 +2860,7 @@ I never use Caps Lock–the feature, so it's nice to have Caps LED indicate alte
 }
 #+end_src
 
-On macOS, right option acts as AltGr. Make Emacs ignore it, so it can work correctly:
+On macOS, right option acts as AltGr. Make Emacs ignore it, so it can work correctly as a Meta modifier:
 #+begin_src emacs-lisp
 (setq ns-right-alternate-modifier 'none)
 #+end_src
@@ -2514,150 +2995,7 @@ Emacs has built-in capability to change keyboard layout (for insert state only),
                               "))
   (quail-set-keyboard-layout "workman"))
 #+end_src
-** Mouse
-I use [[https://www.razer.com/eu-en/Gaming-Mice/Razer-Naga-Chroma/p/RZ01-01610100-R3G1][Razer Naga Chroma]] with 12-button thumb cluster. I use these buttons are used to switch browser tabs, close/open them, go back and forth in history so that sometimes I can browse web only using one hand.
 
-*** Python listener
-I have a small Python script at [[./naga]] to connect to mouse as input device and report button pressed to Emacs.
-
-The script is pretty simple ([[./naga/naga/__init__.py]]).
-#+begin_src python :tangle naga/naga/__init__.py
-#!/usr/bin/env python3
-import evdev
-import subprocess
-
-
-def value_to_string(val):
-    if val == evdev.events.KeyEvent.key_up:
-        return "up"
-    if val == evdev.events.KeyEvent.key_down:
-        return "down"
-    if val == evdev.events.KeyEvent.key_hold:
-        return "hold"
-    return None
-
-
-def main():
-    device = evdev.InputDevice(
-        "/dev/input/by-id/usb-Razer_Razer_Naga_Chroma-if02-event-kbd"
-    )
-    print(device)
-
-    device.grab()
-
-    for event in device.read_loop():
-        if event.type == evdev.ecodes.EV_KEY:
-            subprocess.call(
-                [
-                    "emacsclient",
-                    "--eval",
-                    '(rasen/razer {} "{}")'.format(
-                        event.code - 1, value_to_string(event.value)
-                    ),
-                ]
-            )
-#+end_src
-
-~setup.py~ to make it installable ([[./naga/setup.py]]).
-#+begin_src python :tangle naga/setup.py
-#!/usr/bin/env python
-from setuptools import setup
-
-setup(
-    name='naga',
-    version='1.0',
-    url='https://github.com/rasenduby/dotfiles',
-    packages=['naga'],
-    entry_points={
-        'console_scripts': [
-            'naga=naga:main',
-        ],
-    },
-    license='MIT',
-    install_requires=[
-        'evdev',
-    ],
-)
-#+end_src
-
-And ~default.nix~ to make it installable with Nix ([[./naga/default.nix]]).
-#+begin_src nix :tangle naga/default.nix
-{ lib, python3Packages }:
-python3Packages.buildPythonApplication {
-  name = "naga-1.0";
-
-  src = lib.cleanSource ./.;
-
-  propagatedBuildInputs = [
-    python3Packages.evdev
-  ];
-}
-#+end_src
-
-Expose naga as Flake packages (~<<flake-packages>>~).
-#+name: flake-packages
-#+begin_src nix
-{
-  naga = pkgs.callPackage ./naga { };
-}
-#+end_src
-
-Finally install it (~<<home-manager-section>>~).
-#+name: home-manager-section
-#+begin_src nix
-{
-  home.packages = pkgs.lib.linux-only [ pkgs.naga ];
-}
-#+end_src
-
-And I believe I need to add my user to ~input~ group to fix permissions (~<<nixos-section>>~).
-#+name: nixos-section
-#+begin_src nix
-{
-  users.users.rasen.extraGroups = [ "input" ];
-}
-#+end_src
-
-Activate it on EXWM start (emacs-lisp).
-#+begin_src emacs-lisp
-(defun rasen/naga ()
-  (interactive)
-  (rasen/autostart "naga"))
-
-(rasen/naga)
-#+end_src
-**** TODO Start naga on plugdev
-*** Emacs handler
-Emacs determines what to do with each keypress.
-
-#+begin_src emacs-lisp
-(defun rasen/exwm-send-keys (keys)
-  (dolist (key (append keys nil))
-    (exwm-input--fake-key key)))
-
-(defun rasen/razer (code value)
-  (with-current-buffer (window-buffer (selected-window))
-    ;; (message "(razer %s %s) class-name=%s" code value exwm-class-name)
-    (when (string= value "down")
-      (cond ((= code 11) (rasen/switch-to-previous-buffer))
-            ((or (string= exwm-class-name "Firefox") (string= exwm-class-name "Google-chrome"))
-             (cond
-              ((= code 1) (rasen/exwm-send-keys (kbd "<M-left>"))) ;; back (history)
-              ((= code 2) (rasen/exwm-send-keys (kbd "<C-prior>"))) ;; prev tab
-              ((= code 3) (rasen/exwm-send-keys (kbd "<C-next>"))) ;; next tab
-              ((= code 4) (rasen/exwm-send-keys (kbd "<M-right>")));; next (history)
-              ((= code 5) (rasen/exwm-send-keys (kbd "C-S-t"))) ;; restore last closed tab
-              ((= code 6) (rasen/exwm-send-keys (kbd "C-w"))) ;; close tab
-              ((= code 12) (rasen/exwm-send-keys (kbd "<C-tab>"))) ;; switch to previous tab
-              ))
-            ((string= exwm-class-name "TelegramDesktop")
-             (cond
-              ((= code 1) (rasen/exwm-send-keys (kbd "<escape>"))) ;; deselect conversation
-              ((= code 2) (rasen/exwm-send-keys (kbd "<C-S-tab>"))) ;; prev conversation
-              ((= code 3) (rasen/exwm-send-keys (kbd "<C-tab>"))) ;; next conversation
-              ))
-            (t (message "razer-unhandled %s" code))))))
-#+end_src
 * Network
 ** NetworkManager
 (~<<nixos-section>>~)
@@ -2800,7 +3138,6 @@ On Darwin:
   environment.systemPackages = [ pkgs.syncthing ];
 }
 #+end_src
-** Docker
 ** Backup
 I use borg for backups.
 
@@ -2886,19 +3223,6 @@ Mount external drive when needed.
 }
 #+end_src
 ** direnv
-*** flake
-#+name: home-manager-section
-#+begin_src nix
-{
-  xdg.configFile."direnv/lib/use_flake.sh".text = ''
-    use_flake() {
-      watch_file flake.nix
-      watch_file flake.lock
-      eval "$(nix print-dev-env $@ --profile "$(direnv_layout_dir)/flake-profile")"
-    }
-  '';
-}
-#+end_src
 *** direnv + lorri
 direnv allows having per-directory environment configuration. You can think of automatic virtualenv, but it's more general and supports unloading.
 
@@ -2961,7 +3285,7 @@ Configure EXWM to use autorandr. (emacs-lisp)
               (interactive)
               (rasen/start-command "autorandr -c" "*autorandr*")))
 
-  (exwm-randr-enable))
+  (exwm-randr-mode))
 #+end_src
 
 (~<<home-manager-section>>~)
@@ -2978,81 +3302,81 @@ Configure EXWM to use autorandr. (emacs-lisp)
         home-monitor-2 = "00ffffffffffff004c2d767135305943341f0103804024782a6115ad5045a4260e5054bfef80714f810081c081809500a9c0b300010108e80030f2705a80b0588a0078682100001e000000fd0030901eff8f000a202020202020000000fc004c53323841473730304e0a2020000000ff0048345a524330303236380a2020017f02034bf14761103f04035f762309070783010000e305c0006b030c001000b83c200020016dd85dc401788053003090c354056d1a0000020f3090000461045a04e6060501615a00e30f4100565e00a0a0a029503020350078682100001a6fc200a0a0a055503020350078682100001a0000000000000000000000000000000037";
         work-monitor = "00ffffffffffff0010acc2d0545741312c1b010380351e78eaad75a9544d9d260f5054a54b008100b300d100714fa9408180d1c00101565e00a0a0a02950302035000e282100001a000000ff004d59334e44374234314157540a000000fc0044454c4c205032343138440a20000000fd0031561d711c000a202020202020010302031bb15090050403020716010611121513141f2065030c001000023a801871382d40582c45000e282100001e011d8018711c1620582c25000e282100009ebf1600a08038134030203a000e282100001a7e3900a080381f4030203a000e282100001a00000000000000000000000000000000000000000000000000000000d8";
       in {
-      "omicron" = {
-        fingerprint = {
-          eDP-1 = omicron;
+        "omicron" = {
+          fingerprint = {
+            eDP-1 = omicron;
+          };
+          config = {
+            eDP-1 = {
+              enable = true;
+              primary = true;
+              position = "0x0";
+              mode = "3200x1800";
+              rate = "60.00";
+            };
+          };
         };
-        config = {
-          eDP-1 = {
-            enable = true;
-            primary = true;
-            position = "0x0";
-            mode = "3200x1800";
-            rate = "60.00";
+        "omicron-home" = {
+          fingerprint = {
+            eDP-1 = omicron;
+            DP-1 = home-monitor;
+          };
+          config = {
+            eDP-1.enable = false;
+            DP-1 = {
+              enable = true;
+              primary = true;
+              position = "0x0";
+              mode = "3840x2160";
+              rate = "60.00";
+            };
+          };
+        };
+        "omicron-home-2" = {
+          fingerprint = {
+            eDP-1 = omicron;
+            DP-1 = home-monitor-2;
+          };
+          config = {
+            eDP-1.enable = false;
+            DP-1 = {
+              enable = true;
+              primary = true;
+              position = "0x0";
+              mode = "3840x2160";
+              rate = "60.00";
+            };
+          };
+        };
+        "omicron-home-monitor" = {
+          fingerprint = {
+            DP-1 = home-monitor;
+          };
+          config = {
+            DP-1 = {
+              enable = true;
+              primary = true;
+              position = "0x0";
+              mode = "3840x2160";
+              rate = "60.00";
+            };
+          };
+        };
+        omicron-home-monitor-2 = {
+          fingerprint = {
+            DP-1 = home-monitor-2;
+          };
+          config = {
+            DP-1 = {
+              enable = true;
+              primary = true;
+              position = "0x0";
+              mode = "3840x2160";
+              rate = "60.00";
+            };
           };
         };
       };
-      "omicron-home" = {
-        fingerprint = {
-          eDP-1 = omicron;
-          DP-1 = home-monitor;
-        };
-        config = {
-          eDP-1.enable = false;
-          DP-1 = {
-            enable = true;
-            primary = true;
-            position = "0x0";
-            mode = "3840x2160";
-            rate = "60.00";
-          };
-        };
-      };
-      "omicron-home-2" = {
-        fingerprint = {
-          eDP-1 = omicron;
-          DP-1 = home-monitor-2;
-        };
-        config = {
-          eDP-1.enable = false;
-          DP-1 = {
-            enable = true;
-            primary = true;
-            position = "0x0";
-            mode = "3840x2160";
-            rate = "60.00";
-          };
-        };
-      };
-      "omicron-home-monitor" = {
-        fingerprint = {
-          DP-1 = home-monitor;
-        };
-        config = {
-          DP-1 = {
-            enable = true;
-            primary = true;
-            position = "0x0";
-            mode = "3840x2160";
-            rate = "60.00";
-          };
-        };
-      };
-      omicron-home-monitor-2 = {
-        fingerprint = {
-          DP-1 = home-monitor-2;
-        };
-        config = {
-          DP-1 = {
-            enable = true;
-            primary = true;
-            position = "0x0";
-            mode = "3840x2160";
-            rate = "60.00";
-          };
-        };
-      };
-    };
   };
 }
 #+end_src
@@ -3248,13 +3572,8 @@ I use [[https://github.com/GhostText/GhostText][GhostText]] firefox extension.
 * Evil-mode
 ** General
 #+begin_src emacs-lisp
-(use-package undo-fu
-  :disabled t
-  :commands
-  (undo-fu-only-undo
-   undo-fu-only-redo))
-
 (use-package evil
+  :disabled t
   :custom
   (evil-undo-system 'undo-redo)
   :config
@@ -3262,16 +3581,9 @@ I use [[https://github.com/GhostText/GhostText][GhostText]] firefox extension.
   (evil-mode 1))
 #+end_src
 
-Hard way: prohibit usage of keybindings I have more efficient bindings for.
-#+name: evil-config
-#+begin_src emacs-lisp
-(defmacro rasen/hard-way (key)
-  `(lambda () (interactive) (error "Don't use this key! Use %s instead" ,key)))
-#+end_src
-
 Swap =.= and =;=.
 #+name: evil-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (general-def 'normal
   ";"    #'evil-repeat
   "."    nil
@@ -3286,13 +3598,12 @@ Swap =.= and =;=.
 #+end_src
 
 #+name: evil-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (s-leader-def
   ";"  #'eval-expression)
 #+end_src
 
 Close other window.
-#+name: evil-config
 #+begin_src emacs-lisp
 (defun rasen/quit-other ()
   (interactive)
@@ -3305,7 +3616,7 @@ Close other window.
 
 Move to beginning/end of line with =H= and =L= respectively.
 #+name: evil-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (defun rasen/smart-move-beginning-of-line (arg)
   "Move point back to indentation of beginning of line.
 
@@ -3335,7 +3646,6 @@ point reaches the beginning or end of the buffer, stop there."
 #+end_src
 
 Save buffer with =SPC SPC=.
-#+name: evil-config
 #+begin_src emacs-lisp
 (defun rasen/save-buffer (arg)
   "Save current buffer.  With PREFIX, save all buffers."
@@ -3344,15 +3654,16 @@ Save buffer with =SPC SPC=.
       (save-some-buffers)
     (save-buffer)))
 
-(s-leader-def 'normal
-  "SPC" #'rasen/save-buffer)
-(s-leader-def
-  "s-SPC" #'save-some-buffers)
+(with-eval-after-load "evil"
+  (s-leader-def 'normal
+    "SPC" #'rasen/save-buffer)
+  (s-leader-def
+    "s-SPC" #'save-some-buffers))
 #+end_src
 ** Swap k and j
 With workman layout, =j= is located on qwerty =y= and =k=---on qwerty =n=; thus =j= is higher than =k=, and it is not convenient to press lower key for going up. Just swap them.
 #+name: evil-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (general-def 'motion
   "k"    #'evil-next-visual-line
   "j"    #'evil-previous-visual-line
@@ -3372,7 +3683,7 @@ With workman layout, =j= is located on qwerty =y= and =k=---on qwerty =n=; thus 
   "C-l"  #'windmove-right)
 
 (general-swap-key nil 'motion
-  "C-w j" "C-w k")
+ "C-w j" "C-w k")
 #+end_src
 ** evil-numbers
 I use Vim's =C-a= and =C-x= (increment/decrement number at point) a lot.
@@ -3410,6 +3721,7 @@ These variables need to be set before evil loads (which seems to be required by 
 (add-to-list 'warning-suppress-types '(evil-collection))
 
 (use-package evil-collection
+  :disabled t
   :after (evil)
   :init
   (setq evil-want-integration t
@@ -3479,11 +3791,11 @@ These variables need to be set before evil loads (which seems to be required by 
 ** evil-surrond
 #+begin_src emacs-lisp
 (use-package evil-surround
+  :disabled t
   :config
   (global-evil-surround-mode t))
 #+end_src
 ** calc
-#+name: evil-config
 #+begin_src emacs-lisp
 (use-package calc ; built-in
   :general
@@ -3503,7 +3815,7 @@ These variables need to be set before evil loads (which seems to be required by 
 
 And evil commands to go to navigate errors.
 #+name: evil-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (leader-def 'motion
   ","  #'previous-error
   "."  #'next-error)
@@ -3528,6 +3840,7 @@ Default bindings for ~RET~ prevent many of my commands from working. Remap ~RET~
 ** lispyville
 #+begin_src emacs-lisp
 (use-package lispyville
+  :disabled t
   :hook
   ((clojure-mode emacs-lisp-mode lisp-mode scheme-mode) . lispyville-mode)
   :config
@@ -3916,7 +4229,7 @@ Enable org-protocol.
 Instanly go into insert mode on capture.
 #+name: org-config
 #+begin_src emacs-lisp
-(add-hook 'org-capture-mode-hook 'evil-insert-state)
+;; (add-hook 'org-capture-mode-hook 'evil-insert-state)
 #+end_src
 
 #+name: org-config
@@ -4531,6 +4844,10 @@ Do not show project tags.
                            (:name none ;; don't show closed items—they are still seen in the log
                             :discard (:todo ("DONE" "CANCELED")))
                            (:name none ;; scheduled today
+                            :todo ("WAIT")
+                            :scheduled today
+                            :order 2.5)
+                           (:name none ;; scheduled today
                             :scheduled today
                             :order 2)
                            (:name none ;; deadline today
@@ -4585,8 +4902,8 @@ Do not show project tags.
                         ;; start from yesterday
                         (org-agenda-start-day "-1d")
 
-                        ;; show 6 days
-                        (org-agenda-span 6)
+                        ;; show 8 days
+                        (org-agenda-span 8)
 
                         ;; show closed items
                         (org-agenda-show-log t)
@@ -4612,6 +4929,10 @@ Do not show project tags.
                             :order 1)
                            (:name none ;; don't show closed items—they are still seen in the log
                             :discard (:todo ("DONE" "CANCELED")))
+                           (:name none ;; scheduled today
+                            :and (:todo ("WAIT")
+                                  :scheduled today)
+                            :order 2.5)
                            (:name none ;; scheduled today
                             :scheduled today
                             :order 2)
@@ -4646,9 +4967,21 @@ Do not show project tags.
                              :and (:tag "PROJECT"
                                    :todo "WAIT")
                              :order 9)
+                            (:name "Kiavi"
+                             :and (:category "kiavi"
+                                   :todo "NEXT")
+                             :order 8.1)
+                            (:name "Tonic"
+                             :and (:category "tonic"
+                                   :todo "NEXT")
+                             :order 8.2)
+                            (:name "Dory"
+                             :and (:category "dory"
+                                   :todo "NEXT")
+                             :order 8.3)
                             (:name "Next"
                              :todo "NEXT"
-                             :order 8)
+                             :order 8.4)
                             (:todo "WAIT"
                              :order 12)
                             (:discard (:anything t))))))
@@ -5075,6 +5408,9 @@ Actual style is overridden in Color theme section.
   :after org
   :diminish
   :autoload (org-roam-db-update-file)
+  :bind
+  (:map org-mode-map
+   ("C-c i" . org-roam-node-insert))
   :general
   (s-leader-def
     "n r" #'org-roam-buffer-toggle
@@ -5143,6 +5479,8 @@ Slip boxes are basically different directories that I split notes into.
 (defconst rasen/slip-boxes
   '(;; Default slip-box with permanent notes
     ("d" "default"     ""         "${rasen/capture-tsid}")
+    ;; duplicate with another key to allow \\ n n
+    ("n" "default"     ""         "${rasen/capture-tsid}")
 
     ;; "Life project"—everything that doesn't fit in other slip
     ;; boxes. Examples are: my gratitude journal, small projects,
@@ -5151,6 +5489,8 @@ Slip boxes are basically different directories that I split notes into.
 
     ;; Work notes
     ("f" "fluxon"      "fluxon/"  "${rasen/capture-tsid}")
+
+    ("P" "pulse"       "pulse/"   "${rasen/capture-tsid}" "#+DATE: %<%FT%T%z>\n#+LAST_MODIFIED: \n")
 
     ;; Posts
     ("p" "posts"       "posts/"   "${slug}"    "#+DATE: %<%Y-%m-%d>\n#+LAST_MODIFIED: \n#+PUBLISHED: false")
@@ -5332,9 +5672,10 @@ All daily notes are stored in a separate directory so they do not mix up with no
                               "#+TITLE: %<%Y-%m-%d>\n"
                               "- day of week :: %<%A>\n"
                               "\n"
-                              "* Events\n"
-                              "* Decisions\n"
-                              "* Tomorrow\n")))))
+                              ;; "* Events\n"
+                              ;; "* Decisions\n"
+                              ;; "* Tomorrow\n"
+                              )))))
 #+end_src
 *** org-roam-protocol
 org-roam-protocol allows opening a note corresponding to the current URL directly from the browser (as well as capturing selection into it).
@@ -5594,12 +5935,30 @@ A function to create a new node without prompting for a title. Sometimes I want 
   (interactive)
   (rasen/org-roam-new-node "l"))
 
-(s-leader-def "n n" #'rasen/org-roam-new-node)
-(s-leader-def "n d" #'rasen/org-roam-new-node-default)
-(s-leader-def "n l" #'rasen/org-roam-new-node-life)
-(s-leader-def "n F" (defun rasen/org-roam-new-node-fluxon ()
-                      (interactive)
-                      (rasen/org-roam-new-node "f")))
+(defun rasen/org-roam-new-node-pulse ()
+  (interactive)
+  (rasen/org-roam-new-node "P"))
+
+(defun rasen/org-roam-new-node-fluxon ()
+  (interactive)
+  (rasen/org-roam-new-node "f"))
+
+(with-eval-after-load "meow"
+  (meow-leader-define-key
+   '("n" . nil)
+   '("n n" . rasen/org-roam-new-node)
+   '("n d" . rasen/org-roam-new-node-default)
+   '("n l" . rasen/org-roam-new-node-life)
+   '("n p" . rasen/org-roam-new-node-pulse)
+   '("n F" . rasen/org-roam-new-node-fluxon)))
+
+;; (s-leader-def "n n" #'rasen/org-roam-new-node)
+;; (s-leader-def "n d" #'rasen/org-roam-new-node-default)
+;; (s-leader-def "n l" #'rasen/org-roam-new-node-life)
+;; (s-leader-def "n p" #'rasen/org-roam-new-node-pulse)
+;; (s-leader-def "n F" (defun rasen/org-roam-new-node-fluxon ()
+;;                       (interactive)
+;;                       (rasen/org-roam-new-node "f")))
 #+end_src
 *** org-roam-update-title
 #+name: org-roam-update-title
@@ -5687,7 +6046,7 @@ A function to create a new node without prompting for a title. Sometimes I want 
                          (if (eq system-type 'darwin) "open" "xdg-open") (expand-file-name filename)))))
 
 (use-package org-ref
-  :after org-roam
+  ;; :after org-roam
   :config
 
   (require 'org-ref-ivy)
@@ -6167,6 +6526,7 @@ rating the card."
 ** Evilify org-mode
 #+begin_src emacs-lisp
 (use-package evil-org
+  :disabled t
   :after org
   :diminish
   :init
@@ -6237,8 +6597,8 @@ rating the card."
 Use emacs-state in org-lint buffers.
 #+name: org-config
 #+begin_src emacs-lisp
-(evil-set-initial-state 'org-lint--report-mode 'emacs)
-(evil-set-initial-state 'epa-key-list-mode 'emacs)
+;;(evil-set-initial-state 'org-lint--report-mode 'emacs)
+;;(evil-set-initial-state 'epa-key-list-mode 'emacs)
 #+end_src
 ** Timestamps
 Configure time-stamp for org-mode, so ~time-stamp~ command would update =#+LAST_MODIFIED:= or =#+DATE:= keyword value (whichever is found first) using ISO8601 format.
@@ -6502,7 +6862,7 @@ Open html links in browser:
 {
   home.file.".mailcap".text = ''
     text/html; firefox %s
-    application/pdf; zathura %s
+    application/pdf; open %s
   '';
 }
 #+end_src
@@ -6651,9 +7011,11 @@ Install [[https://github.com/browserpass/browserpass][browserpass]] firefox exte
 Integration with Emacs. (emacs-lisp)
 #+begin_src emacs-lisp
 (use-package ivy-pass
+  :disabled t
   :commands (ivy-pass))
 
 (use-package pass
+  :disabled t
   :commands (pass))
 #+end_src
 
@@ -6665,6 +7027,8 @@ Enable auth-source–pass integration.
 #+end_src
 ** Age
 
+Use Age for file encryption.
+
 #+name: home-manager-section
 #+begin_src nix
 {
@@ -6674,13 +7038,37 @@ Enable auth-source–pass integration.
   ];
 }
 #+end_src
-** Passage
 
+** Passage
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.sessionVariables.PASSAGE_DIR = "${config.home.homeDirectory}/.password-store";
+  home.sessionVariables.PASSAGE_IDENTITIES_FILE = "${config.home.homeDirectory}/.config/passage/identities";
+  home.packages = [
+    (pkgs.passage.overrideAttrs (old: {
+      patches =
+        (old.patches or [])
+        ++ [
+          # Allow using multiple identities.
+          (pkgs.fetchpatch {
+            url = "https://github.com/FiloSottile/passage/commit/fba940f9e9ffbad7b746f26b8d6323ef6f746187.patch";
+            sha256 = "sha256-2w/k6JmcxFq9ThBasM0sL+58fwutF1ioZzwRFXfJgME=";
+          })
+        ];
+    }))
+  ];
+}
+#+end_src
+
+** Gopass
 #+name: home-manager-section
 #+begin_src nix
 {
   home.packages = [
-    pkgs.passage
+    pkgs.unstable.gopass
+    pkgs.unstable.gopass-jsonapi
+    pkgs.pinentry_mac
   ];
 }
 #+end_src
@@ -6742,7 +7130,7 @@ KDE apps might have issues with mime types without this:
 }
 #+end_src
 ** ActivityWatcher
-Emacs mode:
+Emacs integration:
 #+begin_src emacs-lisp
 (use-package activity-watch-mode
   :config
@@ -6855,32 +7243,46 @@ vterm is a terminal emulator using libvterm. Which allows running it within Emac
     "<f11>" nil
     "<f12>" nil
     "<return>" nil
-    "RET" nil)
-  (general-def 'normal 'vterm-mode-map
-    "j" #'evil-previous-line
-    "k" #'evil-collection-vterm-next-line
-    "RET" nil)
-  (general-def 'insert 'vterm-mode-map
-    "<f1>" #'vterm--self-insert
-    "<f2>" #'vterm--self-insert
-    "<f3>" #'vterm--self-insert
-    "<f4>" #'vterm--self-insert
-    "<f5>" #'vterm--self-insert
-    "<f6>" #'vterm--self-insert
-    "<f7>" #'vterm--self-insert
-    "<f8>" #'vterm--self-insert
-    "<f9>" #'vterm--self-insert
-    "<f10>" #'vterm--self-insert
-    "<f11>" #'vterm--self-insert
-    "<f12>" #'vterm--self-insert
-    "C-h" #'vterm--self-insert
-    "RET" #'vterm-send-return
-    "C-c" nil
-    "C-c C-c" #'vterm-send-C-c)
-  (general-def '(insert normal) 'vterm-mode-map
-    "<C-return>" #'vterm-send-return
-    "C-c C-z" #'evil-collection-vterm-toggle-send-escape
-    "C-c z" #'evil-collection-vterm-toggle-send-escape)
+    "RET" #'vterm-send-return)
+
+  ;;  (general-def 'normal 'vterm-mode-map
+  ;;    "j" #'evil-previous-line
+  ;;    "k" #'evil-collection-vterm-next-line
+  ;;    "RET" nil)
+  ;;  (general-def 'insert 'vterm-mode-map
+  ;;    "<f1>" #'vterm--self-insert
+  ;;    "<f2>" #'vterm--self-insert
+  ;;    "<f3>" #'vterm--self-insert
+  ;;    "<f4>" #'vterm--self-insert
+  ;;    "<f5>" #'vterm--self-insert
+  ;;    "<f6>" #'vterm--self-insert
+  ;;    "<f7>" #'vterm--self-insert
+  ;;    "<f8>" #'vterm--self-insert
+  ;;    "<f9>" #'vterm--self-insert
+  ;;    "<f10>" #'vterm--self-insert
+  ;;    "<f11>" #'vterm--self-insert
+  ;;    "<f12>" #'vterm--self-insert
+  ;;    "C-h" #'vterm--self-insert
+  ;;    "RET" #'vterm-send-return
+  ;;    "C-c" nil
+  ;;    "C-c C-c" #'vterm-send-C-c)
+  ;;  (general-def '(insert normal) 'vterm-mode-map
+  ;;    "<C-return>" #'vterm-send-return
+  ;;    "C-c C-z" #'evil-collection-vterm-toggle-send-escape
+  ;;    "C-c z" #'evil-collection-vterm-toggle-send-escape)
+
+
+  ;; (with-eval-after-load "meow"
+  ;;   (define-key vterm-mode-map (kbd "C-n") nil)
+  ;;   (define-key vterm-mode-map (kbd "C-p") nil)
+  ;;   (define-key vterm-mode-map (kbd "C-b") nil)
+  ;;   (define-key vterm-mode-map (kbd "C-f") nil)
+
+  ;;   (let ((map (make-sparse-keymap)))
+  ;;     (set-keymap-parent map meow-normal-state-keymap)
+
+  ;;     (define-key map ))
+  ;;   ())
 
   (setq vterm-buffer-name-string "vterm %s"))
 #+end_src
@@ -7063,11 +7465,18 @@ Eshell is a shell written in Emacs lisp. It offers great integration with Emacs.
 (use-package eshell
   :commands (eshell eshell-exec-visual)
   :init
-  (defun rasen/nixos-rebuild ()
-    (interactive)
-    (eshell-exec-visual "sudo" "nixos-rebuild" "switch"))
+  (when (eq system-type 'gnu/linux)
+    (defun rasen/nixos-rebuild ()
+      (interactive)
+      (eshell-exec-visual "sudo" "nixos-rebuild" "switch")))
+
+  (if (eq system-type 'darwin)
+      (defun rasen/darwin-rebuild ()
+        (interactive)
+        (eshell-exec-visual "darwin-rebuild" "switch" "--flake" rasen/dotfiles-directory)))
 
   :config
+  (require 'em-term)
   (with-eval-after-load 'em-term
     (add-to-list 'eshell-visual-commands "nethack")
     (setq eshell-destroy-buffer-when-process-dies t)))
@@ -7126,6 +7535,33 @@ For home-manager. (~<<home-manager-section>>~)
   };
 }
 #+end_src
+*** Just
+(task runner)
+A task runner / helper for frequently ran commands.
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.packages = [ pkgs.just ];
+}
+#+end_src
+
+Emacs mode for editing justfiles:
+#+begin_src emacs-lisp
+(use-package just-mode)
+#+end_src
+
+Executing just scripts from emacs:
+#+begin_src emacs-lisp
+(use-package justl
+  :commands (just justl justl-exec-recipe-in-dir)
+  :bind
+  (:map justl-mode-map
+   ("RET" . justl-exec-recipe)
+   ("C-<return>" . justl-exec-shell))
+  :config
+  (setq justl-shell 'vterm)
+  (defalias 'just 'justl))
+#+end_src
 *** Other terminal goodies
 #+name: home-manager-section
 #+begin_src nix
@@ -7170,7 +7606,7 @@ For home-manager. (~<<home-manager-section>>~)
     package = pkgs.gitAndTools.gitFull;
 
     userName = "Oleksii Shmalko";
-    userEmail = "oleksii@fluxon.com";
+    userEmail = if name == "bayraktar" then "oleksii@fluxon.com" else "rasen.dubi@gmail.com";
 
     # signing = {
     #   key = "EB3066C3";
@@ -7250,7 +7686,7 @@ Always push to github with ssh keys instead of login/password. (~<<home-manager-
 #+begin_src nix
 {
   programs.git.extraConfig = {
-    url."git@github.com:".pushInsteadOf = "https://github.com";
+    url."git@github.com:".pushInsteadOf = "https://github.com/";
   };
 }
 #+end_src
@@ -7278,19 +7714,19 @@ Magit is a cool emacs interface to git. (emacs-lisp)
 
 Use global git. (~<<magit-config>>~)
 #+name: magit-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (setq magit-git-executable "git")
 #+end_src
 
 Do not put files into trash can. Delete them for real. (~<<magit-config>>~)
 #+name: magit-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (setq-default magit-delete-by-moving-to-trash nil)
 #+end_src
 
 Integrate with ivy. (~<<magit-config>>~)
 #+name: magit-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (setq-default magit-completing-read-function 'ivy-completing-read)
 #+end_src
 
@@ -7308,7 +7744,6 @@ Add a magit command to push =HEAD= into a specified ref. Bound to ~p h~.
 (use-package magit-push
   :after magit
   :config
-  ;; (require 'magit-push)
   (defun rasen/magit-push-head (target args)
     "Push HEAD to a branch read in the minibuffer."
     (interactive
@@ -7336,9 +7771,9 @@ Add a magit command to push =HEAD= into a specified ref. Bound to ~p h~.
   ;; FIXME: magit-checkout does not wait for git fetch to finish.
   (magit-checkout "FETCH_HEAD"))
 
-(if (fboundp 'transient-insert-suffix)
-    (transient-insert-suffix 'magit-fetch 'magit-fetch-modules
-      '(1 "c" "checkout" rasen/magit-fco)))
+;; (if (fboundp 'transient-insert-suffix)
+;;     (transient-insert-suffix 'magit-fetch 'magit-fetch-modules
+;;       '(1 "c" "checkout" rasen/magit-fco)))
 
 (defun rasen/magit-fco-master ()
   "Fetch origin/master and checkout it."
@@ -7346,8 +7781,8 @@ Add a magit command to push =HEAD= into a specified ref. Bound to ~p h~.
   (magit-git-fetch "origin" "master")
   (magit-checkout "origin/master"))
 
-(evil-collection-define-key evil-collection-magit-state 'magit-mode-map
-                       "g m" 'rasen/magit-fco-master)
+;; (evil-collection-define-key evil-collection-magit-state 'magit-mode-map
+;;                        "g m" 'rasen/magit-fco-master)
 #+end_src
 ***** TODO add a detach head command (git checkout HEAD)
 **** GPG
@@ -7383,8 +7818,9 @@ git-commit is emacs mode for editing commit messages. (emacs-lisp)
    "'" #'with-editor-finish)
 
   :config
-  (add-to-list 'evil-insert-state-modes 'with-editor-mode)
-  (setq evil-normal-state-modes (delete 'git-commit-mode evil-normal-state-modes)))
+  ;;  (add-to-list 'evil-insert-state-modes 'with-editor-mode)
+  ;;  (setq evil-normal-state-modes (delete 'git-commit-mode evil-normal-state-modes))
+  )
 #+end_src
 *** diff-hl
 [[https://github.com/dgutov/diff-hl][diff-hl]] is an emacs package to highlight uncommitted changes.
@@ -7439,6 +7875,7 @@ Make '_' a part of words so that commands like =evil-forward-word-begin= work pr
 *** projectile
 #+begin_src emacs-lisp
 (use-package projectile
+  :disabled t
   :general
   (s-leader-def
     "p" #'projectile-command-map)
@@ -7449,8 +7886,11 @@ Make '_' a part of words so that commands like =evil-forward-word-begin= work pr
    "<f3>"   #'projectile-test-project
    "<f4>"   #'projectile-compile-project
    "<f5>"   #'projectile-run-project)
-  :commands (projectile-project-name)
+  :commands (projectile-project-name projectile-find-file)
   :diminish projectile-mode
+  :init
+  (meow-leader-define-key
+   '("u" . projectile-find-file))
   :config
   ;; Use the prefix arg if you want to change the compilation command
   (setq-default compilation-read-command nil)
@@ -7477,17 +7917,19 @@ Make '_' a part of words so that commands like =evil-forward-word-begin= work pr
 Company mode provides autocomplete features.
 #+begin_src emacs-lisp
 (use-package company
+  :disabled t
   :defer 2
-  :general
-  (:keymaps 'company-mode-map
-   :states 'insert
-   "C-n" #'company-complete-common-or-cycle
-   "C-p" #'company-select-previous)
-  ('company-active-map
-   "C-n" #'company-complete-common-or-cycle
-   "C-p" #'company-select-previous-or-abort
-   "C-e" #'company-complete
-   "TAB" #'company-complete-common-or-cycle)
+  ;; :general
+  ;; (:keymaps 'company-mode-map
+  ;;  :states 'insert
+  ;;  "C-n" #'company-complete-common-or-cycle
+  ;;  "C-p" #'company-select-previous)
+  ;; ('company-active-map
+  ;;  "C-n" #'company-complete-common-or-cycle
+  ;;  "C-p" #'company-select-previous-or-abort
+  ;;  "C-e" #'company-complete
+  ;;  "TAB" #'company-complete-common-or-cycle)
+
 
   :diminish company-mode
   :config
@@ -7503,6 +7945,87 @@ Company-box frontend works better with variable-pitch fonts.
   :disabled t
   :diminish
   :hook (company-mode . company-box-mode))
+#+end_src
+*** corfu
+#+begin_src emacs-lisp
+(use-package corfu
+  :custom
+  (corfu-cycle t)
+  :config
+  (global-corfu-mode))
+
+(use-package corfu-history
+  :config
+  (corfu-history-mode 1)
+  (savehist-mode 1)
+  (add-to-list 'savehist-additional-variables 'corfu-history))
+
+(use-package emacs
+  :custom
+  (tab-always-indent 'complete)
+  (read-extended-command-predicate #'command-completion-default-include-p))
+
+(use-package orderless
+  :custom
+  ;; (orderless-style-dispatchers '(orderless-affix-dispatch))
+  ;; (orderless-component-separator #'orderless-escapable-split-on-space)
+  (completion-styles '(orderless basic))
+  (completion-category-defaults nil)
+  (completion-category-overrides '((file (styles partial-completion)))))
+#+end_src
+*** vertico
+#+begin_src emacs-lisp
+(use-package vertico
+  :custom
+  (vertico-count 20)
+  :config
+  (vertico-mode))
+
+(use-package vertico-multiform
+  :config
+  (require 'vertico-buffer)
+  (require 'vertico-unobtrusive)
+  (setq vertico-multiform-commands
+        '((consult-line buffer)
+          (consult-grep buffer)
+          (consult-git-grep buffer)
+          (consult-ripgrep buffer)))
+  (vertico-multiform-mode))
+
+;; More convenient file/directory navigation.
+(use-package vertico-directory
+  :bind
+  (:map vertico-map
+   ("C-e" . vertico-directory-enter)
+   ("RET" . vertico-directory-enter)
+   ("DEL" . vertico-directory-delete-char)
+   ("C-w" . vertico-directory-delete-word))
+  :hook
+  (rfn-eshadow-update-overlay . vertico-directory-tidy))
+
+(use-package savehist
+  :init
+  (savehist-mode 1))
+
+(use-package emacs
+  :custom
+  (enable-recursive-minibuffers t)
+  :init
+  ;; Add prompt indicator to `completing-read-multiple'.
+  ;; We display [CRM<separator>], e.g., [CRM,] if the separator is a comma.
+  (defun crm-indicator (args)
+    (cons (format "[CRM%s] %s"
+                  (replace-regexp-in-string
+                   "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
+                   crm-separator)
+                  (car args))
+          (cdr args)))
+  (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
+
+  ;; Do not allow the cursor in the minibuffer prompt
+  (setq minibuffer-prompt-properties
+        '(read-only t cursor-intangible t face minibuffer-prompt))
+  (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode))
 #+end_src
 *** Hippie expand
 Useful for languages that do not support proper completion.
@@ -7525,7 +8048,7 @@ Useful for languages that do not support proper completion.
 #+begin_src emacs-lisp
 (use-package flycheck
   :config
-  ;; not sure I actually use nix-sandbox
+  ;; not sure I actually sandbox
   ;; (setq flycheck-command-wrapper-function
   ;;       (lambda (cmd) (apply 'nix-shell-command (nix-current-sandbox) cmd))
 
@@ -7578,33 +8101,26 @@ Dim parens.
 *** LSP
 LSP is Language Server Protocol. Some languages support it usually provide better completion and diagnostics.
 #+begin_src emacs-lisp
-(use-package lsp-mode
-  :disabled t
-  :commands (lsp)
-  :hook ((rust-mode haskell-mode) . lsp)
-  :config
-  (setq lsp-prefer-flymake nil)
-  (setq lsp-rust-rls-server-command "rls")
-  (setq lsp-rust-analyzer-server-command "rust-analyzer"))
-
-(use-package lsp-ui
-  :disabled t
-  :commands lsp-ui-mode)
-
 (use-package eglot
   :hook ((rust-mode) . eglot-ensure)
   :config
-  (general-def 'normal eglot-mode-map
-    "SPC e" nil
-    "SPC e r" #'eglot-rename
-    "SPC e e" #'eglot-code-actions)
-  (general-def 'normal "SPC e" nil)
-  (general-def 'normal "SPC e r" nil)
-  (general-def 'normal "SPC e e" nil))
+  (with-eval-after-load "meow"
+    (meow-leader-define-key
+     '("e" . nil)
+     '("e e" . eglot-code-actions)
+     '("e r" . eglot-rename)))
+  (with-eval-after-load "evil"
+    (general-def 'normal eglot-mode-map
+      "SPC e" nil
+      "SPC e r" #'eglot-rename
+      "SPC e e" #'eglot-code-actions)
+    (general-def 'normal "SPC e" nil)
+    (general-def 'normal "SPC e r" nil)
+    (general-def 'normal "SPC e e" nil)))
 #+end_src
 *** Commenting
 #+begin_src emacs-lisp
-(leader-def '(normal visual)  "/" #'comment-line)
+;; (leader-def '(normal visual)  "/" #'comment-line)
 #+end_src
 *** yasnippet
 #+begin_src emacs-lisp
@@ -7656,7 +8172,7 @@ LSP is Language Server Protocol. Some languages support it usually provide bette
             (when (bolp)
               (backward-char)))))))
 
-  (add-hook 'yas-before-expand-snippet-hook #'rasen/yas-before-expand-snippet)
+;;  (add-hook 'yas-before-expand-snippet-hook #'rasen/yas-before-expand-snippet)
 
   (add-hook 'term-mode-hook (lambda ()
                               (setq-local yas-dont-activate-functions t))))
@@ -7674,14 +8190,14 @@ LSP is Language Server Protocol. Some languages support it usually provide bette
 Eval last sexp Vim-style.
 #+name: elisp-mode-config
 #+begin_src emacs-lisp
-(evil-define-operator rasen/evil-eval (beg end type)
-  "Evaluate region."
-  (if (eq type 'block)
-      (evil-apply-on-block 'eval-region beg end nil)
-    (eval-region beg end)))
-
-(general-def 'motion emacs-lisp-mode-map "SPC e" #'eval-last-sexp)
-(general-def 'visual emacs-lisp-mode-map "SPC e" #'rasen/evil-eval)
+;; (evil-define-operator rasen/evil-eval (beg end type)
+;;   "Evaluate region."
+;;   (if (eq type 'block)
+;;       (evil-apply-on-block 'eval-region beg end nil)
+;;     (eval-region beg end)))
+;;
+;; (general-def 'motion emacs-lisp-mode-map "SPC e" #'eval-last-sexp)
+;; (general-def 'visual emacs-lisp-mode-map "SPC e" #'rasen/evil-eval)
 #+end_src
 **** aggressive indent
 Keep lisp code always indented.
@@ -7882,9 +8398,19 @@ Pretty self-explaining.
 
 (use-package rust-mode
   :mode ("\\.rs$" . rust-mode)
+  :init
+  (setq rust-mode-treesitter-derive t)
   :config
+  (push '(rust "https://github.com/tree-sitter/tree-sitter-rust.git")
+        treesit-language-source-alist)
   (add-hook 'rust-mode-hook (lambda () (setq-local fill-column 100)))
-  (add-hook 'rust-mode-hook #'rust-enable-format-on-save))
+  (add-hook 'rust-mode-hook #'rust-enable-format-on-save)
+  (setq-default eglot-workspace-configuration
+                '(:rust-analyzer (:procMacro (:attributes (:enable t)
+                                              :ignored (:crate ["macro"])
+                                              :enable t)
+                                  :cargo (:buildScripts (:enable t)
+                                          :features "all")))))
 
 (use-package flycheck-rust
   :after rust-mode
@@ -8322,7 +8848,19 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 (use-package lua-mode
   :mode ("\\.lua$" . lua-mode)
   :config
-  (setq lua-indent-level 4))
+  (require 'eglot)
+  (push '(lua-mode "lua-language-server") eglot-server-programs)
+  ;; (push '(lua-mode . ("fmtk" "lsp" "--stdio")) eglot-server-programs)
+  (setq eglot-events-buffer-size 0) ; Without this, lua-language-server is super-laggy
+  (setq lua-indent-level 4)
+  (add-hook 'lua-mode-hook (defun rasen/lua-set-format-on-save-hook ()
+                             ;; Set eglot indentation
+                             (add-hook 'write-contents-functions
+                                       (defun rasen/lua-format-on-save ()
+                                         (ignore-errors
+                                           (eglot-format-buffer))
+                                         nil))
+                             (setq-local tab-width 4))))
 #+end_src
 *** Ledger / Hledger
 #+begin_src emacs-lisp
@@ -8396,7 +8934,9 @@ See http://bnbeckwith.com/code/writegood-mode.html
 *** JSON
 #+begin_src emacs-lisp
 (use-package json-mode
-  :mode "\\.json$")
+  :mode "\\.json$"
+  :config
+  (push '(json "https://github.com/tree-sitter/tree-sitter-json.git") treesit-language-source-alist))
 #+end_src
 *** YAML
 #+begin_src emacs-lisp
@@ -8525,6 +9065,45 @@ If given a SOURCE, execute the CMD on it."
                (mapconcat 'shell-quote-argument (cons source args) " ")
              args)))
       (compile (concat zig-zig-bin " " cmd (el-patch-add " -target native-macos.11") " " cmd-args)))))
+#+end_src
+*** Swift
+#+begin_src emacs-lisp
+(use-package swift-mode
+  :mode "\\.swift\\'"
+  :interpreter "swift"
+  :hook ((swift-mode) . eglot-ensure)
+  :config
+  (require 'eglot)
+  (push '(swift-mode "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/sourcekit-lsp") eglot-server-programs))
+#+end_src
+*** Dart
+#+begin_src emacs-lisp
+(use-package dart-mode
+  :mode "\\.dart\\'")
+#+end_src
+** GPT
+
+#+begin_src emacs-lisp
+(use-package gptel
+  :commands (gptel gptel-send)
+  :general
+  ("s-g" #'gptel-send)
+  :config
+  (require 'gptel-curl)
+  (require 'gptel-transient)
+  (require 'password-store)
+  (setq gptel-default-mode 'org-mode)
+  (setq gptel-api-key (password-store-get "openai.com/emacs-api-key"))
+  ;;(setq gptel-api-key #'(lambda () (password-store-get "openai.com/emacs-api-key")))
+
+  (push '(thinking . "You are a thinking partner. Your goal is to challenge my ideas, provide supporting examples or counter-arguments, find inconsistencies, and links to other interesting ideas. Do not re-iterate my ideas. Respond concisely.") gptel-directives)
+
+  (setq gptel-max-tokens 500)
+  (gptel-make-gpt4all "GPT4All"           ;Name of your choosing
+    :protocol "http"
+    :host "localhost:4891"                 ;Where it's running
+    :models '("Meta-Llama-3-8B-Instruct.Q4_0.gguf"
+              "Nous-Hermes-2-Mistral-7B-DPO.Q4_0.gguf")))
 #+end_src
 * Look and Feel
 ** Remove the clutter
@@ -8682,7 +9261,7 @@ I like [[https://input.djr.com/download/?customize&fontSelection=fourStyleFamily
       name = "input-mono-${old.version}.zip";
       extension = ".zip";
       url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
-      sha256 = "sha256-vYwbel6yDrhKHv+rZGID5NPUhXw17mA18uUv8r+IhYM=";
+      sha256 = "sha256-16VdmmcxJipUYsOZ4zzcDCYIuFDcp3EYME+E+YXphsU=";
 
       stripRoot = false;
 
@@ -8893,6 +9472,7 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Go
 (use-package doom-modeline
   :config
   (setq doom-modeline-icon nil)
+  (setq doom-modeline-workspace-name nil)
   (doom-modeline-mode 1))
 #+end_src
 

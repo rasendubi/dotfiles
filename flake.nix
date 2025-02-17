@@ -12,11 +12,11 @@
       ref = "nixos-24.11";
     };
 
-    nixpkgs-stable = {
+    nixpkgs-unstable = {
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-24.11";
+      ref = "nixpkgs-unstable";
     };
     home-manager = {
       type = "github";
@@ -26,7 +26,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     darwin = {
-      url = "github:lnl7/nix-darwin";
+      url = "github:lnl7/nix-darwin/nix-darwin-24.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixos-hardware = {
@@ -128,7 +128,7 @@
       in {
         # Re-export common home-manager configuration to be reused between
         # NixOS module and standalone home-manager config.
-        lib.home-manager-common = { lib, pkgs, config, ... }: {
+        lib.home-manager-common = { name, lib, pkgs, config, ... }: {
           imports = [
             {
               options.hostname = lib.mkOption {
@@ -313,19 +313,7 @@
               };
             }
             {
-              home.packages = pkgs.lib.linux-only [ pkgs.naga ];
-            }
-            {
               home.packages = pkgs.lib.linux-only [ pkgs.networkmanagerapplet ];
-            }
-            {
-              xdg.configFile."direnv/lib/use_flake.sh".text = ''
-                use_flake() {
-                  watch_file flake.nix
-                  watch_file flake.lock
-                  eval "$(nix print-dev-env $@ --profile "$(direnv_layout_dir)/flake-profile")"
-                }
-              '';
             }
             {
               programs.direnv.enable = true;
@@ -343,81 +331,81 @@
                     home-monitor-2 = "00ffffffffffff004c2d767135305943341f0103804024782a6115ad5045a4260e5054bfef80714f810081c081809500a9c0b300010108e80030f2705a80b0588a0078682100001e000000fd0030901eff8f000a202020202020000000fc004c53323841473730304e0a2020000000ff0048345a524330303236380a2020017f02034bf14761103f04035f762309070783010000e305c0006b030c001000b83c200020016dd85dc401788053003090c354056d1a0000020f3090000461045a04e6060501615a00e30f4100565e00a0a0a029503020350078682100001a6fc200a0a0a055503020350078682100001a0000000000000000000000000000000037";
                     work-monitor = "00ffffffffffff0010acc2d0545741312c1b010380351e78eaad75a9544d9d260f5054a54b008100b300d100714fa9408180d1c00101565e00a0a0a02950302035000e282100001a000000ff004d59334e44374234314157540a000000fc0044454c4c205032343138440a20000000fd0031561d711c000a202020202020010302031bb15090050403020716010611121513141f2065030c001000023a801871382d40582c45000e282100001e011d8018711c1620582c25000e282100009ebf1600a08038134030203a000e282100001a7e3900a080381f4030203a000e282100001a00000000000000000000000000000000000000000000000000000000d8";
                   in {
-                  "omicron" = {
-                    fingerprint = {
-                      eDP-1 = omicron;
+                    "omicron" = {
+                      fingerprint = {
+                        eDP-1 = omicron;
+                      };
+                      config = {
+                        eDP-1 = {
+                          enable = true;
+                          primary = true;
+                          position = "0x0";
+                          mode = "3200x1800";
+                          rate = "60.00";
+                        };
+                      };
                     };
-                    config = {
-                      eDP-1 = {
-                        enable = true;
-                        primary = true;
-                        position = "0x0";
-                        mode = "3200x1800";
-                        rate = "60.00";
+                    "omicron-home" = {
+                      fingerprint = {
+                        eDP-1 = omicron;
+                        DP-1 = home-monitor;
+                      };
+                      config = {
+                        eDP-1.enable = false;
+                        DP-1 = {
+                          enable = true;
+                          primary = true;
+                          position = "0x0";
+                          mode = "3840x2160";
+                          rate = "60.00";
+                        };
+                      };
+                    };
+                    "omicron-home-2" = {
+                      fingerprint = {
+                        eDP-1 = omicron;
+                        DP-1 = home-monitor-2;
+                      };
+                      config = {
+                        eDP-1.enable = false;
+                        DP-1 = {
+                          enable = true;
+                          primary = true;
+                          position = "0x0";
+                          mode = "3840x2160";
+                          rate = "60.00";
+                        };
+                      };
+                    };
+                    "omicron-home-monitor" = {
+                      fingerprint = {
+                        DP-1 = home-monitor;
+                      };
+                      config = {
+                        DP-1 = {
+                          enable = true;
+                          primary = true;
+                          position = "0x0";
+                          mode = "3840x2160";
+                          rate = "60.00";
+                        };
+                      };
+                    };
+                    omicron-home-monitor-2 = {
+                      fingerprint = {
+                        DP-1 = home-monitor-2;
+                      };
+                      config = {
+                        DP-1 = {
+                          enable = true;
+                          primary = true;
+                          position = "0x0";
+                          mode = "3840x2160";
+                          rate = "60.00";
+                        };
                       };
                     };
                   };
-                  "omicron-home" = {
-                    fingerprint = {
-                      eDP-1 = omicron;
-                      DP-1 = home-monitor;
-                    };
-                    config = {
-                      eDP-1.enable = false;
-                      DP-1 = {
-                        enable = true;
-                        primary = true;
-                        position = "0x0";
-                        mode = "3840x2160";
-                        rate = "60.00";
-                      };
-                    };
-                  };
-                  "omicron-home-2" = {
-                    fingerprint = {
-                      eDP-1 = omicron;
-                      DP-1 = home-monitor-2;
-                    };
-                    config = {
-                      eDP-1.enable = false;
-                      DP-1 = {
-                        enable = true;
-                        primary = true;
-                        position = "0x0";
-                        mode = "3840x2160";
-                        rate = "60.00";
-                      };
-                    };
-                  };
-                  "omicron-home-monitor" = {
-                    fingerprint = {
-                      DP-1 = home-monitor;
-                    };
-                    config = {
-                      DP-1 = {
-                        enable = true;
-                        primary = true;
-                        position = "0x0";
-                        mode = "3840x2160";
-                        rate = "60.00";
-                      };
-                    };
-                  };
-                  omicron-home-monitor-2 = {
-                    fingerprint = {
-                      DP-1 = home-monitor-2;
-                    };
-                    config = {
-                      DP-1 = {
-                        enable = true;
-                        primary = true;
-                        position = "0x0";
-                        mode = "3840x2160";
-                        rate = "60.00";
-                      };
-                    };
-                  };
-                };
               };
             }
             {
@@ -626,8 +614,27 @@
               ];
             }
             {
+              home.sessionVariables.PASSAGE_DIR = "${config.home.homeDirectory}/.password-store";
+              home.sessionVariables.PASSAGE_IDENTITIES_FILE = "${config.home.homeDirectory}/.config/passage/identities";
               home.packages = [
-                pkgs.passage
+                (pkgs.passage.overrideAttrs (old: {
+                  patches =
+                    (old.patches or [])
+                    ++ [
+                      # Allow using multiple identities.
+                      (pkgs.fetchpatch {
+                        url = "https://github.com/FiloSottile/passage/commit/fba940f9e9ffbad7b746f26b8d6323ef6f746187.patch";
+                        sha256 = "sha256-2w/k6JmcxFq9ThBasM0sL+58fwutF1ioZzwRFXfJgME=";
+                      })
+                    ];
+                }))
+              ];
+            }
+            {
+              home.packages = [
+                pkgs.unstable.gopass
+                pkgs.unstable.gopass-jsonapi
+                pkgs.pinentry_mac
               ];
             }
             {
@@ -848,6 +855,9 @@
               };
             }
             {
+              home.packages = [ pkgs.just ];
+            }
+            {
               home.packages = [ pkgs.dtach ];
             }
             {
@@ -856,7 +866,7 @@
                 package = pkgs.gitAndTools.gitFull;
             
                 userName = "Oleksii Shmalko";
-                userEmail = "oleksii@fluxon.com";
+                userEmail = if name == "bayraktar" then "oleksii@fluxon.com" else "rasen.dubi@gmail.com";
             
                 # signing = {
                 #   key = "EB3066C3";
@@ -864,6 +874,11 @@
                 # };
             
                 extraConfig = {
+                  gpg.format = "ssh";
+                  gpg.ssh.allowedSignersFile = "~/.ssh/allowed_signers";
+                  user.signingKey = "~/.ssh/code_signing.pub";
+                  commit.gpgsign = true;
+            
                   sendemail = {
                     smtpencryption = "ssl";
                     smtpserver = "smtp.gmail.com";
@@ -921,7 +936,7 @@
             }
             {
               programs.git.extraConfig = {
-                url."git@github.com:".pushInsteadOf = "https://github.com";
+                url."git@github.com:".pushInsteadOf = "https://github.com/";
               };
             }
             {
@@ -1032,6 +1047,7 @@
                     company-box
                     counsel
                     counsel-projectile
+                    dart-mode
                     diff-hl
                     diminish
                     direnv
@@ -1051,6 +1067,7 @@
                     evil-surround
                     evil-swap-keys
                     exec-path-from-shell
+                    expand-region
                     fish-completion
                     fish-mode
                     flycheck
@@ -1059,6 +1076,8 @@
                     flycheck-rust
                     forge
                     forth-mode
+                    just-mode
+                    justl
                     general
                     go-mode
                     google-translate
@@ -1081,6 +1100,8 @@
                     lua-mode
                     magit
                     markdown-mode
+                    meow
+                    meow-tree-sitter
                     modus-themes
                     nix-mode
                     nix-sandbox
@@ -1108,6 +1129,9 @@
                     racket-mode
                     restclient
                     rjsx-mode
+                    ryo-modal
+                    god-mode
+                    multiple-cursors
                     rust-mode
                     slime
                     smex
@@ -1130,6 +1154,16 @@
                     yaml-mode
                     yasnippet
                     zig-mode
+              
+                    corfu
+                    cape
+                    vertico
+                    orderless
+                    consult
+                    embark
+                    marginalia
+                    smartparens
+                    git-link
               
                   ]) ++
                   [
@@ -1248,9 +1282,6 @@
                 };
               })
               {
-                naga = pkgs.callPackage ./naga { };
-              }
-              {
                 # note it's a new attribute and does not override old one
                 input-mono = (pkgs.input-fonts.overrideAttrs (old: {
                   pname = "input-mono";
@@ -1258,7 +1289,7 @@
                     name = "input-mono-${old.version}.zip";
                     extension = ".zip";
                     url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
-                    sha256 = "sha256-fvrRbSb5nxqwFhZULqpQf9QmiPDP9rWBUfn1chPahuQ=";
+                    sha256 = "sha256-16VdmmcxJipUYsOZ4zzcDCYIuFDcp3EYME+E+YXphsU=";
               
                     stripRoot = false;
               
@@ -1288,7 +1319,7 @@
           (final: prev: self.packages.${system})
       
           (final: prev: {
-            stable = import inputs.nixpkgs-stable {
+            unstable = import inputs.nixpkgs-unstable {
               inherit system;
               overlays = self.overlays.${system};
               config = { allowUnfree = true; };
@@ -1393,31 +1424,28 @@
                   default < lcmd - 0x2A ; escaping
                   escaping < lcmd - 0x2A ; default
             
-                  # escaping < lcmd - k ~
+                  # escaping < lcmd - e ~
             
                   default < cmd + ctrl - r : yabai -m space --layout $(yabai -m query --spaces --space | jq -r 'if .type == "bsp" then "float" else "bsp" end')
-                  default < lcmd + ctrl - h : yabai -m window --ratio rel:-0.05
-                  default < lcmd + ctrl - l : yabai -m window --ratio rel:+0.05
-                  default < lcmd + shift - h : yabai -m window --swap west
-                  default < lcmd + shift - j : yabai -m window --swap north
-                  default < lcmd + shift - k : yabai -m window --swap south
-                  default < lcmd + shift - l : yabai -m window --swap east
-                  default < lcmd - h [
+                  # default < lcmd + ctrl - n : yabai -m window --ratio rel:-0.05
+                  # default < lcmd + ctrl - o : yabai -m window --ratio rel:+0.05
+                  default < lcmd + shift - n : yabai -m window --swap west
+                  default < lcmd + shift - u : yabai -m window --swap north
+                  default < lcmd + shift - e : yabai -m window --swap south
+                  default < lcmd + shift - o : yabai -m window --swap east
+                  default < lcmd - n [
                     * : yabai -m window --focus west
                     "Emacs" ~
                   ]
-                  default < lcmd - j [
+                  default < lcmd - u [
                     * : yabai -m window --focus north
                     "Emacs" ~
                   ]
-                  default < lcmd - k [
+                  default < lcmd - e [
                     * : yabai -m window --focus south
                     "Emacs" ~
-                    "Slack" ~
-                    "Telegram" ~
-                    "Arc" ~
                   ]
-                  default < lcmd - l [
+                  default < lcmd - o [
                     * : yabai -m window --focus east
                     "Emacs" ~
                   ]
