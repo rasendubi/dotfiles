@@ -70,9 +70,11 @@
   (dolist (state eon/states)
     (set state nil)))
 
-(defun eon--global-enable ())
+(defun eon--global-enable ()
+  (add-hook 'org-capture-mode-hook #'eon-insert-state))
 
-(defun eon--global-disable ())
+(defun eon--global-disable ()
+  (remove-hook 'org-capture-mode-hook #'eon-insert-state))
 
 (defun eon-normal-state ()
   (interactive)
@@ -222,6 +224,9 @@
                                     ;; r i — insert register
 
                                     ("\\ \\" org-roam-node-find)
+                                    ("\\ ," org-roam-dailies-capture-yesterday)
+                                    ("\\ ." rasen/org-daily-dispatch)
+                                    ("<f2>" rasen/org-daily-dispatch)
                                     ("\\ n" rasen/org-roam-new-node)
 
                                     ;; TODO:

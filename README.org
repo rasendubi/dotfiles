@@ -5034,6 +5034,7 @@ Actual style is overridden in Color theme section.
   :after org
   :diminish
   :autoload (org-roam-db-update-file)
+  :commands (rasen/org-daily-dispatch)
   :bind
   (:map org-mode-map
    ("C-c i" . org-roam-node-insert))
@@ -5288,20 +5289,39 @@ All daily notes are stored in a separate directory so they do not mix up with no
 #+begin_src emacs-lisp :tangle no
 (require 'org-roam-dailies)
 (setq org-roam-dailies-directory "life/journal/")
+(defconst rasen/org-roam-daily-template
+  ;; Adding day of week to title makes unlinked references search
+  ;; weaker, so store it in metadata.
+  (concat
+   "#+TITLE: %<%Y-%m-%d>\n"
+   "- day of week :: %<%A>\n"
+   "\n"))
 (setq org-roam-dailies-capture-templates
-      `(("j" "journal" plain "%U\n%?"
-         :if-new (file+head "%<%Y-%m-%d>.org"
-                            ;; Adding day of week to title makes
-                            ;; unlinked references search weaker, so
-                            ;; store it in metadata.
-                            ,(concat
-                              "#+TITLE: %<%Y-%m-%d>\n"
-                              "- day of week :: %<%A>\n"
-                              "\n"
-                              ;; "* Events\n"
-                              ;; "* Decisions\n"
-                              ;; "* Tomorrow\n"
-                              )))))
+      ;; %U inserts incorrect date when now and target date don't
+      ;; match. org-timestamp-inactive is a workaround to insert
+      ;; current time as inactive timestamp correctly.
+      `(("j" "journal" entry "* %(org-timestamp-inactive '(16)) %?"
+         :target (file+head "%<%Y-%m-%d>.org" ,rasen/org-roam-daily-template)
+         :empty-lines-before 1
+         :unnarrowed t
+         :clock-in t
+         :clock-resume t)))
+
+;; Try to guess "today"
+(setq org-extend-today-until 6)
+
+(defun rasen/org-daily-dispatch (arg)
+  "Dispatch command for org-roam-dailies.
+
+With no prefix ARG, capture a note for today.
+With C-u, prompt for a date and capture a note for that day.
+With C-u C-u, prompt for a date and open that daily note.
+
+Intended as a unified entry point for working with org-roam-dailies."
+  (interactive "P")
+  (cond ((eq arg nil) (org-roam-dailies-capture-today))
+        ((equal arg '(4)) (org-roam-dailies-capture-date))
+        ((equal arg '(16)) (org-roam-dailies-goto-date))))
 #+end_src
 *** org-roam-protocol
 org-roam-protocol allows opening a note corresponding to the current URL directly from the browser (as well as capturing selection into it).
