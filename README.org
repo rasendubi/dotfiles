@@ -7458,6 +7458,12 @@ git-commit is emacs mode for editing commit messages. (emacs-lisp)
   (diff-hl-flydiff-mode t)
   (global-diff-hl-mode t))
 #+end_src
+*** git-link
+git-link helps to create permalinks to the files.
+#+begin_src emacs-lisp
+(use-package git-link
+  :commands (git-link))
+#+end_src
 ** Man pages
 This install a number of default man pages for the linux/posix system.
 (~<<nixos-section>>~)
