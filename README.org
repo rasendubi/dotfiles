@@ -9083,6 +9083,15 @@ I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Go
           ("DONE"     . (:foreground ,fg-dim       :inherit fixed-pitch))
           ("CANCELED" . (:foreground ,fg-dim       :inherit fixed-pitch)))))
 #+end_src
+** Auto-dark mode
+#+begin_src emacs-lisp
+(defun my/load-theme (appearance)
+  (pcase appearance
+    ('light (load-theme 'modus-operandi t))
+    ('dark (load-theme 'modus-vivendi t))))
+
+(add-hook 'ns-system-appearance-change-functions #'my/load-theme)
+#+end_src
 ** Emacs modeline
 #+begin_src emacs-lisp
 (use-package doom-modeline
