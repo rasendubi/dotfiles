@@ -1044,7 +1044,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
 (let
   emacs-base =
     if pkgs.stdenv.isDarwin
-    then pkgs.emacs.overrideAttrs (old: {
+    then (pkgs.emacs.overrideAttrs (old: {
       patches =
         (old.patches or [])
         ++ [
@@ -1053,28 +1053,26 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
             url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-28/fix-window-role.patch";
             sha256 = "sha256-+z/KfsBm1lvZTZNiMbxzXQGRTjkCFO4QPlEK35upjsE=";
           })
-          # Use poll instead of select to get file descriptors
-          # (pkgs.fetchpatch {
-          #   url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-29/poll.patch";
-          #   sha256 = "sha256-jN9MlD8/ZrnLuP2/HUXXEVVd6A+aRZNYFdZF8ReJGfY=";
-          # })
           # Enable rounded window with no decoration
           (pkgs.fetchpatch {
-            url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-29/round-undecorated-frame.patch";
+            url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-30/round-undecorated-frame.patch";
             sha256 = "sha256-uYIxNTyfbprx5mCqMNFVrBcLeo+8e21qmBE3lpcnd+4=";
           })
           # Make emacs aware of OS-level light/dark mode
           (pkgs.fetchpatch {
-            url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-28/system-appearance.patch";
-            sha256 = "sha256-oM6fXdXCWVcBnNrzXmF0ZMdp8j0pzkLE66WteeCutv8=";
+            url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-30/system-appearance.patch";
+            sha256 = "sha256-3QLq91AQ6E921/W9nfDjdOUWR8YVsqBAT/W9c1woqAw=";
           })
         ];
-      configureFlags =
-        (old.configureFlags or [])
-        ++ [
-          "LDFLAGS=-headerpad_max_install_names"
-        ];
-    })
+      # configureFlags =
+      #   (old.configureFlags or [])
+      #   ++ [
+      #     "LDFLAGS=-headerpad_max_install_names"
+      #   ];
+    })).override {
+      # Workaround https://github.com/NixOS/nixpkgs/issues/395169
+      withNativeCompilation = false;
+    }
     else pkgs.emacs.override {
       withX = true;
       # select lucid toolkit
@@ -1227,32 +1225,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       epkgs.elpaPackages.eglot
 
       (epkgs.trivialBuild rec {
-        pname = "org-roam-ui";
-        version = "20210830";
-        src = pkgs.fetchFromGitHub {
-          owner = "org-roam";
-          repo = "org-roam-ui";
-          rev = "9ad111d2102c24593f6ac012206bb4b2c9c6c4e1";
-          sha256 = "sha256-x6notv/U+y9Es8m58R/Qh7GEAtRqXqXvr7gy5OiDDUM=";
-        };
-        packageRequires = [
-          epkgs.melpaPackages.f
-          epkgs.melpaPackages.org-roam
-          epkgs.melpaPackages.websocket
-          epkgs.melpaPackages.simple-httpd
-        ];
-
-        postInstall = ''
-          cp -r ./out/ $LISPDIR/
-        '';
-
-        meta = {
-          description = "A graphical frontend for exploring your org-roam Zettelkasten";
-          license = pkgs.lib.licenses.gpl3;
-        };
-      })
-
-      (epkgs.trivialBuild rec {
         pname = "org-fc";
         version = "20201121";
         src = pkgs.fetchFromGitHub {
@@ -1288,6 +1260,8 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       pkgs.w3m
       pkgs.imagemagick
       pkgs.shellcheck
+
+      pkgs.direnv
 
       (pkgs.python3.withPackages (pypkgs: [
         pypkgs.autopep8
@@ -8884,7 +8858,7 @@ I like [[https://input.djr.com/download/?customize&fontSelection=fourStyleFamily
       name = "input-mono-${old.version}.zip";
       extension = ".zip";
       url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
-      sha256 = "sha256-16VdmmcxJipUYsOZ4zzcDCYIuFDcp3EYME+E+YXphsU=";
+      sha256 = "sha256-0F4WNKA2GJm6qmMpynBpiOYDzwh2u2HOKhQKLONRfek=";
 
       stripRoot = false;
 
