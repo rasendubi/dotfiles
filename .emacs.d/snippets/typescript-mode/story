@@ -3,17 +3,17 @@
 # key: story
 # expand-env: ((yas-indent-line 'fixed))
 # --
-import { Story } from '@storybook/react';
+import { ComponentMeta, ComponentStory } from '@storybook/react';
 
-import ${1:`(file-name-sans-extension (file-name-base (buffer-file-name)))`}, { $1Props } from '${2:./}';
+import { ${1:`(file-name-sans-extension (file-name-base (buffer-file-name)))`}, $1Props } from '${2:./}';
 
 export default {
   title: '$1',
   component: $1,
-};
+} as ComponentMeta<typeof $1>;
 
-const Template: Story<$1Props> = (props) => <$1 {...props} />;
+const Template: ComponentStory<typeof $1> = (args) => <$1 {...args} />;
 $0
-export const Story1 = Template.bind({});
-Story1.args = {
+export const Default = Template.bind({});
+Default.args = {
 };
