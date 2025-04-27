@@ -7257,6 +7257,7 @@ Executing just scripts from emacs:
       rebase.autostash = true;
       rerere.enabled = true;
       advice.detachedHead = false;
+      merge.conflictStyle = "zdiff3";
 
       init.defaultBranch = "main";
     };
