@@ -49,3 +49,6 @@
 /emacs.el
 /README.nix
 /.emacs.d/transient/
+/README.js
+/README.sh
+/.emacs.d/forge-database.sqlite
