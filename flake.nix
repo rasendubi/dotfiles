@@ -9,7 +9,7 @@
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-24.11";
+      ref = "nixos-25.05";
     };
 
     nixpkgs-unstable = {
@@ -22,11 +22,11 @@
       type = "github";
       owner = "rycee";
       repo = "home-manager";
-      ref = "release-24.11";
+      ref = "release-25.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     darwin = {
-      url = "github:lnl7/nix-darwin/nix-darwin-24.11";
+      url = "github:lnl7/nix-darwin/nix-darwin-25.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixos-hardware = {
@@ -1167,8 +1167,8 @@
                     epkgs.elpaPackages.org
                     epkgs.nongnuPackages.org-contrib
                     epkgs.elpaPackages.adaptive-wrap
-                    epkgs.exwm
                     # not available in melpa
+                    epkgs.elpaPackages.exwm
                     epkgs.elpaPackages.valign
               
                     epkgs.elpaPackages.eglot
@@ -1262,7 +1262,7 @@
                     name = "input-mono-${old.version}.zip";
                     extension = ".zip";
                     url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
-                    sha256 = "sha256-0F4WNKA2GJm6qmMpynBpiOYDzwh2u2HOKhQKLONRfek=";
+                    sha256 = "sha256-vbOW/oFLDqYtVDRrpO4O0Xxmz5PHYElx0Zi9DiTr5X4=";
               
                     stripRoot = false;
               
@@ -1312,14 +1312,31 @@
         darwinHosts = {
           bayraktar = {
             system = "aarch64-darwin";
+            systemStateVersion = 4;
+            homeManagerStateVersion = "21.05";
+          };
+          oleksiishmalko = {
+            system = "aarch64-darwin";
+            primaryUser = "oleksii.shmalko";
+            systemStateVersion = 6;
+            homeManagerStateVersion = "25.05";
           };
         };
       
-        mkDarwinConfiguration = { name, system, modules ? [] }:
+        mkDarwinConfiguration = { name, system, systemStateVersion, homeManagerStateVersion, primaryUser ? "rasen", modules ? [] }:
           inputs.darwin.lib.darwinSystem {
             inherit system;
             modules = modules ++ [
-              { networking.hostName = name; }
+              {
+                networking.hostName = name;
+                system.primaryUser = primaryUser;
+                system.stateVersion = systemStateVersion;
+                home-manager.sharedModules = [
+                  ({lib, ...}: {
+                    home.stateVersion = lib.mkForce homeManagerStateVersion;
+                  })
+                ];
+              }
               self.darwin-common
             ];
           };
@@ -1339,7 +1356,7 @@
               home-manager = {
                 useUserPackages = false;
                 useGlobalPkgs = true;
-                users.rasen = { ... }: {
+                users."${config.system.primaryUser}" = { ... }: {
                   imports = [
                     inputs.self.lib.home-manager-common
                     { hostname = config.networking.hostName; }
@@ -1353,14 +1370,11 @@
                 allowUnfree = true;
               };
               nixpkgs.overlays = self.overlays.aarch64-darwin;
-              services.nix-daemon.enable = true;
-            
-              system.stateVersion = 4;
             }
             {
-              users.users.rasen = {
+              users.users.${config.system.primaryUser} = {
                 description = "Oleksii Shmalko";
-                home = "/Users/rasen/";
+                home = "/Users/${config.system.primaryUser}/";
               };
             }
             {
@@ -1441,7 +1455,7 @@
               # add fish to default shells
               environment.shells = [ pkgs.fish ];
               # set it as default for me
-              users.users.rasen.shell = pkgs.fish;
+              users.users."${config.system.primaryUser}".shell = pkgs.fish;
             }
           ];
         };
