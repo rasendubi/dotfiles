@@ -224,10 +224,13 @@
                                     ;; r i — insert register
 
                                     ("\\ \\" org-roam-node-find)
-                                    ("\\ ," org-roam-dailies-capture-yesterday)
-                                    ("\\ ." rasen/org-daily-dispatch)
+                                    ("\\ <" org-roam-dailies-goto-previous-note)
+                                    ("\\ >" org-roam-dailies-goto-next-note)
+                                    ;; ("\\ ," org-roam-dailies-capture-yesterday)
+                                    ;; ("\\ ." rasen/org-daily-dispatch)
                                     ("<f2>" rasen/org-daily-dispatch)
                                     ("\\ n" rasen/org-roam-new-node)
+                                    ("\\ c" org-capture)
 
                                     ;; TODO:
                                     ;; - find place for kill-whole-line
