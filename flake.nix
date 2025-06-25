@@ -1314,12 +1314,30 @@
             system = "aarch64-darwin";
             systemStateVersion = 4;
             homeManagerStateVersion = "21.05";
+          
+          
+            modules = [
+              ({ lib, ... }: {
+                home-manager.users."rasen" = {
+                  programs.git.userEmail = lib.mkForce "oleksii@fluxon.com";
+                };
+              })
+            ];
+          
           };
           oleksiishmalko = {
             system = "aarch64-darwin";
             primaryUser = "oleksii.shmalko";
             systemStateVersion = 6;
             homeManagerStateVersion = "25.05";
+          
+            modules = [
+              ({ lib, ... }: {
+                home-manager.users."oleksii.shmalko" = {
+                  programs.git.userEmail = lib.mkForce "oleksii.shmalko@datadoghq.com";
+                };
+              })
+            ];
           };
         };
       
@@ -1375,6 +1393,56 @@
               users.users.${config.system.primaryUser} = {
                 description = "Oleksii Shmalko";
                 home = "/Users/${config.system.primaryUser}/";
+              };
+            }
+            {
+              system.defaults = {
+                NSGlobalDomain = {
+                  # auto switch light/dark mode
+                  AppleInterfaceStyleSwitchesAutomatically = true;
+            
+                  # disable automatic capitalization
+                  NSAutomaticCapitalizationEnabled = false;
+            
+                  # Use F1, F2, etc keys by default (without needing to press fn)
+                  "com.apple.keyboard.fnState" = true;
+            
+                  # disable beeps
+                  "com.apple.sound.beep.volume" = 0.0;
+            
+                  # Disable natural scrolling
+                  "com.apple.swipescrolldirection" = false;
+                };
+            
+                dock = {
+                  # Auto-hide dock
+                  autohide = true;
+                };
+            
+                finder = {
+                  # Show extensions in finder
+                  AppleShowAllExtensions = true;
+                  # Prefer list view
+                  FXPreferredViewStyle = "Nlsv";
+                  # Open home directory by default
+                  NewWindowTarget = "Home";
+                  # Show pathbar
+                  ShowPathbar = true;
+                };
+            
+                # Change keyboard layout on fn click
+                hitoolbox.AppleFnUsageType = "Change Input Source";
+            
+                # Show seconds in clock
+                menuExtraClock.ShowSeconds = true;
+              };
+            
+              system.keyboard = {
+                enableKeyMapping = true;
+                # Move tilde back on non-US keyboards
+                nonUS.remapTilde = true;
+                # Remap caps lock to control
+                remapCapsLockToControl = true;
               };
             }
             {
