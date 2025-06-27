@@ -20,26 +20,29 @@
 
 (defun rasen/set-my-fonts ()
   (cond
-   ((and (eq system-type 'darwin)
-         (rasen/font-exists-p "Input"))
-    (set-face-attribute 'fixed-pitch nil :family "Input" :height 140)
-    (set-face-attribute 'default nil :family "Input" :height 140))
+   ((rasen/font-exists-p "Iosevka")
+    (set-face-attribute 'fixed-pitch nil :family "Iosevka" :height 140 :width 'regular)
+    (set-face-attribute 'default nil :family "Iosevka" :height 140 :width 'regular))
 
-   ((rasen/font-exists-p "Input") ; check for custom four-family font first
-    (set-face-attribute 'fixed-pitch nil :family "Input" :height 70)
-    (set-face-attribute 'default nil :family "Input" :height 70))
-   ((rasen/font-exists-p "Input Mono")
-    (set-face-attribute 'fixed-pitch nil :family "Input Mono" :height 65)
-    (set-face-attribute 'default nil :family "Input Mono" :height 65))
-   ((rasen/font-exists-p "Fira Code Retina")
-    (set-face-attribute 'fixed-pitch nil :family "Fira Code Retina" :height 65)
-    (set-face-attribute 'default nil :family "Fira Code Retina" :height 65))
-   ((rasen/font-exists-p "Terminess Powerline")
-    (set-face-attribute 'fixed-pitch nil :family "Terminess Powerline" :height 160)
-    (set-face-attribute 'default nil :family "Terminess Powerline" :height 160))
-   ((rasen/font-exists-p "Terminus")
-    (set-face-attribute 'fixed-pitch nil :family "Terminus" :height 160)
-    (set-face-attribute 'default nil :family "Terminus" :height 160)))
+   ((rasen/font-exists-p "IBM Plex Mono")
+    (set-face-attribute 'fixed-pitch nil :family "IBM Plex Mono" :height 140)
+    (set-face-attribute 'default nil :family "IBM Plex Mono" :height 140 :width 'regular))
+
+   ((rasen/font-exists-p "Monaspace Neon")
+    (set-face-attribute 'fixed-pitch nil :family "Monaspace Neon" :height 140 :width 'regular)
+    (set-face-attribute 'default nil :family "Monaspace Neon" :height 140 :width 'regular))
+
+   ((rasen/font-exists-p "Source Code Pro")
+    (set-face-attribute 'fixed-pitch nil :family "Source Code Pro" :height 140 :width 'regular)
+    (set-face-attribute 'default nil :family "Source Code Pro" :height 140))
+
+   ((rasen/font-exists-p "Roboto Mono")
+    (set-face-attribute 'fixed-pitch nil :family "Roboto Mono" :height 140)
+    (set-face-attribute 'default nil :family "Roboto Mono" :height 140 :width 'regular))
+
+   ((rasen/font-exists-p "DejaVu Sans Mono")
+    (set-face-attribute 'fixed-pitch nil :family "DejaVu Sans Mono" :height 140)
+    (set-face-attribute 'default nil :family "DejaVu Sans Mono" :height 140)))
 
   (cond
    ((and (eq system-type 'darwin)

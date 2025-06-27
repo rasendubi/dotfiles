@@ -212,8 +212,13 @@
             
               # fonts used by emacs
               home.packages = [
-                pkgs.input-mono
+                pkgs.ibm-plex
+                pkgs.monaspace
+                pkgs.dejavu_fonts
                 pkgs.libertine
+                pkgs.roboto-mono
+                pkgs.mononoki
+                pkgs.iosevka
               ];
             }
             {
@@ -955,6 +960,7 @@
             {
               fonts.fontconfig.enable = true;
               home.packages = [
+                pkgs.iosevka
                 pkgs.inconsolata
                 pkgs.dejavu_fonts
                 pkgs.source-code-pro
@@ -1254,33 +1260,6 @@
                   packages = emacs-packages;
                 };
               })
-              {
-                # note it's a new attribute and does not override old one
-                input-mono = (pkgs.input-fonts.overrideAttrs (old: {
-                  pname = "input-mono";
-                  src = pkgs.fetchzip {
-                    name = "input-mono-${old.version}.zip";
-                    extension = ".zip";
-                    url = "https://input.djr.com/build/?fontSelection=fourStyleFamily&regular=InputMonoNarrow-Regular&italic=InputMonoNarrow-Italic&bold=InputMonoNarrow-Bold&boldItalic=InputMonoNarrow-BoldItalic&a=0&g=0&i=topserif&l=serifs_round&zero=0&asterisk=height&braces=straight&preset=default&line-height=1.2&accept=I+do&email=";
-                    sha256 = "sha256-vbOW/oFLDqYtVDRrpO4O0Xxmz5PHYElx0Zi9DiTr5X4=";
-              
-                    stripRoot = false;
-              
-                    postFetch = ''
-                      # Reset the timestamp to release date for determinism.
-                      PATH=${pkgs.lib.makeBinPath [ pkgs.python3.pkgs.fonttools ]}:$PATH
-                      for ttf_file in $out/Input_Fonts/*/*/*.ttf; do
-                        ttx_file=$(dirname "$ttf_file")/$(basename "$ttf_file" .ttf).ttx
-                        ttx "$ttf_file"
-                        rm "$ttf_file"
-                        touch -m -t 201506240000 "$ttx_file"
-                        ttx --recalc-timestamp "$ttx_file"
-                        rm "$ttx_file"
-                      done
-                    '';
-                  };
-                }));
-              }
             ];
       
       in {
