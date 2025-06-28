@@ -8869,8 +8869,8 @@ Configure fonts in Emacs. (~.emacs.d/early-init.el~)
   (let ((scale (if (eq system-type 'darwin) 2 1)))
     (cond
      ((rasen/font-exists-p "Iosevka")
-      (set-face-attribute 'fixed-pitch nil :family "Iosevka" :height (* 90 scale) :width 'regular)
-      (set-face-attribute 'default nil :family "Iosevka" :height (* 90 scale) :width 'regular))
+      (set-face-attribute 'fixed-pitch nil :family "Iosevka" :height (* 80 scale) :width 'regular)
+      (set-face-attribute 'default nil :family "Iosevka" :height (* 80 scale) :width 'regular))
 
      ((rasen/font-exists-p "IBM Plex Mono")
       (set-face-attribute 'fixed-pitch nil :family "IBM Plex Mono" :height 140)
