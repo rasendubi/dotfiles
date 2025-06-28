@@ -2033,15 +2033,14 @@ A good mode to highlight whitespace issues (leading/trailing spaces/newlines) an
   :diminish (global-whitespace-mode
              whitespace-mode
              whitespace-newline-mode)
-  ;; :hook (prog-mode . whitespace-mode)
+  :hook (prog-mode . whitespace-mode)
   :config
   (setq-default whitespace-line-column 120
                 whitespace-style '(face
                                    tab-mark
                                    empty
                                    trailing
-                                   lines-tail))
-  (global-whitespace-mode))
+                                   lines-tail)))
 #+end_src
 ** whitespace-cleanup
 Fix whitespaces on file save.
