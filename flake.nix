@@ -639,15 +639,14 @@
               home.packages = [
                 pkgs.unstable.gopass
                 pkgs.unstable.gopass-jsonapi
-                pkgs.pinentry_mac
               ];
             }
             {
               home.packages = pkgs.lib.linux-only [
-                pkgs.gwenview
-                pkgs.dolphin
+                pkgs.kdePackages.gwenview
+                pkgs.kdePackages.dolphin
                 # pkgs.kdeFrameworks.kfilemetadata
-                pkgs.filelight
+                pkgs.kdePackages.filelight
                 pkgs.shared-mime-info
               ];
             }
@@ -667,7 +666,6 @@
             }
             {
               home.packages = [
-                (pkgs.lib.linux-only pkgs.google-play-music-desktop-player)
                 (pkgs.lib.linux-only pkgs.tdesktop) # Telegram
                 pkgs.feh
             
@@ -1032,7 +1030,7 @@
                     withX = true;
                     # select lucid toolkit
                     toolkit = "lucid";
-                    withGTK2 = false; withGTK3 = false;
+                    withGTK3 = false;
                   };
                 emacs-packages = (epkgs:
                   (with epkgs.melpaPackages; [
@@ -1495,6 +1493,9 @@
                 enable = true;
                 enableSSHSupport = true;
               };
+            }
+            {
+              environment.systemPackages = [ pkgs.pinentry_mac ];
             }
             {
               programs.fish.enable = true;

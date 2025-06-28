@@ -19,42 +19,43 @@
   (and (display-graphic-p) (not (null (x-list-fonts font)))))
 
 (defun rasen/set-my-fonts ()
-  (cond
-   ((rasen/font-exists-p "Iosevka")
-    (set-face-attribute 'fixed-pitch nil :family "Iosevka" :height 140 :width 'regular)
-    (set-face-attribute 'default nil :family "Iosevka" :height 140 :width 'regular))
+  (let ((scale (if (eq system-type 'darwin) 2 1)))
+    (cond
+     ((rasen/font-exists-p "Iosevka")
+      (set-face-attribute 'fixed-pitch nil :family "Iosevka" :height (* 90 scale) :width 'regular)
+      (set-face-attribute 'default nil :family "Iosevka" :height (* 90 scale) :width 'regular))
 
-   ((rasen/font-exists-p "IBM Plex Mono")
-    (set-face-attribute 'fixed-pitch nil :family "IBM Plex Mono" :height 140)
-    (set-face-attribute 'default nil :family "IBM Plex Mono" :height 140 :width 'regular))
+     ((rasen/font-exists-p "IBM Plex Mono")
+      (set-face-attribute 'fixed-pitch nil :family "IBM Plex Mono" :height 140)
+      (set-face-attribute 'default nil :family "IBM Plex Mono" :height 140 :width 'regular))
 
-   ((rasen/font-exists-p "Monaspace Neon")
-    (set-face-attribute 'fixed-pitch nil :family "Monaspace Neon" :height 140 :width 'regular)
-    (set-face-attribute 'default nil :family "Monaspace Neon" :height 140 :width 'regular))
+     ((rasen/font-exists-p "Monaspace Neon")
+      (set-face-attribute 'fixed-pitch nil :family "Monaspace Neon" :height 140 :width 'regular)
+      (set-face-attribute 'default nil :family "Monaspace Neon" :height 140 :width 'regular))
 
-   ((rasen/font-exists-p "Source Code Pro")
-    (set-face-attribute 'fixed-pitch nil :family "Source Code Pro" :height 140 :width 'regular)
-    (set-face-attribute 'default nil :family "Source Code Pro" :height 140))
+     ((rasen/font-exists-p "Source Code Pro")
+      (set-face-attribute 'fixed-pitch nil :family "Source Code Pro" :height 140 :width 'regular)
+      (set-face-attribute 'default nil :family "Source Code Pro" :height 140))
 
-   ((rasen/font-exists-p "Roboto Mono")
-    (set-face-attribute 'fixed-pitch nil :family "Roboto Mono" :height 140)
-    (set-face-attribute 'default nil :family "Roboto Mono" :height 140 :width 'regular))
+     ((rasen/font-exists-p "Roboto Mono")
+      (set-face-attribute 'fixed-pitch nil :family "Roboto Mono" :height 140)
+      (set-face-attribute 'default nil :family "Roboto Mono" :height 140 :width 'regular))
 
-   ((rasen/font-exists-p "DejaVu Sans Mono")
-    (set-face-attribute 'fixed-pitch nil :family "DejaVu Sans Mono" :height 140)
-    (set-face-attribute 'default nil :family "DejaVu Sans Mono" :height 140)))
+     ((rasen/font-exists-p "DejaVu Sans Mono")
+      (set-face-attribute 'fixed-pitch nil :family "DejaVu Sans Mono" :height 140)
+      (set-face-attribute 'default nil :family "DejaVu Sans Mono" :height 140)))
 
-  (cond
-   ((and (eq system-type 'darwin)
-         (rasen/font-exists-p "Linux Libertine O"))
-    (set-face-attribute 'variable-pitch nil :family "Linux Libertine O" :height 180))
+    (cond
+     ((and (eq system-type 'darwin)
+           (rasen/font-exists-p "Linux Libertine O"))
+      (set-face-attribute 'variable-pitch nil :family "Linux Libertine O" :height 180))
 
-   ((rasen/font-exists-p "Linux Libertine O")
-    (set-face-attribute 'variable-pitch nil :family "Linux Libertine O" :height 90))
-   ((rasen/font-exists-p "Vollkorn")
-    (set-face-attribute 'variable-pitch nil :family "Vollkorn" :height 80))
-   ((rasen/font-exists-p "DejaVu Sans")
-    (set-face-attribute 'variable-pitch nil :family "DejaVu Sans"))))
+     ((rasen/font-exists-p "Linux Libertine O")
+      (set-face-attribute 'variable-pitch nil :family "Linux Libertine O" :height 90))
+     ((rasen/font-exists-p "Vollkorn")
+      (set-face-attribute 'variable-pitch nil :family "Vollkorn" :height 80))
+     ((rasen/font-exists-p "DejaVu Sans")
+      (set-face-attribute 'variable-pitch nil :family "DejaVu Sans")))))
 
 (rasen/set-my-fonts)
 

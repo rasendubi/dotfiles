@@ -654,9 +654,8 @@ in
 {
   imports = [
     {
-      nixpkgs.config.allowUnfree = true;
-
       # The NixOS release to be compatible with for stateful data such as databases.
+      # TODO: make it per-machine
       system.stateVersion = "21.05";
     }
 
@@ -956,7 +955,7 @@ This is my small Dell XPS 13 running NixOS.
   boot.kernelModules = [ "kvm-intel" "wl" ];
   boot.extraModulePackages = [ config.boot.kernelPackages.rtl88x2bu config.boot.kernelPackages.broadcom_sta ];
 
-  hardware.opengl = {
+  hardware.graphics = {
     enable = true;
     extraPackages = [
       pkgs.vaapiIntel
@@ -1019,7 +1018,7 @@ Clickpad:
 #+name: machine-omicron
 #+begin_src nix
 {
-  services.xserver.libinput = {
+  services.libinput = {
     enable = true;
     touchpad.accelSpeed = "0.7";
   };
@@ -1168,7 +1167,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       withX = true;
       # select lucid toolkit
       toolkit = "lucid";
-      withGTK2 = false; withGTK3 = false;
+      withGTK3 = false;
     };
   emacs-packages = (epkgs:
     (with epkgs.melpaPackages; [
@@ -2194,7 +2193,7 @@ NixOS has an EXWM module, but my feeling is that it's too limiting. (~<<nixos-se
   };
   services.xserver.displayManager.lightdm.enable = true;
   # services.xserver.displayManager.startx.enable = true;
-  services.xserver.displayManager.defaultSession = "none+exwm";
+  services.displayManager.defaultSession = "none+exwm";
 }
 #+end_src
 
@@ -2525,8 +2524,8 @@ Besides Workman, I use Ukrainian layout. I also use Russian symbols, but they ar
 #+name: nixos-section
 #+begin_src nix
 {
-  services.xserver.layout = "us,ua";
-  services.xserver.xkbVariant = "workman,";
+  services.xserver.xkb.layout = "us,ua";
+  services.xserver.xkb.variant = "workman,";
 
   # Use same config for linux console
   console.useXkbConfig = true;
@@ -2551,7 +2550,7 @@ I never use Caps Lock–the feature, so it's nice to have Caps LED indicate alte
 #+name: nixos-section
 #+begin_src nix
 {
-  services.xserver.xkbOptions = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
+  services.xserver.xkb.options = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
   # services.xserver.xkbOptions = "grp:caps_toggle,grp_led:caps";
 }
 #+end_src
@@ -2733,7 +2732,7 @@ Auto-start ~nm-applet~ (emacs-lisp)
 {
   services.openssh = {
     enable = true;
-    passwordAuthentication = false;
+    settings.PasswordAuthentication = false;
   };
 }
 #+end_src
@@ -2755,22 +2754,22 @@ Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
   services.dnsmasq = {
     enable = true;
 
-    # These are used in addition to resolv.conf
-    servers = [
-      "8.8.8.8"
-      "8.8.4.4"
-    ];
+    settings = {
+      # These are used in addition to resolv.conf
+      server = [
+        "8.8.8.8"
+        "8.8.4.4"
+      ];
 
-    extraConfig = ''
-      interface=lo
-      bind-interfaces
-      listen-address=127.0.0.1
-      cache-size=1000
-
-      no-negcache
-    '';
+      interface = "lo";
+      bind-interfaces = true;
+      listen-address = "127.0.0.1";
+      cache-size = 1000;
+      no-negcache = true;
+    };
   };
 }
+
 #+end_src
 ** Firewall
 Enable firewall. This blocks all ports for ingress traffic and pings.
@@ -2796,7 +2795,6 @@ Update [[https://linux.die.net/man/1/locate][locate]] database daily.
 {
   services.locate = {
     enable = true;
-    localuser = "rasen";
   };
 }
 #+end_src
@@ -3123,7 +3121,7 @@ Use PipeWire as audio server.
 #+begin_src nix
 {
   # PipeWire requires pulseaudio to be disabled.
-  hardware.pulseaudio.enable = false;
+  services.pulseaudio.enable = false;
 
   security.rtkit.enable = true;
   services.pipewire = {
@@ -3131,34 +3129,6 @@ Use PipeWire as audio server.
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
-
-
-    media-session.config.bluez-monitor.rules = [
-      {
-        # Matches all cards
-        matches = [ { "device.name" = "~bluez_card.*"; } ];
-        actions = {
-          "update-props" = {
-            "bluez5.reconnect-profiles" = [ "hfp_hf" "hsp_hs" "a2dp_sink" ];
-            # mSBC is not expected to work on all headset + adapter combinations.
-            "bluez5.msbc-support" = true;
-            # SBC-XQ is not expected to work on all headset + adapter combinations.
-            "bluez5.sbc-xq-support" = true;
-          };
-        };
-      }
-      {
-        matches = [
-          # Matches all sources
-          { "node.name" = "~bluez_input.*"; }
-          # Matches all outputs
-          { "node.name" = "~bluez_output.*"; }
-        ];
-        actions = {
-          "node.pause-on-idle" = false;
-        };
-      }
-    ];
   };
 }
 #+end_src
@@ -6621,7 +6591,7 @@ Here go applications (almost) every normal user needs.
   programs.gnupg.agent = {
     enable = true;
     enableSSHSupport = true;
-    pinentryFlavor = "qt";
+    pinentryPackage = pkgs.pinentry-qt;
   };
 
   ## is it no longer needed?
@@ -6775,8 +6745,15 @@ Use Age for file encryption.
   home.packages = [
     pkgs.unstable.gopass
     pkgs.unstable.gopass-jsonapi
-    pkgs.pinentry_mac
   ];
+}
+#+end_src
+
+On MacOS:
+#+name: darwin-section
+#+begin_src nix
+{
+  environment.systemPackages = [ pkgs.pinentry_mac ];
 }
 #+end_src
 
@@ -6786,10 +6763,10 @@ I don't use full KDE but some apps are definitely nice.
 #+begin_src nix
 {
   home.packages = pkgs.lib.linux-only [
-    pkgs.gwenview
-    pkgs.dolphin
+    pkgs.kdePackages.gwenview
+    pkgs.kdePackages.dolphin
     # pkgs.kdeFrameworks.kfilemetadata
-    pkgs.filelight
+    pkgs.kdePackages.filelight
     pkgs.shared-mime-info
   ];
 }
@@ -6826,7 +6803,6 @@ KDE apps might have issues with mime types without this:
 #+begin_src nix
 {
   home.packages = [
-    (pkgs.lib.linux-only pkgs.google-play-music-desktop-player)
     (pkgs.lib.linux-only pkgs.tdesktop) # Telegram
     pkgs.feh
 
@@ -7548,7 +7524,7 @@ This install a number of default man pages for the linux/posix system.
   environment.systemPackages = [
     pkgs.man-pages
     pkgs.stdman
-    pkgs.posix_man_pages
+    pkgs.man-pages-posix
     pkgs.stdmanpages
   ];
 }
@@ -8853,7 +8829,7 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
     fontDir.enable = true;
     enableGhostscriptFonts = false;
 
-    fonts = with pkgs; [
+    packages = with pkgs; [
       pkgs.inconsolata
       pkgs.dejavu_fonts
       pkgs.source-code-pro
@@ -8891,42 +8867,43 @@ Configure fonts in Emacs. (~.emacs.d/early-init.el~)
   (and (display-graphic-p) (not (null (x-list-fonts font)))))
 
 (defun rasen/set-my-fonts ()
-  (cond
-   ((rasen/font-exists-p "Iosevka")
-    (set-face-attribute 'fixed-pitch nil :family "Iosevka" :height 140 :width 'regular)
-    (set-face-attribute 'default nil :family "Iosevka" :height 140 :width 'regular))
+  (let ((scale (if (eq system-type 'darwin) 2 1)))
+    (cond
+     ((rasen/font-exists-p "Iosevka")
+      (set-face-attribute 'fixed-pitch nil :family "Iosevka" :height (* 90 scale) :width 'regular)
+      (set-face-attribute 'default nil :family "Iosevka" :height (* 90 scale) :width 'regular))
 
-   ((rasen/font-exists-p "IBM Plex Mono")
-    (set-face-attribute 'fixed-pitch nil :family "IBM Plex Mono" :height 140)
-    (set-face-attribute 'default nil :family "IBM Plex Mono" :height 140 :width 'regular))
+     ((rasen/font-exists-p "IBM Plex Mono")
+      (set-face-attribute 'fixed-pitch nil :family "IBM Plex Mono" :height 140)
+      (set-face-attribute 'default nil :family "IBM Plex Mono" :height 140 :width 'regular))
 
-   ((rasen/font-exists-p "Monaspace Neon")
-    (set-face-attribute 'fixed-pitch nil :family "Monaspace Neon" :height 140 :width 'regular)
-    (set-face-attribute 'default nil :family "Monaspace Neon" :height 140 :width 'regular))
+     ((rasen/font-exists-p "Monaspace Neon")
+      (set-face-attribute 'fixed-pitch nil :family "Monaspace Neon" :height 140 :width 'regular)
+      (set-face-attribute 'default nil :family "Monaspace Neon" :height 140 :width 'regular))
 
-   ((rasen/font-exists-p "Source Code Pro")
-    (set-face-attribute 'fixed-pitch nil :family "Source Code Pro" :height 140 :width 'regular)
-    (set-face-attribute 'default nil :family "Source Code Pro" :height 140))
+     ((rasen/font-exists-p "Source Code Pro")
+      (set-face-attribute 'fixed-pitch nil :family "Source Code Pro" :height 140 :width 'regular)
+      (set-face-attribute 'default nil :family "Source Code Pro" :height 140))
 
-   ((rasen/font-exists-p "Roboto Mono")
-    (set-face-attribute 'fixed-pitch nil :family "Roboto Mono" :height 140)
-    (set-face-attribute 'default nil :family "Roboto Mono" :height 140 :width 'regular))
+     ((rasen/font-exists-p "Roboto Mono")
+      (set-face-attribute 'fixed-pitch nil :family "Roboto Mono" :height 140)
+      (set-face-attribute 'default nil :family "Roboto Mono" :height 140 :width 'regular))
 
-   ((rasen/font-exists-p "DejaVu Sans Mono")
-    (set-face-attribute 'fixed-pitch nil :family "DejaVu Sans Mono" :height 140)
-    (set-face-attribute 'default nil :family "DejaVu Sans Mono" :height 140)))
+     ((rasen/font-exists-p "DejaVu Sans Mono")
+      (set-face-attribute 'fixed-pitch nil :family "DejaVu Sans Mono" :height 140)
+      (set-face-attribute 'default nil :family "DejaVu Sans Mono" :height 140)))
 
-  (cond
-   ((and (eq system-type 'darwin)
-         (rasen/font-exists-p "Linux Libertine O"))
-    (set-face-attribute 'variable-pitch nil :family "Linux Libertine O" :height 180))
+    (cond
+     ((and (eq system-type 'darwin)
+           (rasen/font-exists-p "Linux Libertine O"))
+      (set-face-attribute 'variable-pitch nil :family "Linux Libertine O" :height 180))
 
-   ((rasen/font-exists-p "Linux Libertine O")
-    (set-face-attribute 'variable-pitch nil :family "Linux Libertine O" :height 90))
-   ((rasen/font-exists-p "Vollkorn")
-    (set-face-attribute 'variable-pitch nil :family "Vollkorn" :height 80))
-   ((rasen/font-exists-p "DejaVu Sans")
-    (set-face-attribute 'variable-pitch nil :family "DejaVu Sans"))))
+     ((rasen/font-exists-p "Linux Libertine O")
+      (set-face-attribute 'variable-pitch nil :family "Linux Libertine O" :height 90))
+     ((rasen/font-exists-p "Vollkorn")
+      (set-face-attribute 'variable-pitch nil :family "Vollkorn" :height 80))
+     ((rasen/font-exists-p "DejaVu Sans")
+      (set-face-attribute 'variable-pitch nil :family "DejaVu Sans")))))
 
 (rasen/set-my-fonts)
 #+end_src
@@ -8947,8 +8924,7 @@ Use variable-pitch fonts in org-mode. (~<<org-config>>~)
 (require 'org-variable-pitch)
 (setq org-variable-pitch-fixed-font "Iosevka")
 (set-face-attribute 'org-variable-pitch-fixed-face nil
-                    :height (if (eq system-type 'darwin) 140 65)
-                    :weight 'regular)
+                    :inherit 'fixed-pitch)
 (diminish 'org-variable-pitch-minor-mode)
 (diminish 'buffer-face-mode)
 

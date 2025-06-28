@@ -15,7 +15,7 @@ let
         boot.kernelModules = [ "kvm-intel" "wl" ];
         boot.extraModulePackages = [ config.boot.kernelPackages.rtl88x2bu config.boot.kernelPackages.broadcom_sta ];
       
-        hardware.opengl = {
+        hardware.graphics = {
           enable = true;
           extraPackages = [
             pkgs.vaapiIntel
@@ -57,7 +57,7 @@ let
         ];
       }
       {
-        services.xserver.libinput = {
+        services.libinput = {
           enable = true;
           touchpad.accelSpeed = "0.7";
         };
@@ -139,9 +139,8 @@ in
 {
   imports = [
     {
-      nixpkgs.config.allowUnfree = true;
-
       # The NixOS release to be compatible with for stateful data such as databases.
+      # TODO: make it per-machine
       system.stateVersion = "21.05";
     }
 
@@ -196,7 +195,7 @@ in
       };
       services.xserver.displayManager.lightdm.enable = true;
       # services.xserver.displayManager.startx.enable = true;
-      services.xserver.displayManager.defaultSession = "none+exwm";
+      services.displayManager.defaultSession = "none+exwm";
     }
     {
       programs.slock.enable = true;
@@ -211,14 +210,14 @@ in
       time.timeZone = "Europe/Kiev";
     }
     {
-      services.xserver.layout = "us,ua";
-      services.xserver.xkbVariant = "workman,";
+      services.xserver.xkb.layout = "us,ua";
+      services.xserver.xkb.variant = "workman,";
     
       # Use same config for linux console
       console.useXkbConfig = true;
     }
     {
-      services.xserver.xkbOptions = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
+      services.xserver.xkb.options = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
       # services.xserver.xkbOptions = "grp:caps_toggle,grp_led:caps";
     }
     {
@@ -239,7 +238,7 @@ in
     {
       services.openssh = {
         enable = true;
-        passwordAuthentication = false;
+        settings.PasswordAuthentication = false;
       };
     }
     {
@@ -249,22 +248,22 @@ in
       services.dnsmasq = {
         enable = true;
     
-        # These are used in addition to resolv.conf
-        servers = [
-          "8.8.8.8"
-          "8.8.4.4"
-        ];
+        settings = {
+          # These are used in addition to resolv.conf
+          server = [
+            "8.8.8.8"
+            "8.8.4.4"
+          ];
     
-        extraConfig = ''
-          interface=lo
-          bind-interfaces
-          listen-address=127.0.0.1
-          cache-size=1000
-    
-          no-negcache
-        '';
+          interface = "lo";
+          bind-interfaces = true;
+          listen-address = "127.0.0.1";
+          cache-size = 1000;
+          no-negcache = true;
+        };
       };
     }
+    
     {
       networking.firewall = {
         enable = true;
@@ -277,7 +276,6 @@ in
     {
       services.locate = {
         enable = true;
-        localuser = "rasen";
       };
     }
     {
@@ -342,7 +340,7 @@ in
     }
     {
       # PipeWire requires pulseaudio to be disabled.
-      hardware.pulseaudio.enable = false;
+      services.pulseaudio.enable = false;
     
       security.rtkit.enable = true;
       services.pipewire = {
@@ -350,34 +348,6 @@ in
         alsa.enable = true;
         alsa.support32Bit = true;
         pulse.enable = true;
-    
-    
-        media-session.config.bluez-monitor.rules = [
-          {
-            # Matches all cards
-            matches = [ { "device.name" = "~bluez_card.*"; } ];
-            actions = {
-              "update-props" = {
-                "bluez5.reconnect-profiles" = [ "hfp_hf" "hsp_hs" "a2dp_sink" ];
-                # mSBC is not expected to work on all headset + adapter combinations.
-                "bluez5.msbc-support" = true;
-                # SBC-XQ is not expected to work on all headset + adapter combinations.
-                "bluez5.sbc-xq-support" = true;
-              };
-            };
-          }
-          {
-            matches = [
-              # Matches all sources
-              { "node.name" = "~bluez_input.*"; }
-              # Matches all outputs
-              { "node.name" = "~bluez_output.*"; }
-            ];
-            actions = {
-              "node.pause-on-idle" = false;
-            };
-          }
-        ];
       };
     }
     {
@@ -395,7 +365,7 @@ in
       programs.gnupg.agent = {
         enable = true;
         enableSSHSupport = true;
-        pinentryFlavor = "qt";
+        pinentryPackage = pkgs.pinentry-qt;
       };
     
       ## is it no longer needed?
@@ -474,7 +444,7 @@ in
       environment.systemPackages = [
         pkgs.man-pages
         pkgs.stdman
-        pkgs.posix_man_pages
+        pkgs.man-pages-posix
         pkgs.stdmanpages
       ];
     }
@@ -487,7 +457,7 @@ in
         fontDir.enable = true;
         enableGhostscriptFonts = false;
     
-        fonts = with pkgs; [
+        packages = with pkgs; [
           pkgs.inconsolata
           pkgs.dejavu_fonts
           pkgs.source-code-pro
