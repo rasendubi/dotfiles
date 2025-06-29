@@ -1141,7 +1141,6 @@
                     swift-mode
                     terraform-mode
                     tide
-                    toc-org
                     typescript-mode
                     visual-fill-column
                     vterm

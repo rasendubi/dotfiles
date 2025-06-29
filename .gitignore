@@ -52,3 +52,4 @@
 /README.js
 /README.sh
 /.emacs.d/forge-database.sqlite
+/.emacs.d/request/
