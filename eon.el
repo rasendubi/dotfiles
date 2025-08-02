@@ -19,6 +19,12 @@
                      eon-insert-state)
   "List of eon states.")
 
+(defvar eon-normal-state-entry-hook nil
+  "Hook run when entering normal state.")
+
+(defvar eon-insert-state-entry-hook nil
+  "Hook run when entering insert state.")
+
 (defvar-local eon-motion-state nil)
 (defvar-local eon-normal-state nil)
 (defvar-local eon-insert-state nil)
@@ -78,6 +84,7 @@
 
 (defun eon-normal-state ()
   (interactive)
+  (run-hooks 'eon-normal-state-entry-hook)
   (dolist (state eon/states)
     (set state nil))
   (setq-local eon-normal-state t)
@@ -88,7 +95,8 @@
   (dolist (state eon/states)
     (set state nil))
   (setq eon-insert-state t)
-  (setq-local cursor-type 'bar))
+  (setq-local cursor-type 'bar)
+  (run-hooks 'eon-insert-state-entry-hook))
 
 (defun eon-insert ()
   "Switch to insert state. Deletes region if active."
@@ -280,3 +288,23 @@
   (when dir
     (vc-file-setprop dir 'project-vc nil)
     (rasen/reset-project (file-name-parent-directory dir))))
+
+;;; Input Method Management
+
+(defvar-local eon--saved-input-method nil
+  "Saved input method for restoration when entering insert state.")
+
+(defun eon--save-input-method ()
+  "Save the current input method when leaving insert state."
+  (when eon-insert-state
+    (setq-local eon--saved-input-method current-input-method)
+    (when current-input-method
+      (deactivate-input-method))))
+
+(defun eon--restore-input-method ()
+  "Restore the saved input method when entering insert state."
+  (when eon--saved-input-method
+    (activate-input-method eon--saved-input-method)))
+
+(add-hook 'eon-normal-state-entry-hook #'eon--save-input-method)
+(add-hook 'eon-insert-state-entry-hook #'eon--restore-input-method)
