@@ -947,6 +947,10 @@
               programs.git.extraConfig.github.name = "rasendubi";
             }
             {
+              home.sessionVariables.npm_config_prefix = "$HOME/.npm-global";
+              home.sessionPath = ["$HOME/.npm-global/bin"];
+            }
+            {
               home.packages = [ pkgs.plantuml ];
             }
             {

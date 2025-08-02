@@ -8069,6 +8069,15 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
   :config
   (setq-default js-indent-level 2))
 #+end_src
+
+*** Create writable npm global directory
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.sessionVariables.npm_config_prefix = "$HOME/.npm-global";
+  home.sessionPath = ["$HOME/.npm-global/bin"];
+}
+#+end_src
 *** Typescript
 #+begin_src emacs-lisp
 (use-package typescript-mode
