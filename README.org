@@ -1820,6 +1820,74 @@ Fix whitespaces on file save.
   :config
   (which-key-mode))
 #+end_src
+** Spell-check
+Install hunspell as spell checker.
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.packages = [
+    (pkgs.hunspellWithDicts (with pkgs.hunspellDicts; [en_US en_US-large uk_UA]))
+  ];
+}
+#+end_src
+
+Fix Ukrainian dictionary to play nicely with English one.
+#+name: flake-overlays
+#+begin_src nix
+(final: prev: {
+  hunspellDicts = prev.hunspellDicts // {
+    # uk_UA affix file strips all latin characters from input, so
+    # combining en_US,uk_UA stops spell-checking english words
+    # entirely.
+    #
+    # Remove these iconv lines, so that we can use both dictionaries
+    # together.
+    uk_UA = prev.hunspellDicts.uk_UA.overrideAttrs (old: {
+      postInstall = ''
+        sed -i 's/^ICONV 64$/ICONV 2/' $out/share/hunspell/uk_UA.aff
+        sed -i '/^ICONV [^ ]* 0$/d' $out/share/hunspell/uk_UA.aff
+      '';
+    });
+  };
+})
+#+end_src
+
+Make spellcheck work with Unicode apostrophe.
+#+begin_src emacs-lisp
+(use-package ispell
+  :config
+  (setq ispell-program-name "hunspell")
+  (setq ispell-dictionary "en_US,uk_UA")
+
+  (ispell-set-spellchecker-params)
+  (ispell-hunspell-add-multi-dic "en_US,uk_UA")
+  (ispell-change-dictionary "en_US,uk_UA" t)
+
+  ;; This needs to be overriden for some reason, even though
+  ;; ispell-dictionary-alist has the same value.
+  (setq ispell-local-dictionary-alist
+        `(("en_US,uk_UA" "[[:alpha:]]" "[^[:alpha:]]"
+           "['0-9`’-]" nil ("-d" "en_US,uk_UA") nil utf-8)))
+
+
+  ;; Don't send ’ to the subprocess.
+  (defun rasen/replace-apostrophe (args)
+    (cons (replace-regexp-in-string
+           "’" "'" (car args))
+          (cdr args)))
+  (advice-add #'ispell-send-string :filter-args
+              #'rasen/replace-apostrophe)
+
+  ;; Convert ' back to ’ from the subprocess.
+  (defun rasen/replace-quote (args)
+    (if (not (derived-mode-p 'org-mode))
+        args
+      (cons (replace-regexp-in-string
+             "'" "’" (car args))
+            (cdr args))))
+  (advice-add #'ispell-parse-output :filter-args
+              #'rasen/replace-quote))
+#+end_src
 ** Google translate
 #+begin_src emacs-lisp
 (use-package google-translate

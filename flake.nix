@@ -225,6 +225,11 @@
               home.packages = [ pkgs.ripgrep ];
             }
             {
+              home.packages = [
+                (pkgs.hunspellWithDicts (with pkgs.hunspellDicts; [en_US en_US-large uk_UA]))
+              ];
+            }
+            {
               home.packages = pkgs.lib.linux-only [
                 pkgs.xss-lock
               ];
@@ -1284,6 +1289,22 @@
             };
           })
           inputs.emacs-overlay.overlay
+          (final: prev: {
+            hunspellDicts = prev.hunspellDicts // {
+              # uk_UA affix file strips all latin characters from input, so
+              # combining en_US,uk_UA stops spell-checking english words
+              # entirely.
+              #
+              # Remove these iconv lines, so that we can use both dictionaries
+              # together.
+              uk_UA = prev.hunspellDicts.uk_UA.overrideAttrs (old: {
+                postInstall = ''
+                  sed -i 's/^ICONV 64$/ICONV 2/' $out/share/hunspell/uk_UA.aff
+                  sed -i '/^ICONV [^ ]* 0$/d' $out/share/hunspell/uk_UA.aff
+                '';
+              });
+            };
+          })
         ];
       in {
         overlays = genAttrs systems mkOverlays;
