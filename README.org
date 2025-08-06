@@ -703,6 +703,136 @@ Emacs integration for yabai:
   (yabai-move-on-error "south" #'windmove-down))
 #+end_src
 
+** Karabiner configuration
+Configure Karabiner-Elements for advanced keyboard customization.
+
+#+name: home-manager-section
+#+begin_src nix
+{
+  xdg.configFile."karabiner/karabiner.json".text = builtins.toJSON {
+    global.show_in_menu_bar = false;
+    profiles = [
+      {
+        name = "Default profile";
+        selected = true;
+        virtual_hid_keyboard = {
+          country_code = 0;
+          keyboard_type_v2 = "ansi";
+        };
+        complex_modifications.rules = [
+          {
+            description = "S-<return> to Terminal";
+            manipulators = [
+              {
+                type = "basic";
+                conditions = [
+                  {
+                    type = "frontmost_application_unless";
+                    bundle_identifiers = ["org\\.gnu\\.Emacs"];
+                    file_paths = ["/emacs$"];
+                  }
+                ];
+                from = {
+                  key_code = "return_or_enter";
+                  modifiers.mandatory = ["left_gui"];
+                };
+                to = [{ shell_command = "cd ~; /Users/rasen/.nix-profile/bin/emacsclient -c -e '(progn (vterm) (set-window-dedicated-p nil t))'"; }];
+              }
+            ];
+          }
+          {
+            description = "remap s-C-j/l to S-C-left/right for space switching";
+            manipulators = [
+              {
+                type = "basic";
+                from = {
+                  key_code = "j";
+                  modifiers.mandatory = ["left_gui" "left_control"];
+                };
+                to = {
+                  key_code = "left_arrow";
+                  modifiers = ["left_gui" "left_control"];
+                };
+              }
+              {
+                type = "basic";
+                from = {
+                  key_code = "l";
+                  modifiers.mandatory = ["left_gui" "left_control"];
+                };
+                to = {
+                  key_code = "right_arrow";
+                  modifiers = ["left_gui" "left_control"];
+                };
+              }
+            ];
+          }
+          {
+            description = "ctrl to switch keyboard layout";
+            manipulators = [
+              {
+                type = "basic";
+                conditions = [{ type = "input_source_unless"; input_sources = [{ language = "en"; }]; }];
+                from.key_code = "left_control";
+                to = [{ select_input_source.input_source_id = "org.sil.ukelele.keyboardlayout.workman.workman"; }];
+              }
+              {
+                type = "basic";
+                conditions = [{ type = "input_source_if"; input_sources = [{ language = "en"; }]; }];
+                from.key_code = "left_control";
+                to = [{ select_input_source.input_source_id = "com.apple.keylayout.Ukrainian-PC"; }];
+              }
+            ];
+          }
+          {
+            description = "fn key to switch keyboard layout";
+            manipulators = [
+              {
+                type = "basic";
+                conditions = [{ type = "input_source_unless"; input_sources = [{ language = "en"; }]; }];
+                from.apple_vendor_top_case_key_code = "keyboard_fn";
+                to = [{ apple_vendor_keyboard_key_code = "function"; }];
+                to_if_alone = [{ select_input_source.input_source_id = "org.sil.ukelele.keyboardlayout.workman.workman"; }];
+                parameters.basic.to_if_alone_timeout_milliseconds = 200;
+              }
+              {
+                type = "basic";
+                conditions = [{ type = "input_source_if"; input_sources = [{ language = "en"; }]; }];
+                from.apple_vendor_top_case_key_code = "keyboard_fn";
+                to = [{ apple_vendor_keyboard_key_code = "function"; }];
+                to_if_alone = [{ select_input_source.input_source_id = "com.apple.keylayout.Ukrainian-PC"; }];
+                parameters.basic.to_if_alone_timeout_milliseconds = 200;
+              }
+            ];
+          }
+          {
+            description = "Post escape if caps_lock is tapped";
+            manipulators = [
+              {
+                type = "basic";
+                from = {
+                  key_code = "caps_lock";
+                  modifiers.optional = ["any"];
+                };
+                parameters = {
+                  basic = {
+                    to_if_alone_timeout_milliseconds = 200;
+                    to_if_held_down_threshold_milliseconds = 200;
+                  };
+                };
+                to = [{ key_code = "left_control"; }];
+                to_if_alone = [{ key_code = "escape"; }];
+                to_if_held_down = [{ key_code = "left_control"; }];
+              }
+            ];
+          }
+        ];
+      }
+    ];
+  };
+}
+#+end_src
+
 ** defaults bindings
 Override keybindings in settings:
 
