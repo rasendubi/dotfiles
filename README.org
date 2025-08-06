@@ -271,6 +271,7 @@ Integrate home-manager into nix-darwin.
       ];
     };
     # users.rasen = inputs.self.lib.home-manager-common;
+    backupFileExtension = "bak";
   };
 }
 #+end_src

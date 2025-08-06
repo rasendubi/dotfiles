@@ -1387,6 +1387,7 @@
                   ];
                 };
                 # users.rasen = inputs.self.lib.home-manager-common;
+                backupFileExtension = "bak";
               };
             }
             {
