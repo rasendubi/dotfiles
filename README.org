@@ -4462,7 +4462,7 @@ Set my org files location.
 #+begin_src emacs-lisp
 (setq org-directory "~/org"
       org-default-notes-file rasen/org-refile-file
-      org-agenda-files (cons "~/org/roam/fluxon/index.org" (rasen/org-files-in-dir "~/org")))
+      org-agenda-files (cons "~/org/roam/dd/index.org" (cons "~/org/roam/fluxon/index.org" (rasen/org-files-in-dir "~/org"))))
 #+end_src
 
 Show agenda as the only window and restore window layout on quit (so that agenda does not mess up with my layout).
@@ -5192,6 +5192,7 @@ Slip boxes are basically different directories that I split notes into.
 
     ;; Work notes
     ("f" "fluxon"      "fluxon/"  "${rasen/capture-tsid}")
+    ("D" "datadog"     "dd/"      "${rasen/capture-tsid}")
 
     ("P" "pulse"       "pulse/"   "${rasen/capture-tsid}" "#+DATE: %<%FT%T%z>\n#+LAST_MODIFIED: \n")
 
