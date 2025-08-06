@@ -552,8 +552,8 @@ I'm the only user of the system:
       ShowPathbar = true;
     };
 
-    # Change keyboard layout on fn click
-    hitoolbox.AppleFnUsageType = "Change Input Source";
+    # Disable default fn keyboard layout switch. I have my own with Karabiner
+    hitoolbox.AppleFnUsageType = "Do Nothing";
 
     # Show seconds in clock
     menuExtraClock.ShowSeconds = true;
@@ -700,6 +700,84 @@ Emacs integration for yabai:
 (defun yabai-windmove-down ()
   (interactive)
   (yabai-move-on-error "south" #'windmove-down))
+#+end_src
+
+** defaults bindings
+Override keybindings in settings:
+
+#+name: darwin-section
+#+begin_src nix
+{
+  system.defaults.CustomUserPreferences = {
+    "com.apple.symbolichotkeys" = {
+      AppleSymbolicHotKeys = let
+
+        disabled = { enabled = false; };
+
+        modifier = enabled: code: if enabled then code else 0;
+        enabled =
+          { shift ? false
+          , control ? false
+          , option ? false
+          , command ? false
+          , function ? false
+            # Keycode from
+            # /System/Library/Frameworks/Carbon.framework/Versions/A/Frameworks/HIToolbox.framework/Versions/A/Headers/Events.h
+          , key
+            # ASCII code of the key
+          , ascii ? 65535
+          }:
+          let
+            modifiers = lib.foldl' builtins.bitOr 0 [
+              (modifier shift    (lib.fromHexString "0x020000"))
+              (modifier control  (lib.fromHexString "0x040000"))
+              (modifier option   (lib.fromHexString "0x080000"))
+              (modifier command  (lib.fromHexString "0x100000"))
+              (modifier function (lib.fromHexString "0x800000"))
+            ];
+          in {
+            enabled = true;
+            value = {
+              parameters = [ascii key modifiers];
+              type = "standard";
+            };
+          };
+
+      in {
+        # Move left a space
+        "79" = enabled {
+          command = true;
+          control = true;
+          key = 123; # left arrow
+        };
+        # Move right a space
+        "81" = enabled {
+          command = true;
+          control = true;
+          key = 124; # right arrow
+        };
+        # quick note
+        "190" = disabled;
+
+        # Cmd-P -> Show Launchpad
+        "160" = enabled {
+          command = true;
+          key = 31; # o
+          ascii = 112; # p
+        };
+        # Show spotlight search
+        "64" = disabled;
+      };
+    };
+  };
+
+  system.activationScripts.activateHotkeys = {
+    enable = true;
+    text = ''
+      /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
+    '';
+  };
+}
 #+end_src
 * Machines
 ** omicron
