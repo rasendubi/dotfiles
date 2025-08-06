@@ -6914,8 +6914,13 @@ For home-manager:
   };
 
   # manage other shells as well
-  programs.bash.enable = true;
+  # programs.bash.enable = true;
   programs.zsh.enable = true;
+  programs.zsh.initContent = ''
+    if [[ -f "~/.zshrc_local" ]]; then
+      source "~/.zshrc_local"
+    fi
+  '';
 }
 #+end_src
 

@@ -811,8 +811,13 @@
               };
             
               # manage other shells as well
-              programs.bash.enable = true;
+              # programs.bash.enable = true;
               programs.zsh.enable = true;
+              programs.zsh.initContent = ''
+                if [[ -f "~/.zshrc_local" ]]; then
+                  source "~/.zshrc_local"
+                fi
+              '';
             }
             {
               programs.fish.functions.fish_user_key_bindings = ''
