@@ -251,7 +251,7 @@
                             type = "basic";
                             conditions = [{ type = "input_source_if"; input_sources = [{ language = "en"; }]; }];
                             from.key_code = "left_control";
-                            to = [{ select_input_source.input_source_id = "com.apple.keylayout.Ukrainian-PC"; }];
+                            to = [{ select_input_source.language = "^uk$"; }];
                           }
                         ];
                       }
