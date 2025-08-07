@@ -800,7 +800,7 @@ Configure Karabiner-Elements for advanced keyboard customization.
                 conditions = [{ type = "input_source_if"; input_sources = [{ language = "en"; }]; }];
                 from.apple_vendor_top_case_key_code = "keyboard_fn";
                 to = [{ apple_vendor_keyboard_key_code = "function"; }];
-                to_if_alone = [{ select_input_source.input_source_id = "com.apple.keylayout.Ukrainian-PC"; }];
+                to_if_alone = [{ select_input_source.language = "^uk$"; }];
                 parameters.basic.to_if_alone_timeout_milliseconds = 200;
               }
             ];
