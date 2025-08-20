@@ -940,8 +940,8 @@
               # programs.bash.enable = true;
               programs.zsh.enable = true;
               programs.zsh.initContent = ''
-                if [[ -f "~/.zshrc_local" ]]; then
-                  source "~/.zshrc_local"
+                if [[ -e "$HOME/.zshrc_local" ]]; then
+                  source "$HOME/.zshrc_local"
                 fi
               '';
             }
