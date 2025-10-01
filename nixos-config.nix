@@ -167,7 +167,6 @@ in
       # register self and nixpkgs as flakes for quick access
       nix.registry = {
         self.flake = inputs.self;
-    
         nixpkgs.flake = inputs.nixpkgs;
       };
     }

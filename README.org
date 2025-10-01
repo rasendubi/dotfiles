@@ -394,6 +394,35 @@ in {
 #+end_src
 
 ~<<flake-overlays>>~ are defined elsewhere.
+** agenix
+agenix allows encrypting secrets, so they can be stored in nix store.
+#+name: flake-inputs
+#+begin_src nix
+agenix = {
+  url = "github:ryantm/agenix";
+  inputs.nixpkgs.follows = "nixpkgs";
+  inputs.home-manager.follows = "home-manager";
+};
+#+end_src
+
+Secrets (tangled to secrets.nix):
+#+begin_src nix :tangle ./secrets.nix :noweb no-export
+# Auto-generated from README.org
+let
+  systems = {
+    pie = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHutBETZO1KDA1anRT/3GDKaeFaEmdAqh7FZ6TKnYNDT";
+  };
+  users = {
+    yubikey1 = "age1yubikey1qvqpv4f2kvwxzdf4rm349za00jayxhk23ads42l92sjywlcwce20yhm6pm2";
+    bayraktar = "age1kmlska3klt5ca98chxm0xu2q2rc5x2c3agkut6303ajg35rreqes7qg3yd";
+  };
+in {
+  "secrets/wireless_secrets.age".publicKeys = [
+    users.yubikey1 users.bayraktar  # for editing
+    systems.pie
+  ];
+}
+#+end_src
 * NixOS
 ** General
 I'm a [[http://nixos.org/][NixOS]] user. What's cool about it is that I can describe all my system configuration in one file (almost). I can execute a single command and have a system with the same software, system settings, etc.
@@ -439,7 +468,22 @@ This =<<nixos-section>>= is replaced by other parts of this doc.
   # register self and nixpkgs as flakes for quick access
   nix.registry = {
     self.flake = inputs.self;
+    nixpkgs.flake = inputs.nixpkgs;
+  };
+}
+#+end_src
 
+Same configuration for nix-darwin systems.
+#+name: darwin-section
+#+begin_src nix
+{
+  # for compatibility with nix-shell, nix-build, etc.
+  environment.etc.nixpkgs.source = inputs.nixpkgs;
+  nix.nixPath = ["nixpkgs=/etc/nixpkgs"];
+
+  # register self and nixpkgs as flakes for quick access
+  nix.registry = {
+    self.flake = inputs.self;
     nixpkgs.flake = inputs.nixpkgs;
   };
 }
@@ -910,6 +954,16 @@ Override keybindings in settings:
   };
 }
 #+end_src
+** Linux builder
+#+name: darwin-section
+#+begin_src nix
+{
+  nix.linux-builder = {
+    enable = true;
+    package = pkgs.darwin.linux-builder;
+  };
+}
+#+end_src
 * Machines
 ** omicron
 This is my small Dell XPS 13 running NixOS.
@@ -1283,6 +1337,8 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
 
       epkgs.elpaPackages.eglot
 
+      epkgs.elpaPackages.llm
+
       (epkgs.trivialBuild rec {
         pname = "org-fc";
         version = "20201121";
@@ -1331,7 +1387,8 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
         pypkgs.virtualenv
       ]))
 
-      (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science uk]))
+      # (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science uk]))
+      (pkgs.hunspellWithDicts (with pkgs.hunspellDicts; [en_US en_US-large uk_UA]))
 
       # latex for displaying fragments in org-mode
       (pkgs.texlive.combine {
@@ -2030,15 +2087,8 @@ Fix whitespaces on file save.
   (which-key-mode))
 #+end_src
 ** Spell-check
-Install hunspell as spell checker.
-#+name: home-manager-section
-#+begin_src nix
-{
-  home.packages = [
-    (pkgs.hunspellWithDicts (with pkgs.hunspellDicts; [en_US en_US-large uk_UA]))
-  ];
-}
-#+end_src
+
+hunspell is installed in emacs packages.
 
 Fix Ukrainian dictionary to play nicely with English one.
 #+name: flake-overlays
@@ -2952,6 +3002,7 @@ Mount external drive when needed.
   };
 }
 #+end_src
+
 ** direnv
 *** direnv + lorri
 direnv allows having per-directory environment configuration. You can think of automatic virtualenv, but it's more general and supports unloading.
@@ -2986,6 +3037,13 @@ Better (?) direnv integration via [[https://github.com/purcell/envrc][purcell/en
 {
   virtualisation.virtualbox.host.enable = true;
   users.extraGroups.vboxusers.members = ["rasen"];
+}
+#+end_src
+** User-level services
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.packages = [ pkgs.unstable.pm2 ];
 }
 #+end_src
 * Hardware
@@ -3715,6 +3773,15 @@ Package for =f-files= and =f-ext?= functions.
 #+begin_src emacs-lisp
 (use-package f
   :commands (f-files f-ext? f-no-ext))
+#+end_src
+** Electric quote
+Use proper quotes in org-mode.
+
+#+begin_src emacs-lisp
+(use-package org
+  :defer t
+  :config
+  (add-hook 'org-mode-hook #'electric-quote-local-mode))
 #+end_src
 ** Todo
 A special function that marks the task as done yesterday if prefix is supplied (useful for habits).
@@ -5382,6 +5449,7 @@ All daily notes are stored in a separate directory so they do not mix up with no
          :empty-lines-before 1
          :unnarrowed t
          :clock-in t
+         :clock-keep nil
          :clock-resume t)))
 
 ;; Try to guess "today"
@@ -7343,6 +7411,7 @@ Executing just scripts from emacs:
       init.defaultBranch = "main";
     };
   };
+  home.packages = [ pkgs.git-annex pkgs.datalad ];
 }
 #+end_src
 
@@ -7433,7 +7502,7 @@ Do not put files into trash can. Delete them for real. (~<<magit-config>>~)
 Integrate with ivy. (~<<magit-config>>~)
 #+name: magit-config
 #+begin_src emacs-lisp :tangle no
-(setq-default magit-completing-read-function 'ivy-completing-read)
+;; (setq-default magit-completing-read-function 'ivy-completing-read)
 #+end_src
 
 Use =q= to quit transient buffers.
@@ -7626,7 +7695,7 @@ Make '_' a part of words so that commands like =evil-forward-word-begin= work pr
 Company mode provides autocomplete features.
 #+begin_src emacs-lisp
 (use-package company
-  :disabled t
+  ;; :disabled t
   :defer 2
   ;; :general
   ;; (:keymaps 'company-mode-map
@@ -7678,9 +7747,12 @@ Company-box frontend works better with variable-pitch fonts.
   :custom
   ;; (orderless-style-dispatchers '(orderless-affix-dispatch))
   ;; (orderless-component-separator #'orderless-escapable-split-on-space)
-  (completion-styles '(orderless basic))
+  (completion-styles '(basic orderless))
   (completion-category-defaults nil)
-  (completion-category-overrides '((file (styles partial-completion)))))
+  (completions-sort 'historical)
+  (completion-category-overrides nil)
+  ;; (completion-category-overrides '((file (styles flex))))
+  )
 #+end_src
 *** vertico
 #+begin_src emacs-lisp
@@ -8804,19 +8876,26 @@ If given a SOURCE, execute the CMD on it."
   :config
   (require 'gptel-curl)
   (require 'gptel-transient)
+  (require 'gptel-rewrite)
+  (require 'gptel-context)
   (require 'password-store)
   (setq gptel-default-mode 'org-mode)
   (setq gptel-api-key (password-store-get "openai.com/emacs-api-key"))
   ;;(setq gptel-api-key #'(lambda () (password-store-get "openai.com/emacs-api-key")))
+  ;; (setq gptel-api-key #'(lambda () (shell-command-to-string "passage openai.com/emacs-api-key")))
 
   (push '(thinking . "You are a thinking partner. Your goal is to challenge my ideas, provide supporting examples or counter-arguments, find inconsistencies, and links to other interesting ideas. Do not re-iterate my ideas. Respond concisely.") gptel-directives)
 
-  (setq gptel-max-tokens 500)
-  (gptel-make-gpt4all "GPT4All"           ;Name of your choosing
-    :protocol "http"
-    :host "localhost:4891"                 ;Where it's running
-    :models '("Meta-Llama-3-8B-Instruct.Q4_0.gguf"
-              "Nous-Hermes-2-Mistral-7B-DPO.Q4_0.gguf")))
+  (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "* @user\n\n")
+  (setf (alist-get 'org-mode gptel-response-prefix-alist) "* @assistant\n\n")
+
+  ;; (setq gptel-max-tokens 500)
+  ;; (gptel-make-gpt4all "GPT4All"           ;Name of your choosing
+  ;;   :protocol "http"
+  ;;   :host "localhost:4891"                 ;Where it's running
+  ;;   :models '("Meta-Llama-3-8B-Instruct.Q4_0.gguf"
+  ;;             "Nous-Hermes-2-Mistral-7B-DPO.Q4_0.gguf"))
+  )
 #+end_src
 * Look and Feel
 ** Remove the clutter

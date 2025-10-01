@@ -29,6 +29,11 @@
       url = "github:lnl7/nix-darwin/nix-darwin-25.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    agenix = {
+      url = "github:ryantm/agenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
     nixos-hardware = {
       type = "github";
       owner = "NixOS";
@@ -348,11 +353,6 @@
               home.packages = [ pkgs.ripgrep ];
             }
             {
-              home.packages = [
-                (pkgs.hunspellWithDicts (with pkgs.hunspellDicts; [en_US en_US-large uk_UA]))
-              ];
-            }
-            {
               home.packages = pkgs.lib.linux-only [
                 pkgs.xss-lock
               ];
@@ -452,6 +452,9 @@
               programs.direnv.enable = true;
               programs.direnv.nix-direnv.enable = true;
               services.lorri.enable = pkgs.stdenv.isLinux;
+            }
+            {
+              home.packages = [ pkgs.unstable.pm2 ];
             }
             {
               programs.autorandr = {
@@ -1034,6 +1037,7 @@
                   init.defaultBranch = "main";
                 };
               };
+              home.packages = [ pkgs.git-annex pkgs.datalad ];
             }
             {
               programs.git.aliases = {
@@ -1313,6 +1317,8 @@
               
                     epkgs.elpaPackages.eglot
               
+                    epkgs.elpaPackages.llm
+              
                     (epkgs.trivialBuild rec {
                       pname = "org-fc";
                       version = "20201121";
@@ -1361,7 +1367,8 @@
                       pypkgs.virtualenv
                     ]))
               
-                    (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science uk]))
+                    # (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science uk]))
+                    (pkgs.hunspellWithDicts (with pkgs.hunspellDicts; [en_US en_US-large uk_UA]))
               
                     # latex for displaying fragments in org-mode
                     (pkgs.texlive.combine {
@@ -1518,6 +1525,17 @@
                 allowUnfree = true;
               };
               nixpkgs.overlays = self.overlays.aarch64-darwin;
+            }
+            {
+              # for compatibility with nix-shell, nix-build, etc.
+              environment.etc.nixpkgs.source = inputs.nixpkgs;
+              nix.nixPath = ["nixpkgs=/etc/nixpkgs"];
+            
+              # register self and nixpkgs as flakes for quick access
+              nix.registry = {
+                self.flake = inputs.self;
+                nixpkgs.flake = inputs.nixpkgs;
+              };
             }
             {
               users.users.${config.system.primaryUser} = {
@@ -1706,6 +1724,12 @@
                 text = ''
                   /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
                 '';
+              };
+            }
+            {
+              nix.linux-builder = {
+                enable = true;
+                package = pkgs.darwin.linux-builder;
               };
             }
             {
