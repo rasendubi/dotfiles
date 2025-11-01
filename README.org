@@ -7382,7 +7382,8 @@ Always push to github with ssh keys instead of login/password. (~<<home-manager-
 #+begin_src nix
 {
   programs.git.extraConfig = {
-    url."git@github.com:".pushInsteadOf = "https://github.com/";
+    url."ssh://git@github.com/DataDog".insteadOf = "https://github.com/DataDog";
+    url."ssh://git@github.com/".pushInsteadOf = "https://github.com/";
   };
 }
 #+end_src
