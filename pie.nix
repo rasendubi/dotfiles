@@ -41,6 +41,8 @@
         ];
         extraGroups = [ "wheel" ];
       };
+    
+      security.sudo.wheelNeedsPassword = false;
     }
     {
       services.avahi = {
@@ -102,6 +104,13 @@
         };
       };
     
+      environment.etc.crypttab = {
+        mode = "0600";
+        text = ''
+          wdisk UUID=391eb77a-5504-4b34-8ff0-f1612f419427 none luks,noauto,nofail,x-systemd.device-timeout=1ms
+        '';
+      };
+    
       # Configure auto-mountable drive
       fileSystems."/run/media/ext-data" = {
         device = "/dev/disk/by-uuid/63972645-dbc8-4543-b854-91038b2da6cb";
@@ -113,6 +122,7 @@
           "x-systemd.device-timeout=1ms" # device should be plugged already—do not wait for it
           "x-systemd.idle-timout=5m"     # unmount after 5 min of inactivity
         ];
+        # depends = [ "/dev/mapper/wdisk" ];
       };
     }
     {
@@ -145,7 +155,6 @@
     
       networking.wireless.networks."Rotem Indiana".pskRaw = "ext:rotem_indiana";
       networking.wireless.networks."Rotem Indiana".priority = 10;
-      networking.wireless.networks."Rotem Indiana_Guest".pskRaw = "ext:rotem_indiana_guest";
       networking.wireless.networks."Rotem Indiana_Backup".pskRaw = "ext:rotem_indiana_backup";
     
       hardware.enableRedistributableFirmware = true;
@@ -167,7 +176,7 @@
       # ];
     }
     {
-      swapDevices = [ { device = "/swapfile"; size = 1024; } ];
+      # swapDevices = [ { device = "/swapfile"; size = 1024; } ];
     }
   ];
 }
