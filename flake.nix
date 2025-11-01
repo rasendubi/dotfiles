@@ -1077,7 +1077,8 @@
             }
             {
               programs.git.extraConfig = {
-                url."git@github.com:".pushInsteadOf = "https://github.com/";
+                url."ssh://git@github.com/DataDog".insteadOf = "https://github.com/DataDog";
+                url."ssh://git@github.com/".pushInsteadOf = "https://github.com/";
               };
             }
             {
@@ -1244,7 +1245,6 @@
                     lua-mode
                     magit
                     markdown-mode
-                    modus-themes
                     nix-mode
                     nix-sandbox
                     notmuch

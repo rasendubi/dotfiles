@@ -65,10 +65,6 @@
 
 (add-hook 'after-make-frame-functions #'rasen/font-hook)
 
-(require 'modus-themes)
-(require 'modus-operandi-theme)
-(require 'modus-vivendi-theme)
-
 (setq modus-themes-italic-constructs t)
 (setq modus-themes-bold-constructs t)
 

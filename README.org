@@ -1264,7 +1264,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       lua-mode
       magit
       markdown-mode
-      modus-themes
       nix-mode
       nix-sandbox
       notmuch
@@ -9081,10 +9080,6 @@ Load console configuration early at initrd. This ensures the proper font (sizes)
 ** Color theme
 I use [[https://gitlab.com/protesilaos/modus-themes][modus-operandi]] theme. (Goes to early-init to avoid flash of unstyled emacs.)
 #+begin_src emacs-lisp :tangle .emacs.d/early-init.el
-(require 'modus-themes)
-(require 'modus-operandi-theme)
-(require 'modus-vivendi-theme)
-
 (setq modus-themes-italic-constructs t)
 (setq modus-themes-bold-constructs t)
 
