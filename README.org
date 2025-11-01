@@ -4580,188 +4580,109 @@ Do not show project tags.
         ;; org-agenda-time-grid '((daily today require-timed) nil "......"  "----------------")
         )
 
+  (defmacro rasen/mk-agenda (agenda-files inbox-files extra-categories)
+    `'((agenda "" ((org-agenda-files ,agenda-files)
+                   ;; start from yesterday
+                   (org-agenda-start-day "-1d")
+
+                   ;; show 8 days
+                   (org-agenda-span 8)
+
+                   ;; show closed items
+                   (org-agenda-show-log t)
+                   (org-agenda-log-mode-items '(closed))
+
+                   ;; Show habits on each day. (Useful if today
+                   ;; is closed but you still want to see the
+                   ;; habit graph.)
+                   ;; (org-habit-show-habits-only-for-today nil)
+
+                   (org-super-agenda-groups
+                    '(;; 1. time-grid
+                      ;; 2. scheduled today
+                      ;; 3. deadline today
+                      ;; 4. habits
+                      ;; 5. rest (anniversaries, etc.)
+                      ;; 6. deadline reminders
+                      (:name none ;; habits
+                       :habit t
+                       :order 4)
+                      (:name none ;; time-grid
+                       :time-grid t
+                       :order 1)
+                      (:name none ;; don't show closed items—they are still seen in the log
+                       :discard (:todo ("DONE" "CANCELED")))
+                      (:name none ;; scheduled today
+                       :and (:todo ("WAIT")
+                             :scheduled today)
+                       :order 2.5)
+                      (:name none ;; scheduled today
+                       :scheduled today
+                       :order 2)
+                      (:name none ;; deadline today
+                       :deadline today
+                       :order 3)
+                      (:name none ;; deadline reminders
+                       :deadline t
+                       :scheduled t
+                       :order 6)
+                      (:name none ;; everything else
+                       :anything t
+                       :order 5)))))
+       (alltodo "" ((org-agenda-files ,agenda-files)
+                    (org-agenda-overriding-header "")
+                    (org-super-agenda-groups
+                     '(;; drop scheduled items—they are shown in
+                       ;; agenda view
+                       (:discard (:scheduled t))
+
+                       ;; 8. Next items
+                       ;; 9. Active projects (NEXT/WAIT)
+                       ;; 11. Active books (NEXT)
+                       ;; 12. Waiting for items (WAIT)
+                       (:name "Books"
+                        :and (:category "books"
+                              :todo "NEXT")
+                        :order 11)
+                       (:name "Projects"
+                        :and (:tag "PROJECT"
+                              :todo "NEXT")
+                        :and (:tag "PROJECT"
+                              :todo "WAIT")
+                        :order 9)
+                       ,@extra-categories
+                       (:name "Next"
+                        :todo "NEXT"
+                        :order 8.99)
+                       (:todo "WAIT"
+                        :order 12)
+                       (:discard (:anything t))))))
+
+       ;; inbox items (they must have a “CREATED” property to be considered an item)
+       (search "+{:CREATED:}" ((org-agenda-files ,inbox-files)
+                               (org-agenda-overriding-header "")
+                               (org-super-agenda-groups
+                                '((:name "Inbox"
+                                   :auto-category t
+                                   :anything t)))))))
+
   (setq org-agenda-custom-commands
-        '(("o" "Overview"
-           ((agenda "" (;; start from yesterday
-                        (org-agenda-start-day "-1d")
+        `(("o" "Overview" ,(rasen/mk-agenda
+                            org-agenda-files
+                            (mapcar (lambda (x) (concat rasen/org-directory "/" x))
+                                    '("refile-omicron.org"
+                                      "orgzly.org"))
+                            nil))
 
-                        ;; show 6 days
-                        (org-agenda-span 6)
+          ("f" "Fluxon" ,(rasen/mk-agenda
+                          '("~/org/roam/fluxon/index.org" "~/org/refile-bayraktar.org")
+                          '("~/org/refile-bayraktar.org")
+                          nil))
 
-                        ;; show closed items
-                        (org-agenda-show-log t)
-                        (org-agenda-log-mode-items '(closed))
-
-                        ;; Show habits on each day. (Useful if today
-                        ;; is closed but you still want to see the
-                        ;; habit graph.)
-                        ;; (org-habit-show-habits-only-for-today nil)
-
-                        (org-super-agenda-groups
-                         '(;; 1. time-grid
-                           ;; 2. scheduled today
-                           ;; 3. deadline today
-                           ;; 4. habits
-                           ;; 5. rest (anniversaries, etc.)
-                           ;; 6. deadline reminders
-                           (:name none ;; habits
-                            :habit t
-                            :order 4)
-                           (:name none ;; time-grid
-                            :time-grid t
-                            :order 1)
-                           (:name none ;; don't show closed items—they are still seen in the log
-                            :discard (:todo ("DONE" "CANCELED")))
-                           (:name none ;; scheduled today
-                            :todo ("WAIT")
-                            :scheduled today
-                            :order 2.5)
-                           (:name none ;; scheduled today
-                            :scheduled today
-                            :order 2)
-                           (:name none ;; deadline today
-                            :deadline today
-                            :order 3)
-                           (:name none ;; deadline reminders
-                            :deadline t
-                            :scheduled t
-                            :order 6)
-                           (:name none ;; everything else
-                            :anything t
-                            :order 5)))))
-            (alltodo "" ((org-agenda-overriding-header "")
-                         (org-super-agenda-groups
-                          '(;; drop scheduled items—they are shown in
-                            ;; agenda view
-                            (:discard (:scheduled t))
-
-                            ;; 8. Next items
-                            ;; 9. Active projects (NEXT/WAIT)
-                            ;; 11. Active books (NEXT)
-                            ;; 12. Waiting for items (WAIT)
-                            (:name "Books"
-                             :and (:category "books"
-                                   :todo "NEXT")
-                             :order 11)
-                            (:name "Projects"
-                             :and (:tag "PROJECT"
-                                   :todo "NEXT")
-                             :and (:tag "PROJECT"
-                                   :todo "WAIT")
-                             :order 9)
-                            (:name "Next"
-                             :todo "NEXT"
-                             :order 8)
-                            (:todo "WAIT"
-                             :order 12)
-                            (:discard (:anything t))))))
-
-            ;; inbox items (they must have a “CREATED” property to be considered an item)
-            (search "+{:CREATED:}" ((org-agenda-files (mapcar (lambda (x) (concat rasen/org-directory "/" x))
-                                                              '("refile-omicron.org"
-                                                                "orgzly.org")))
-                                    (org-agenda-overriding-header "")
-                                    (org-super-agenda-groups
-                                     '((:name "Inbox"
-                                        :auto-category t
-                                        :anything t)))))))
-
-          ("f" "Fluxon"
-           ((agenda "" ((org-agenda-files '("~/org/roam/fluxon/index.org" "~/org/refile-bayraktar.org"))
-                        ;; start from yesterday
-                        (org-agenda-start-day "-1d")
-
-                        ;; show 8 days
-                        (org-agenda-span 8)
-
-                        ;; show closed items
-                        (org-agenda-show-log t)
-                        (org-agenda-log-mode-items '(closed))
-
-                        ;; Show habits on each day. (Useful if today
-                        ;; is closed but you still want to see the
-                        ;; habit graph.)
-                        ;; (org-habit-show-habits-only-for-today nil)
-
-                        (org-super-agenda-groups
-                         '(;; 1. time-grid
-                           ;; 2. scheduled today
-                           ;; 3. deadline today
-                           ;; 4. habits
-                           ;; 5. rest (anniversaries, etc.)
-                           ;; 6. deadline reminders
-                           (:name none ;; habits
-                            :habit t
-                            :order 4)
-                           (:name none ;; time-grid
-                            :time-grid t
-                            :order 1)
-                           (:name none ;; don't show closed items—they are still seen in the log
-                            :discard (:todo ("DONE" "CANCELED")))
-                           (:name none ;; scheduled today
-                            :and (:todo ("WAIT")
-                                  :scheduled today)
-                            :order 2.5)
-                           (:name none ;; scheduled today
-                            :scheduled today
-                            :order 2)
-                           (:name none ;; deadline today
-                            :deadline today
-                            :order 3)
-                           (:name none ;; deadline reminders
-                            :deadline t
-                            :scheduled t
-                            :order 6)
-                           (:name none ;; everything else
-                            :anything t
-                            :order 5)))))
-            (alltodo "" ((org-agenda-files '("~/org/roam/fluxon/index.org" "~/org/refile-bayraktar.org"))
-                         (org-agenda-overriding-header "")
-                         (org-super-agenda-groups
-                          '(;; drop scheduled items—they are shown in
-                            ;; agenda view
-                            (:discard (:scheduled t))
-
-                            ;; 8. Next items
-                            ;; 9. Active projects (NEXT/WAIT)
-                            ;; 11. Active books (NEXT)
-                            ;; 12. Waiting for items (WAIT)
-                            (:name "Books"
-                             :and (:category "books"
-                                   :todo "NEXT")
-                             :order 11)
-                            (:name "Projects"
-                             :and (:tag "PROJECT"
-                                   :todo "NEXT")
-                             :and (:tag "PROJECT"
-                                   :todo "WAIT")
-                             :order 9)
-                            (:name "Kiavi"
-                             :and (:category "kiavi"
-                                   :todo "NEXT")
-                             :order 8.1)
-                            (:name "Tonic"
-                             :and (:category "tonic"
-                                   :todo "NEXT")
-                             :order 8.2)
-                            (:name "Dory"
-                             :and (:category "dory"
-                                   :todo "NEXT")
-                             :order 8.3)
-                            (:name "Next"
-                             :todo "NEXT"
-                             :order 8.4)
-                            (:todo "WAIT"
-                             :order 12)
-                            (:discard (:anything t))))))
-
-            ;; inbox items (they must have a “CREATED” property to be considered an item)
-            (search "+{:CREATED:}" ((org-agenda-files '("~/org/refile-bayraktar.org"))
-                                    (org-agenda-overriding-header "")
-                                    (org-super-agenda-groups
-                                     '((:name "Inbox"
-                                        :auto-category t
-                                        :anything t)))))))
+          ("d" "DataDog" ,(rasen/mk-agenda
+                           '("~/org/roam/dd/index.org" "~/org/refile-oleksiishmalko.org")
+                           '("~/org/refile-oleksiishmalko.org")
+                           nil))
 
           ("N" tags "+TODO=\"NEXT\"-PROJECT|+TODO=\"WAIT\"-PROJECT")
           ("n" todo-tree "NEXT")
