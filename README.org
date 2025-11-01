@@ -7797,6 +7797,7 @@ Automatically determine indent style.
 #+begin_src emacs-lisp
 (use-package dtrt-indent
   :diminish
+  :disabled t
   :config
   (dtrt-indent-global-mode))
 #+end_src
@@ -8275,6 +8276,7 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 *** Python
 #+begin_src emacs-lisp
 (use-package elpy
+  :disabled t
   :after (flycheck)
   :config
   ;; Do not show vertical guides in python code
