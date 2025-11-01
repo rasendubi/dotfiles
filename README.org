@@ -3328,6 +3328,14 @@ I use [[https://github.com/GhostText/GhostText][GhostText]] firefox extension.
   (setq atomic-chrome-buffer-open-style 'frame)
   (atomic-chrome-start-server))
 #+end_src
+* Key bindings
+I have my custom modal editing mode in [[file:.emacs.d/site-lisp/eon.el][eon.el]].
+#+begin_src emacs-lisp
+(use-package eon
+  :load-path "~/.emacs.d/site-lisp/"
+  :config
+  (eon-global-mode))
+#+end_src
 * Evil-mode
 ** General
 #+begin_src emacs-lisp

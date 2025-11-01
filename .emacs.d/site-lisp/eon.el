@@ -62,7 +62,7 @@
   (lambda ()
     (eon-mode 1))
   :group 'eon
-  (if eon-mode
+  (if eon-global-mode
       (eon--global-enable)
     (eon--global-disable)))
 
