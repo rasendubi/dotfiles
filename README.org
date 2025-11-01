@@ -7575,6 +7575,12 @@ Make '_' a part of words so that commands like =evil-forward-word-begin= work pr
             (when (eq major-mode 'compilation-mode)
               (ansi-color-apply-on-region compilation-filter-start (point-max)))))
 #+end_src
+*** project-vc
+#+begin_src emacs-lisp
+(use-package project
+  :custom
+  (project-vc-extra-root-markers '(".bazelproject" "Cargo.lock")))
+#+end_src
 *** projectile
 #+begin_src emacs-lisp
 (use-package projectile
