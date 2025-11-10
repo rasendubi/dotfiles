@@ -7821,6 +7821,10 @@ LSP is Language Server Protocol. Some languages support it usually provide bette
 (use-package eglot
   :hook ((rust-mode) . eglot-ensure)
   :config
+  ;; eglot-code-action-indicator = margin does not render properly but
+  ;; makes lines jumpy. See
+  ;; https://www.reddit.com/r/emacs/comments/1n3o2we/comment/nbf9bsi/
+  (setq eglot-code-action-indications '(eldoc-hint))
   (with-eval-after-load "evil"
     (general-def 'normal eglot-mode-map
       "SPC e" nil
