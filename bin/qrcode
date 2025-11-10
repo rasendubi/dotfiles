@@ -1,0 +1,2 @@
+#!/usr/bin/env sh
+qrencode -o - | open -a Preview.app -f
