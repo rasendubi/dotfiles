@@ -1109,6 +1109,7 @@
                     backends.ssh.allowed-signers = "~/dotfiles/allowed_signers";
                   };
                   git.sign-on-push = true;
+                  git.private-commits = "description(glob:'wip:*') | description(glob:'private:*')";
             
                   templates.git_push_bookmark = "'jj-' ++ change_id.short()";
                 };
