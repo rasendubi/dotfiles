@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: flake
+# key: flake
+# --
+if has nix; then
+  nix_direnv_manual_reload
+  use flake
+fi
