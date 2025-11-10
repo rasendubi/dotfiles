@@ -1,2 +1,7 @@
+# bayraktar
 rasen.dubi@gmail.com namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHn93FUUpL5FXYwmdCfNUMIEQ3cY2tLtT6NObp/oxSB9 commit signing
 oleksii@fluxon.com namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHn93FUUpL5FXYwmdCfNUMIEQ3cY2tLtT6NObp/oxSB9 commit signing
+
+# lapdog
+oleksii.shmalko@datadoghq.com namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMOYNAulLWUsYQ7uvANeCnVfubZ0LriVoYQ+AvI3vcsd dd laptop code signing
+rasen.dubi@gmail.com namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN84ASXbdIKy2xjqNGZt45xf94UZhdhrLZvFC+Uf6wYG dd laptop code signing
