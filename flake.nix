@@ -1014,7 +1014,7 @@
             
                 extraConfig = {
                   gpg.format = "ssh";
-                  gpg.ssh.allowedSignersFile = "~/.ssh/allowed_signers";
+                  gpg.ssh.allowedSignersFile = "~/dotfiles/allowed_signers";
                   user.signingKey = "~/.ssh/code_signing.pub";
                   commit.gpgsign = true;
             
