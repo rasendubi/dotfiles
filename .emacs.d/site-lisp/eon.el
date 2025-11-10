@@ -177,6 +177,12 @@
   (when (region-active-p)
     (delete-region (region-beginning) (region-end)))
   (call-interactively #'yank))
+(defun eon-yank-pop ()
+  "Similar to `yank-pop' but replaces the current selection."
+  (interactive "*")
+  (when (region-active-p)
+    (delete-region (region-beginning) (region-end)))
+  (call-interactively #'yank-pop))
 
 (defun eon-quit ()
   (interactive)
@@ -243,14 +249,18 @@
                                     ;; TODO:
                                     ;; - find place for kill-whole-line
                                     ;; - C-c
-                                    ;; - eglot-code-action eglot-rename
+                                    ("s a" eglot-code-actions)
+                                    ("s r" eglot-rename)
                                     ;; - save mark, save window config (?)
                                     ;; - save buffer / some buffer
+                                    ("k" avy-goto-char)
+                                    ("K" avy-goto-char-2)
 
                                     ("'" eon-mark)))
   (define-key eon-motion-state-map (kbd from) (eval `(eon--wrap-kbd ,@target))))
 
 (define-key eon-normal-state-map (kbd "c") #'eon-yank)
+(define-key eon-normal-state-map (kbd "C") #'eon-yank-pop)
 
 (add-to-ordered-list 'emulation-mode-map-alists `((eon-normal-state . ,eon-normal-state-map)
                                                   (eon-motion-state . ,eon-motion-state-map)
@@ -279,8 +289,9 @@
 (cl-defmethod project-root ((project string))
   project)
 
-(add-hook 'project-find-functions
-	  #'local/project-try-explicit)
+(with-eval-after-load 'project
+  (add-hook 'project-find-functions #'local/project-try-explicit)
+  (add-hook 'project-find-functions #'project-try-vc))
 
 (defun rasen/reset-project (dir)
   (interactive "D")

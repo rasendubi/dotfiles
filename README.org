@@ -7586,7 +7586,7 @@ Make '_' a part of words so that commands like =evil-forward-word-begin= work pr
 #+begin_src emacs-lisp
 (use-package project
   :custom
-  (project-vc-extra-root-markers '(".bazelproject" "Cargo.lock")))
+  (project-vc-extra-root-markers '(".bazelproject" "Cargo.lock" ".git")))
 #+end_src
 *** projectile
 #+begin_src emacs-lisp
