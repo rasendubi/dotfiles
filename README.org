@@ -1127,6 +1127,7 @@ oleksiishmalko = {
     ({ lib, ... }: {
       home-manager.users."oleksii.shmalko" = {
         programs.git.settings.user.email = lib.mkForce "oleksii.shmalko@datadoghq.com";
+        programs.git.settings.github.user = lib.mkForce "dd-oleksii";
       };
     })
   ];
@@ -1197,6 +1198,9 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       withGTK3 = false;
     };
   emacs-packages = (epkgs:
+    (with epkgs; [
+      <<emacs-packages>>
+    ]) ++
     (with epkgs.melpaPackages; [
 
       activity-watch-mode
@@ -6732,10 +6736,46 @@ Integration with Emacs. (emacs-lisp)
   :commands (pass))
 #+end_src
 
-Enable auth-source–pass integration.
+Enable auth-source–pass integration + patches to make auth-source work with passage instead of pass.
 #+begin_src emacs-lisp
 (use-package auth-source
+  :init
+  (el-patch-feature auth-source-pass)
   :config
+  (require 'auth-source-pass)
+  (with-eval-after-load 'auth-source-pass
+    (el-patch-defun auth-source-pass-entries ()
+      "Return a list of all password store entries."
+      (let ((store-dir (expand-file-name auth-source-pass-filename)))
+        (mapcar
+         (lambda (file) (file-name-sans-extension (file-relative-name file store-dir)))
+         (directory-files-recursively store-dir (el-patch-swap "\\.gpg\\'" "\\.age\\'")))))
+
+    (el-patch-defun auth-source-pass--read-entry (entry)
+      "Return a string with the file content of ENTRY."
+      (el-patch-swap
+        (with-temp-buffer
+          (insert-file-contents (expand-file-name
+                                 (format "%s.gpg" entry)
+                                 auth-source-pass-filename))
+          (buffer-substring-no-properties (point-min) (point-max)))
+
+        (with-temp-buffer
+          (let* ((exit-code
+                  (with-environment-variables
+                      (("PINENTRY_PROGRAM" "pinentry-mac"))
+                    (call-process
+                     "rage" nil t nil
+                     "--decrypt"
+                     (expand-file-name
+                      (format "%s.age" entry)
+                      auth-source-pass-filename)
+                     "-i"
+                     (expand-file-name (car (file-expand-wildcards "~/.config/passage/identities/*")))))))
+            (if (zerop exit-code)
+                (buffer-substring-no-properties (point-min) (point-max))
+              (error "Failed to decrypt %s with rage" entry)))))))
+
   (auth-source-pass-enable))
 #+end_src
 ** Age
@@ -6747,6 +6787,7 @@ Use Age for file encryption.
 {
   home.packages = [
     pkgs.age
+    pkgs.rage
     pkgs.age-plugin-yubikey
   ];
 }
@@ -7517,7 +7558,7 @@ Configure my username in ~.gitconfig~.
 #+name: home-manager-section
 #+begin_src nix
 {
-  programs.git.settings.github.name = "rasendubi";
+  programs.git.settings.github.user = "rasendubi";
 }
 #+end_src
 *** git-commit
@@ -7552,6 +7593,20 @@ git-link helps to create permalinks to the files.
 #+begin_src emacs-lisp
 (use-package git-link
   :commands (git-link))
+#+end_src
+*** pr-review
+GitHub’s PR review is completely broken for larger PRs with many comments (can’t view all comment, can only review one file at a time). Use [[https://github.com/blahgeek/emacs-pr-review][blahgeek/emacs-pr-review]] instead.
+
+Install emacs package:
+#+name: emacs-packages
+#+begin_src nix
+melpaPackages.pr-review
+#+end_src
+
+Configure:
+#+begin_src emacs-lisp
+(use-package pr-review
+  :commands (pr-review pr-review-notification))
 #+end_src
 ** jujutsu
 #+name: home-manager-section

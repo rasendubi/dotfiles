@@ -760,6 +760,7 @@
             {
               home.packages = [
                 pkgs.age
+                pkgs.rage
                 pkgs.age-plugin-yubikey
               ];
             }
@@ -1096,7 +1097,7 @@
               };
             }
             {
-              programs.git.settings.github.name = "rasendubi";
+              programs.git.settings.github.user = "rasendubi";
             }
             {
               programs.jujutsu = {
@@ -1223,6 +1224,9 @@
                     withGTK3 = false;
                   };
                 emacs-packages = (epkgs:
+                  (with epkgs; [
+                    melpaPackages.pr-review
+                  ]) ++
                   (with epkgs.melpaPackages; [
               
                     activity-watch-mode
@@ -1519,6 +1523,7 @@
               ({ lib, ... }: {
                 home-manager.users."oleksii.shmalko" = {
                   programs.git.settings.user.email = lib.mkForce "oleksii.shmalko@datadoghq.com";
+                  programs.git.settings.github.user = lib.mkForce "dd-oleksii";
                 };
               })
             ];
