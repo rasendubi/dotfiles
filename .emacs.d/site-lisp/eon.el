@@ -245,6 +245,8 @@
                                     ("<f2>" rasen/org-daily-dispatch)
                                     ("\\ n" rasen/org-roam-new-node)
                                     ("\\ c" org-capture)
+                                    ("\\ a" org-agenda)
+                                    ("\\ o" rasen/org-clock-out-or-last)
 
                                     ;; TODO:
                                     ;; - find place for kill-whole-line
@@ -258,6 +260,12 @@
 
                                     ("'" eon-mark)))
   (define-key eon-motion-state-map (kbd from) (eval `(eon--wrap-kbd ,@target))))
+
+(defun rasen/org-clock-out-or-last ()
+  (interactive)
+  (if (org-clocking-p)
+      (org-clock-out)
+    (org-clock-in-last '(4))))
 
 (define-key eon-normal-state-map (kbd "c") #'eon-yank)
 (define-key eon-normal-state-map (kbd "C") #'eon-yank-pop)
