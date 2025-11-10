@@ -24,12 +24,11 @@
 /README.el
 /emacs.el
 /README.nix
-/.emacs.d/transient/
 /README.js
 /README.sh
 
 # For .emacs.d, it's easier to list what needs to be tracked
-/.emacs.d/
+/.emacs.d/*
 !/.emacs.d/init.el
 !/.emacs.d/early-init.el
 !/.emacs.d/site-lisp/
