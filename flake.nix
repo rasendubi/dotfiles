@@ -1085,6 +1085,36 @@
               programs.git.extraConfig.github.name = "rasendubi";
             }
             {
+              programs.jujutsu = {
+                enable = true;
+                package = pkgs.unstable.jujutsu;
+                settings = {
+                  user = {
+                    name = "Oleksii Shmalko";
+                    email = "rasen.dubi@gmail.com";
+                  };
+            
+                  ui = {
+                    editor = "emacsclient";
+                    pager = ":builtin";
+                    default-command = "log";
+                    graph.style = "ascii";
+                    show-cryptographic-signatures = true;
+                  };
+            
+                  signing = {
+                    behavior = "drop";
+                    backend = "ssh";
+                    key = "~/.ssh/code_signing.pub";
+                    backends.ssh.allowed-signers = "~/dotfiles/allowed_signers";
+                  };
+                  git.sign-on-push = true;
+            
+                  templates.git_push_bookmark = "'jj-' ++ change_id.short()";
+                };
+              };
+            }
+            {
               home.sessionVariables.npm_config_prefix = "$HOME/.npm-global";
               home.sessionPath = ["$HOME/.npm-global/bin"];
             }
