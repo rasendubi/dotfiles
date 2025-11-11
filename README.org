@@ -2662,11 +2662,12 @@ One caveat is that it's dropped when I activate (update) new system version, or 
 
 Add a small Emacs function to re-apply this configuration (emacs-lisp).
 #+begin_src emacs-lisp
-(defun rasen/set-xkb-layout ()
-  (interactive)
-  (rasen/autostart "xkbcomp ~/dotfiles/Xkeymap $DISPLAY"))
+(when (eq system-type 'gnu-linux)
+  (defun rasen/set-xkb-layout ()
+    (interactive)
+    (rasen/autostart "xkbcomp ~/dotfiles/Xkeymap $DISPLAY"))
 
-(rasen/set-xkb-layout)
+  (rasen/set-xkb-layout))
 #+end_src
 
 Install xkbcomp to execute these commands. (~<<home-manager-section>>~)
