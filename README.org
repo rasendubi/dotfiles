@@ -46,7 +46,7 @@ The following goes to ~flake.nix~ file.
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-25.05";
+      ref = "nixos-25.11";
     };
 
     <<flake-inputs>>
@@ -191,7 +191,7 @@ home-manager = {
   type = "github";
   owner = "rycee";
   repo = "home-manager";
-  ref = "release-25.05";
+  ref = "release-25.11";
   inputs.nixpkgs.follows = "nixpkgs";
 };
 #+end_src
@@ -281,7 +281,7 @@ Add nix-darwin to flake inputs.
 #+name: flake-inputs
 #+begin_src nix
 darwin = {
-  url = "github:lnl7/nix-darwin/nix-darwin-25.05";
+  url = "github:lnl7/nix-darwin/nix-darwin-25.11";
   inputs.nixpkgs.follows = "nixpkgs";
 };
 #+end_src
@@ -342,23 +342,13 @@ in {
 }
 #+end_src
 
-And enable this in home-manager ([[https://github.com/nix-community/home-manager/blob/master/modules/targets/darwin/linkapps.nix][home-manager/linkapps.nix at master · nix-community/home-manager · GitHub]]):
+Link installed apps to ~~/Applications/Home Manager Apps~:
 #+name: home-manager-section
 #+begin_src nix
-({ config, lib, pkgs, ... }:
-
 {
-  config = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
-    # Install MacOS applications to the user environment.
-    home.file."Applications/Home Manager Apps".source = let
-      apps = pkgs.buildEnv {
-        name = "home-manager-applications";
-        paths = config.home.packages;
-        pathsToLink = "/Applications";
-      };
-    in "${apps}/Applications";
-  };
-})
+  targets.darwin.linkApps.enable = pkgs.stdenv.hostPlatform.isDarwin;
+  targets.darwin.copyApps.enable = false;
+}
 #+end_src
 ** Packages
 Generate packages set for each supported system.
@@ -469,6 +459,7 @@ This =<<nixos-section>>= is replaced by other parts of this doc.
   nix.registry = {
     self.flake = inputs.self;
     nixpkgs.flake = inputs.nixpkgs;
+    nixpkgs-unstable.flake = inputs.nixpkgs-unstable;
   };
 }
 #+end_src
@@ -485,6 +476,7 @@ Same configuration for nix-darwin systems.
   nix.registry = {
     self.flake = inputs.self;
     nixpkgs.flake = inputs.nixpkgs;
+    nixpkgs-unstable.flake = inputs.nixpkgs-unstable;
   };
 }
 #+end_src
@@ -513,6 +505,15 @@ Same but for Home Manager–managed host.
         to = ({
           type = "path";
           path = inputs.nixpkgs.outPath;
+        } // lib.filterAttrs
+          (n: v: n == "lastModified" || n == "rev" || n == "revCount" || n == "narHash")
+          inputs.nixpkgs);
+      }
+      {
+        from = { id = "nixpkgs-unstable"; type = "indirect"; };
+        to = ({
+          type = "path";
+          path = inputs.nixpkgs-unstable.outPath;
         } // lib.filterAttrs
           (n: v: n == "lastModified" || n == "rev" || n == "revCount" || n == "narHash")
           inputs.nixpkgs);
@@ -1077,7 +1078,7 @@ bayraktar = {
   modules = [
     ({ lib, ... }: {
       home-manager.users."rasen" = {
-        programs.git.userEmail = lib.mkForce "oleksii@fluxon.com";
+        programs.git.settings.user.email = lib.mkForce "oleksii@fluxon.com";
       };
     })
   ];
@@ -1125,7 +1126,7 @@ oleksiishmalko = {
   modules = [
     ({ lib, ... }: {
       home-manager.users."oleksii.shmalko" = {
-        programs.git.userEmail = lib.mkForce "oleksii.shmalko@datadoghq.com";
+        programs.git.settings.user.email = lib.mkForce "oleksii.shmalko@datadoghq.com";
       };
     })
   ];
@@ -1143,6 +1144,8 @@ emacs-overlay = {
   type = "github";
   owner = "nix-community";
   repo = "emacs-overlay";
+  inputs.nixpkgs.follows = "nixpkgs";
+  inputs.nixpkgs-stable.follows = "nixpkgs";
 };
 #+end_src
 
@@ -1387,7 +1390,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       ]))
 
       # (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science uk]))
-      (pkgs.hunspellWithDicts (with pkgs.hunspellDicts; [en_US en_US-large uk_UA]))
+      (pkgs.hunspell.withDicts (dicts: with dicts; [en_US-large uk_UA]))
 
       # latex for displaying fragments in org-mode
       (pkgs.texlive.combine {
@@ -3004,7 +3007,7 @@ Mount external drive when needed.
 #+end_src
 
 ** direnv
-*** direnv + lorri
+*** direnv + nix-direnv
 direnv allows having per-directory environment configuration. You can think of automatic virtualenv, but it's more general and supports unloading.
 
 (~<<home-manager-section>>~)
@@ -3013,24 +3016,30 @@ direnv allows having per-directory environment configuration. You can think of a
 {
   programs.direnv.enable = true;
   programs.direnv.nix-direnv.enable = true;
-  services.lorri.enable = pkgs.stdenv.isLinux;
+
+  # move .direnv directories to ~/.cache/direnv/layouts/
+  programs.direnv.stdlib = ''
+    : "''${XDG_CACHE_HOME:="''${HOME}/.cache"}"
+    declare -A direnv_layout_dirs
+    direnv_layout_dir() {
+        local hash path
+        echo "''${direnv_layout_dirs[$PWD]:=$(
+            hash="$(sha1sum - <<< "$PWD" | head -c8)"
+            path="''${PWD//[^a-zA-Z0-9]/-}"
+            echo "''${XDG_CACHE_HOME}/direnv/layouts/''${hash}''${path}"
+        )}"
+    }
+  '';
 }
 #+end_src
 
-# Enable Emacs integration. (emacs-lisp)
-# #+begin_src emacs-lisp
-# (use-package direnv
-#   :after exec-path-from-shell
-#   :config
-#   (direnv-mode))
-# #+end_src
-
-Better (?) direnv integration via [[https://github.com/purcell/envrc][purcell/envrc]]. (emacs-lisp)
+direnv integration into Emacs via [[https://github.com/purcell/envrc][purcell/envrc]]. (emacs-lisp)
 #+begin_src emacs-lisp
 (use-package envrc
   :after exec-path-from-shell
   :hook (after-init . envrc-global-mode))
 #+end_src
+
 ** VirtualBox
 #+name: nixos-section
 #+begin_src nix
@@ -6853,7 +6862,7 @@ Install Vim as my backup editor. (~<<nixos-section>>~)
 #+begin_src nix
 {
   environment.systemPackages = [
-    pkgs.vim_configurable
+    pkgs.vim-full
   ];
 }
 #+end_src
@@ -6863,7 +6872,7 @@ For Home Manager–managed hosts.
 #+begin_src nix
 {
   home.packages = [
-    pkgs.vim_configurable
+    pkgs.vim-full
   ];
 }
 #+end_src
@@ -7305,17 +7314,17 @@ Executing just scripts from emacs:
 {
   programs.git = {
     enable = true;
-    package = pkgs.gitAndTools.gitFull;
+    package = pkgs.gitFull;
 
-    userName = "Oleksii Shmalko";
-    userEmail = if name == "bayraktar" then "oleksii@fluxon.com" else "rasen.dubi@gmail.com";
+    settings = {
+      user.name = "Oleksii Shmalko";
+      user.email = if name == "bayraktar" then "oleksii@fluxon.com" else "rasen.dubi@gmail.com";
 
-    # signing = {
-    #   key = "EB3066C3";
-    #   signByDefault = true;
-    # };
+      # signing = {
+      #   key = "EB3066C3";
+      #   signByDefault = true;
+      # };
 
-    extraConfig = {
       gpg.format = "ssh";
       gpg.ssh.allowedSignersFile = "~/dotfiles/allowed_signers";
       user.signingKey = "~/.ssh/code_signing.pub";
@@ -7348,7 +7357,7 @@ I have *LOTS* of aliases (~<<home-manager-section>>~)
 #+name: home-manager-section
 #+begin_src nix
 {
-  programs.git.aliases = {
+  programs.git.settings.aliases = {
     cl    = "clone";
     gh-cl = "gh-clone";
     cr    = "cr-fix";
@@ -7389,7 +7398,7 @@ Always push to github with ssh keys instead of login/password. (~<<home-manager-
 #+name: home-manager-section
 #+begin_src nix
 {
-  programs.git.extraConfig = {
+  programs.git.settings = {
     url."ssh://git@github.com/DataDog".insteadOf = "https://github.com/DataDog";
     url."ssh://git@github.com/".pushInsteadOf = "https://github.com/";
   };
@@ -7508,7 +7517,7 @@ Configure my username in ~.gitconfig~.
 #+name: home-manager-section
 #+begin_src nix
 {
-  programs.git.extraConfig.github.name = "rasendubi";
+  programs.git.settings.github.name = "rasendubi";
 }
 #+end_src
 *** git-commit
@@ -8625,12 +8634,24 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
                              (setq-local tab-width 4))))
 #+end_src
 *** Ledger / Hledger
+Install latest version with home-manager:
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.packages = [ pkgs.unstable.hledger ];
+}
+#+end_src
+
 #+begin_src emacs-lisp
 (use-package ledger-mode
   :mode "\\.journal$"
   :config
+  (setq ledger-mode-should-check-version nil)
   (setq ledger-binary-path "hledger")
-  (add-hook 'ledger-mode-hook 'orgstruct-mode))
+  (add-hook 'ledger-mode-hook 'eon-mode)
+  ;; (setq outline-regexp "[*]+")
+  ;; (add-hook 'ledger-mode-hook 'orgstruct-mode)
+  )
 #+end_src
 *** Markdown
 #+begin_src emacs-lisp
@@ -8933,7 +8954,7 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
       pkgs.inconsolata
       pkgs.dejavu_fonts
       pkgs.source-code-pro
-      pkgs.ubuntu_font_family
+      pkgs.ubuntu-classic
       pkgs.unifont
       pkgs.powerline-fonts
       pkgs.terminus_font
@@ -8952,7 +8973,7 @@ For home-manager.
     pkgs.inconsolata
     pkgs.dejavu_fonts
     pkgs.source-code-pro
-    pkgs.ubuntu_font_family
+    pkgs.ubuntu-classic
     pkgs.unifont
     pkgs.powerline-fonts
     pkgs.terminus_font

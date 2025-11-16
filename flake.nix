@@ -9,7 +9,7 @@
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-25.05";
+      ref = "nixos-25.11";
     };
 
     nixpkgs-unstable = {
@@ -22,11 +22,11 @@
       type = "github";
       owner = "rycee";
       repo = "home-manager";
-      ref = "release-25.05";
+      ref = "release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     darwin = {
-      url = "github:lnl7/nix-darwin/nix-darwin-25.05";
+      url = "github:lnl7/nix-darwin/nix-darwin-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     agenix = {
@@ -44,6 +44,8 @@
       type = "github";
       owner = "nix-community";
       repo = "emacs-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs-stable.follows = "nixpkgs";
     };
   };
 
@@ -142,20 +144,10 @@
                 description = "hostname so that other home-manager options can depend on it.";
               };
             }
-            ({ config, lib, pkgs, ... }:
-            
             {
-              config = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
-                # Install MacOS applications to the user environment.
-                home.file."Applications/Home Manager Apps".source = let
-                  apps = pkgs.buildEnv {
-                    name = "home-manager-applications";
-                    paths = config.home.packages;
-                    pathsToLink = "/Applications";
-                  };
-                in "${apps}/Applications";
-              };
-            })
+              targets.darwin.linkApps.enable = pkgs.stdenv.hostPlatform.isDarwin;
+              targets.darwin.copyApps.enable = false;
+            }
             {
               home.file."nixpkgs".source = inputs.nixpkgs;
               systemd.user.sessionVariables.NIX_PATH = pkgs.lib.linux-only (lib.mkForce "nixpkgs=$HOME/nixpkgs\${NIX_PATH:+:}$NIX_PATH");
@@ -177,6 +169,15 @@
                     to = ({
                       type = "path";
                       path = inputs.nixpkgs.outPath;
+                    } // lib.filterAttrs
+                      (n: v: n == "lastModified" || n == "rev" || n == "revCount" || n == "narHash")
+                      inputs.nixpkgs);
+                  }
+                  {
+                    from = { id = "nixpkgs-unstable"; type = "indirect"; };
+                    to = ({
+                      type = "path";
+                      path = inputs.nixpkgs-unstable.outPath;
                     } // lib.filterAttrs
                       (n: v: n == "lastModified" || n == "rev" || n == "revCount" || n == "narHash")
                       inputs.nixpkgs);
@@ -451,7 +452,20 @@
             {
               programs.direnv.enable = true;
               programs.direnv.nix-direnv.enable = true;
-              services.lorri.enable = pkgs.stdenv.isLinux;
+            
+              # move .direnv directories to ~/.cache/direnv/layouts/
+              programs.direnv.stdlib = ''
+                : "''${XDG_CACHE_HOME:="''${HOME}/.cache"}"
+                declare -A direnv_layout_dirs
+                direnv_layout_dir() {
+                    local hash path
+                    echo "''${direnv_layout_dirs[$PWD]:=$(
+                        hash="$(sha1sum - <<< "$PWD" | head -c8)"
+                        path="''${PWD//[^a-zA-Z0-9]/-}"
+                        echo "''${XDG_CACHE_HOME}/direnv/layouts/''${hash}''${path}"
+                    )}"
+                }
+              '';
             }
             {
               home.packages = [ pkgs.unstable.pm2 ];
@@ -807,7 +821,7 @@
             }
             {
               home.packages = [
-                pkgs.vim_configurable
+                pkgs.vim-full
               ];
             }
             {
@@ -1002,17 +1016,17 @@
             {
               programs.git = {
                 enable = true;
-                package = pkgs.gitAndTools.gitFull;
+                package = pkgs.gitFull;
             
-                userName = "Oleksii Shmalko";
-                userEmail = if name == "bayraktar" then "oleksii@fluxon.com" else "rasen.dubi@gmail.com";
+                settings = {
+                  user.name = "Oleksii Shmalko";
+                  user.email = if name == "bayraktar" then "oleksii@fluxon.com" else "rasen.dubi@gmail.com";
             
-                # signing = {
-                #   key = "EB3066C3";
-                #   signByDefault = true;
-                # };
+                  # signing = {
+                  #   key = "EB3066C3";
+                  #   signByDefault = true;
+                  # };
             
-                extraConfig = {
                   gpg.format = "ssh";
                   gpg.ssh.allowedSignersFile = "~/dotfiles/allowed_signers";
                   user.signingKey = "~/.ssh/code_signing.pub";
@@ -1040,7 +1054,7 @@
               home.packages = [ pkgs.git-annex pkgs.datalad ];
             }
             {
-              programs.git.aliases = {
+              programs.git.settings.aliases = {
                 cl    = "clone";
                 gh-cl = "gh-clone";
                 cr    = "cr-fix";
@@ -1076,13 +1090,13 @@
               };
             }
             {
-              programs.git.extraConfig = {
+              programs.git.settings = {
                 url."ssh://git@github.com/DataDog".insteadOf = "https://github.com/DataDog";
                 url."ssh://git@github.com/".pushInsteadOf = "https://github.com/";
               };
             }
             {
-              programs.git.extraConfig.github.name = "rasendubi";
+              programs.git.settings.github.name = "rasendubi";
             }
             {
               programs.jujutsu = {
@@ -1120,6 +1134,9 @@
               home.sessionPath = ["$HOME/.npm-global/bin"];
             }
             {
+              home.packages = [ pkgs.unstable.hledger ];
+            }
+            {
               home.packages = [ pkgs.plantuml ];
             }
             {
@@ -1135,7 +1152,7 @@
                 pkgs.inconsolata
                 pkgs.dejavu_fonts
                 pkgs.source-code-pro
-                pkgs.ubuntu_font_family
+                pkgs.ubuntu-classic
                 pkgs.unifont
                 pkgs.powerline-fonts
                 pkgs.terminus_font
@@ -1399,7 +1416,7 @@
                     ]))
               
                     # (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science uk]))
-                    (pkgs.hunspellWithDicts (with pkgs.hunspellDicts; [en_US en_US-large uk_UA]))
+                    (pkgs.hunspell.withDicts (dicts: with dicts; [en_US-large uk_UA]))
               
                     # latex for displaying fragments in org-mode
                     (pkgs.texlive.combine {
@@ -1486,7 +1503,7 @@
             modules = [
               ({ lib, ... }: {
                 home-manager.users."rasen" = {
-                  programs.git.userEmail = lib.mkForce "oleksii@fluxon.com";
+                  programs.git.settings.user.email = lib.mkForce "oleksii@fluxon.com";
                 };
               })
             ];
@@ -1501,7 +1518,7 @@
             modules = [
               ({ lib, ... }: {
                 home-manager.users."oleksii.shmalko" = {
-                  programs.git.userEmail = lib.mkForce "oleksii.shmalko@datadoghq.com";
+                  programs.git.settings.user.email = lib.mkForce "oleksii.shmalko@datadoghq.com";
                 };
               })
             ];
@@ -1566,6 +1583,7 @@
               nix.registry = {
                 self.flake = inputs.self;
                 nixpkgs.flake = inputs.nixpkgs;
+                nixpkgs-unstable.flake = inputs.nixpkgs-unstable;
               };
             }
             {

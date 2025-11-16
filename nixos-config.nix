@@ -168,6 +168,7 @@ in
       nix.registry = {
         self.flake = inputs.self;
         nixpkgs.flake = inputs.nixpkgs;
+        nixpkgs-unstable.flake = inputs.nixpkgs-unstable;
       };
     }
     {
@@ -399,7 +400,7 @@ in
     }
     {
       environment.systemPackages = [
-        pkgs.vim_configurable
+        pkgs.vim-full
       ];
     }
     {
@@ -460,7 +461,7 @@ in
           pkgs.inconsolata
           pkgs.dejavu_fonts
           pkgs.source-code-pro
-          pkgs.ubuntu_font_family
+          pkgs.ubuntu-classic
           pkgs.unifont
           pkgs.powerline-fonts
           pkgs.terminus_font

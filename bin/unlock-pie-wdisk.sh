@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-set -e
+set -ex
 
 kill_agent() {
     eval "$(ssh-agent -k)"
