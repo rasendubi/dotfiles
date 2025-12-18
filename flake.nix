@@ -1769,9 +1769,20 @@
               };
             }
             {
+              nix.settings.trusted-users = [ "@admin" ];
               nix.linux-builder = {
                 enable = true;
-                package = pkgs.darwin.linux-builder;
+                config.virtualisation.cores = 8;
+                config.virtualisation.darwin-builder = {
+                  diskSize = 40 * 1024; # bump from 20Gb
+                  memorySize = 8 * 1024;
+                };
+              };
+              launchd.daemons.linux-builder = {
+                serviceConfig = {
+                  StandardOutPath = "/var/log/linux-builder.log";
+                  StandardErrorPath = "/var/log/linux-builder.log";
+                };
               };
             }
             {
