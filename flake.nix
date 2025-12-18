@@ -452,20 +452,6 @@
             {
               programs.direnv.enable = true;
               programs.direnv.nix-direnv.enable = true;
-            
-              # move .direnv directories to ~/.cache/direnv/layouts/
-              programs.direnv.stdlib = ''
-                : "''${XDG_CACHE_HOME:="''${HOME}/.cache"}"
-                declare -A direnv_layout_dirs
-                direnv_layout_dir() {
-                    local hash path
-                    echo "''${direnv_layout_dirs[$PWD]:=$(
-                        hash="$(sha1sum - <<< "$PWD" | head -c8)"
-                        path="''${PWD//[^a-zA-Z0-9]/-}"
-                        echo "''${XDG_CACHE_HOME}/direnv/layouts/''${hash}''${path}"
-                    )}"
-                }
-              '';
             }
             {
               home.packages = [ pkgs.unstable.pm2 ];
@@ -1051,6 +1037,11 @@
             
                   init.defaultBranch = "main";
                 };
+            
+                ignores = [
+                  ".DS_Store"
+                  ".direnv/"
+                ];
               };
               home.packages = [ pkgs.git-annex pkgs.datalad ];
             }
