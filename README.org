@@ -6984,6 +6984,8 @@ vterm is a terminal emulator using libvterm. Which allows running it within Emac
 #+begin_src emacs-lisp
 (use-package vterm
   :commands vterm
+  :bind (:map vterm-mode-map
+         ("C-q" . vterm-send-next-key))
   :config
   (setq vterm-kill-buffer-on-exit t)
 
