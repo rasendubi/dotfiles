@@ -1162,7 +1162,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
 (let
   emacs-base =
     if pkgs.stdenv.isDarwin
-    then (pkgs.emacs.overrideAttrs (old: {
+    then pkgs.emacs.overrideAttrs (old: {
       patches =
         (old.patches or [])
         ++ [
@@ -1187,10 +1187,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       #   ++ [
       #     "LDFLAGS=-headerpad_max_install_names"
       #   ];
-    })).override {
-      # Workaround https://github.com/NixOS/nixpkgs/issues/395169
-      withNativeCompilation = false;
-    }
+    })
     else pkgs.emacs.override {
       withX = true;
       # select lucid toolkit
@@ -1209,8 +1206,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       avy
       bash-completion
       beacon
-      blacken
-      cider
       clojure-mode
       cmake-mode
       color-identifiers-mode
@@ -1230,20 +1225,20 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       elpy
       emojify
       envrc
-      epresent
-      evil
-      evil-collection
-      evil-numbers
-      evil-org
-      evil-surround
-      evil-swap-keys
+      # epresent
+      # evil
+      # evil-collection
+      # evil-numbers
+      # evil-org
+      # evil-surround
+      # evil-swap-keys
       exec-path-from-shell
       expand-region
       fish-completion
       fish-mode
       flycheck
       flycheck-inline
-      flycheck-jest
+      # flycheck-jest
       flycheck-rust
       forge
       forth-mode
@@ -1265,9 +1260,9 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       json-mode
       ledger-mode
       lispyville
-      lsp-haskell
-      lsp-mode
-      lsp-ui
+      # lsp-haskell
+      # lsp-mode
+      # lsp-ui
       lua-mode
       magit
       markdown-mode
@@ -1277,7 +1272,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       ol-notmuch
       org-cliplink
       org-download
-      org-drill
+      # org-drill
       org-ref
       org-roam
       org-roam-bibtex
@@ -1514,7 +1509,7 @@ Returns the results of the FN as a list."
       res)))
 
 (el-patch-feature ob-core)
-(el-patch-defun org-babel-expand-noweb-references (&optional info parent-buffer)
+(el-patch-defun org-babel-expand-noweb-references (&optional info parent-buffer context)
   "Expand Noweb references in the body of the current source code block.
 
 For example the following reference would be replaced with the
@@ -8137,9 +8132,9 @@ Pretty self-explaining.
   (setq company-ghc-show-info t)
   (setq flycheck-ghc-stack-use-nix t)
   :config
-  (add-hook 'haskell-mode-hook #'interactive-haskell-mode)
-  (add-hook 'haskell-mode-hook #'haskell-decl-scan-mode)
-  (add-hook 'haskell-mode-hook #'lsp)
+  ;; (add-hook 'haskell-mode-hook #'interactive-haskell-mode)
+  ;; (add-hook 'haskell-mode-hook #'haskell-decl-scan-mode)
+  ;; (add-hook 'haskell-mode-hook #'lsp)
 
   (setq haskell-compile-cabal-build-command "cd %s && stack build")
   (setq haskell-compile-cabal-build-command-alt "cd %s && cabal build --ghc-options=-ferror-spans")
@@ -8149,24 +8144,24 @@ Pretty self-explaining.
   (add-to-list 'haskell-process-args-stack-ghci "--test")
 
   ;; Use Nix for default build/test command
-  (projectile-register-project-type 'haskell-stack
-                                    '("stack.yaml")
-                                    :compile "stack build --fast --nix"
-                                    :test "stack build --nix --test")
+  ;; (projectile-register-project-type 'haskell-stack
+  ;;                                   '("stack.yaml")
+  ;;                                   :compile "stack build --fast --nix"
+  ;;                                   :test "stack build --nix --test")
 
-  (general-def haskell-mode-map
-    [f8]       #'haskell-navigate-imports
-    "C-c C-b"  #'haskell-compile
-    "C-c v c"  #'haskell-cabal-visit-file
+  ;; (general-def haskell-mode-map
+  ;;   [f8]       #'haskell-navigate-imports
+  ;;   "C-c C-b"  #'haskell-compile
+  ;;   "C-c v c"  #'haskell-cabal-visit-file
 
-    ;; haskell-interactive-mode
-    "C-x C-d"  nil
-    "C-c C-z"  #'haskell-interactive-switch
-    "C-c C-l"  #'haskell-process-load-file
-    "C-c C-t"  #'haskell-process-do-type
-    "C-c C-i"  #'haskell-process-do-info
-    "C-c M-."  nil
-    "C-c C-d"  nil)
+  ;;   ;; haskell-interactive-mode
+  ;;   "C-x C-d"  nil
+  ;;   "C-c C-z"  #'haskell-interactive-switch
+  ;;   "C-c C-l"  #'haskell-process-load-file
+  ;;   "C-c C-t"  #'haskell-process-do-type
+  ;;   "C-c C-i"  #'haskell-process-do-info
+  ;;   "C-c M-."  nil
+  ;;   "C-c C-d"  nil)
 
   ;; Disable popups (i.e., report errors in the interactive shell).
   (setq haskell-interactive-popup-errors nil)
@@ -8195,6 +8190,7 @@ Pretty self-explaining.
 
 #+begin_src emacs-lisp
 (use-package lsp-haskell
+  :disabled t
   :after haskell-mode lsp-mode)
 #+end_src
 *** Rust

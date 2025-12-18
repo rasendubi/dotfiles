@@ -32,7 +32,7 @@ Returns the results of the FN as a list."
       res)))
 
 (el-patch-feature ob-core)
-(el-patch-defun org-babel-expand-noweb-references (&optional info parent-buffer)
+(el-patch-defun org-babel-expand-noweb-references (&optional info parent-buffer context)
   "Expand Noweb references in the body of the current source code block.
 
 For example the following reference would be replaced with the

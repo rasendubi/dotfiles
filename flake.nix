@@ -1181,7 +1181,7 @@
               (let
                 emacs-base =
                   if pkgs.stdenv.isDarwin
-                  then (pkgs.emacs.overrideAttrs (old: {
+                  then pkgs.emacs.overrideAttrs (old: {
                     patches =
                       (old.patches or [])
                       ++ [
@@ -1206,10 +1206,7 @@
                     #   ++ [
                     #     "LDFLAGS=-headerpad_max_install_names"
                     #   ];
-                  })).override {
-                    # Workaround https://github.com/NixOS/nixpkgs/issues/395169
-                    withNativeCompilation = false;
-                  }
+                  })
                   else pkgs.emacs.override {
                     withX = true;
                     # select lucid toolkit
@@ -1228,8 +1225,6 @@
                     avy
                     bash-completion
                     beacon
-                    blacken
-                    cider
                     clojure-mode
                     cmake-mode
                     color-identifiers-mode
@@ -1249,20 +1244,20 @@
                     elpy
                     emojify
                     envrc
-                    epresent
-                    evil
-                    evil-collection
-                    evil-numbers
-                    evil-org
-                    evil-surround
-                    evil-swap-keys
+                    # epresent
+                    # evil
+                    # evil-collection
+                    # evil-numbers
+                    # evil-org
+                    # evil-surround
+                    # evil-swap-keys
                     exec-path-from-shell
                     expand-region
                     fish-completion
                     fish-mode
                     flycheck
                     flycheck-inline
-                    flycheck-jest
+                    # flycheck-jest
                     flycheck-rust
                     forge
                     forth-mode
@@ -1284,9 +1279,9 @@
                     json-mode
                     ledger-mode
                     lispyville
-                    lsp-haskell
-                    lsp-mode
-                    lsp-ui
+                    # lsp-haskell
+                    # lsp-mode
+                    # lsp-ui
                     lua-mode
                     magit
                     markdown-mode
@@ -1296,7 +1291,7 @@
                     ol-notmuch
                     org-cliplink
                     org-download
-                    org-drill
+                    # org-drill
                     org-ref
                     org-roam
                     org-roam-bibtex
