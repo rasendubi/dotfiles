@@ -29,24 +29,33 @@
       url = "github:lnl7/nix-darwin/nix-darwin-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nixos-hardware = {
+      type = "github";
+      owner = "NixOS";
+      repo = "nixos-hardware";
+    };
+    nixos-raspberrypi.url = "github:nvmd/nixos-raspberrypi/main";
     agenix = {
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
       inputs.darwin.follows = "darwin";
     };
-    nixos-hardware = {
-      type = "github";
-      owner = "NixOS";
-      repo = "nixos-hardware";
-      flake = false;
+    disko = {
+      url = "github:nix-community/disko/latest";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    impermanence = {
+      url = "github:nix-community/impermanence";
+      inputs.nixpkgs.follows = "";
+      inputs.home-manager.follows = "";
     };
     emacs-overlay = {
       type = "github";
       owner = "nix-community";
       repo = "emacs-overlay";
-      inputs.nixpkgs.follows = "nixpkgs-unstable";
-      inputs.nixpkgs-stable.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "";
+      inputs.nixpkgs-stable.follows = "";
     };
     llm-agents = {
       url = "github:numtide/llm-agents.nix";
@@ -91,16 +100,12 @@
         genAttrs (builtins.attrNames hosts) (name: mkHost ({ inherit name; } // hosts.${name}));
 
       # merges a list of attrsets into a single attrset
-      mergeSections = inputs.nixpkgs.lib.foldr inputs.nixpkgs.lib.mergeAttrs {};
+      mergeSections = inputs.nixpkgs.lib.foldr inputs.nixpkgs.lib.attrsets.recursiveUpdate {};
 
     in mergeSections [
       (let
         nixosHosts = {
           omicron = { system = "x86_64-linux";  config = ./nixos-config.nix; };
-      
-          # pie uses a separate config as it is very different
-          # from other hosts.
-          pie =     { system = "aarch64-linux"; config = ./pie.nix; };
         };
       
         mkNixosConfiguration = { name, system, config }:
@@ -117,6 +122,434 @@
       in {
         nixosConfigurations = genHosts nixosHosts mkNixosConfiguration;
       })
+      {
+        nixosConfigurations = {
+          pie = inputs.nixos-raspberrypi.lib.nixosSystem {
+            specialArgs = {
+              inherit inputs;
+              inherit (inputs) nixos-raspberrypi;
+              # Semi-secret: don't want to publish these values but it'll
+              # end up in nix store anyway.
+              sensitive = import ./secrets/sensitive.nix;
+            };
+            system = "aarch64-linux";
+            modules = [
+              inputs.agenix.nixosModules.default
+              inputs.disko.nixosModules.disko
+              inputs.nixos-raspberrypi.nixosModules.raspberry-pi-3.base
+              ({ pkgs, lib, config, inputs, sensitive, ... }: {
+                imports = [
+                  {
+                    networking.hostName = "pie";
+                    system.stateVersion = "25.11";
+                    environment.systemPackages = [pkgs.libraspberrypi];
+                  }
+                  {
+                    nix = {
+                      settings.trusted-users = ["@wheel"];
+                      extraOptions = ''
+                        experimental-features = nix-command flakes
+                      '';
+                    };
+                  }
+                  {
+                    boot.loader.raspberry-pi.bootloader = "kernel";
+                  }
+                  {
+                    services.openssh = {
+                      enable = true;
+                      settings = {
+                        PasswordAuthentication = false;
+                        PermitRootLogin = "no";
+                      };
+                    };
+                  
+                    users.mutableUsers = false;
+                    users.users.rasen = {
+                      isNormalUser = true;
+                      home = "/home/rasen";
+                      createHome = true;
+                      openssh.authorizedKeys.keys = [
+                        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDHH15uiQw3jBbrdlcRb8wOr8KVltuwbHP/JOFAzXFO1l/4QxnKs6Nno939ugULM7Lu0Vx5g6FreuCOa2NMWk5rcjIwOzjrZnHZ7aoAVnE7H9scuz8NGnrWdc1Oq0hmcDxdZrdKdB6CPG/diGWNZy77nLvz5JcX1kPLZENPeApCERwR5SvLecA4Es5JORHz9ssEcf8I7VFpAebfQYDu+VZZvEu03P2+5SXv8+5zjiuxM7qxzqRmv0U8eftii9xgVNC7FaoRBhhM7yKkpbnqX7IeSU3WeVcw4+d1d8b9wD/sFOyGc1xAcvafLaGdgeCQGU729DupRRJokpw6bBRQGH29 rasen@omicron"
+                        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIulco7Hi0uJ90GLwuDvgG/Xlv/i2R4ySa5+/dOYygsr rasen@bayraktar"
+                      ];
+                      extraGroups = [ "wheel" ];
+                    };
+                  
+                    security.sudo.wheelNeedsPassword = false;
+                  
+                    services.avahi = {
+                      enable = true;
+                      nssmdns4 = true;
+                      publish = {
+                        enable = true;
+                        addresses = true;
+                        userServices = true;
+                      };
+                    };
+                  }
+                  {
+                    nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+                      "netdata"
+                    ];
+                    services.netdata = {
+                      enable = true;
+                      package = pkgs.netdata.override {
+                        withCloudUi = true;
+                      };
+                    };
+                    networking.firewall.allowedTCPPorts = [ 19999 ];
+                  }
+                  {
+                    services.gitolite = {
+                      enable = true;
+                      enableGitAnnex = true;
+                      user = "git";
+                      adminPubkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIulco7Hi0uJ90GLwuDvgG/Xlv/i2R4ySa5+/dOYygsr rasen@bayraktar";
+                      dataDir = "/media/data/gitolite";
+                    };
+                  }
+                  {
+                    services.syncthing = {
+                      enable = true;
+                      dataDir = "/media/data/syncthing";
+                      openDefaultPorts = true;
+                      settings = {
+                        devices = {
+                          bayraktar = {
+                            id = sensitive.syncthing.bayraktar;
+                            autoAcceptFolders = true;
+                          };
+                          bugdroid = {
+                            id = sensitive.syncthing.bugdroid;
+                            autoAcceptFolders = true;
+                          };
+                          lapdog = {
+                            id = sensitive.syncthing.lapdog;
+                            autoAcceptFolders = true;
+                          };
+                          omicron = {
+                            id = sensitive.syncthing.omicron;
+                            autoAcceptFolders = true;
+                          };
+                        };
+                      };
+                    };
+                  }
+                  {
+                    programs.mosh.enable = true;
+                    environment.systemPackages = [
+                      pkgs.vim
+                      pkgs.psmisc
+                    ];
+                  }
+                  {
+                    # This was manually transformed from the sd installer image.
+                    disko.devices.disk.sd = {
+                      type = "disk";
+                      device = "/dev/mmcblk0";
+                      content = {
+                        type = "gpt";
+                        partitions = {
+                          firmware = {
+                            name = "FIRMWARE";
+                            size = "1024M";
+                            type = "EF02";
+                            content = {
+                              type = "filesystem";
+                              device = "/dev/mmcblk0p1";
+                              format = "vfat";
+                              mountpoint = "/boot/firmware";
+                              mountOptions = [
+                                "noatime"
+                                "noauto"
+                                "x-systemd.automount"
+                                "x-systemd.idle-timeout=1min"
+                              ];
+                            };
+                          };
+                  
+                          luks = {
+                            size = "100%";
+                            content = {
+                              type = "luks";
+                              device = "/dev/mmcblk0p3";
+                              name = "root";
+                              extraFormatArgs = [
+                                # RPi does not have hardware-accelerated AES, so chacha
+                                # + adiantum provide better performance
+                                "--cipher=xchacha12,aes-adiantum-plain64"
+                                # adiantum needs larger sector size to be efficient
+                                "--sector-size=4096"
+                              ];
+                              askPassword = true;
+                              content = {
+                                type = "btrfs";
+                                extraArgs = ["-f"]; # override existing partition
+                                postCreateHook = let
+                                  thisBtrfs = config.disko.devices.disk.sd.content.partitions.root.content.content;
+                                  device = thisBtrfs.device;
+                                  subvolumes = thisBtrfs.subvolumes;
+                  
+                                  makeBlankSnapshot = btrfsMntPoint: subvol: let
+                                    subvolAbsPath = lib.strings.normalizePath "${btrfsMntPoint}/${subvol.name}";
+                                    dst = "${subvolAbsPath}-blank";
+                                    # NOTE: this one-liner has the same functionality (inspired by zfs hook)
+                                    # btrfs subvolume list -s mnt/rootfs | grep -E ' rootfs-blank$' || btrfs subvolume snapshot -r mnt/rootfs mnt/rootfs-blank
+                                  in ''
+                                    if ! btrfs subvolume show "${dst}" > /dev/null 2>&1; then
+                                      btrfs subvolume snapshot -r "${subvolAbsPath}" "${dst}"
+                                    fi
+                                  '';
+                                  # Mount top-level subvolume (/) with "subvol=/", without it
+                                  # the default subvolume will be mounted. They're the same in
+                                  # this case, though. So "subvol=/" isn't really necessary
+                                in ''
+                                  MNTPOINT=$(mktemp -d)
+                                  mount ${device} "$MNTPOINT" -o subvol=/
+                                  trap 'umount $MNTPOINT; rm -rf $MNTPOINT' EXIT
+                                  ${makeBlankSnapshot "$MNTPOINT" subvolumes."@root"}
+                                '';
+                                subvolumes = {
+                                  "@root" = {
+                                    mountpoint = "/";
+                                    mountOptions = ["compress=zstd" "noatime"];
+                                  };
+                                  "@nix" = {
+                                    mountpoint = "/nix";
+                                    mountOptions = ["compress=zstd" "noatime"];
+                                  };
+                                  "@persist" = {
+                                    mountpoint = "/persist";
+                                    mountOptions = ["compress=zstd" "noatime"];
+                                  };
+                                  "@log" = {
+                                    mountpoint = "/var/log";
+                                    mountOptions = ["compress=zstd" "noatime"];
+                                  };
+                                };
+                              };
+                            };
+                          };
+                        };
+                      };
+                    };
+                  
+                    disko.devices.disk.main = {
+                      type = "disk";
+                      device = "/dev/sda";
+                      content = {
+                        type = "gpt";
+                        partitions = {
+                          luks = {
+                            size = "100%";
+                            content = {
+                              type = "luks";
+                              name = "main";
+                              initrdUnlock = false;
+                              extraFormatArgs = [
+                                # RPi does not have hardware-accelerated AES, so chacha
+                                # + adiantum provide better performance
+                                "--cipher=xchacha12,aes-adiantum-plain64"
+                                # adiantum needs larger sector size to be efficient
+                                "--sector-size=4096"
+                              ];
+                              askPassword = true;
+                              settings.allowDiscards = true;
+                  
+                              content = {
+                                type = "btrfs";
+                                extraArgs = ["-f"]; # override existing partition
+                                subvolumes = {
+                                  "@data" = {
+                                    mountpoint = "/media/data";
+                                    mountOptions = [
+                                      "ssd"
+                                      "compress=zstd"
+                                      "noatime"
+                                      "noauto"                        # do not mount on boot
+                                      "nofail"
+                                      "x-systemd.automount"           # mount when needed
+                                      "x-systemd.device-timeout=1ms"  # don’t wait for device to appear if it’s not there
+                                      "x-systemd.idle-timeout=5m"     # unmount after 5 mins of inactivity
+                                    ];
+                                  };
+                                  "@tmp" = {
+                                    mountpoint = "/media/tmp";
+                                    mountOptions = [
+                                      "ssd"
+                                      "compress=zstd"
+                                      "noatime"
+                                      "noauto"                        # do not mount on boot
+                                      "nofail"
+                                      "x-systemd.automount"           # mount when needed
+                                      "x-systemd.device-timeout=1ms"  # don’t wait for device to appear if it’s not there
+                                      "x-systemd.idle-timeout=5m"     # unmount after 5 mins of inactivity
+                                    ];
+                                  };
+                                };
+                              };
+                            };
+                          };
+                        };
+                      };
+                    };
+                    environment.etc.crypttab = {
+                      mode = "0600";
+                      text = ''
+                        main /dev/disk/by-partlabel/disk-main-luks none luks,discard,noauto,nofail,x-systemd.device-timeout=1ms
+                      '';
+                    };
+                  
+                    fileSystems."/".neededForBoot = true;
+                    fileSystems."/nix".neededForBoot = true;
+                    fileSystems."/persist".neededForBoot = true;
+                    fileSystems."/var/log".neededForBoot = true;
+                  
+                    swapDevices = [{
+                      device = "/media/tmp/swapfile";
+                      size = 16*1024;
+                    }];
+                    boot.kernel.sysctl = {
+                      "vm.swappiness" = 160;
+                    };
+                  
+                    # TODO: dedup https://wiki.nixos.org/wiki/Btrfs#Deduplication
+                  
+                    services.btrfs.autoScrub.enable = true;
+                  }
+                  {
+                    services.snapper.configs = {
+                      # TODO: make root ephemeral and snapshot /persist instead
+                      root = {
+                        SUBVOLUME = "/";
+                        TIMELINE_CREATE = true;
+                        TIMELINE_CLEANUP = true;
+                      };
+                      data = {
+                        SUBVOLUME = "/media/data/";
+                        NUMBER_CLEANUP = true;
+                        NUMBER_LIMIT = 10;
+                        NUMBER_LIMIT_IMPORTANT = 10;
+                        TIMELINE_CREATE = true;
+                        TIMELINE_CLEANUP = true;
+                        TIMELINE_LIMIT_MONTHLY = 6;
+                        TIMELINE_LIMIT_YEARLY = 2;
+                      };
+                    };
+                  
+                    age.secrets.restic-password.file = ./secrets/pie-restic-password.age;
+                    age.secrets.restic-sa-key.file = ./secrets/pie-restic-sa-key.json.age;
+                    services.restic.backups.data = {
+                      paths = ["/media/data/"];
+                      exclude = ["/media/data/.snapshots/"];
+                  
+                      repository = sensitive.backups.repository;
+                      passwordFile = config.age.secrets.restic-password.path;
+                      environmentFile = toString (pkgs.writeText "restic-env" ''
+                        GOOGLE_PROJECT_ID=${sensitive.backups.googleProjectId}
+                        GOOGLE_APPLICATION_CREDENTIALS=${config.age.secrets.restic-sa-key.path}
+                        RESTIC_KEY_HINT=${sensitive.backups.resticKeyHint}
+                        RESTIC_READ_CONCURRENCY=4
+                        RESTIC_CACHE_DIR=/media/tmp/restic/cache
+                        TMPDIR=/media/tmp/restic/tmp
+                      '');
+                      progressFps = 0.1; # every 10 seconds
+                      extraBackupArgs = [
+                        "--skip-if-unchanged"
+                        "--one-file-system"
+                      ];
+                  
+                      timerConfig.OnCalendar = "hourly";
+                      pruneOpts = [
+                        "--keep-hourly 24"
+                        "--keep-daily 7"
+                        "--keep-weekly 4"
+                        "--keep-monthly 12"
+                        "--keep-yearly 80"
+                      ];
+                  
+                      runCheck = true;
+                      checkOpts = [
+                        "--read-data-subset=50M"
+                      ];
+                  
+                      # Remount snapshot in place of /media/data. We’re doing this with
+                      # PrivateMounts, so it does not affect the main system.
+                      backupPrepareCommand = ''
+                        set -euxo pipefail
+                        umount /media/data
+                        SNAPSHOT_NUMBER=$(snapper -c data create --description 'restic backup' --read-only --cleanup-algorithm number --print-number)
+                        mount /dev/mapper/main /media/data -o ro,subvol=@data/.snapshots/$SNAPSHOT_NUMBER/snapshot
+                      '';
+                      backupCleanupCommand = ''
+                        umount /media/data
+                        snapper -c data cleanup number
+                      '';
+                    };
+                    systemd.services.restic-backups-data.path = [pkgs.util-linux pkgs.snapper];
+                    systemd.services.restic-backups-data.serviceConfig = {
+                      PrivateMounts = true;
+                      Nice = 19;
+                      IOSchedulingPriority = 7; # lowest
+                    };
+                  }
+                  {
+                    boot.initrd = {
+                      enable = true;
+                      availableKernelModules = [ "r8169" ];
+                      luks.forceLuksSupportInInitrd = true;
+                      luks.cryptoModules = lib.mkDefault (lib.mkAfter [
+                          "aes"
+                          "aes_generic"
+                          "blowfish"
+                          "twofish"
+                          "serpent"
+                          "cbc"
+                          "xts"
+                          "lrw"
+                          "sha1"
+                          "sha256"
+                          "sha512"
+                          "af_alg"
+                          "algif_skcipher"
+                          "cryptd"
+                          "input_leds"
+                          # extra:
+                          "xchacha20"
+                          "xchacha12" "adiantum" "nhpoly1305"
+                      ]);
+                      network = {
+                        enable = true;
+                        udhcpc.enable = true;
+                        flushBeforeStage2 = true;
+                        ssh = {
+                          enable = true;
+                          port = 2222;
+                          hostKeys = [./secrets/ssh_host_pie_ed25519_key];
+                  
+                          # hostKeys = ["/boot/initrd/sshhost_ed25519_key"];
+                          # ignoreEmptyHostKeys = true; # we’re going to deliver it out of bound
+                          # extraConfig = ''
+                          #   HostKey /boot/ssh_host_ed25519_key
+                          # '';
+                          authorizedKeys = [
+                            "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDHH15uiQw3jBbrdlcRb8wOr8KVltuwbHP/JOFAzXFO1l/4QxnKs6Nno939ugULM7Lu0Vx5g6FreuCOa2NMWk5rcjIwOzjrZnHZ7aoAVnE7H9scuz8NGnrWdc1Oq0hmcDxdZrdKdB6CPG/diGWNZy77nLvz5JcX1kPLZENPeApCERwR5SvLecA4Es5JORHz9ssEcf8I7VFpAebfQYDu+VZZvEu03P2+5SXv8+5zjiuxM7qxzqRmv0U8eftii9xgVNC7FaoRBhhM7yKkpbnqX7IeSU3WeVcw4+d1d8b9wD/sFOyGc1xAcvafLaGdgeCQGU729DupRRJokpw6bBRQGH29 rasen@omicron"
+                            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIulco7Hi0uJ90GLwuDvgG/Xlv/i2R4ySa5+/dOYygsr rasen@bayraktar"
+                          ];
+                        };
+                        postCommands = ''
+                          echo "cryptsetup-askpass && exit 0" >> /root/.profile
+                        '';
+                      };
+                    };
+                  }
+                ];
+              })
+            ];
+          };
+        };
+      }
       (let
         homeManagerHosts = {
         };
@@ -1797,4 +2230,13 @@
         darwinConfigurations = genHosts darwinHosts mkDarwinConfiguration;
       })
     ];
+
+  nixConfig = {
+    extra-substituters = [
+      "https://nixos-raspberrypi.cachix.org"
+    ];
+    extra-trusted-public-keys = [
+      "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI="
+    ];
+  };
 }

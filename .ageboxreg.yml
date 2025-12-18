@@ -1,0 +1,4 @@
+file_ids:
+- secrets/sensitive.nix
+- secrets/ssh_host_pie_ed25519_key
+version: "1"
