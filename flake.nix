@@ -339,6 +339,13 @@
               };
               # services.emacs.enable = true;
             
+              services.emacs = {
+                enable = true;
+                client.enable = true;
+                defaultEditor = true;
+                package = config.programs.emacs.finalPackage;
+              };
+            
               # fonts used by emacs
               home.packages = [
                 pkgs.ibm-plex
