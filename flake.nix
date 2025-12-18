@@ -1134,9 +1134,11 @@
             }
             {
               home.packages = [ pkgs.nodejs pkgs.pnpm ];
-              home.sessionVariables.npm_config_prefix = "$HOME/.npm-global";
-              home.sessionVariables.PNPM_HOME = "$HOME/.pnpm-global";
-              home.sessionPath = ["$HOME/.npm-global/bin" "$HOME/.pnpm-global"];
+              xdg.enable = true;
+              # xdg.dataHome defaults to ~/.local/share/
+              home.sessionVariables.npm_config_prefix = "${config.xdg.dataHome}/npm";
+              home.sessionVariables.PNPM_HOME = "${config.xdg.dataHome}/pnpm";
+              home.sessionPath = ["${config.xdg.dataHome}/npm/bin" "${config.xdg.dataHome}/pnpm"];
             }
             {
               home.packages = [ pkgs.unstable.hledger ];

@@ -8483,9 +8483,11 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 #+begin_src nix
 {
   home.packages = [ pkgs.nodejs pkgs.pnpm ];
-  home.sessionVariables.npm_config_prefix = "$HOME/.npm-global";
-  home.sessionVariables.PNPM_HOME = "$HOME/.pnpm-global";
-  home.sessionPath = ["$HOME/.npm-global/bin" "$HOME/.pnpm-global"];
+  xdg.enable = true;
+  # xdg.dataHome defaults to ~/.local/share/
+  home.sessionVariables.npm_config_prefix = "${config.xdg.dataHome}/npm";
+  home.sessionVariables.PNPM_HOME = "${config.xdg.dataHome}/pnpm";
+  home.sessionPath = ["${config.xdg.dataHome}/npm/bin" "${config.xdg.dataHome}/pnpm"];
 }
 #+end_src
 *** Typescript
