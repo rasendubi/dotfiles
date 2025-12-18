@@ -47,6 +47,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.nixpkgs-stable.follows = "nixpkgs";
     };
+    llm-agents = {
+      url = "github:numtide/llm-agents.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = { self, ... }@inputs:
@@ -1153,6 +1157,14 @@
               ];
             }
             {
+              home.packages = with pkgs.llm-agents; [
+                claude-code
+                claude-code-acp
+                cursor-agent
+                pi
+              ];
+            }
+            {
               fonts.fontconfig.enable = true;
               home.packages = [
                 pkgs.iosevka
@@ -1229,6 +1241,8 @@
                 emacs-packages = (epkgs:
                   (with epkgs; [
                     melpaPackages.pr-review
+                    melpaPackages.pi-coding-agent
+                    melpaPackages.agent-shell
                   ]) ++
                   (with epkgs.melpaPackages; [
               
@@ -1493,6 +1507,7 @@
               });
             };
           })
+          inputs.llm-agents.overlays.default
         ];
       in {
         overlays = genAttrs systems mkOverlays;

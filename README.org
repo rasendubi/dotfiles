@@ -8935,7 +8935,58 @@ If given a SOURCE, execute the CMD on it."
 (use-package dart-mode
   :mode "\\.dart\\'")
 #+end_src
-** GPT
+** Agents
+
+Flake input:
+#+name: flake-inputs
+#+begin_src nix
+llm-agents = {
+  url = "github:numtide/llm-agents.nix";
+  inputs.nixpkgs.follows = "nixpkgs";
+};
+#+end_src
+
+Add overlay:
+#+name: flake-overlays
+#+begin_src nix
+inputs.llm-agents.overlays.default
+#+end_src
+
+Install agents and tools:
+#+name: home-manager-section
+#+begin_src nix
+{
+  home.packages = with pkgs.llm-agents; [
+    claude-code
+    claude-code-acp
+    cursor-agent
+    pi
+  ];
+}
+#+end_src
+
+#+name: emacs-packages
+#+begin_src nix
+melpaPackages.pi-coding-agent
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package pi-coding-agent
+  :commands (pi-coding-agent)
+  :init
+  (defalias 'pi 'pi-coding-agent))
+#+end_src
+
+Emacs integration via agent-shell:
+#+name: emacs-packages
+#+begin_src nix
+melpaPackages.agent-shell
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package agent-shell
+  :commands (agent-shell))
+#+end_src
 
 #+begin_src emacs-lisp
 (use-package gptel
