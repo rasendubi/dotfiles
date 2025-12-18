@@ -1125,6 +1125,10 @@
                   git.private-commits = "description(glob:'wip:*') | description(glob:'private:*')";
             
                   templates.git_push_bookmark = "'jj-' ++ change_id.short()";
+            
+                  revset-aliases."closest_bookmark(to)" = "heads(::to & bookmarks())";
+                  revset-aliases."closest_pushable(to)" = "heads(::to & ~description(exact:'') & (~empty() | merges()))";
+                  aliases.tug = ["bookmark" "move" "--from" "closest_bookmark(@)" "--to" "closest_pushable(@)"];
                 };
               };
             }
