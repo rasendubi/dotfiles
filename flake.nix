@@ -461,7 +461,7 @@
               programs.direnv.nix-direnv.enable = true;
             }
             {
-              home.packages = [ pkgs.unstable.pm2 ];
+              home.packages = [ pkgs.runit ];
             }
             {
               programs.autorandr = {

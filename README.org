@@ -3052,10 +3052,11 @@ direnv integration into Emacs via [[https://github.com/purcell/envrc][purcell/en
 }
 #+end_src
 ** User-level services
+Install runit to manage user-level services.
 #+name: home-manager-section
 #+begin_src nix
 {
-  home.packages = [ pkgs.unstable.pm2 ];
+  home.packages = [ pkgs.runit ];
 }
 #+end_src
 * Hardware
