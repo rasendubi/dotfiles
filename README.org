@@ -8470,8 +8470,10 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 #+name: home-manager-section
 #+begin_src nix
 {
+  home.packages = [ pkgs.nodejs pkgs.pnpm ];
   home.sessionVariables.npm_config_prefix = "$HOME/.npm-global";
-  home.sessionPath = ["$HOME/.npm-global/bin"];
+  home.sessionVariables.PNPM_HOME = "$HOME/.pnpm-global";
+  home.sessionPath = ["$HOME/.npm-global/bin" "$HOME/.pnpm-global"];
 }
 #+end_src
 *** Typescript

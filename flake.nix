@@ -1131,8 +1131,10 @@
               };
             }
             {
+              home.packages = [ pkgs.nodejs pkgs.pnpm ];
               home.sessionVariables.npm_config_prefix = "$HOME/.npm-global";
-              home.sessionPath = ["$HOME/.npm-global/bin"];
+              home.sessionVariables.PNPM_HOME = "$HOME/.pnpm-global";
+              home.sessionPath = ["$HOME/.npm-global/bin" "$HOME/.pnpm-global"];
             }
             {
               home.packages = [ pkgs.unstable.hledger ];
