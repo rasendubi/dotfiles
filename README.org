@@ -8182,24 +8182,10 @@ Pretty self-explaining.
 *** Go
 #+begin_src emacs-lisp
 (use-package go-mode
-  :mode ("\\.go$" . go-mode)
-  ;; :gfhook #'rasen/eglot-format-on-save-hook
-  ;; :ghook #'eglot-ensure
-  ;; :hook
-  ;; (go-mode . #'rasen/eglot-format-on-save)
-  :config
-  ;; (remove-hook 'go-mode #'go-mode)
-
-  (require 'eglot)
-  (defun rasen/eglot-format-on-save ()
-    (interactive)
-    (add-hook 'before-save-hook #'eglot-format-buffer))
-  (defun rasen/eglot-disable-format-on-save ()
-    (interactive)
-    (remove-hook 'before-save-hook #'eglot-format-buffer))
-  (defun rasen/go-enable-format-on-save ()
-    (interactive)
-    (add-hook 'go-mode-hook #'rasen/eglot-format-on-save)))
+  :mode ("\\.go$" . go-ts-mode)
+  :init
+  (add-to-list 'treesit-language-source-alist
+               '(go . ("https://github.com/tree-sitter/tree-sitter-go.git" "v0.25.0" "src"))))
 #+end_src
 *** C/C++
 **** Doxygen
