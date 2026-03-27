@@ -8435,7 +8435,7 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 Typescript support via tree sitter.
 #+begin_src emacs-lisp
 (use-package treesit
-  :mode (("\\.jsx" . tsx-ts-mode)
+  :mode (("\\.jsx\\'" . tsx-ts-mode)
          ("\\.tsx\\'" . tsx-ts-mode)
          ("\\.js\\'" . typescript-ts-mode)
          ("\\.ts\\'" . typescript-ts-mode)
@@ -8467,19 +8467,6 @@ pkgs.typescript-language-server
 #+begin_src emacs-lisp
 (use-package vue-mode
   :mode "\\.vue$")
-#+end_src
-*** Web-mode
-#+begin_src emacs-lisp
-(use-package web-mode
-  :commands (web-mode)
-  :init
-  (add-to-list 'auto-mode-alist '("\\.blade.php\\'" . web-mode))
-  (add-to-list 'auto-mode-alist '("\\.ts\\'" . web-mode))
-  (add-to-list 'auto-mode-alist '("\\.tsx\\'" . web-mode))
-  :config
-  (setq web-mode-engines-alist
-        '(("php"    . "\\.phtml\\'")
-          ("blade"  . "\\.blade\\."))))
 #+end_src
 *** Clojure(Script)
 #+begin_src emacs-lisp
