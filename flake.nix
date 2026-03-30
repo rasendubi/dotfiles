@@ -1284,7 +1284,6 @@
                     fish-mode
                     flycheck
                     flycheck-inline
-                    # flycheck-jest
                     flycheck-rust
                     forge
                     forth-mode

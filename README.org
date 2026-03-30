@@ -1249,7 +1249,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       fish-mode
       flycheck
       flycheck-inline
-      # flycheck-jest
       flycheck-rust
       forge
       forth-mode
@@ -8624,11 +8623,6 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
   :commands (prettier-js prettier-js-mode)
   :hook
   (typescript-mode . prettier-js-mode))
-#+end_src
-
-#+begin_src emacs-lisp
-(use-package flycheck-jest
-  :after flycheck)
 #+end_src
 *** Svelte
 #+begin_src emacs-lisp
