@@ -448,6 +448,7 @@ in
 This =<<nixos-section>>= is replaced by other parts of this doc.
 
 ** Re-expose nixpkgs
+For NixOS:
 #+name: nixos-section
 #+begin_src nix
 {
@@ -523,7 +524,7 @@ Same but for Home Manager–managed host.
 }
 #+end_src
 ** Sandbox
-Build all packages in sandbox:
+Build all Nix packages in sandbox:
 #+name: nixos-section
 #+begin_src nix
 {
@@ -531,7 +532,7 @@ Build all packages in sandbox:
 }
 #+end_src
 ** Users
-I'm the only user of the system:
+I'm the only user of the system (nixos-section):
 
 #+name: nixos-section
 #+begin_src nix
@@ -548,7 +549,6 @@ I'm the only user of the system:
 
 =initialPassword= is used only first time when user is created. It must be changed as soon as possible with =passwd=.
 
-** Machines
 * macOS
 ** Users
 #+name: darwin-section
@@ -1193,11 +1193,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
             sha256 = "sha256-3QLq91AQ6E921/W9nfDjdOUWR8YVsqBAT/W9c1woqAw=";
           })
         ];
-      # configureFlags =
-      #   (old.configureFlags or [])
-      #   ++ [
-      #     "LDFLAGS=-headerpad_max_install_names"
-      #   ];
     })
     else pkgs.emacs.override {
       withX = true;
@@ -1227,7 +1222,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       dart-mode
       diff-hl
       diminish
-      direnv
       dockerfile-mode
       doom-modeline
       dtrt-indent
@@ -1235,14 +1229,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       el-patch
       elpy
       emojify
-      envrc
-      # epresent
-      # evil
-      # evil-collection
-      # evil-numbers
-      # evil-org
-      # evil-surround
-      # evil-swap-keys
       exec-path-from-shell
       expand-region
       fish-completion
@@ -1270,9 +1256,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       json-mode
       ledger-mode
       lispyville
-      # lsp-haskell
-      # lsp-mode
-      # lsp-ui
       lua-mode
       magit
       markdown-mode
@@ -1282,7 +1265,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       ol-notmuch
       org-cliplink
       org-download
-      # org-drill
       org-ref
       org-roam
       org-roam-bibtex
@@ -1307,7 +1289,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       multiple-cursors
       rust-mode
       slime
-      smex
       spaceline
       svelte-mode
       swift-mode
@@ -1345,8 +1326,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       # not available in melpa
       epkgs.elpaPackages.exwm
       epkgs.elpaPackages.valign
-
-      epkgs.elpaPackages.eglot
 
       epkgs.elpaPackages.llm
 
@@ -1398,7 +1377,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
         pypkgs.virtualenv
       ]))
 
-      # (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science uk]))
       (pkgs.hunspell.withDicts (dicts: with dicts; [en_US-large uk_UA]))
 
       # latex for displaying fragments in org-mode
@@ -1995,14 +1973,6 @@ Evilify ivy-occur.
     "w"    #'ivy-wgrep-change-to-wgrep-mode))
 #+end_src
 
-** smex
-I use smex for improved =counsel-M-x= (show most frequently used commands first).
-#+begin_src emacs-lisp
-(use-package smex
-  :config
-  :disabled t
-  (smex-initialize))
-#+end_src
 ** counsel
 #+begin_src emacs-lisp
 (use-package counsel
@@ -2318,14 +2288,15 @@ Initialize EXWM configuration (emacs-lisp)
             (lambda ()
               (exwm-workspace-rename-buffer exwm-class-name)))
 
-  (with-eval-after-load 'evil
-    (evil-set-initial-state 'exwm-mode 'motion))
+  ;; (with-eval-after-load 'evil
+  ;;   (evil-set-initial-state 'exwm-mode 'motion))
 
   ;; do not forward anything besides keys defined with
   ;; `exwm-input-set-key' and `exwm-mode-map'
   (setq exwm-input-prefix-keys '())
 
-  (exwm-enable))
+  (when (eq system-type 'gnu/linux)
+    (exwm-enable)))
 #+end_src
 
 Add a couple of helpers functions. (emacs-lisp)
@@ -3035,7 +3006,13 @@ direnv allows having per-directory environment configuration. You can think of a
 }
 #+end_src
 
-direnv integration into Emacs via [[https://github.com/purcell/envrc][purcell/envrc]]. (emacs-lisp)
+direnv integration into Emacs via [[https://github.com/purcell/envrc][purcell/envrc]]:
+#+name: emacs-packages
+#+begin_src nix
+epkgs.melpaPackages.envrc
+#+end_src
+
+(emacs-lisp)
 #+begin_src emacs-lisp
 (use-package envrc
   :after exec-path-from-shell

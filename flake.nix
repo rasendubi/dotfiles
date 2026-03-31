@@ -1226,11 +1226,6 @@
                           sha256 = "sha256-3QLq91AQ6E921/W9nfDjdOUWR8YVsqBAT/W9c1woqAw=";
                         })
                       ];
-                    # configureFlags =
-                    #   (old.configureFlags or [])
-                    #   ++ [
-                    #     "LDFLAGS=-headerpad_max_install_names"
-                    #   ];
                   })
                   else pkgs.emacs.override {
                     withX = true;
@@ -1240,6 +1235,7 @@
                   };
                 emacs-packages = (epkgs:
                   (with epkgs; [
+                    epkgs.melpaPackages.envrc
                     melpaPackages.pr-review
                     melpaPackages.pi-coding-agent
                     melpaPackages.agent-shell
@@ -1262,7 +1258,6 @@
                     dart-mode
                     diff-hl
                     diminish
-                    direnv
                     dockerfile-mode
                     doom-modeline
                     dtrt-indent
@@ -1270,14 +1265,6 @@
                     el-patch
                     elpy
                     emojify
-                    envrc
-                    # epresent
-                    # evil
-                    # evil-collection
-                    # evil-numbers
-                    # evil-org
-                    # evil-surround
-                    # evil-swap-keys
                     exec-path-from-shell
                     expand-region
                     fish-completion
@@ -1305,9 +1292,6 @@
                     json-mode
                     ledger-mode
                     lispyville
-                    # lsp-haskell
-                    # lsp-mode
-                    # lsp-ui
                     lua-mode
                     magit
                     markdown-mode
@@ -1317,7 +1301,6 @@
                     ol-notmuch
                     org-cliplink
                     org-download
-                    # org-drill
                     org-ref
                     org-roam
                     org-roam-bibtex
@@ -1342,7 +1325,6 @@
                     multiple-cursors
                     rust-mode
                     slime
-                    smex
                     spaceline
                     svelte-mode
                     swift-mode
@@ -1380,8 +1362,6 @@
                     # not available in melpa
                     epkgs.elpaPackages.exwm
                     epkgs.elpaPackages.valign
-              
-                    epkgs.elpaPackages.eglot
               
                     epkgs.elpaPackages.llm
               
@@ -1433,7 +1413,6 @@
                       pypkgs.virtualenv
                     ]))
               
-                    # (pkgs.aspellWithDicts (dicts: with dicts; [en en-computers en-science uk]))
                     (pkgs.hunspell.withDicts (dicts: with dicts; [en_US-large uk_UA]))
               
                     # latex for displaying fragments in org-mode
