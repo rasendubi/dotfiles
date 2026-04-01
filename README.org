@@ -1196,7 +1196,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
     })
     else pkgs.emacs.override {
       withX = true;
-      # select lucid toolkit
       toolkit = "lucid";
       withGTK3 = false;
     };
@@ -1260,7 +1259,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       magit
       markdown-mode
       nix-mode
-      nix-sandbox
       notmuch
       ol-notmuch
       org-cliplink
@@ -1274,13 +1272,9 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       php-mode
       pip-requirements
       plantuml-mode
-      prettier-js
       projectile
       protobuf-mode
-      psc-ide
-      purescript-mode
       py-autopep8
-      racer
       racket-mode
       restclient
       rjsx-mode
@@ -1293,8 +1287,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       svelte-mode
       swift-mode
       terraform-mode
-      tide
-      typescript-mode
       visual-fill-column
       vterm
       vue-mode
@@ -3513,8 +3505,6 @@ These variables need to be set before evil loads (which seems to be required by 
           python
           racer
           restclient
-          tide
-          typescript-mode
           vterm
           which-key
           xref))
@@ -8467,140 +8457,42 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
 }
 #+end_src
 *** Typescript
+Typescript support via tree sitter.
 #+begin_src emacs-lisp
-(use-package typescript-mode
-  :commands (typescript-mode)
-  :gfhook
-  #'rasen/setup-tide-mode
-  #'abbrev-mode
-  :init
-  (el-patch-feature typescript-mode)
-  (add-hook 'web-mode-hook
-            (defun rasen/enable-typescript ()
-              (when (member (file-name-extension buffer-file-name)
-                            '("ts" "tsx" "js" "jsx"))
-                (typescript-mode))))
-  (add-hook 'rjsx-mode-hook #'rasen/enable-typescript)
-  :general
-  ('insert
-   'typescript-mode-map
-   "M-j"   #'c-indent-new-comment-line
-   "C-M-j" #'c-indent-new-comment-line)
+(use-package treesit
+  :mode (("\\.jsx" . tsx-ts-mode)
+         ("\\.tsx\\'" . tsx-ts-mode)
+         ("\\.js\\'" . typescript-ts-mode)
+         ("\\.ts\\'" . typescript-ts-mode)
+         ("\\.mjs\\'" . typescript-ts-mode)
+         ("\\.mts\\'" . typescript-ts-mode)
+         ("\\.cjs\\'" . typescript-ts-mode))
   :config
-  (setq-default typescript-indent-level 2)
+  (add-to-list 'treesit-language-source-alist
+               '(tsx . ("https://github.com/tree-sitter/tree-sitter-typescript.git" "v0.23.2" "tsx/src")))
+  (add-to-list 'treesit-language-source-alist
+               '(typescript . ("https://github.com/tree-sitter/tree-sitter-typescript.git" "v0.23.2" "typescript/src"))))
+#+end_src
 
-  ;; Add more jsdoc tags
-  (el-patch-defconst typescript-jsdoc-empty-tag-regexp
-    (concat typescript-jsdoc-before-tag-regexp
-            "\\(@"
-            (regexp-opt
-             '("abstract"
-               "addon"
-               "async"
-               "author"
-               "class"
-               "classdesc"
-               "const"
-               "constant"
-               "constructor"
-               "constructs"
-               "copyright"
-               "default"
-               "defaultvalue"
-               "deprecated"
-               "desc"
-               "description"
-               "event"
-               "example"
-               "exec"
-               "export"
-               "exports"
-               "file"
-               "fileoverview"
-               "final"
-               "func"
-               "function"
-               "generator"
-               "global"
-               "hidden"
-               "hideconstructor"
-               "ignore"
-               "implicitcast"
-               "inheritdoc"
-               "inner"
-               "instance"
-               "interface"
-               "license"
-               "method"
-               "mixin"
-               "noalias"
-               "noshadow"
-               "notypecheck"
-               "override"
-               "overview"
-               "owner"
-               "package"
-               "preserve"
-               "preservetry"
-               "private"
-               "protected"
-               "public"
-               "readonly"
-               "static"
-               "summary"
-               "supported"
-               "todo"
-               "tutorial"
-               "virtual"
-               (el-patch-add
-                 "remarks"
-                 "alpha"
-                 "beta"
-                 "defaultValue"
-                 "eventProperty"
-                 "example"
-                 "experimental"
-                 "inheritDoc"
-                 "internal"
-                 "label"
-                 "link"
-                 "packageDocumentation"
-                 "privateRemarks"
-                 "sealed"
-                 "typeParam")))
-            "\\)\\s-*")
-    "Matches empty jsdoc tags."))
+Install typsecript-language-server as emacs package (so it’s available to emacs but not system-wide):
+#+name: emacs-packages
+#+begin_src nix
+pkgs.typescript-language-server
+#+end_src
+
+Buffer formatting with [[https://github.com/radian-software/apheleia][apheleia]] (via prettier).
+#+name: emacs-packages
+#+begin_src nix
+melpaPackages.apheleia
 #+end_src
 
 #+begin_src emacs-lisp
-(use-package tide
-  :commands (tide-setup
-             tide-hl-identifier-mode
-             tide-format-before-save)
-  :hook
-  (typescript-mode . rasen/setup-tide-mode)
-  :init
-  (defun rasen/setup-tide-mode ()
-    (interactive)
-    (with-demoted-errors "tide-setup: %S"
-      (tide-setup))
-    (flycheck-mode +1)
-    (setq flycheck-check-syntax-automatically '(save mode-enabled))
-    (eldoc-mode +1)
-    (tide-hl-identifier-mode +1)
-    (company-mode +1))
+(use-package apheleia
+  :diminish t
   :config
-  ;; K is used for avy
-  (general-def 'normal 'tide-mode-map
-    "K" nil))
+  (apheleia-global-mode 1))
 #+end_src
 
-#+begin_src emacs-lisp
-(use-package prettier-js
-  :commands (prettier-js prettier-js-mode)
-  :hook
-  (typescript-mode . prettier-js-mode))
-#+end_src
 *** Svelte
 #+begin_src emacs-lisp
 (use-package svelte-mode

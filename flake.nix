@@ -1229,7 +1229,6 @@
                   })
                   else pkgs.emacs.override {
                     withX = true;
-                    # select lucid toolkit
                     toolkit = "lucid";
                     withGTK3 = false;
                   };
@@ -1237,6 +1236,8 @@
                   (with epkgs; [
                     epkgs.melpaPackages.envrc
                     melpaPackages.pr-review
+                    pkgs.typescript-language-server
+                    melpaPackages.apheleia
                     melpaPackages.pi-coding-agent
                     melpaPackages.agent-shell
                   ]) ++
@@ -1296,7 +1297,6 @@
                     magit
                     markdown-mode
                     nix-mode
-                    nix-sandbox
                     notmuch
                     ol-notmuch
                     org-cliplink
@@ -1310,13 +1310,9 @@
                     php-mode
                     pip-requirements
                     plantuml-mode
-                    prettier-js
                     projectile
                     protobuf-mode
-                    psc-ide
-                    purescript-mode
                     py-autopep8
-                    racer
                     racket-mode
                     restclient
                     rjsx-mode
@@ -1329,8 +1325,6 @@
                     svelte-mode
                     swift-mode
                     terraform-mode
-                    tide
-                    typescript-mode
                     visual-fill-column
                     vterm
                     vue-mode
