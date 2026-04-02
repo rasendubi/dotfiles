@@ -1236,8 +1236,8 @@
                   (with epkgs; [
                     epkgs.melpaPackages.envrc
                     melpaPackages.pr-review
-                    pkgs.typescript-language-server
                     melpaPackages.apheleia
+                    pkgs.typescript-language-server
                     melpaPackages.pi-coding-agent
                     melpaPackages.agent-shell
                   ]) ++
