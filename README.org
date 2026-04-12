@@ -1226,7 +1226,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       dtrt-indent
       edit-indirect
       el-patch
-      elpy
       emojify
       exec-path-from-shell
       expand-region
@@ -1251,7 +1250,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       ivy-bibtex
       ivy-pass
       jinja2-mode
-      js2-mode
       json-mode
       ledger-mode
       lispyville
@@ -1272,26 +1270,20 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       php-mode
       pip-requirements
       plantuml-mode
-      projectile
       protobuf-mode
-      py-autopep8
       racket-mode
       restclient
-      rjsx-mode
       ryo-modal
       god-mode
       multiple-cursors
       rust-mode
       slime
-      spaceline
       svelte-mode
       swift-mode
       terraform-mode
       visual-fill-column
       vterm
       vue-mode
-      w3m
-      web-mode
       wgrep
       which-key
       whitespace-cleanup-mode
@@ -1354,20 +1346,10 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       pkgs.sqlite
 
       pkgs.notmuch
-      pkgs.w3m
       pkgs.imagemagick
       pkgs.shellcheck
 
       pkgs.direnv
-
-      (pkgs.python3.withPackages (pypkgs: [
-        pypkgs.autopep8
-        pypkgs.black
-        pypkgs.flake8
-        pypkgs.mypy
-        pypkgs.pylint
-        pypkgs.virtualenv
-      ]))
 
       (pkgs.hunspell.withDicts (dicts: with dicts; [en_US-large uk_UA]))
 
@@ -3496,7 +3478,6 @@ These variables need to be set before evil loads (which seems to be required by 
           compile
           flycheck
           help
-          js2-mode
           ;; notmuch bindings aren't that cool and are less efficient than native
           ;; keymap
           ;; notmuch
@@ -7665,44 +7646,6 @@ Make '_' a part of words so that commands like =evil-forward-word-begin= work pr
   :custom
   (project-vc-extra-root-markers '(".bazelproject" "Cargo.lock" ".git")))
 #+end_src
-*** projectile
-#+begin_src emacs-lisp
-(use-package projectile
-  :disabled t
-  :general
-  (s-leader-def
-    "p" #'projectile-command-map)
-  ('motion
-   ;; That works much better than the default
-   "g f"    #'projectile-find-file-dwim
-   "U"      #'projectile-find-file
-   "<f3>"   #'projectile-test-project
-   "<f4>"   #'projectile-compile-project
-   "<f5>"   #'projectile-run-project)
-  :commands (projectile-project-name projectile-find-file)
-  :diminish projectile-mode
-  :config
-  ;; Use the prefix arg if you want to change the compilation command
-  (setq-default compilation-read-command nil)
-
-  (setq-default projectile-use-git-grep t)
-
-  ;; projectile-find-file is slow on very large projects.  Enable
-  ;; known-files caching for projectile to speed it up.
-  ;; (Note: clear cache with `projectile-invalidate-cache', or C-u U)
-  ;; (setq-default projectile-enable-caching t)
-  ;; set projectile-enable-caching on a per-project basis in .dir-locals.el
-
-  (setq-default projectile-completion-system 'ivy)
-  (projectile-mode))
-#+end_src
-
-#+begin_src emacs-lisp
-(use-package counsel-projectile
-  :after projectile
-  :config
-  (counsel-projectile-mode))
-#+end_src
 *** company
 Company mode provides autocomplete features.
 #+begin_src emacs-lisp
@@ -8378,42 +8321,6 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
    ("\\.cmake\\'"         . cmake-mode)))
 #+end_src
 *** Python
-#+begin_src emacs-lisp
-(use-package elpy
-  :disabled t
-  :after (flycheck)
-  :config
-  ;; Do not show vertical guides in python code
-  (setq elpy-modules (delq 'elpy-module-highlight-indentation elpy-modules))
-
-  ;; (setq elpy-modules (delq 'elpy-module-pyvenv elpy-modules))
-  ;; (setq elpy-modules (delq 'elpy-module-django elpy-modules))
-
-  ;; Do not use flymake (flycheck will kick in instead)
-  (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
-
-  ;; Use python3 (instead of python2)
-  ;; (setq flycheck-python-flake8-executable "python3"
-  ;;       flycheck-python-pycompile-executable "python3"
-  ;;       flycheck-python-pylint-executable "python3")
-
-  (elpy-enable))
-#+end_src
-
-#+begin_src emacs-lisp
-(use-package blacken
-  :hook (elpy-mode . blacken-mode))
-#+end_src
-
-#+begin_src emacs-lisp
-(use-package py-autopep8
-  :disabled t
-  :hook (elpy-mode . py-autopep8-enable-on-save)
-  :config
-  (defun rasen/autopep8-disable-on-save ()
-    (interactive)
-    (remove-hook 'before-save-hook 'py-autopep8-buffer t)))
-#+end_src
 
 #+begin_src emacs-lisp
 (use-package pip-requirements

@@ -1264,7 +1264,6 @@
                     dtrt-indent
                     edit-indirect
                     el-patch
-                    elpy
                     emojify
                     exec-path-from-shell
                     expand-region
@@ -1289,7 +1288,6 @@
                     ivy-bibtex
                     ivy-pass
                     jinja2-mode
-                    js2-mode
                     json-mode
                     ledger-mode
                     lispyville
@@ -1310,26 +1308,20 @@
                     php-mode
                     pip-requirements
                     plantuml-mode
-                    projectile
                     protobuf-mode
-                    py-autopep8
                     racket-mode
                     restclient
-                    rjsx-mode
                     ryo-modal
                     god-mode
                     multiple-cursors
                     rust-mode
                     slime
-                    spaceline
                     svelte-mode
                     swift-mode
                     terraform-mode
                     visual-fill-column
                     vterm
                     vue-mode
-                    w3m
-                    web-mode
                     wgrep
                     which-key
                     whitespace-cleanup-mode
@@ -1392,20 +1384,10 @@
                     pkgs.sqlite
               
                     pkgs.notmuch
-                    pkgs.w3m
                     pkgs.imagemagick
                     pkgs.shellcheck
               
                     pkgs.direnv
-              
-                    (pkgs.python3.withPackages (pypkgs: [
-                      pypkgs.autopep8
-                      pypkgs.black
-                      pypkgs.flake8
-                      pypkgs.mypy
-                      pypkgs.pylint
-                      pypkgs.virtualenv
-                    ]))
               
                     (pkgs.hunspell.withDicts (dicts: with dicts; [en_US-large uk_UA]))
               
