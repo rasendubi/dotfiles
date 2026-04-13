@@ -7080,6 +7080,16 @@ shell exits, the buffer is killed."
     (vterm-send-string command)
     (vterm-send-return)))
 #+end_src
+*** eat terminal emulator
+#+name: emacs-packages
+#+begin_src nix
+nongnuPackages.eat
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package eat
+  :commands (eat))
+#+end_src
 *** fish
 [[https://fishshell.com/][fish]] is a cool shell, I use it as my default for day-to-day work.
 

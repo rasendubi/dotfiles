@@ -1235,6 +1235,7 @@
                 emacs-packages = (epkgs:
                   (with epkgs; [
                     epkgs.melpaPackages.envrc
+                    nongnuPackages.eat
                     melpaPackages.pr-review
                     melpaPackages.apheleia
                     pkgs.typescript-language-server
