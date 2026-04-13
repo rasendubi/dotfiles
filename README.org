@@ -8661,7 +8661,7 @@ Flake input:
 #+begin_src nix
 llm-agents = {
   url = "github:numtide/llm-agents.nix";
-  inputs.nixpkgs.follows = "nixpkgs";
+  inputs.nixpkgs.follows = "nixpkgs-unstable";
 };
 #+end_src
 
