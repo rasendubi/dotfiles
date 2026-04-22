@@ -1779,6 +1779,16 @@ Do not create lockfiles either. (I am the only user in the system and only use e
 #+begin_src emacs-lisp
 (setq create-lockfiles nil)
 #+end_src
+
+Store native compilation cache inside =~/.emacs.d/var/eln-cache=. This goes to early init:
+#+begin_src emacs-lisp :tangle .emacs.d/early-init.el
+(when (and (fboundp 'startup-redirect-eln-cache)
+           (fboundp 'native-comp-available-p)
+           (native-comp-available-p))
+  (startup-redirect-eln-cache
+   (convert-standard-filename
+    (expand-file-name  "var/eln-cache/" user-emacs-directory))))
+#+end_src
 ** Helpers
 Emacs lisp helper functions.
 
