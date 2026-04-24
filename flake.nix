@@ -1117,6 +1117,7 @@
                     default-command = "log";
                     graph.style = "ascii";
                     show-cryptographic-signatures = true;
+                    conflict-marker-style = "git";
                   };
             
                   signing = {
