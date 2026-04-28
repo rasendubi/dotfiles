@@ -1159,7 +1159,7 @@
             {
               home.packages = with pkgs.llm-agents; [
                 claude-code
-                claude-code-acp
+                claude-agent-acp
                 cursor-agent
                 pi
               ];
