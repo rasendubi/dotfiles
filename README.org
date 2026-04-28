@@ -4051,7 +4051,9 @@ An interactive command to jump to a specific datetree entry in the current buffe
 #+name: org-config
 #+begin_src emacs-lisp
 (defun rasen/org-refile-files ()
-  (rasen/org-files-in-dir rasen/org-directory))
+  (append
+   '("~/org/dd/index.org" "~/org/fluxon/index.org")
+   (rasen/org-files-in-dir rasen/org-directory)))
 
 ;; non-nil values work bad with ivy
 (setq-default org-refile-use-outline-path 'file)
