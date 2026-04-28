@@ -7737,6 +7737,9 @@ Company-box frontend works better with variable-pitch fonts.
   :config
   (vertico-mode))
 
+(use-package consult
+  :commands (consult-ripgrep))
+
 (use-package vertico-multiform
   :config
   (require 'vertico-buffer)
