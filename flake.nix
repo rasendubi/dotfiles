@@ -33,6 +33,7 @@
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
+      inputs.darwin.follows = "darwin";
     };
     nixos-hardware = {
       type = "github";
@@ -44,7 +45,7 @@
       type = "github";
       owner = "nix-community";
       repo = "emacs-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
       inputs.nixpkgs-stable.follows = "nixpkgs";
     };
     llm-agents = {
