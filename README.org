@@ -670,7 +670,7 @@ org-clock.1s.sh
 
 Skhd integration to move between windows.
 
-[https://gist.github.com/ethan-leba/760054f36a2f7c144c6b06ab6458fae6]
+https://gist.github.com/ethan-leba/760054f36a2f7c144c6b06ab6458fae6
 #+name: darwin-section
 #+begin_src nix
 {
@@ -1147,7 +1147,6 @@ oleksiishmalko = {
 
 * Emacs
 ** Install Emacs
-#+name: install-emacs
 
 I use emacs from [[https://github.com/nix-community/emacs-overlay][emacs-overlay]].
 #+name: flake-inputs
@@ -4648,7 +4647,7 @@ Do not show project tags.
 
   (setq org-agenda-custom-commands
         `(("o" "Overview" ,(rasen/mk-agenda
-                            org-agenda-files
+                            '("~/org/plan.org")
                             (mapcar (lambda (x) (concat rasen/org-directory "/" x))
                                     '("refile-omicron.org"
                                       "orgzly.org"))
