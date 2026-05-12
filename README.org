@@ -2638,6 +2638,7 @@ Fix Ukrainian dictionary to play nicely with English one.
 Make spellcheck work with Unicode apostrophe.
 #+begin_src emacs-lisp
 (use-package ispell
+  :defer 10
   :config
   (setq ispell-program-name "hunspell")
   (setq ispell-dictionary "en_US,uk_UA")
@@ -2651,7 +2652,6 @@ Make spellcheck work with Unicode apostrophe.
   (setq ispell-local-dictionary-alist
         `(("en_US,uk_UA" "[[:alpha:]]" "[^[:alpha:]]"
            "['0-9`’-]" nil ("-d" "en_US,uk_UA") nil utf-8)))
-
 
   ;; Don't send ’ to the subprocess.
   (defun rasen/replace-apostrophe (args)
@@ -5127,15 +5127,16 @@ Do not show project tags.
                    ;; Show habits on each day. (Useful if today
                    ;; is closed but you still want to see the
                    ;; habit graph.)
-                   ;; (org-habit-show-habits-only-for-today nil)
+                   (org-habit-show-habits-only-for-today nil)
+                   (org-habit-show-done-always-green t)
 
                    (org-super-agenda-groups
                     '(;; 1. time-grid
-                      ;; 2. scheduled today
-                      ;; 3. deadline today
+                      ;; 2. deadlines
+                      ;; 3. scheduled
+                      ;; 3.5. WAIT scheduled today
                       ;; 4. habits
                       ;; 5. rest (anniversaries, etc.)
-                      ;; 6. deadline reminders
                       (:name none ;; habits
                        :habit t
                        :order 4)
@@ -5144,20 +5145,28 @@ Do not show project tags.
                        :order 1)
                       (:name none ;; don't show closed items—they are still seen in the log
                        :discard (:todo ("DONE" "CANCELED")))
+                      (:name none  ; deadlines
+                       :deadline t
+                       :order 2)
                       (:name none ;; scheduled today
                        :and (:todo ("WAIT")
                              :scheduled today)
-                       :order 2.5)
-                      (:name none ;; scheduled today
-                       :scheduled today
-                       :order 2)
-                      (:name none ;; deadline today
-                       :deadline today
-                       :order 3)
-                      (:name none ;; deadline reminders
-                       :deadline t
+                       :order 3.5)
+                      (:name none  ; scheduled
                        :scheduled t
-                       :order 6)
+                       :order 3)
+                      ;; (:name none ;; scheduled today
+                      ;;  :scheduled today
+                      ;;  :order 2)
+                      ;; (:name none ;; deadline today
+                      ;;  :deadline today
+                      ;;  :order 1.7)
+                      ;; (:name none ;; deadline reminders
+                      ;;  :deadline t
+                      ;;  :order 1.5)
+                      ;; (:name none ;; scheduled reminders
+                      ;;  :deadline t
+                      ;;  :order 1.9)
                       (:name none ;; everything else
                        :anything t
                        :order 5)))))
@@ -8656,19 +8665,19 @@ Pretty self-explaining.
 (use-package haskell-mode
   :mode "\\.hs$"
   :init
-  (setq company-ghc-show-info t)
-  (setq flycheck-ghc-stack-use-nix t)
+  ;; (setq company-ghc-show-info t)
+  ;; (setq flycheck-ghc-stack-use-nix t)
   :config
   ;; (add-hook 'haskell-mode-hook #'interactive-haskell-mode)
   ;; (add-hook 'haskell-mode-hook #'haskell-decl-scan-mode)
   ;; (add-hook 'haskell-mode-hook #'lsp)
 
-  (setq haskell-compile-cabal-build-command "cd %s && stack build")
-  (setq haskell-compile-cabal-build-command-alt "cd %s && cabal build --ghc-options=-ferror-spans")
+  ;; (setq haskell-compile-cabal-build-command "cd %s && stack build")
+  ;; (setq haskell-compile-cabal-build-command-alt "cd %s && cabal build --ghc-options=-ferror-spans")
 
   ;; Use Nix for stack ghci
-  (add-to-list 'haskell-process-args-stack-ghci "--fast --nix")
-  (add-to-list 'haskell-process-args-stack-ghci "--test")
+  ;; (add-to-list 'haskell-process-args-stack-ghci "--fast --nix")
+  ;; (add-to-list 'haskell-process-args-stack-ghci "--test")
 
   ;; Use Nix for default build/test command
   ;; (projectile-register-project-type 'haskell-stack
@@ -8713,12 +8722,6 @@ Pretty self-explaining.
                  '(haskell-left-arrows
                    (regexp . "\\(\\s-+\\)\\(<-\\|←\\)\\s-+")
                    (modes . '(haskell-mode literate-haskell-mode))))))
-#+end_src
-
-#+begin_src emacs-lisp
-(use-package lsp-haskell
-  :disabled t
-  :after haskell-mode lsp-mode)
 #+end_src
 *** Rust
 #+begin_src emacs-lisp
@@ -9202,6 +9205,7 @@ pkgs.parinfer-rust-emacs
   :config
   (add-to-list 'parinfer-rust-troublesome-modes #'aggressive-indent-mode)
   (add-to-list 'parinfer-rust-troublesome-modes #'paren-face-mode)
+  (add-to-list 'parinfer-rust-troublesome-modes #'apheleia-mode)
   (setq parinfer-rust-disable-troublesome-modes t))
 #+end_src
 
