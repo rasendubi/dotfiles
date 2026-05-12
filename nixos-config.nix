@@ -184,7 +184,7 @@ in
       nix.settings.trusted-users = ["rasen"];
     }
     {
-      environment.systemPackages = [ pkgs.xorg.xhost ];
+      environment.systemPackages = [ pkgs.xhost ];
       services.xserver.windowManager.session = lib.singleton {
         name = "exwm";
         start = ''

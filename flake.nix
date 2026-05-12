@@ -9,7 +9,7 @@
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-25.11";
+      ref = "nixos-26.05";
     };
 
     nixpkgs-unstable = {
@@ -22,11 +22,11 @@
       type = "github";
       owner = "rycee";
       repo = "home-manager";
-      ref = "release-25.11";
+      ref = "release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     darwin = {
-      url = "github:lnl7/nix-darwin/nix-darwin-25.11";
+      url = "github:lnl7/nix-darwin/nix-darwin-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixos-hardware = {
@@ -818,7 +818,7 @@
               '';
             }
             {
-              home.packages = [ pkgs.xorg.xkbcomp ];
+              home.packages = [ pkgs.xkbcomp ];
             }
             {
               home.file.".XCompose".text = ''
@@ -1229,7 +1229,8 @@
             }
             {
               programs.zathura = {
-                enable = true;
+                # FIXME: appstream is broken on 26.05 (https://github.com/NixOS/nixpkgs/issues/514566)
+                enable = pkgs.stdenv.isLinux;
                 options = {
                   incremental-search = true;
                 };
@@ -1390,6 +1391,7 @@
                   source "$HOME/.zshrc_local"
                 fi
               '';
+              programs.zsh.dotDir = "${config.xdg.configHome}/zsh";
             }
             {
               programs.fish.functions.fish_user_key_bindings = ''
@@ -1652,7 +1654,7 @@
                         # Enable rounded window with no decoration
                         (pkgs.fetchpatch {
                           url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-30/round-undecorated-frame.patch";
-                          sha256 = "sha256-uYIxNTyfbprx5mCqMNFVrBcLeo+8e21qmBE3lpcnd+4=";
+                          sha256 = "sha256-fesZ0H3LO6T2AiRV8ASozKxZBpvVzwLEcLDy6rctR6c=";
                         })
                         # Make emacs aware of OS-level light/dark mode
                         (pkgs.fetchpatch {

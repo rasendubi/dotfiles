@@ -46,7 +46,7 @@ The following goes to ~flake.nix~ file.
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-25.11";
+      ref = "nixos-26.05";
     };
 
     <<flake-inputs>>
@@ -196,7 +196,7 @@ home-manager = {
   type = "github";
   owner = "rycee";
   repo = "home-manager";
-  ref = "release-25.11";
+  ref = "release-26.05";
   inputs.nixpkgs.follows = "nixpkgs";
 };
 #+end_src
@@ -286,7 +286,7 @@ Add nix-darwin to flake inputs.
 #+name: flake-inputs
 #+begin_src nix
 darwin = {
-  url = "github:lnl7/nix-darwin/nix-darwin-25.11";
+  url = "github:lnl7/nix-darwin/nix-darwin-26.05";
   inputs.nixpkgs.follows = "nixpkgs";
 };
 #+end_src
@@ -1737,7 +1737,7 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
           # Enable rounded window with no decoration
           (pkgs.fetchpatch {
             url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-30/round-undecorated-frame.patch";
-            sha256 = "sha256-uYIxNTyfbprx5mCqMNFVrBcLeo+8e21qmBE3lpcnd+4=";
+            sha256 = "sha256-fesZ0H3LO6T2AiRV8ASozKxZBpvVzwLEcLDy6rctR6c=";
           })
           # Make emacs aware of OS-level light/dark mode
           (pkgs.fetchpatch {
@@ -2792,7 +2792,7 @@ NixOS has an EXWM module, but my feeling is that it's too limiting. (~<<nixos-se
 #+name: nixos-section
 #+begin_src nix
 {
-  environment.systemPackages = [ pkgs.xorg.xhost ];
+  environment.systemPackages = [ pkgs.xhost ];
   services.xserver.windowManager.session = lib.singleton {
     name = "exwm";
     start = ''
@@ -3200,7 +3200,7 @@ Install xkbcomp to execute these commands. (~<<home-manager-section>>~)
 #+name: home-manager-section
 #+begin_src nix
 {
-  home.packages = [ pkgs.xorg.xkbcomp ];
+  home.packages = [ pkgs.xkbcomp ];
 }
 #+end_src
 
@@ -7382,7 +7382,8 @@ KDE apps might have issues with mime types without this:
 #+begin_src nix
 {
   programs.zathura = {
-    enable = true;
+    # FIXME: appstream is broken on 26.05 (https://github.com/NixOS/nixpkgs/issues/514566)
+    enable = pkgs.stdenv.isLinux;
     options = {
       incremental-search = true;
     };
@@ -7710,6 +7711,7 @@ For home-manager:
       source "$HOME/.zshrc_local"
     fi
   '';
+  programs.zsh.dotDir = "${config.xdg.configHome}/zsh";
 }
 #+end_src
 
