@@ -9187,6 +9187,23 @@ Install SBCL.
   :config
   (setq inferior-lisp-program "sbcl"))
 #+end_src
+*** Parinfer for lisps
+#+name: emacs-packages
+#+begin_src nix
+epkgs.melpaPackages.parinfer-rust-mode
+pkgs.parinfer-rust-emacs
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package parinfer-rust-mode
+  :defer t
+  :hook (emacs-lisp-mode scheme-mode)
+  :config
+  (add-to-list 'parinfer-rust-troublesome-modes #'aggressive-indent-mode)
+  (add-to-list 'parinfer-rust-troublesome-modes #'paren-face-mode)
+  (setq parinfer-rust-disable-troublesome-modes t))
+#+end_src
+
 *** Zig
 #+begin_src emacs-lisp
 (use-package zig-mode
