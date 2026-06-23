@@ -2003,7 +2003,7 @@
             {
               users.users.${config.system.primaryUser} = {
                 description = "Oleksii Shmalko";
-                home = "/Users/${config.system.primaryUser}/";
+                home = "/Users/${config.system.primaryUser}";
               };
             }
             {
