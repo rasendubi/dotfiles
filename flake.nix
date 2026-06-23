@@ -1594,7 +1594,6 @@
             {
               home.packages = with pkgs.llm-agents; [
                 claude-code
-                claude-agent-acp
                 cursor-agent
                 pi
               ];
