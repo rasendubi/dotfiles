@@ -1639,6 +1639,7 @@
           in
             mergeSections [
               (let
+                homebrew-emacs-plus = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/dbc974ef02d76f19ce0aadea8ea6416fe41eef2b";
                 emacs-base =
                   if pkgs.stdenv.isDarwin
                   then pkgs.emacs.overrideAttrs (old: {
@@ -1647,17 +1648,17 @@
                       ++ [
                         # Fix OS window role so that yabai can pick up emacs
                         (pkgs.fetchpatch {
-                          url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-28/fix-window-role.patch";
+                          url = "${homebrew-emacs-plus}/patches/emacs-28/fix-window-role.patch";
                           sha256 = "sha256-+z/KfsBm1lvZTZNiMbxzXQGRTjkCFO4QPlEK35upjsE=";
                         })
                         # Enable rounded window with no decoration
                         (pkgs.fetchpatch {
-                          url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-30/round-undecorated-frame.patch";
-                          sha256 = "sha256-uYIxNTyfbprx5mCqMNFVrBcLeo+8e21qmBE3lpcnd+4=";
+                          url = "${homebrew-emacs-plus}/patches/emacs-30/round-undecorated-frame.patch";
+                          sha256 = "sha256-fesZ0H3LO6T2AiRV8ASozKxZBpvVzwLEcLDy6rctR6c=";
                         })
                         # Make emacs aware of OS-level light/dark mode
                         (pkgs.fetchpatch {
-                          url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-30/system-appearance.patch";
+                          url = "${homebrew-emacs-plus}/patches/emacs-30/system-appearance.patch";
                           sha256 = "sha256-3QLq91AQ6E921/W9nfDjdOUWR8YVsqBAT/W9c1woqAw=";
                         })
                       ];
