@@ -1592,9 +1592,8 @@
               ];
             }
             {
-              home.packages = with pkgs.llm-agents; [
+              home.packages = with inputs.llm-agents.packages."${pkgs.stdenv.hostPlatform.system}"; [
                 claude-code
-                cursor-agent
                 pi
               ];
             }
@@ -1652,8 +1651,8 @@
                         })
                         # Enable rounded window with no decoration
                         (pkgs.fetchpatch {
-                          url = "${homebrew-emacs-plus}/patches/emacs-30/round-undecorated-frame.patch";
-                          sha256 = "sha256-fesZ0H3LO6T2AiRV8ASozKxZBpvVzwLEcLDy6rctR6c=";
+                          url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-30/round-undecorated-frame.patch";
+                          sha256 = "sha256-uYIxNTyfbprx5mCqMNFVrBcLeo+8e21qmBE3lpcnd+4=";
                         })
                         # Make emacs aware of OS-level light/dark mode
                         (pkgs.fetchpatch {
@@ -1899,7 +1898,6 @@
               });
             };
           })
-          inputs.llm-agents.overlays.default
         ];
       in {
         overlays = genAttrs systems mkOverlays;

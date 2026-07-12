@@ -1736,8 +1736,8 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
           })
           # Enable rounded window with no decoration
           (pkgs.fetchpatch {
-            url = "${homebrew-emacs-plus}/patches/emacs-30/round-undecorated-frame.patch";
-            sha256 = "sha256-fesZ0H3LO6T2AiRV8ASozKxZBpvVzwLEcLDy6rctR6c=";
+            url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-30/round-undecorated-frame.patch";
+            sha256 = "sha256-uYIxNTyfbprx5mCqMNFVrBcLeo+8e21qmBE3lpcnd+4=";
           })
           # Make emacs aware of OS-level light/dark mode
           (pkgs.fetchpatch {
@@ -8668,6 +8668,7 @@ Pretty self-explaining.
   ;; (setq company-ghc-show-info t)
   ;; (setq flycheck-ghc-stack-use-nix t)
   :config
+  (setq haskell-mode-hook nil)
   ;; (add-hook 'haskell-mode-hook #'interactive-haskell-mode)
   ;; (add-hook 'haskell-mode-hook #'haskell-decl-scan-mode)
   ;; (add-hook 'haskell-mode-hook #'lsp)
@@ -9250,19 +9251,12 @@ llm-agents = {
 };
 #+end_src
 
-Add overlay:
-#+name: flake-overlays
-#+begin_src nix
-inputs.llm-agents.overlays.default
-#+end_src
-
 Install agents and tools:
 #+name: home-manager-section
 #+begin_src nix
 {
-  home.packages = with pkgs.llm-agents; [
+  home.packages = with inputs.llm-agents.packages."${pkgs.stdenv.hostPlatform.system}"; [
     claude-code
-    cursor-agent
     pi
   ];
 }
