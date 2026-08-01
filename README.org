@@ -2976,7 +2976,7 @@ Common key bindings. (emacs-lisp)
 (exwm-input-set-key (kbd "s-$") #'rasen/exwm-telegram)          ;; s-S-4
 (exwm-input-set-key (kbd "s-&") #'rasen/exwm-google-play-music) ;; s-S-7
 (exwm-input-set-key (kbd "s-(") #'notmuch)                      ;; s-S-9
-(exwm-input-set-key (kbd "<s-return>") #'vterm)
+(exwm-input-set-key (kbd "<s-return>") #'ghostel)
 (exwm-input-set-key (kbd "<s-S-return>") #'rasen/terminal)
 
 (exwm-input-set-key (kbd "s-z") #'exwm-layout-toggle-mode-line)
@@ -7654,6 +7654,43 @@ shell exits, the buffer is killed."
     (vterm-send-string command)
     (vterm-send-return)))
 #+end_src
+*** ghostel
+#+name: emacs-packages
+#+begin_src nix
+melpaPackages.ghostel
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package ghostel
+  :commands (ghostel)
+  :bind (:map ghostel-semi-char-mode-map
+         ("<f1>" . nil)
+         ("<f2>" . nil)
+         ("<f3>" . nil)
+         ("<f4>" . nil)
+         ("<f5>" . nil)
+         ("<f6>" . nil)
+         ("<f7>" . nil)
+         ("<f8>" . nil)
+         ("<f9>" . nil)
+         ("<f10>" . nil)
+         ("<f11>" . nil)
+         ("<f12>" . nil))
+  :config
+  (setq ghostel-module-directory (expand-file-name "var/ghostel" user-emacs-directory)))
+#+end_src
+
+Run all compile commands in ghostel.
+#+begin_src emacs-lisp
+(use-package ghostel-compile
+  :hook (after-init . ghostel-compile-global-mode))
+#+end_src
+
+Support for quail
+#+begin_src emacs-lisp
+(use-package ghostel-ime
+  :hook (ghostel-mode . ghostel-ime-mode))
+#+end_src
 *** eat terminal emulator
 #+name: emacs-packages
 #+begin_src nix
@@ -9355,7 +9392,7 @@ Add a little bit of highlighting for the cursor when buffer scrolls or cursor ju
 
   ;; do not blink where beacon-mode plays badly
   (defun rasen/dont-blink-predicate ()
-    (member major-mode '(notmuch-search-mode)))
+    (member major-mode '(notmuch-search-mode ghostel-mode)))
   (add-hook 'beacon-dont-blink-predicates #'rasen/dont-blink-predicate)
 
   (beacon-mode 1))

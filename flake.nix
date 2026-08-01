@@ -1671,6 +1671,7 @@
                 emacs-packages = (epkgs:
                   (with epkgs; [
                     epkgs.melpaPackages.envrc
+                    melpaPackages.ghostel
                     nongnuPackages.eat
                     melpaPackages.pr-review
                     melpaPackages.apheleia
