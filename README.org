@@ -7664,6 +7664,7 @@ melpaPackages.ghostel
 (use-package ghostel
   :commands (ghostel)
   :bind (:map ghostel-semi-char-mode-map
+         ("C-q" . ghostel-send-next-key)
          ("<f1>" . nil)
          ("<f2>" . nil)
          ("<f3>" . nil)
@@ -9392,7 +9393,7 @@ Add a little bit of highlighting for the cursor when buffer scrolls or cursor ju
 
   ;; do not blink where beacon-mode plays badly
   (defun rasen/dont-blink-predicate ()
-    (member major-mode '(notmuch-search-mode ghostel-mode)))
+    (member major-mode '(notmuch-search-mode ghostel-mode vterm-mode)))
   (add-hook 'beacon-dont-blink-predicates #'rasen/dont-blink-predicate)
 
   (beacon-mode 1))
