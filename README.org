@@ -8472,7 +8472,7 @@ LSP is Language Server Protocol. Some languages support it usually provide bette
   ;; eglot-code-action-indicator = margin does not render properly but
   ;; makes lines jumpy. See
   ;; https://www.reddit.com/r/emacs/comments/1n3o2we/comment/nbf9bsi/
-  (setq eglot-code-action-indications '(eldoc-hint))
+  ;; (setq eglot-code-action-indications '(eldoc-hint))
   (with-eval-after-load "evil"
     (general-def 'normal eglot-mode-map
       "SPC e" nil
@@ -8768,7 +8768,11 @@ Pretty self-explaining.
 #+begin_src emacs-lisp
 (use-package eldoc
   :commands (eldoc-mode)
-  :diminish eldoc-mode)
+  :diminish eldoc-mode
+  :config
+  ;; Default is displaying in both echo area and a dedicated buffer
+  ;; which is way too annoying.
+  (setq eldoc-display-functions (list #'eldoc-display-in-echo-area)))
 
 (use-package rust-mode
   :mode ("\\.rs$" . rust-mode)
