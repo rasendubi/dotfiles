@@ -7965,6 +7965,8 @@ Executing just scripts from emacs:
     ignores = [
       ".DS_Store"
       ".direnv/"
+      ".cache/"
+      ".local/"
     ];
   };
   home.packages = [ pkgs.git-annex pkgs.datalad ];
@@ -8437,7 +8439,7 @@ Display flycheck error inline.
 *** electric-pair
 Auto-close pairs.
 #+begin_src emacs-lisp
-(electric-pair-mode)
+(electric-pair-mode t)
 #+end_src
 *** Color identifiers
 #+begin_src emacs-lisp

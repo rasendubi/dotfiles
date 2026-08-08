@@ -1488,6 +1488,8 @@
                 ignores = [
                   ".DS_Store"
                   ".direnv/"
+                  ".cache/"
+                  ".local/"
                 ];
               };
               home.packages = [ pkgs.git-annex pkgs.datalad ];
