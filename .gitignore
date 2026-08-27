@@ -31,8 +31,10 @@
 /.emacs.d/*
 !/.emacs.d/init.el
 !/.emacs.d/early-init.el
-!/.emacs.d/site-lisp/
+!/.emacs.d/user-lisp/
 !/.emacs.d/snippets/
+*.elc
+/.emacs.d/user-lisp/.user-lisp-autoloads.el
 
 /notmuch-tags
 /private.el

@@ -1,3 +1,4 @@
+;;;  -*- lexical-binding: t; -*-
 ;;;
 ;;; This file is auto-generated from "README.org"
 ;;;

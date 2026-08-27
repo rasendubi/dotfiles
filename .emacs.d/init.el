@@ -1,6 +1,7 @@
-;;
-;; This file is auto-generated from "README.org"
-;;
+;;;  -*- lexical-binding: t; -*-
+;;;
+;;; This file is auto-generated from "README.org"
+;;;
 
 (defvar rasen/dotfiles-directory
   (file-name-as-directory

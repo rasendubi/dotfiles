@@ -1722,31 +1722,39 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
 #+name: flake-packages
 #+begin_src nix
 (let
-  homebrew-emacs-plus = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/dbc974ef02d76f19ce0aadea8ea6416fe41eef2b";
+  homebrew-emacs-plus = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/8da4d9bee657e392aab493b0281b91edd9d9196e";
   emacs-base =
     if pkgs.stdenv.isDarwin
-    then pkgs.emacs.overrideAttrs (old: {
+    then pkgs.unstable.emacs31.overrideAttrs (old: {
       patches =
         (old.patches or [])
         ++ [
-          # Fix OS window role so that yabai can pick up emacs
           (pkgs.fetchpatch {
-            url = "${homebrew-emacs-plus}/patches/emacs-28/fix-window-role.patch";
-            sha256 = "sha256-+z/KfsBm1lvZTZNiMbxzXQGRTjkCFO4QPlEK35upjsE=";
+            url = "${homebrew-emacs-plus}/patches/emacs-31/fix-ns-x-colors.patch";
+            sha256 = "sha256-oe3DFgEXwp0cZJl+ufWqTonaeWSliikTRsVDNbcy4Yw=";
+          })
+          # # Fix OS window role so that yabai can pick up emacs
+          # (pkgs.fetchpatch {
+          #   url = "${homebrew-emacs-plus}/patches/emacs-28/fix-window-role.patch";
+          #   sha256 = "sha256-+z/KfsBm1lvZTZNiMbxzXQGRTjkCFO4QPlEK35upjsE=";
+          # })
+          # Make emacs aware of OS-level light/dark mode
+          (pkgs.fetchpatch {
+            url = "${homebrew-emacs-plus}/patches/emacs-31/system-appearance.patch";
+            sha256 = "sha256-4+2U+4+2tpuaThNJfZOjy1JPnneGcsoge9r+WpgNDko=";
           })
           # Enable rounded window with no decoration
           (pkgs.fetchpatch {
-            url = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/master/patches/emacs-30/round-undecorated-frame.patch";
-            sha256 = "sha256-fesZ0H3LO6T2AiRV8ASozKxZBpvVzwLEcLDy6rctR6c=";
+            url = "${homebrew-emacs-plus}/patches/emacs-31/round-undecorated-frame.patch";
+            sha256 = "sha256-KCMEvJzN1OkwFYoMLpZghvdeoO1Ckcxk3Mo19YAf850=";
           })
-          # Make emacs aware of OS-level light/dark mode
           (pkgs.fetchpatch {
-            url = "${homebrew-emacs-plus}/patches/emacs-30/system-appearance.patch";
-            sha256 = "sha256-3QLq91AQ6E921/W9nfDjdOUWR8YVsqBAT/W9c1woqAw=";
+            url = "${homebrew-emacs-plus}/patches/emacs-31/fix-ns-scroll-crash.patch";
+            sha256 = "sha256-syC9un5Vy1+bmBWIc+TEwTCM/nfPIxd4IhWYdEfP4qE=";
           })
         ];
     })
-    else pkgs.emacs.override {
+    else pkgs.unstable.emacs31.override {
       withX = true;
       toolkit = "lucid";
       withGTK3 = false;
@@ -1977,9 +1985,10 @@ Emacs does not source this file automatically, so I need to instruct it to do so
 Check [[https://orgmode.org/worg/org-contrib/babel/intro.html#emacs-initialization][org-babel documentation]] for more info.
 The following snippet is an adaptation of that idea and goes to my ~.emacs.d/init.el~.
 #+begin_src emacs-lisp :tangle .emacs.d/init.el
-;;
-;; This file is auto-generated from "README.org"
-;;
+;;;  -*- lexical-binding: t; -*-
+;;;
+;;; This file is auto-generated from "README.org"
+;;;
 
 (defvar rasen/dotfiles-directory
   (file-name-as-directory
@@ -1996,6 +2005,7 @@ The following snippet is an adaptation of that idea and goes to my ~.emacs.d/ini
 
 Another important file that needs to be tangled is [[./.emacs.d/early-init.el]]. For now, just add a header to it.
 #+begin_src emacs-lisp :tangle .emacs.d/early-init.el
+;;;  -*- lexical-binding: t; -*-
 ;;;
 ;;; This file is auto-generated from "README.org"
 ;;;
@@ -3858,7 +3868,7 @@ I use [[https://github.com/GhostText/GhostText][GhostText]] firefox extension.
 I have my custom modal editing mode in [[file:.emacs.d/site-lisp/eon.el][eon.el]].
 #+begin_src emacs-lisp
 (use-package eon
-  :load-path "~/.emacs.d/site-lisp/"
+  :load-path "~/.emacs.d/user-lisp/"
   :config
   (eon-global-mode))
 #+end_src
@@ -5726,7 +5736,7 @@ Slip boxes are basically different directories that I split notes into.
     ("P" "pulse"       "pulse/"   "${rasen/capture-tsid}" "#+DATE: %<%FT%T%z>\n#+LAST_MODIFIED: \n")
 
     ;; Posts
-    ("p" "posts"       "posts/"   "${slug}"    "#+DATE: %<%Y-%m-%d>\n#+LAST_MODIFIED: \n#+PUBLISHED: false")
+    ("p" "posts"       "posts/"   "${slug}"    "#+DATE: %<%Y-%m-%d>\n#+LAST_MODIFIED: \n#+DRAFT: true")
 
     ;; Literature notes
     ("b" "bibliograpic" "biblio/" "${citekey}" "#+LAST_MODIFIED: \n#+DATE: %<%Y-%m-%d>\n"))
@@ -7677,8 +7687,8 @@ melpaPackages.ghostel
          ("<f10>" . nil)
          ("<f11>" . nil)
          ("<f12>" . nil))
-  :config
-  (setq ghostel-module-directory (expand-file-name "var/ghostel" user-emacs-directory)))
+  :custom
+  (ghostel-module-directory (expand-file-name "var/ghostel" user-emacs-directory)))
 #+end_src
 
 Run all compile commands in ghostel.
@@ -9506,7 +9516,6 @@ Apply my font settings when new frame is created (useful when emacs is started i
 Use variable-pitch fonts in org-mode. (~<<org-config>>~)
 #+name: org-config
 #+begin_src emacs-lisp
-(push "~/.emacs.d/site-lisp" load-path)
 (require 'org-variable-pitch)
 (setq org-variable-pitch-fixed-font "Iosevka")
 (set-face-attribute 'org-variable-pitch-fixed-face nil
