@@ -8237,6 +8237,15 @@ Configure:
   };
 }
 #+end_src
+
+Emacs interface via majutsu:
+#+begin_src emacs-lisp
+(use-package majutsu
+  :commands (majutsu)
+  :load-path "~/.emacs.d/elpa/majutsu/"
+  :vc (:url "https://github.com/0WD0/majutsu"
+       :rev "74371e921ba34532908e944f4dec0083f36a3ae4"))
+#+end_src
 ** Man pages
 This install a number of default man pages for the linux/posix system.
 (~<<nixos-section>>~)
