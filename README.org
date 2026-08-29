@@ -17,12 +17,10 @@ This file contains Emacs configuration, NixOS and home-manager configuration for
 To generate actual nix files, you can open this file in Emacs, and execute =M-x org-babel-tangle=. Or from command line with the following command.
 
 #+begin_src sh :tangle no
-emacs README.org --batch -f org-babel-tangle
+emacs -Q README.org --batch -f org-babel-tangle
 #+end_src
 
 #+RESULTS:
-
-Note that you need to patch org-babel to correctly generate configs (<<patch-ob-tangle>>)
 
 I keep generated files in sync with org files (so this repo is a valid Nix Flake), but they are not worth looking at—you'll have much better time reading this doc instead.
 
@@ -30,11 +28,15 @@ Pieces not (yet) covered in org files are:
 - scripts at =bin/=
 
 * Top-level
+** README.org preamble
+#+begin_src emacs-lisp
+;;;  -*- lexical-binding: t; -*-
+#+end_src
 ** Flake
 This repository is nix flakes–compatible.
 
 The following goes to ~flake.nix~ file.
-#+begin_src nix :tangle flake.nix :noweb no-export :padline no
+#+begin_src nix :tangle flake.nix :padline no
 #
 # This file is auto-generated from "README.org"
 #
@@ -111,8 +113,7 @@ The following goes to ~flake.nix~ file.
 #+end_src
 
 Nix flakes are still an experimental feature, so you need the following in NixOS configuration to enable it.
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   nix = {
     extraOptions = ''
@@ -123,8 +124,7 @@ Nix flakes are still an experimental feature, so you need the following in NixOS
 #+end_src
 
 For nix-darwin systems:
-#+name: darwin-section
-#+begin_src nix
+#+begin_src nix :noweb-ref darwin-section
 {
   nix = {
     extraOptions = ''
@@ -143,8 +143,7 @@ experimental-features = nix-command flakes
 For packages that are not available in latest stable, expose the unstable channel as ~pkgs.unstable~.
 
 Add input:
-#+name: flake-inputs
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-inputs
 nixpkgs-unstable = {
   type = "github";
   owner = "NixOS";
@@ -154,8 +153,7 @@ nixpkgs-unstable = {
 #+end_src
 
 Add overlay:
-#+name: flake-overlays
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-overlays
 (final: prev: {
   unstable = import inputs.nixpkgs-unstable {
     inherit system;
@@ -166,8 +164,7 @@ Add overlay:
 #+end_src
 ** NixOS
 Expose NixOS configurations.
-#+name: flake-outputs-nixos
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-outputs-nixos
 (let
   nixosHosts = {
     omicron = { system = "x86_64-linux";  config = ./nixos-config.nix; };
@@ -190,8 +187,7 @@ in {
 #+end_src
 ** Home manager
 Add home-manager to flake inputs.
-#+name: flake-inputs
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-inputs
 home-manager = {
   type = "github";
   owner = "rycee";
@@ -202,8 +198,7 @@ home-manager = {
 #+end_src
 
 Expose home-manager configurations.
-#+name: flake-outputs-home-manager
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-outputs-home-manager
 (let
   homeManagerHosts = {
   };
@@ -237,8 +232,7 @@ in {
 })
 #+end_src
 
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   options.hostname = lib.mkOption {
     default = null;
@@ -249,8 +243,7 @@ in {
 #+end_src
 
 Integrate home-manager module into NixOS.
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   imports = [inputs.home-manager.nixosModules.home-manager];
   home-manager = {
@@ -262,8 +255,7 @@ Integrate home-manager module into NixOS.
 #+end_src
 
 Integrate home-manager into nix-darwin.
-#+name: darwin-section
-#+begin_src nix
+#+begin_src nix :noweb-ref darwin-section
 {
   imports = [inputs.home-manager.darwinModules.home-manager];
   home-manager = {
@@ -283,8 +275,7 @@ Integrate home-manager into nix-darwin.
 
 ** nix-darwin
 Add nix-darwin to flake inputs.
-#+name: flake-inputs
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-inputs
 darwin = {
   url = "github:lnl7/nix-darwin/nix-darwin-26.05";
   inputs.nixpkgs.follows = "nixpkgs";
@@ -292,8 +283,7 @@ darwin = {
 #+end_src
 
 Add helper function to differentiate linux-only config:
-#+name: flake-overlays
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-overlays
 (final: prev: {
   lib = prev.lib // {
     linux-only = prev.lib.mkIf final.stdenv.isLinux;
@@ -301,8 +291,7 @@ Add helper function to differentiate linux-only config:
 })
 #+end_src
 
-#+name: flake-outputs-nix-darwin
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-outputs-nix-darwin
 (let
   darwinHosts = {
     <<darwin-host>>
@@ -337,8 +326,7 @@ in {
 })
 #+end_src
 
-#+name: darwin-section
-#+begin_src nix
+#+begin_src nix :noweb-ref darwin-section
 {
   nixpkgs.config = {
     allowUnfree = true;
@@ -348,8 +336,7 @@ in {
 #+end_src
 
 Link installed apps to ~~/Applications/Home Manager Apps~:
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   targets.darwin.linkApps.enable = pkgs.stdenv.hostPlatform.isDarwin;
   targets.darwin.copyApps.enable = false;
@@ -357,8 +344,7 @@ Link installed apps to ~~/Applications/Home Manager Apps~:
 #+end_src
 ** Packages
 Generate packages set for each supported system.
-#+name: flake-outputs-packages
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-outputs-packages
 (let
   mkPackages = system:
     let
@@ -374,8 +360,7 @@ in {
 #+end_src
 ** Overlays
 Generate overlays for all supported systems.
-#+name: flake-outputs-overlays
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-outputs-overlays
 (let
   mkOverlays = system: [
     # mix-in all local packages, so they are available as pkgs.${packages-name}
@@ -395,7 +380,7 @@ I'm a [[http://nixos.org/][NixOS]] user. What's cool about it is that I can desc
 
 An outline of configuration looks like this:
 
-#+begin_src nix :tangle nixos-config.nix :noweb no-export :padline no
+#+begin_src nix :tangle nixos-config.nix :noweb no-export
 #
 # This file is auto-generated from "README.org"
 #
@@ -425,8 +410,7 @@ This =<<nixos-section>>= is replaced by other parts of this doc.
 
 ** Re-expose nixpkgs
 For NixOS:
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   # for compatibility with nix-shell, nix-build, etc.
   environment.etc.nixpkgs.source = inputs.nixpkgs;
@@ -442,8 +426,7 @@ For NixOS:
 #+end_src
 
 Same configuration for nix-darwin systems.
-#+name: darwin-section
-#+begin_src nix
+#+begin_src nix :noweb-ref darwin-section
 {
   # for compatibility with nix-shell, nix-build, etc.
   environment.etc.nixpkgs.source = inputs.nixpkgs;
@@ -459,8 +442,7 @@ Same configuration for nix-darwin systems.
 #+end_src
 
 Same but for Home Manager–managed host.
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.file."nixpkgs".source = inputs.nixpkgs;
   systemd.user.sessionVariables.NIX_PATH = pkgs.lib.linux-only (lib.mkForce "nixpkgs=$HOME/nixpkgs\${NIX_PATH:+:}$NIX_PATH");
@@ -501,17 +483,14 @@ Same but for Home Manager–managed host.
 #+end_src
 ** Sandbox
 Build all Nix packages in sandbox:
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   nix.settings.sandbox = true;
 }
 #+end_src
 ** Users
 I'm the only user of the system (nixos-section):
-
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   users.extraUsers.rasen = {
     isNormalUser = true;
@@ -527,8 +506,7 @@ I'm the only user of the system (nixos-section):
 
 * macOS
 ** Users
-#+name: darwin-section
-#+begin_src nix
+#+begin_src nix :noweb-ref darwin-section
 {
   users.users.${config.system.primaryUser} = {
     description = "Oleksii Shmalko";
@@ -537,8 +515,7 @@ I'm the only user of the system (nixos-section):
 }
 #+end_src
 ** Some defaults
-#+name: darwin-section
-#+begin_src nix
+#+begin_src nix :noweb-ref darwin-section
 {
   system.defaults = {
     NSGlobalDomain = {
@@ -621,8 +598,7 @@ org-clock.1s.sh
 ~/.nix-profile/bin/emacs --batch --eval "(progn (require 'server) (princ (server-eval-at \"server\" '(rasen/xbar \"$0\"${1:+" '$1"}))))"
 #+end_src
 ** Yabai integration
-#+name: darwin-section
-#+begin_src nix
+#+begin_src nix :noweb-ref darwin-section
 {
   services.yabai = {
     enable = true;
@@ -647,8 +623,7 @@ org-clock.1s.sh
 Skhd integration to move between windows.
 
 https://gist.github.com/ethan-leba/760054f36a2f7c144c6b06ab6458fae6
-#+name: darwin-section
-#+begin_src nix
+#+begin_src nix :noweb-ref darwin-section
 {
   environment.systemPackages = [ pkgs.skhd ];
   services.skhd = {
@@ -726,9 +701,7 @@ Emacs integration for yabai:
 
 ** Karabiner configuration
 Configure Karabiner-Elements for advanced keyboard customization.
-
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   xdg.configFile."karabiner/karabiner.json".text = builtins.toJSON {
     global.show_in_menu_bar = false;
@@ -856,9 +829,7 @@ Configure Karabiner-Elements for advanced keyboard customization.
 
 ** defaults bindings
 Override keybindings in settings:
-
-#+name: darwin-section
-#+begin_src nix
+#+begin_src nix :noweb-ref darwin-section
 {
   system.defaults.CustomUserPreferences = {
     "com.apple.symbolichotkeys" = {
@@ -932,8 +903,7 @@ Override keybindings in settings:
 }
 #+end_src
 ** Linux builder
-#+name: darwin-section
-#+begin_src nix
+#+begin_src nix :noweb-ref darwin-section
 {
   nix.settings.trusted-users = [ "@admin" ];
   nix.linux-builder = {
@@ -956,8 +926,7 @@ Override keybindings in settings:
 * Machines
 ** omicron
 This is my small Dell XPS 13 running NixOS.
-#+name: machine-omicron
-#+begin_src nix
+#+begin_src nix :noweb-ref machine-omicron
 {
   imports = [
     (import "${inputs.nixos-hardware}/dell/xps/13-9360")
@@ -987,8 +956,7 @@ This is my small Dell XPS 13 running NixOS.
 #+end_src
 
 ~inputs.nixos-hardware~ comes from the following flake input.
-#+name: flake-inputs
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-inputs
 nixos-hardware = {
   type = "github";
   owner = "NixOS";
@@ -997,8 +965,7 @@ nixos-hardware = {
 #+end_src
 
 LVM on LUKS setup for disk encryption.
-#+name: machine-omicron
-#+begin_src nix
+#+begin_src nix :noweb-ref machine-omicron
 {
   boot.initrd.luks.devices = {
     root = {
@@ -1027,8 +994,7 @@ LVM on LUKS setup for disk encryption.
 #+end_src
 
 Clickpad:
-#+name: machine-omicron
-#+begin_src nix
+#+begin_src nix :noweb-ref machine-omicron
 {
   services.libinput = {
     enable = true;
@@ -1038,8 +1004,7 @@ Clickpad:
 #+end_src
 
 Fix screen tearing ([[https://wiki.archlinux.org/index.php/intel_graphics#Tearing][ArchWiki]]):
-#+name: machine-omicron
-#+begin_src nix
+#+begin_src nix :noweb-ref machine-omicron
 {
   services.xserver.config = ''
     Section "Device"
@@ -1054,8 +1019,7 @@ Fix screen tearing ([[https://wiki.archlinux.org/index.php/intel_graphics#Tearin
 #+end_src
 ** bayraktar
 bayraktar is macbook pro managed with nix-darwin.
-#+name: darwin-host
-#+begin_src nix
+#+begin_src nix :noweb-ref darwin-host
 bayraktar = {
   system = "aarch64-darwin";
   systemStateVersion = 4;
@@ -1074,8 +1038,7 @@ bayraktar = {
 #+end_src
 
 *** Work email
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   accounts.email.accounts = lib.mkIf (config.hostname == "bayraktar") (lib.mkForce {
     fluxon = {
@@ -1102,8 +1065,7 @@ bayraktar = {
 
 ** oleksiishmalko
 Another work macbook pro.
-#+name: darwin-host
-#+begin_src nix
+#+begin_src nix :noweb-ref darwin-host
 oleksiishmalko = {
   system = "aarch64-darwin";
   primaryUser = "oleksii.shmalko";
@@ -1134,14 +1096,12 @@ nix run nixpkgs#nixos-rebuild -- switch --flake path:.#pie --target-host pie.loc
 #+end_src
 
 Add nixos-raspberrypi input:
-#+name: flake-inputs
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-inputs
 nixos-raspberrypi.url = "github:nvmd/nixos-raspberrypi/main";
 #+end_src
 
 Add configuration:
-#+name: flake-outputs-nixos
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-outputs-nixos
 {
   nixosConfigurations = {
     pie = inputs.nixos-raspberrypi.lib.nixosSystem {
@@ -1170,8 +1130,7 @@ Add configuration:
 
 *** General
 General stuff first.
-#+name: pie
-#+begin_src nix
+#+begin_src nix :noweb-ref pie
 {
   networking.hostName = "pie";
   system.stateVersion = "25.11";
@@ -1180,8 +1139,7 @@ General stuff first.
 #+end_src
 
 *** Flake support
-#+name: pie
-#+begin_src nix
+#+begin_src nix :noweb-ref pie
 {
   nix = {
     settings.trusted-users = ["@wheel"];
@@ -1194,16 +1152,14 @@ General stuff first.
 
 *** Bootloader
 Configure bootloader via nixos-raspberrypi.
-#+name: pie
-#+begin_src nix
+#+begin_src nix :noweb-ref pie
 {
   boot.loader.raspberry-pi.bootloader = "kernel";
 }
 #+end_src
 
 *** Remote access
-#+name: pie
-#+begin_src nix
+#+begin_src nix :noweb-ref pie
 {
   services.openssh = {
     enable = true;
@@ -1240,8 +1196,7 @@ Configure bootloader via nixos-raspberrypi.
 #+end_src
 
 *** Netdata
-#+name: pie
-#+begin_src nix
+#+begin_src nix :noweb-ref pie
 {
   nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
     "netdata"
@@ -1257,8 +1212,7 @@ Configure bootloader via nixos-raspberrypi.
 #+end_src
 
 *** Gitolite
-#+name: pie
-#+begin_src nix
+#+begin_src nix :noweb-ref pie
 {
   services.gitolite = {
     enable = true;
@@ -1271,8 +1225,7 @@ Configure bootloader via nixos-raspberrypi.
 #+end_src
 
 *** Syncthing
-#+name: pie
-#+begin_src nix
+#+begin_src nix :noweb-ref pie
 {
   services.syncthing = {
     enable = true;
@@ -1303,8 +1256,7 @@ Configure bootloader via nixos-raspberrypi.
 #+end_src
 
 *** Tools
-#+name: pie
-#+begin_src nix
+#+begin_src nix :noweb-ref pie
 {
   programs.mosh.enable = true;
   environment.systemPackages = [
@@ -1315,8 +1267,7 @@ Configure bootloader via nixos-raspberrypi.
 #+end_src
 
 *** Disk configuration
-#+name: pie
-#+begin_src nix
+#+begin_src nix :noweb-ref pie
 {
   # This was manually transformed from the sd installer image.
   disko.devices.disk.sd = {
@@ -1495,8 +1446,7 @@ Configure bootloader via nixos-raspberrypi.
 #+end_src
 
 *** Backups
-#+name: pie
-#+begin_src nix
+#+begin_src nix :noweb-ref pie
 {
   services.snapper.configs = {
     # TODO: make root ephemeral and snapshot /persist instead
@@ -1577,21 +1527,18 @@ Configure bootloader via nixos-raspberrypi.
 
 *** Binary cache
 Substituters:
-#+name: flake-extra-substituters
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-extra-substituters
 "https://nixos-raspberrypi.cachix.org"
 #+end_src
 
 Trusted public keys:
-#+name: flake-extra-trusted-public-keys
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-extra-trusted-public-keys
 "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI="
 #+end_src
 
 *** agenix
 Flake inputs:
-#+name: flake-inputs
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-inputs
 agenix = {
   url = "github:ryantm/agenix";
   inputs.nixpkgs.follows = "nixpkgs";
@@ -1623,8 +1570,7 @@ in {
 
 *** disko
 Flake inputs:
-#+name: flake-inputs
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-inputs
 disko = {
   url = "github:nix-community/disko/latest";
   inputs.nixpkgs.follows = "nixpkgs";
@@ -1633,8 +1579,7 @@ disko = {
 
 *** impermanence
 Flake inputs:
-#+name: flake-inputs
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-inputs
 impermanence = {
   url = "github:nix-community/impermanence";
   inputs.nixpkgs.follows = "";
@@ -1643,8 +1588,7 @@ impermanence = {
 #+end_src
 
 *** Remote unlock
-#+name: pie
-#+begin_src nix
+#+begin_src nix :noweb-ref pie
 {
   boot.initrd = {
     enable = true;
@@ -1701,8 +1645,7 @@ impermanence = {
 ** Install Emacs
 
 I use emacs from [[https://github.com/nix-community/emacs-overlay][emacs-overlay]].
-#+name: flake-inputs
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-inputs
 emacs-overlay = {
   type = "github";
   owner = "nix-community";
@@ -1713,14 +1656,12 @@ emacs-overlay = {
 #+end_src
 
 Use overlay (~<<flake-overlays>>~).
-#+name: flake-overlays
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-overlays
 inputs.emacs-overlay.overlay
 #+end_src
 
 Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
-#+name: flake-packages
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-packages
 (let
   homebrew-emacs-plus = "https://raw.githubusercontent.com/d12frosted/homebrew-emacs-plus/8da4d9bee657e392aab493b0281b91edd9d9196e";
   emacs-base =
@@ -1733,11 +1674,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
             url = "${homebrew-emacs-plus}/patches/emacs-31/fix-ns-x-colors.patch";
             sha256 = "sha256-oe3DFgEXwp0cZJl+ufWqTonaeWSliikTRsVDNbcy4Yw=";
           })
-          # # Fix OS window role so that yabai can pick up emacs
-          # (pkgs.fetchpatch {
-          #   url = "${homebrew-emacs-plus}/patches/emacs-28/fix-window-role.patch";
-          #   sha256 = "sha256-+z/KfsBm1lvZTZNiMbxzXQGRTjkCFO4QPlEK35upjsE=";
-          # })
           # Make emacs aware of OS-level light/dark mode
           (pkgs.fetchpatch {
             url = "${homebrew-emacs-plus}/patches/emacs-31/system-appearance.patch";
@@ -1770,51 +1706,31 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       atomic-chrome
       avy
       bash-completion
-      beacon
       clojure-mode
       cmake-mode
-      color-identifiers-mode
-      company
-      company-box
-      counsel
-      counsel-projectile
       dart-mode
-      diff-hl
       diminish
       dockerfile-mode
       doom-modeline
-      dtrt-indent
       edit-indirect
       el-patch
-      emojify
       exec-path-from-shell
       expand-region
       fish-completion
       fish-mode
       flycheck
-      flycheck-inline
-      flycheck-rust
       forge
       forth-mode
       just-mode
       justl
-      general
       go-mode
-      google-translate
       gptel
       graphviz-dot-mode
-      groovy-mode
       haskell-mode
-      imenu-list
-      ivy
-      ivy-bibtex
-      ivy-pass
       jinja2-mode
       json-mode
       ledger-mode
-      lispyville
       lua-mode
-      magit
       markdown-mode
       nix-mode
       notmuch
@@ -1825,42 +1741,23 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
       org-roam
       org-roam-bibtex
       org-super-agenda
-      paren-face
       pass
-      php-mode
       pip-requirements
       plantuml-mode
       protobuf-mode
       racket-mode
       restclient
-      ryo-modal
-      god-mode
-      multiple-cursors
       rust-mode
-      slime
       svelte-mode
       swift-mode
       terraform-mode
       visual-fill-column
-      vterm
       vue-mode
       wgrep
-      which-key
       whitespace-cleanup-mode
-      writegood-mode
       yaml-mode
       yasnippet
       zig-mode
-
-      corfu
-      cape
-      vertico
-      orderless
-      consult
-      embark
-      marginalia
-      smartparens
-      git-link
 
     ]) ++
     [
@@ -1877,10 +1774,6 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
         pname = "org-fc";
         version = "20201121";
         src = pkgs.fetchFromGitHub {
-          # owner = "rasendubi";
-          # repo = "org-fc";
-          # rev = "35ec13fd0412cd17cbf0adba7533ddf0998d1a90";
-          # sha256 = "sha256-2h1dIR7WHYFsLZ/0D4HgkoNDxKQy+v3OaiiCwToynvU=";
           owner = "l3kn";
           repo = "org-fc";
           rev = "cc191458a991138bdba53328690a569b8b563502";
@@ -1947,8 +1840,7 @@ in {
 #+end_src
 
 Install Emacs with Home manager (~<<home-manager-section>>~)
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   programs.emacs = {
     enable = true;
@@ -1997,8 +1889,7 @@ The following snippet is an adaptation of that idea and goes to my ~.emacs.d/ini
 
 (require 'org)
 (require 'ob-tangle)
-
-<<ob-tangle-patch>>
+(require 'el-patch)
 
 (org-babel-load-file (expand-file-name "README.org" rasen/dotfiles-directory))
 #+end_src
@@ -2009,180 +1900,6 @@ Another important file that needs to be tangled is [[./.emacs.d/early-init.el]].
 ;;;
 ;;; This file is auto-generated from "README.org"
 ;;;
-#+end_src
-** Patch ob-tangle
-#+name: patch-ob-tangle
-*This patch is critical to getting this config working. Without it, org-babel will tangle this file incorrectly*
-
-This patches ob-tangle to allow defining sections with the same name multiple times. All sections with the same name are concatenated. (This was the default behavior some time ago, so this restores it.)
-(~<<ob-tangle-patch>>~)
-#+name: ob-tangle-patch
-#+begin_src emacs-lisp :noweb no
-(require 'el-patch)
-;; org-babel fixes to tangle ALL matching sections
-(defun rasen/map-regex (regex fn)
-  "Map the REGEX over the BUFFER executing FN.
-
-FN is called with the match-data of the regex.
-
-Returns the results of the FN as a list."
-  (save-excursion
-    (goto-char (point-min))
-    (let (res)
-      (save-match-data
-        (while (re-search-forward regex nil t)
-          (let ((f (match-data)))
-            (setq res
-                  (append res
-                          (list
-                           (save-match-data
-                             (funcall fn f))))))))
-      res)))
-
-(el-patch-feature ob-core)
-(el-patch-defun org-babel-expand-noweb-references (&optional info parent-buffer context)
-  "Expand Noweb references in the body of the current source code block.
-
-For example the following reference would be replaced with the
-body of the source-code block named `example-block'.
-
-<<example-block>>
-
-Note that any text preceding the <<foo>> construct on a line will
-be interposed between the lines of the replacement text.  So for
-example if <<foo>> is placed behind a comment, then the entire
-replacement text will also be commented.
-
-This function must be called from inside of the buffer containing
-the source-code block which holds BODY.
-
-In addition the following syntax can be used to insert the
-results of evaluating the source-code block named `example-block'.
-
-<<example-block()>>
-
-Any optional arguments can be passed to example-block by placing
-the arguments inside the parenthesis following the convention
-defined by `org-babel-lob'.  For example
-
-<<example-block(a=9)>>
-
-would set the value of argument \"a\" equal to \"9\".  Note that
-these arguments are not evaluated in the current source-code
-block but are passed literally to the \"example-block\"."
-  (let* ((parent-buffer (or parent-buffer (current-buffer)))
-         (info (or info (org-babel-get-src-block-info 'light)))
-         (lang (nth 0 info))
-         (body (nth 1 info))
-         (comment (string= "noweb" (cdr (assq :comments (nth 2 info)))))
-         (noweb-re (format "\\(.*?\\)\\(%s\\)"
-                           (with-current-buffer parent-buffer
-                             (org-babel-noweb-wrap))))
-         (cache nil)
-         (c-wrap
-          (lambda (s)
-            ;; Comment string S, according to LANG mode.  Return new
-            ;; string.
-            (unless org-babel-tangle-uncomment-comments
-              (with-temp-buffer
-                (funcall (org-src-get-lang-mode lang))
-                (comment-region (point)
-                                (progn (insert s) (point)))
-                (org-trim (buffer-string))))))
-         (expand-body
-          (lambda (i)
-            ;; Expand body of code represented by block info I.
-            (let ((b (if (org-babel-noweb-p (nth 2 i) :eval)
-                         (org-babel-expand-noweb-references i)
-                       (nth 1 i))))
-              (if (not comment) b
-                (let ((cs (org-babel-tangle-comment-links i)))
-                  (concat (funcall c-wrap (car cs)) "\n"
-                          b "\n"
-                          (funcall c-wrap (cadr cs))))))))
-         (expand-references
-          (lambda (ref cache)
-            (pcase (gethash ref cache)
-              (`(,last . ,previous)
-               ;; Ignore separator for last block.
-               (let ((strings (list (funcall expand-body last))))
-                 (dolist (i previous)
-                   (let ((parameters (nth 2 i)))
-                     ;; Since we're operating in reverse order, first
-                     ;; push separator, then body.
-                     (push (or (cdr (assq :noweb-sep parameters)) "\n")
-                           strings)
-                     (push (funcall expand-body i) strings)))
-                 (mapconcat #'identity strings "")))
-              ;; Raise an error about missing reference, or return the
-              ;; empty string.
-              ((guard (or org-babel-noweb-error-all-langs
-                          (member lang org-babel-noweb-error-langs)))
-               (error "Cannot resolve %s (see `org-babel-noweb-error-langs')"
-                      (org-babel-noweb-wrap ref)))
-              (_ "")))))
-    (replace-regexp-in-string
-     noweb-re
-     (lambda (m)
-       (with-current-buffer parent-buffer
-         (save-match-data
-           (let* ((prefix (match-string 1 m))
-                  (id (match-string 3 m))
-                  (evaluate (string-match-p "(.*)" id))
-                  (expansion
-                   (cond
-                    (evaluate
-                     ;; Evaluation can potentially modify the buffer
-                     ;; and invalidate the cache: reset it.
-                     (setq cache nil)
-                     (let ((raw (org-babel-ref-resolve id)))
-                       (if (stringp raw) raw (format "%S" raw))))
-                    ;; Retrieve from the Library of Babel.
-                    ((nth 2 (assoc-string id org-babel-library-of-babel)))
-                    ;; Return the contents of headlines literally.
-                    ((org-babel-ref-goto-headline-id id)
-                     (org-babel-ref-headline-body))
-                    ;; Look for a source block named SOURCE-NAME.  If
-                    ;; found, assume it is unique; do not look after
-                    ;; `:noweb-ref' header argument.
-                    ((org-with-point-at 1
-                       (let ((r (org-babel-named-src-block-regexp-for-name id)))
-                         (and (re-search-forward r nil t)
-                              (not (org-in-commented-heading-p))
-                              (el-patch-swap
-                                (funcall expand-body
-                                         (org-babel-get-src-block-info t))
-                                (mapconcat
-                                 #'identity
-                                 (rasen/map-regex r
-                                                  (lambda (md)
-                                                    (funcall expand-body
-                                                             (org-babel-get-src-block-info t))))
-                                 "\n"))))))
-                    ;; All Noweb references were cached in a previous
-                    ;; run.  Extract the information from the cache.
-                    ((hash-table-p cache)
-                     (funcall expand-references id cache))
-                    ;; Though luck.  We go into the long process of
-                    ;; checking each source block and expand those
-                    ;; with a matching Noweb reference.  Since we're
-                    ;; going to visit all source blocks in the
-                    ;; document, cache information about them as well.
-                    (t
-                     (setq cache (make-hash-table :test #'equal))
-                     (org-with-wide-buffer
-                      (org-babel-map-src-blocks nil
-                        (if (org-in-commented-heading-p)
-                            (org-forward-heading-same-level nil t)
-                          (let* ((info (org-babel-get-src-block-info t))
-                                 (ref (cdr (assq :noweb-ref (nth 2 info)))))
-                            (push info (gethash ref cache))))))
-                     (funcall expand-references id cache)))))
-             ;; Interpose PREFIX between every line.
-             (mapconcat #'identity
-                        (split-string expansion "[\n\r]")
-                        (concat "\n" prefix))))))
-     body t t 2)))
 #+end_src
 ** GC hacks
 Suppress GC in early init and restore it after init is complete. (~.emacs.d/early-init.el~)
@@ -2219,107 +1936,6 @@ Hard way: prohibit usage of keybindings I have more efficient bindings for.
   `(lambda () (interactive) (error "Don't use this key! Use %s instead" ,key)))
 #+end_src
 
-** General (package)
-
-I use [[https://github.com/noctuid/general.el][general]] to define my keybindings. (emacs-lisp)
-#+begin_src emacs-lisp
-<<before-general>>
-
-(use-package general)
-
-;; Definer for my leader
-(general-create-definer --leader-def   :prefix "SPC")
-(general-create-definer --s-leader-def :keymaps '(motion insert emacs) :prefix "s-SPC" :non-normal-prefix "s-SPC")
-
-;; Extra-hackery to define key with multiple prefixes
-(defmacro leader-def (&rest args)
-  (declare (indent defun))
-  `(progn (--leader-def   ,@args)
-          (--s-leader-def ,@args)))
-
-;; Definer for my leader + applied globally across all windows.
-(general-create-definer s-leader-def
-  :keymaps '(motion emacs insert) :prefix "SPC"
-  :non-normal-prefix "s-SPC"
-  :global-prefix "s-SPC")
-
-(s-leader-def "" nil)
-
-(with-eval-after-load "evil"
-  ;; free-up prefix
-  (s-leader-def :keymaps '(motion normal visual) "" nil))
-#+end_src
-
-** General keybindings
-
-I use a custom modal mode.
-
-#+begin_src emacs-lisp
-(use-package ryo-modal
-  :disabled t
-  :config
-  (with-eval-after-load 'org
-    (setq org-support-shift-select 'always))
-
-  (defun rasen/shift-translate ()
-    "Make the following commands behave as if shift-translated."
-    (interactive)
-    (setq this-command-keys-shift-translated t))
-
-  (defun rasen/dwim-beginning-of-line-paragraph ()
-    (interactive "^")
-    (let ((orig-point (point)))
-      (if (eq orig-point (line-beginning-position))
-          (backward-paragraph)
-        (back-to-indentation)
-        (when (= orig-point (point))
-          (move-beginning-of-line 1)))))
-
-  (defun rasen/extend-beginning-of-line-paragraph ()
-    (interactive)
-    (let ((this-command-keys-shift-translated t))
-      (call-interactively 'rasen/dwim-beginning-of-line-paragraph)))
-
-  (defun rasen/dwim-end-of-line-paragraph ()
-    (interactive "^")
-    (let ((orig-point (point)))
-      (if (eq orig-point (line-end-position))
-          (forward-paragraph)
-        (end-of-line))))
-  (defun rasen/extend-end-of-line-paragraph ()
-    (interactive)
-    (let ((this-command-keys-shift-translated t))
-      (call-interactively 'rasen/dwim-end-of-line-paragraph)))
-
-  (let ((keys
-         '(("n" "<left>")
-           ("N" "S-<left>")
-           ("o" "<right>")
-           ("O" "S-<right>")
-           ("u" "<up>")
-           ("U" "S-<up>")
-           ("e" "<down>")
-           ("E" "S-<down>")
-           ("f" "M-b")
-           ("F" "M-S-b")
-           ("p" "M-f")
-           ("P" "M-S-f"))))
-    (mapc (lambda (it)
-            (define-key ryo-modal-mode-map (kbd (car it)) (kbd (cadr it))))
-          keys))
-  (global-set-key (kbd "<escape>") (defun rasen/enable-ryo ()
-                                     (interactive)
-                                     (ryo-modal-mode 1)))
-
-  (define-key ryo-modal-mode-map (kbd "Y") nil)
-
-  (ryo-modal-keys
-   ("t" ryo-modal-mode)
-   ("y" rasen/dwim-beginning-of-line-paragraph)
-   ("Y" rasen/dwim-beginning-of-line-paragraph :first '(rasen/shift-translate))
-   ("i" rasen/dwim-end-of-line-paragraph)
-   ("I" rasen/dwim-end-of-line-paragraph :first '(rasen/shift-translate))))
-#+end_src
 ** Don't clutter system
 Save custom configuration in the =~/.emacs.d/custom.el= file so emacs does not clutter =init.el=.
 #+begin_src emacs-lisp
@@ -2368,23 +1984,18 @@ Timestamp-ids are used to uniquely identify things.
 
 Insert current date in =yyyy-mm-dd= format. Useful when creating dated notes or dumb commits.
 #+begin_src emacs-lisp
-(defun rasen/insert-date (arg)
-  "Insert current date. With prefix ARG, insert time in ISO 8601 format as well. With double-prefix, insert time in UTC timezone."
-  (interactive "p")
-  (insert (format-time-string
-           (if (> arg 1)
-               "%FT%T%z"
-             "%F")
-           nil
-           (if (equal arg 16) t nil))))
+  (defun rasen/insert-date (arg)
+    "Insert current date. With prefix ARG, insert time in ISO 8601 format as well. With double-prefix, insert time in UTC timezone."
+    (interactive "p")
+    (insert (format-time-string
+             (if (> arg 1)
+                 "%FT%T%z"
+               "%F")
+             nil
+             (if (equal arg 16) t nil))))
 
-(general-def 'insert '(git-commit-mode-map ivy-minibuffer-map)
-  "C-c ." #'rasen/insert-date)
-(general-def 'ivy-minibuffer-map
-  "C-c ." #'rasen/insert-date)
 
-(general-def 'normal 'org-mode-map
-  "RET ." #'rasen/insert-date)
+;; (define-key git-commit-mode-map (kbd "C-c .") #'rasen/insert-date)
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2455,131 +2066,13 @@ Shamelessly stolen from https://github.com/purcell/emacs.d.
   "Add an STR to the PATH environment variable."
   (setenv "PATH" (concat str ":" (getenv "PATH"))))
 #+end_src
-** ivy
-#+begin_src emacs-lisp
-(use-package ivy
-  :disabled t
-  :demand
-  :general
-  (s-leader-def
-    "b"  #'ivy-switch-buffer)
-  :diminish ivy-mode
-  :config
-  <<ivy-config>>
-  (ivy-mode 1)
-  )
-#+end_src
-
-Do not start input with =^= and ignore the case.
-#+name: ivy-config
-#+begin_src emacs-lisp :tangle no
-(setq-default ivy-initial-inputs-alist nil)
-(setq-default ivy-re-builders-alist '((t . ivy--regex-ignore-order)))
-#+end_src
-
-Do not show ~./~ and ~../~ during file name completion.
-#+name: ivy-config
-#+begin_src emacs-lisp :tangle no
-(setq-default ivy-extra-directories nil)
-#+end_src
-
-The normal =C-j= is not placed conveniently on Workman layout, so move its function to =C-e= (which is qwerty =k=).
-#+name: ivy-config
-#+begin_src emacs-lisp :tangle no
-(general-def 'ivy-minibuffer-map
-  "C-e"   #'ivy-alt-done
-  "C-M-e" #'ivy-immediate-done)
-#+end_src
-
-Evilify ivy-occur.
-#+name: ivy-config
-#+begin_src emacs-lisp :tangle no
-(with-eval-after-load "evil"
-  (general-def
-    :keymaps '(ivy-occur-mode-map ivy-occur-grep-mode-map)
-    :states 'normal
-    "k"    #'ivy-occur-next-line
-    "j"    #'ivy-occur-previous-line
-    "C-n"  #'ivy-occur-next-line
-    "C-p"  #'ivy-occur-previous-line
-    "RET"  #'ivy-occur-press-and-switch
-    "TAB"  #'ivy-occur-press
-    "C-e"  #'ivy-occur-press-and-switch
-    "g r"  #'ivy-occur-revert-buffer
-    "g g"  #'evil-goto-first-line
-    "d"    #'ivy-occur-delete-candidate
-    "r"    #'read-only-mode
-    "a"    #'ivy-occur-read-action
-    "c"    #'ivy-occur-toggle-calling
-    "f"    #'ivy-occur-press
-    "o"    #'ivy-occur-dispatch
-    "q"    #'quit-window)
-
-  (general-def 'normal 'ivy-occur-grep-mode-map
-    "w"    #'ivy-wgrep-change-to-wgrep-mode))
-#+end_src
-
-** counsel
-#+begin_src emacs-lisp
-(use-package counsel
-  :demand
-  :disabled t
-  :diminish counsel-mode
-  :general
-  (s-leader-def
-    "x"  #'counsel-M-x
-    "f"  #'counsel-find-file)
-  ('motion
-   "g r"    #'counsel-git-grep
-   "g /"    #'counsel-rg)
-  ('read-expression-map
-   "C-r"    #'counsel-expression-history)
-  :config
-  ;; reset ivy initial inputs for counsel
-  (setq-default ivy-initial-inputs-alist nil)
-  (counsel-mode 1))
-#+end_src
-
-Install ripgrep (rg) to user environment:
-#+name: home-manager-section
-#+begin_src nix
-{
-  home.packages = [ pkgs.ripgrep ];
-}
-#+end_src
 ** avy
 Jump anywhere with a few keystrokes in tree-like way.
 #+begin_src emacs-lisp
 (use-package avy
-  :general
-  ('motion
-   "K"  #'avy-goto-char)
   :custom
   ;; easy workman keys (excluding pinky)
   (avy-keys '(?s ?h ?t ?n ?e ?o ?d ?r ?u ?p)))
-#+end_src
-** imenu / imenu-list
-Use imenu to jump to symbols in the current buffer.
-#+begin_src emacs-lisp
-(use-package imenu-list
-  :disabled t
-  :general
-  (:keymaps 'imenu-list-major-mode-map
-   :states 'normal
-   "RET"       #'imenu-list-goto-entry
-   "TAB"       #'imenu-list-display-entry
-   "<backtab>" #'hs-toggle-hiding
-   "g r"       #'imenu-list-refresh
-   "q"         #'imenu-list-quit-window)
-
-  (defun rasen/imenu-or-list (arg)
-    "Invoke `counsel-imenu'. If prefix is provided, toggle imenu-list"
-    (interactive "P")
-    (if arg
-        (imenu-list-smart-toggle)
-      (counsel-imenu)))
-
-  (leader-def 'motion  "g" #'rasen/imenu-or-list))
 #+end_src
 ** wgrep
 Edit grep buffers and apply changes to the files.
@@ -2610,23 +2103,12 @@ Fix whitespaces on file save.
   :config
   (global-whitespace-cleanup-mode 1))
 #+end_src
-** which-key
-[[https://github.com/justbur/emacs-which-key][which-key]] is a minor mode for Emacs that displays the key bindings following your currently entered incomplete command (a prefix) in a popup.
-#+begin_src emacs-lisp
-(use-package which-key
-  :disabled t
-  :defer 2
-  :diminish which-key-mode
-  :config
-  (which-key-mode))
-#+end_src
 ** Spell-check
 
 hunspell is installed in emacs packages.
 
 Fix Ukrainian dictionary to play nicely with English one.
-#+name: flake-overlays
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-overlays
 (final: prev: {
   hunspellDicts = prev.hunspellDicts // {
     # uk_UA affix file strips all latin characters from input, so
@@ -2681,60 +2163,11 @@ Make spellcheck work with Unicode apostrophe.
   (advice-add #'ispell-parse-output :filter-args
               #'rasen/replace-quote))
 #+end_src
-** Google translate
-#+begin_src emacs-lisp
-(use-package google-translate
-  :disabled t
-  :general
-  ('normal
-   '(markdown-mode-map org-mode-map)
-   "z g t" #'rasen/google-translate-at-point
-   "z g T" #'google-translate-smooth-translate)
-
-  :commands (google-translate-smooth-translate)
-  :config
-  (defun rasen/google-translate-at-point (arg)
-    "Translate word at point. If prefix is provided, do reverse translation"
-    (interactive "P")
-    (if arg
-        (google-translate-at-point-reverse)
-      (google-translate-at-point)))
-
-  (require 'google-translate-default-ui)
-  (require 'google-translate-smooth-ui)
-  (setq google-translate-show-phonetic t)
-
-  (setq google-translate-default-source-language "en"
-        google-translate-default-target-language "ua")
-
-  (setq google-translate-translation-directions-alist '(("en" . "ua") ("ua" . "en")))
-  ;; auto-toggle input method
-  (setq google-translate-input-method-auto-toggling t
-        google-translate-preferable-input-methods-alist '((nil . ("en"))
-                                                          (ukrainian-computer . ("ua")))))
-#+end_src
 ** tab-bar-mode
 New in Emacs 27.
 #+begin_src emacs-lisp
 (use-package tab-bar
-  :general
-  ('motion
-   "M-h"  #'tab-bar-switch-to-prev-tab
-   "M-l"  #'tab-bar-switch-to-next-tab)
   :config
-  (general-def 'normal
-    "M-h"  #'tab-bar-switch-to-prev-tab
-    "M-l"  #'tab-bar-switch-to-next-tab)
-  (general-def '(normal visual) 'org-mode-map
-    "M-h" nil
-    "M-l" nil)
-  (general-def '(normal visual) 'evil-org-mode-map
-    "M-h" nil
-    "M-l" nil)
-  (general-def 'org-mode-map
-    "M-h" nil
-    "M-l" nil)
-
   (setq tab-bar-select-tab-modifiers '(meta))
   (setq tab-bar-tab-hints t)
 
@@ -2784,6 +2217,49 @@ Center all text in the buffer in some modes. (That's a nice distraction-free set
   (setq-default visual-fill-column-center-text t
                 visual-fill-column-fringes-outside-margins nil))
 #+end_src
+** Completion
+#+begin_src emacs-lisp
+(use-package minibuffer
+  :ensure nil
+  :bind (:map minibuffer-visible-completions-up-down-map
+         ("C-n" . minibuffer-next-completion)
+         ("C-p" . minibuffer-previous-completion))
+  :hook ((minibuffer-setup . cursor-intangible-mode))
+  :custom
+  (tab-always-indent 'complete)  ; Make TAB invoke complete
+  (tab-first-completion 'word)   ; Don't complete mid-word
+  (completion-auto-help t)
+  (completion-auto-select nil)   ; Don't auto-select *Completions* buffer
+  (completion-eager-update t)
+  (completion-eager-display t)   ; Display completions buffer immediately
+  (minibuffer-visible-completions 'up-down)
+  (completion-ignore-case t)
+  (read-file-name-completion-ignore-case t)
+  (read-buffer-completion-ignore-case t)
+  (completion-show-help nil)
+  (completion-styles '(partial-completion flex))
+  (completions-format 'one-column)  ; Show completions in a single column
+  (completions-max-height 16)
+  (completions-sort 'historical)
+  (enable-recursive-minibuffers t)
+  (minibuffer-prompt-properties '(read-only t intangible t cursor-intangible t face minibuffer-prompt))
+  (minibuffer-depth-indicate-mode t)
+  (minibuffer-electric-default-mode t))
+
+(use-package completion-preview
+  :ensure nil
+  ;; :bind (:map completion-preview-active-mode
+  ;;        ("M-n" . )
+  ;;        ("M-p" . nil)
+  ;;        ("C-i" . nil))
+  :config
+  (setq completion-preview-minimum-symbol-length 2)
+  (global-completion-preview-mode 1))
+
+(use-package savehist
+  :config
+  (savehist-mode t))
+#+end_src
 ** Misc
 Use single-key =y/n= instead of a more verbose =yes/no=.
 #+begin_src emacs-lisp
@@ -2799,8 +2275,7 @@ Automatically add a final newline in files.
 Emacs is my Window Manager, thanks to [[https://github.com/ch11ng/exwm][EXWM]].
 
 NixOS has an EXWM module, but my feeling is that it's too limiting. (~<<nixos-section>>~)
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   environment.systemPackages = [ pkgs.xhost ];
   services.xserver.windowManager.session = lib.singleton {
@@ -2834,8 +2309,6 @@ Initialize EXWM configuration (emacs-lisp)
             (lambda ()
               (exwm-workspace-rename-buffer exwm-class-name)))
 
-  ;; (with-eval-after-load 'evil
-  ;;   (evil-set-initial-state 'exwm-mode 'motion))
 
   ;; do not forward anything besides keys defined with
   ;; `exwm-input-set-key' and `exwm-mode-map'
@@ -2868,18 +2341,11 @@ Add a couple of helpers functions. (emacs-lisp)
   "Similar to `exwm-input-set-key', but always refreshes prefix
 keys. This allows defining keys from any place in config."
   (exwm-input-set-key key command)
-  ;; Alternatively, try general-setq (which calls customize handler)
   (exwm-input--update-global-prefix-keys))
 #+end_src
 ** Window management
 Common key bindings. (emacs-lisp)
 #+begin_src emacs-lisp
-(use-package evil
-  :disabled t
-  :defer t
-  :commands (evil-window-split
-             evil-window-vsplit))
-
 (defun rasen/exwm-next-workspace ()
   (interactive)
   ;; (let ((cur exwm-workspace-current-index)
@@ -2927,23 +2393,22 @@ Common key bindings. (emacs-lisp)
 (exwm-input-set-key (kbd "s-.") #'rasen/exwm-next-workspace)
 (exwm-input-set-key (kbd "s->") #'rasen/move-tab-other-frame) ;; s-S-.
 
-(general-def
-  :prefix-command 'rasen/tab-map
-  "T" #'tab-bar-mode
-  "1" #'tab-bar-select-tab
-  "2" #'tab-bar-select-tab
-  "3" #'tab-bar-select-tab
-  "4" #'tab-bar-select-tab
-  "5" #'tab-bar-select-tab
-  "6" #'tab-bar-select-tab
-  "7" #'tab-bar-select-tab
-  "8" #'tab-bar-select-tab
-  "9" #'tab-bar-select-tab
-  "t" #'tab-bar-new-tab
-  "n" #'tab-bar-switch-to-prev-tab
-  "o" #'tab-bar-switch-to-next-tab
-  ">" #'tab-bar-move-tab-to-frame
-  "k" #'tab-bar-close-tab)
+(define-prefix-command 'rasen/tab-map)
+(define-key rasen/tab-map (kbd "T") #'tab-bar-mode)
+(define-key rasen/tab-map (kbd "1") #'tab-bar-select-tab)
+(define-key rasen/tab-map (kbd "2") #'tab-bar-select-tab)
+(define-key rasen/tab-map (kbd "3") #'tab-bar-select-tab)
+(define-key rasen/tab-map (kbd "4") #'tab-bar-select-tab)
+(define-key rasen/tab-map (kbd "5") #'tab-bar-select-tab)
+(define-key rasen/tab-map (kbd "6") #'tab-bar-select-tab)
+(define-key rasen/tab-map (kbd "7") #'tab-bar-select-tab)
+(define-key rasen/tab-map (kbd "8") #'tab-bar-select-tab)
+(define-key rasen/tab-map (kbd "9") #'tab-bar-select-tab)
+(define-key rasen/tab-map (kbd "t") #'tab-bar-new-tab)
+(define-key rasen/tab-map (kbd "n") #'tab-bar-switch-to-prev-tab)
+(define-key rasen/tab-map (kbd "o") #'tab-bar-switch-to-next-tab)
+(define-key rasen/tab-map (kbd ">") #'tab-bar-move-tab-to-frame)
+(define-key rasen/tab-map (kbd "k") #'tab-bar-close-tab)
 
 (exwm-input-set-key (kbd "s-t") #'rasen/tab-map)
 
@@ -2993,10 +2458,8 @@ Common key bindings. (emacs-lisp)
 (exwm-input-set-key (kbd "s-f") #'exwm-layout-toggle-fullscreen)
 (exwm-input-set-key (kbd "s-C-SPC") #'exwm-floating-toggle-floating)
 
-(general-def 'exwm-mode-map
-  "C-c" nil ;; disable default bindings
-
-  "<f1> v" #'counsel-describe-variable)
+;; (define-key exwm-mode-map (kbd "C-c") nil)
+(define-key exwm-mode-map (kbd "<f1> v") #'describe-variable)
 
 ;; Without the next line, EXWM won't intercept necessary prefix keys
 ;; (if you rebind them after EXWM has started)
@@ -3035,17 +2498,14 @@ Slock tries to disable OOM killer (so the locker is not killed when memory is lo
 slock: unable to disable OOM killer. Make sure to suid or sgid slock.
 #+end_src
 
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   programs.slock.enable = true;
 }
 #+end_src
 *** xss-lock
 [[https://bitbucket.org/raymonad/xss-lock][xss-lock]] is a small utility to plug a screen locker into screen saver extension for X. This automatically activates selected screensaver after a period of user inactivity, or when system goes to sleep.
-
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = pkgs.lib.linux-only [
     pkgs.xss-lock
@@ -3090,8 +2550,7 @@ Use built-in EXWM system tray (emacs-lisp)
 I use [[https://github.com/Roger/escrotum][Escrotum]] for screenshots.
 
 Install it. (~<<home-manager-section>>~)
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = pkgs.lib.linux-only [ pkgs.escrotum ];
 }
@@ -3108,24 +2567,21 @@ Bind it to Print Screen button. (emacs-lisp)
 #+end_src
 ** Misc
 I definitely use X server:
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   services.xserver.enable = true;
 }
 #+end_src
 
 Use English as my only supported locale:
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   i18n.supportedLocales = [ "en_US.UTF-8/UTF-8" ];
 }
 #+end_src
 
 Setup timezone:
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   time.timeZone = "Europe/Kiev";
 }
@@ -3142,8 +2598,7 @@ It looks like this:
 
 *** Keyboard layout
 Besides Workman, I use Ukrainian layout. I also use Russian symbols, but they are on the third level (~<<nixos-section>>~).
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   services.xserver.xkb.layout = "us,ua";
   services.xserver.xkb.variant = "workman,";
@@ -3154,8 +2609,7 @@ Besides Workman, I use Ukrainian layout. I also use Russian symbols, but they ar
 #+end_src
 
 Same setting but for Home Manager (~<<home-manager-section>>~)
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.keyboard = {
     layout = "us,ua";
@@ -3168,8 +2622,7 @@ Map left Caps Lock to Ctrl, and left Ctrl to switch between layout. (Shift-Ctrl 
 I never use Caps Lock–the feature, so it's nice to have Caps LED indicate alternate layouts.
 
 ~<<nixos-section>>~:
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   services.xserver.xkb.options = "grp:lctrl_toggle,grp_led:caps,ctrl:nocaps";
   # services.xserver.xkbOptions = "grp:caps_toggle,grp_led:caps";
@@ -3185,8 +2638,7 @@ On macOS, right option acts as AltGr. Make Emacs ignore it, so it can work corre
 I have a slightly customized Workman+Ukrainian layout at [[./Xkeymap]] (more keys on 3rd level). It's quite big and isn't particularly fun to explain, so I keep it off my main config.
 
 Activate it on session start (~<<home-manager-section>>~).
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   xsession.initExtra = ''
     xkbcomp ${./Xkeymap} $DISPLAY
@@ -3207,8 +2659,7 @@ Add a small Emacs function to re-apply this configuration (emacs-lisp).
 #+end_src
 
 Install xkbcomp to execute these commands. (~<<home-manager-section>>~)
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = [ pkgs.xkbcomp ];
 }
@@ -3216,8 +2667,7 @@ Install xkbcomp to execute these commands. (~<<home-manager-section>>~)
 
 *** Compose keys
 Add some custom compose keys (~<<home-manager-section>>~):
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.file.".XCompose".text = ''
     include "%L"
@@ -3285,8 +2735,7 @@ Add some custom compose keys (~<<home-manager-section>>~):
 
 *** xcape
 Make short press on left control behave as Escape (=<<home-manager-section>>=):
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   services.xcape = {
     enable = pkgs.stdenv.isLinux;
@@ -3316,8 +2765,7 @@ Emacs has built-in capability to change keyboard layout (for insert state only),
 * Network
 ** NetworkManager
 (~<<nixos-section>>~)
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   networking = {
     hostName = name;
@@ -3336,8 +2784,7 @@ Emacs has built-in capability to change keyboard layout (for insert state only),
 #+end_src
 
 Install network manager applet for user. (~<<home-manager-section>>~)
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = pkgs.lib.linux-only [ pkgs.networkmanagerapplet ];
 }
@@ -3349,8 +2796,7 @@ Auto-start ~nm-applet~ (emacs-lisp)
 #+end_src
 ** SSH
 (~<<nixos-section>>~)
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   services.openssh = {
     enable = true;
@@ -3360,8 +2806,7 @@ Auto-start ~nm-applet~ (emacs-lisp)
 #+end_src
 *** Mosh
 [[https://mosh.mit.edu/][Mosh (mobile shell)]] is a cool addition to ssh.
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   programs.mosh.enable = true;
 }
@@ -3370,8 +2815,7 @@ Auto-start ~nm-applet~ (emacs-lisp)
 Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
 
 (~<<nixos-section>>~)
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   services.dnsmasq = {
     enable = true;
@@ -3397,8 +2841,7 @@ Use [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] as a DNS cache.
 Enable firewall. This blocks all ports for ingress traffic and pings.
 
 (~<<nixos-section>>~)
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   networking.firewall = {
     enable = true;
@@ -3412,8 +2855,7 @@ Enable firewall. This blocks all ports for ingress traffic and pings.
 * Services
 ** Locate
 Update [[https://linux.die.net/man/1/locate][locate]] database daily.
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   services.locate = {
     enable = true;
@@ -3421,8 +2863,7 @@ Update [[https://linux.die.net/man/1/locate][locate]] database daily.
 }
 #+end_src
 ** Gitolite
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   services.gitolite = {
     enable = true;
@@ -3433,9 +2874,7 @@ Update [[https://linux.die.net/man/1/locate][locate]] database daily.
 #+end_src
 ** Syncthing
 I use Syncthing to sync my org-mode files to my phone.
-
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   services.syncthing = {
     enable = true;
@@ -3448,17 +2887,14 @@ I use Syncthing to sync my org-mode files to my phone.
 #+end_src
 
 On Darwin:
-#+name: darwin-section
-#+begin_src nix
+#+begin_src nix :noweb-ref darwin-section
 {
   environment.systemPackages = [ pkgs.syncthing ];
 }
 #+end_src
 ** Backup
 I use borg for backups.
-
-#+name: machine-omicron
-#+begin_src nix
+#+begin_src nix :noweb-ref machine-omicron
 (let
   commonOptions = {
     # repo = "borg@10.13.0.3:.";
@@ -3512,8 +2948,7 @@ in {
 #+end_src
 
 Mount external drive when needed.
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   # Prepare mount point
   system.activationScripts = {
@@ -3544,8 +2979,7 @@ Mount external drive when needed.
 direnv allows having per-directory environment configuration. You can think of automatic virtualenv, but it's more general and supports unloading.
 
 (~<<home-manager-section>>~)
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   programs.direnv.enable = true;
   programs.direnv.nix-direnv.enable = true;
@@ -3553,8 +2987,7 @@ direnv allows having per-directory environment configuration. You can think of a
 #+end_src
 
 direnv integration into Emacs via [[https://github.com/purcell/envrc][purcell/envrc]]:
-#+name: emacs-packages
-#+begin_src nix
+#+begin_src nix :noweb-ref emacs-packages
 epkgs.melpaPackages.envrc
 #+end_src
 
@@ -3566,8 +2999,7 @@ epkgs.melpaPackages.envrc
 #+end_src
 
 ** VirtualBox
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   virtualisation.virtualbox.host.enable = true;
   users.extraGroups.vboxusers.members = ["rasen"];
@@ -3575,16 +3007,14 @@ epkgs.melpaPackages.envrc
 #+end_src
 ** User-level services
 Install runit to manage user-level services.
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = [ pkgs.runit ];
 }
 #+end_src
 * Hardware
 ** Do not suspend on AC
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   services.logind = {
     lidSwitchDocked = "ignore";
@@ -3612,8 +3042,7 @@ Configure EXWM to use autorandr. (emacs-lisp)
 #+end_src
 
 (~<<home-manager-section>>~)
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   programs.autorandr = {
     enable = true;
@@ -3705,8 +3134,7 @@ Configure EXWM to use autorandr. (emacs-lisp)
 #+end_src
 ** Screen brightness
 =xbacklight= stopped working recently. =acpilight= is a drop-in replacement.
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   hardware.acpilight.enable = true;
   environment.systemPackages = [ pkgs.acpilight ];
@@ -3715,8 +3143,7 @@ Configure EXWM to use autorandr. (emacs-lisp)
 #+end_src
 
 For Home Manager–managed hosts.
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = pkgs.lib.linux-only [ pkgs.acpilight ];
 }
@@ -3734,9 +3161,7 @@ Redshift adjusts the color temperature of the screen according to the position o
 
 Blue light blocks [[https://en.wikipedia.org/wiki/Melatonin][melatonin]] (sleep harmone) secretion, so you feel less sleepy when you stare at computer screen.
 Redshift blocks some blue light (making screen more red), which should improve melatonin secretion and restore sleepiness (which is a good thing).
-
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   services.redshift = {
     enable = true;
@@ -3746,8 +3171,7 @@ Redshift blocks some blue light (making screen more red), which should improve m
 #+end_src
 ** PipeWire
 Use PipeWire as audio server.
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   # PipeWire requires pulseaudio to be disabled.
   services.pulseaudio.enable = false;
@@ -3763,8 +3187,7 @@ Use PipeWire as audio server.
 #+end_src
 
 =pavucontrol= is PulseAudio Volume Control—a nice utility for controlling pulseaudio settings. (~<<home-manager-section>>~)
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = pkgs.lib.linux-only [ pkgs.pavucontrol ];
 }
@@ -3789,16 +3212,14 @@ Bind volume control commands. (emacs-lisp)
 I have a bluetooth headset, so this enables bluetooth audio in NixOS.
 
 (~<<nixos-section>>~)
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   hardware.bluetooth.enable = true;
 }
 #+end_src
 ** ADB
 I need to access my Android device. (~<<nixos-section>>~)
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   services.udev.packages = [ pkgs.android-udev-rules ];
   programs.adb.enable = true;
@@ -3807,8 +3228,7 @@ I need to access my Android device. (~<<nixos-section>>~)
 #+end_src
 ** fwupd
 fwupd is a service that allows applications to update firmware. (~<<nixos-section>>~)
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   services.fwupd.enable = true;
 }
@@ -3820,8 +3240,7 @@ fwupdmgr get-updates
 #+end_src
 * Browsers
 Firefox is default, Chrome for backup.
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = pkgs.lib.linux-only [
     pkgs.firefox
@@ -3833,8 +3252,7 @@ Firefox is default, Chrome for backup.
 Tridactyl is a Firefox plugin that provides Vim-like bindings.
 
 Here is my config. (~<<tridactylrc>>~)
-#+name: tridactylrc
-#+begin_src fundamental :tangle no
+#+begin_src fundamental :noweb-ref tridactylrc :tangle no
 " drop all existing configuration
 sanitize tridactyllocal tridactylsync
 
@@ -3845,8 +3263,7 @@ bind k scrollline 2
 #+end_src
 
 Link tridactyl config to the place the tridactyl can find it. (~<<home-manager-section>>~)
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   xdg.configFile."tridactyl/tridactylrc".text = ''
     <<tridactylrc>>
@@ -3872,295 +3289,16 @@ I have my custom modal editing mode in [[file:.emacs.d/site-lisp/eon.el][eon.el]
   :config
   (eon-global-mode))
 #+end_src
-* Evil-mode
-** General
-#+begin_src emacs-lisp
-(use-package evil
-  :disabled t
-  :custom
-  (evil-undo-system 'undo-redo)
-  :config
-  <<evil-config>>
-  (evil-mode 1))
-#+end_src
-
-Swap =.= and =;=.
-#+name: evil-config
-#+begin_src emacs-lisp :tangle no
-(general-def 'normal
-  ";"    #'evil-repeat
-  "."    nil
-  "C-;"  #'evil-repeat-pop
-  "C-."  nil)
-
-(general-def 'motion
-  "."    #'evil-repeat-find-char
-  ";"    nil
-  "g."   #'goto-last-change
-  "g;"   nil)
-#+end_src
-
-#+name: evil-config
-#+begin_src emacs-lisp :tangle no
-(s-leader-def
-  ";"  #'eval-expression)
-#+end_src
-
-Close other window.
-#+begin_src emacs-lisp
-(defun rasen/quit-other ()
-  (interactive)
-  (other-window 1)
-  (quit-window))
-
-(s-leader-def
-  "q"  #'rasen/quit-other)
-#+end_src
-
-Move to beginning/end of line with =H= and =L= respectively.
-#+name: evil-config
-#+begin_src emacs-lisp :tangle no
-(defun rasen/smart-move-beginning-of-line (arg)
-  "Move point back to indentation of beginning of line.
-
-Move point to the first non-whitespace character on this line.
-If point is already there, move to the beginning of the line.
-Effectively toggle between the first non-whitespace character and
-the beginning of the line.
-
-If ARG is not nil or 1, move forward ARG - 1 lines first.  If
-point reaches the beginning or end of the buffer, stop there."
-  (interactive "^p")
-  (setq arg (or arg 1))
-
-  ;; Move lines first
-  (when (/= arg 1)
-    (let ((line-move-visual nil))
-      (forward-line (1- arg))))
-
-  (let ((orig-point (point)))
-    (back-to-indentation)
-    (when (= orig-point (point))
-      (move-beginning-of-line 1))))
-
-(general-def 'motion
-  "H"  #'rasen/smart-move-beginning-of-line
-  "L"  #'evil-end-of-line)
-#+end_src
-
-Save buffer with =SPC SPC=.
-#+begin_src emacs-lisp
-(defun rasen/save-buffer (arg)
-  "Save current buffer.  With PREFIX, save all buffers."
-  (interactive "P")
-  (if arg
-      (save-some-buffers)
-    (save-buffer)))
-
-(with-eval-after-load "evil"
-  (s-leader-def 'normal
-    "SPC" #'rasen/save-buffer)
-  (s-leader-def
-    "s-SPC" #'save-some-buffers))
-#+end_src
-** Swap k and j
-With workman layout, =j= is located on qwerty =y= and =k=---on qwerty =n=; thus =j= is higher than =k=, and it is not convenient to press lower key for going up. Just swap them.
-#+name: evil-config
-#+begin_src emacs-lisp :tangle no
-(general-def 'motion
-  "k"    #'evil-next-visual-line
-  "j"    #'evil-previous-visual-line
-  "gk"   #'evil-next-line
-  "gj"   #'evil-previous-line)
-
-(general-def 'operator
-  "k"    #'evil-next-line
-  "j"    #'evil-previous-line
-  "gk"   #'evil-next-visual-line
-  "gj"   #'evil-previous-visual-line)
-
-(general-def 'motion
-  "C-h"  #'windmove-left
-  "C-k"  #'windmove-down
-  "C-j"  #'windmove-up
-  "C-l"  #'windmove-right)
-
-(general-swap-key nil 'motion
- "C-w j" "C-w k")
-#+end_src
-** evil-numbers
-I use Vim's =C-a= and =C-x= (increment/decrement number at point) a lot.
-=evil-numbers= provides that functionality for evil.
-#+begin_src emacs-lisp
-(use-package evil-numbers
-  :after evil
-  :general
-  ('normal
-   "C-a" #'evil-numbers/inc-at-pt
-   "C-x" #'evil-numbers/dec-at-pt))
-#+end_src
-
-Now, remap =C-x= to =RET=. (Because =C-x= is used for decrementing numbers.)
-#+name: evil-config
-#+begin_src emacs-lisp
-(general-def 'motion
-  "RET" (lookup-key (current-global-map) (kbd "C-x")))
-;; Unmap it from magit
-(general-def magit-file-mode-map
-  "C-x" nil)
-#+end_src
-** evil-collection
-evil-collection is a collection of evil bindings for different modes.
-
-These variables need to be set before evil loads (which seems to be required by =general=) or shortly after. So the following needs to be placed before general:
-#+name: before-general
-#+begin_src emacs-lisp
-(setq evil-want-integration t
-      evil-want-keybinding nil)
-#+end_src
-
-#+begin_src emacs-lisp
-(require 'warnings)
-(add-to-list 'warning-suppress-types '(evil-collection))
-
-(use-package evil-collection
-  :disabled t
-  :after (evil)
-  :init
-  (setq evil-want-integration t
-        evil-want-keybinding nil)
-  :config
-  (defun rasen/rotate-keys (_mode mode-keymaps &rest _rest)
-    ;; (evil-collection-translate-key 'normal mode-keymaps
-    ;;   "k" "j"
-    ;;   "j" "k"
-    ;;   "gk" "gj"
-    ;;   "gj" "gk"
-    ;;   (kbd "C-j") (kbd "C-k")
-    ;;   (kbd "C-k") (kbd "C-j")
-    ;;   (kbd "M-j") (kbd "M-k")
-    ;;   (kbd "M-k") (kbd "M-j")
-    ;;   "." ";"
-    ;;   ";" ".")
-    )
-  (add-hook 'evil-collection-setup-hook #'rasen/rotate-keys)
-
-  (setq evil-collection-mode-list
-        '(dired
-          compile
-          flycheck
-          help
-          ;; notmuch bindings aren't that cool and are less efficient than native
-          ;; keymap
-          ;; notmuch
-          magit
-          forge
-          python
-          racer
-          restclient
-          vterm
-          which-key
-          xref))
-
-  (setq evil-collection-magit-use-y-for-yank t
-        evil-collection-magit-state 'normal)
-
-  (evil-collection-init)
-
-  ;; Evilify magit-blame.
-  (general-def 'normal magit-blame-read-only-mode-map
-    "k"    #'evil-next-visual-line
-    "j"    #'evil-previous-visual-line
-    "C-k"  #'magit-blame-next-chunk
-    "C-j"  #'magit-blame-previous-chunk
-    "gk"   #'magit-blame-next-chunk-same-commit
-    "gj"   #'magit-blame-previous-chunk-same-commit)
-
-  (general-def magit-blame-read-only-mode-map "SPC" nil) ;; expose my leader
-
-  (general-def
-    :states `(,evil-collection-magit-state visual)
-    :keymaps 'magit-status-mode-map
-    "C-j"  #'magit-section-backward-sibling
-    "C-k"  #'magit-section-forward-sibling
-    "gj"   #'magit-section-backward
-    "gk"   #'magit-section-forward
-    "j"    #'evil-previous-visual-line
-    "k"    #'evil-next-visual-line))
-#+end_src
-** evil-surrond
-#+begin_src emacs-lisp
-(use-package evil-surround
-  :disabled t
-  :config
-  (global-evil-surround-mode t))
-#+end_src
-** calc
-#+begin_src emacs-lisp
-(use-package calc ; built-in
-  :general
-  (leader-def 'motion
-    "="  #'quick-calc
-    "+"  #'calc)
-  ('motion
-   "g ="  #'quick-calc
-   "g +"  #'calc))
-#+end_src
-** Evilify compile mode
+** Compile mode
 #+begin_src emacs-lisp
 (use-package compile ; built-in
   :config
   (setq compilation-scroll-output t))
 #+end_src
 
-And evil commands to go to navigate errors.
-#+name: evil-config
-#+begin_src emacs-lisp :tangle no
-(leader-def 'motion
-  ","  #'previous-error
-  "."  #'next-error)
-(general-def 'motion
-  "M-,"    #'previous-error
-  "M-."    #'next-error)
-#+end_src
-** Evilify minibuffer
-Not really "evilify."
+** Minibuffer
 #+begin_src emacs-lisp
-(general-def 'minibuffer-local-map
-  ;; Finish input with C-e ("e" in Workman is qwerty's "k")
-  "C-e"  #'exit-minibuffer)
-#+end_src
-** Evilify shell mode
-Default bindings for ~RET~ prevent many of my commands from working. Remap ~RET~ to ~C-RET~.
-#+begin_src emacs-lisp
-(general-def 'shell-mode-map
-  "RET"         nil
-  "<C-return>"  #'comint-send-input)
-#+end_src
-** lispyville
-#+begin_src emacs-lisp
-(use-package lispyville
-  :disabled t
-  :hook
-  ((clojure-mode emacs-lisp-mode lisp-mode scheme-mode) . lispyville-mode)
-  :config
-  (lispyville-set-key-theme
-   '(operators
-     c-w
-     ;; < and >
-     slurp/barf-cp
-     (atom-movement t)
-     commentary
-     ;; wrap with M-(, M-[, or M-{
-     wrap
-     additional
-     ;; M-o open below list, M-O open above list
-     additional-insert))
-
-  ;; override drag directions
-  (lispyville--define-key 'normal
-    (kbd "M-j") #'lispyville-drag-backward
-    (kbd "M-k") #'lispyville-drag-forward))
+(define-key minibuffer-local-map (kbd "C-e") #'exit-minibuffer)
 #+end_src
 ** scheme
 #+begin_src emacs-lisp
@@ -4173,35 +3311,16 @@ Default bindings for ~RET~ prevent many of my commands from working. Remap ~RET~
 #+begin_src emacs-lisp
 (use-package org
   :mode ("\\.org$" . org-mode)
-  :general
-  ("C-c l"  #'org-store-link)
-  (s-leader-def
-    "c"  #'org-capture
-    "a"  #'org-agenda
-
-    "o"  #'org-clock-out
-    "l"  #'org-clock-in-last
-    "j"  #'org-clock-goto)
-  (leader-def 'normal 'org-mode-map
-    "t"  #'rasen/org-todo
-    "s"  #'org-schedule
-    "d"  #'org-deadline
-    "i"  #'org-clock-in
-
-    "T"  #'rasen/org-do-today
-
-    "w"  #'rasen/org-refile-hydra/body
-    "r"  #'org-archive-subtree-default)
-  (leader-def 'motion 'org-agenda-map
-    "t"  #'rasen/org-agenda-todo)
-  ('normal 'org-mode-map "RET n s" #'org-narrow-to-subtree)
-  ('(insert normal) 'org-mode-map
-   "C-c ,"  #'org-time-stamp-inactive)
-  ('org-mode-map
-   ;; tabs
-   "M-l" nil
-   "M-h" nil)
-  :gfhook 'flyspell-mode
+  ;; :bind
+  ;; ("C-c l" . org-store-link)
+  ;; ("s-SPC c" . org-capture)
+  ;; ("s-SPC a" . org-agenda)
+  ;; ("s-SPC o" . org-clock-out)
+  ;; ("s-SPC l" . org-clock-in-last)
+  ;; ("s-SPC j" . org-clock-goto)
+  ;; :bind-keymap
+  ;; ("s-SPC" . org-mode-map)
+  :hook (org-mode . flyspell-mode)
   :init
   <<org-init>>
   :config
@@ -4210,55 +3329,46 @@ Default bindings for ~RET~ prevent many of my commands from working. Remap ~RET~
 #+end_src
 
 Do not indent inside tasks
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-adapt-indentation nil)
 #+end_src
 
 Do not indent org-babel blocks.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-edit-src-content-indentation 0)
 #+end_src
 
 Do not indent tags.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-tags-column 0)
 #+end_src
 
 When entering tags, offer tags from all agenda files. (This is the closes to global tag tracking I could find.))
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-complete-tags-always-offer-all-agenda-tags t)
 #+end_src
 
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-ellipsis "…")
 #+end_src
 
 By default, show all of org file. (This can be changed on a per-file basis with ~#+STARTUP:~.)
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-startup-folded nil)
 #+end_src
 
 Make the table header float if scrolled out of view.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-table-header-line-p t)
 #+end_src
 
 Hide emphasis markers (asterisks and slashes).
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-hide-emphasis-markers t)
 #+end_src
 
 Allow emphasis marks to follow ndash/mdash, and proper quotes.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 ;; allow ndash/mdash (–, —), and proper quotes (’, “, ”) before/after
 ;; emphasis markers.
 ;;
@@ -4272,8 +3382,7 @@ Allow emphasis marks to follow ndash/mdash, and proper quotes.
 #+end_src
 
 Open pdfs in external viewer:
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (add-to-list 'org-file-apps
              `("\\.pdf\\'" . ,(if (eq system-type 'darwin)
                                   "open %s"
@@ -4281,8 +3390,7 @@ Open pdfs in external viewer:
 #+end_src
 
 Use =whitespace-mode= in Org (but don't show too long lines).
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (add-hook 'org-mode-hook (lambda ()
                            (setq-local whitespace-style '(face
                                                           tab-mark
@@ -4292,14 +3400,12 @@ Use =whitespace-mode= in Org (but don't show too long lines).
 #+end_src
 
 My directory for org files.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq rasen/org-directory "~/org")
 #+end_src
 
 My helper to find all org files in a directory.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (defun rasen/org-files-in-dir (dir)
   (f-files dir
            (lambda (file) (or (f-ext? file "org")
@@ -4309,8 +3415,7 @@ My helper to find all org files in a directory.
 #+end_src
 
 Package for =f-files= and =f-ext?= functions.
-#+name: org-init
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-init
 (use-package f
   :commands (f-files f-ext? f-no-ext))
 #+end_src
@@ -4325,8 +3430,7 @@ Use proper quotes in org-mode.
 #+end_src
 ** Todo
 A special function that marks the task as done yesterday if prefix is supplied (useful for habits).
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (defun rasen/org-todo (&optional arg)
   "As `org-todo' but calls `org-todo-yesterday' when ARG is non-nil."
   (interactive "P")
@@ -4343,8 +3447,7 @@ A special function that marks the task as done yesterday if prefix is supplied (
 #+end_src
 
 Use the following states: =TODO= =NEXT= =DONE= =CANCELED= =WAIT=.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq-default org-todo-keywords
               '((sequence "TODO(t)" "NEXT(n!)" "|" "DONE(d!)")
                 (sequence "BUILD(b!)" "|")
@@ -4354,38 +3457,32 @@ Use the following states: =TODO= =NEXT= =DONE= =CANCELED= =WAIT=.
 #+end_src
 
 When repeated task is finished, go back to =TODO= state.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq-default org-todo-repeat-to-state "NEXT")
 #+end_src
 
 Log state changes to "LOGBOOK" drawer.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq-default org-log-into-drawer t)
 #+end_src
 
 Save =CLOSED= timestamp when task is done.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-log-done t)
 #+end_src
 
 Disable force-logging repeated tasks because otherwise you’ll get duplicated log lines.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-log-repeat nil)
 #+end_src
 
 Fontify the whole line for done tasks.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-fontify-done-headline t)
 #+end_src
 
 Import =org-expiry= for =org-expiry-insert-created=---this inserts =CREATED= property.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (require 'org-expiry)
 (setq org-expiry-inactive-timestamps t)
 ;; The next line was required but it fails with error now. Still works
@@ -4395,8 +3492,7 @@ Import =org-expiry= for =org-expiry-insert-created=---this inserts =CREATED= pro
 
 Schedule task for today and mark it NEXT.
 I use this a lot during daily planning.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (defun rasen/org-do-today (&optional arg)
   "Schedule task for today and mark it NEXT.
 
@@ -4407,26 +3503,20 @@ If prefix is supplied, select different scheduled time."
 #+end_src
 
 A command to fold everything except =NEXT= items.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (defun rasen/org-occur-next ()
   (interactive)
   (let ((org-highlight-sparse-tree-matches nil))
     (org-occur (concat "^" org-outline-regexp " *" "NEXT" "\\>"))))
-
-(general-def '(motion normal) 'org-mode-map
-  "z n" #'rasen/org-occur-next)
 #+end_src
 
 Disable highlighting for org-occur.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-highlight-sparse-tree-matches nil)
 #+end_src
 ** Highlight projects
 Fontify all headlines with the =:PROJECT:= tag.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (defface rasen/org-project-face
   '((t :weight bold))
   "Face for org-mode projects.")
@@ -4440,20 +3530,17 @@ Fontify all headlines with the =:PROJECT:= tag.
 Note that the face is overridden in [[*Color theme][Color theme]] section.
 ** Clocking
 Remove clocks with 0 duration.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq-default org-clock-out-remove-zero-time-clocks t)
 #+end_src
 
 Save more last clocks.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq-default org-clock-history-length 10)
 #+end_src
 ** Capture
 I use an extension that adds page url to the title (used for page tracking). Strip it down here
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (defun rasen/strip-url-from-title (title)
   (message "stripping: %s" title)
   (replace-regexp-in-string
@@ -4463,8 +3550,7 @@ I use an extension that adds page url to the title (used for page tracking). Str
 #+end_src
 
 My capture templates.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq rasen/org-refile-file (concat rasen/org-directory "/refile-" system-name ".org"))
 (setq org-capture-templates
       `(("u"
@@ -4523,33 +3609,15 @@ My capture templates.
 #+end_src
 
 Enable org-protocol.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (require 'org-protocol)
 #+end_src
 
 =%l= in org-capture fails with multiline context, so use only the first line as a context.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-context-in-file-links 1)
 #+end_src
 
-*** org-capture keybindings
-Instanly go into insert mode on capture.
-#+name: org-config
-#+begin_src emacs-lisp
-;; (add-hook 'org-capture-mode-hook 'evil-insert-state)
-#+end_src
-
-#+name: org-config
-#+begin_src emacs-lisp
-(general-def
-  :keymaps 'org-capture-mode-map
-  :states 'normal
-  "'"      #'org-capture-finalize)
-(leader-def 'normal 'org-capture-mode-map
-  "w" #'org-capture-refile)
-#+end_src
 ** Capturing images
 #+begin_src emacs-lisp
 (use-package org-download
@@ -4610,8 +3678,7 @@ An interactive command to jump to a specific datetree entry in the current buffe
   (setq org-cliplink-max-length 200))
 #+end_src
 ** Refile
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (defun rasen/org-refile-files ()
   (append
    '("~/org/dd/index.org" "~/org/fluxon/index.org")
@@ -4630,8 +3697,7 @@ An interactive command to jump to a specific datetree entry in the current buffe
 #+end_src
 
 Setting ~org-refile-use-outline-path~ to ~'file~ prepends the file names to refile targets but also has a side effect of allowing refiling to the top level of these files. Patch ~org-refile-get-targets~ to disable that.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (el-patch-defun org-refile-get-targets (&optional default-buffer)
   "Produce a table with refile targets."
   (let ((case-fold-search nil)
@@ -4738,8 +3804,7 @@ Setting ~org-refile-use-outline-path~ to ~'file~ prepends the file names to refi
 #+end_src
 *** Refiling with hydras
 Adapted from [[https://mollermara.com/blog/Fast-refiling-in-org-mode-with-hydras/][Fast refiling in org-mode with hydras | Josh Moller-Mara]]. Extended to support refiling by outline path.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (require 'hydra)
 
 (defun rasen/concat (sequence separator)
@@ -4836,16 +3901,15 @@ With a `C-u` ARG, just jump to the headline."
        (org-agenda-refile current-prefix-arg)
      (org-refile current-prefix-arg))))
 
-(leader-def 'normal 'org-mode-map         "w" #'rasen/org-refile-hydra/body)
-(leader-def 'motion 'org-agenda-mode-map  "w" #'rasen/org-refile-hydra/body)
-(leader-def 'normal 'org-capture-mode-map "w" #'rasen/org-refile-hydra/body)
+;; (leader-def 'org-mode-map         "w" #'rasen/org-refile-hydra/body)
+;; (leader-def 'org-agenda-mode-map  "w" #'rasen/org-refile-hydra/body)
+;; (leader-def 'org-capture-mode-map "w" #'rasen/org-refile-hydra/body)
 #+end_src
 *** Refile last but *before* archive
 I like my archive sibling to be the last child. The default org-refile ignores that at refiles all entries *after* archive.
 
 So here is a little patch to refile before archive sibling if it is present.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (defun rasen/org-goto-last-child ()
   "Goto the last child, even if it is invisible.
 Return t when a child was found.  Otherwise don't move point and return nil."
@@ -5060,15 +4124,13 @@ prefix argument (`C-u C-u C-u C-c C-w')."
                      file)))))))
 #+end_src
 ** Archive
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 ;; (setq-default org-archive-default-command 'org-archive-to-archive-sibling)
 (setq-default org-archive-default-command #'org-archive-subtree)
 #+end_src
 ** Agenda
 Set my org files location.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-directory "~/org"
       org-default-notes-file rasen/org-refile-file
       org-agenda-files (cons "~/org/roam/dd/index.org" (cons "~/org/roam/fluxon/index.org" (rasen/org-files-in-dir "~/org"))))
@@ -5081,38 +4143,34 @@ Show agenda as the only window and restore window layout on quit (so that agenda
 #+end_src
 
 Configure my agenda view.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-agenda-span 6)
 #+end_src
 
 Configure stuck projects.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (add-to-list 'org-tags-exclude-from-inheritance "PROJECT")
 (setq org-stuck-projects
       '("+PROJECT/-TODO-DONE-CANCELED-WAIT" ("NEXT" "WAIT") nil ""))
 #+end_src
 
 Do not align tags in agenda.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-agenda-tags-column 0)
 #+end_src
 
 Do not show project tags.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-agenda-hide-tags-regexp "PROJECT\\|fc\\|suspended")
 #+end_src
 
 #+begin_src emacs-lisp
 (use-package org-super-agenda
+  :bind
+  (:map org-super-agenda-header-map
+        ("k" . #'org-agenda-next-line)
+        ("j" . #'org-agenda-previous-line))
   :config
-  (general-def org-super-agenda-header-map
-    "k" #'org-agenda-next-line
-    "j" #'org-agenda-previous-line)
-
   ;; cache agenda, and only rebuild on request
   (setq org-agenda-sticky t)
 
@@ -5309,14 +4367,12 @@ of what a project is and how to check if it stuck, customize the variable
 #+end_src
 ** Babel
 Code-highlight (fontify) org-babel (=#+begin_src=) blocks.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-src-fontify-natively t)
 #+end_src
 
 Do not confirm evaluation for emacs-lisp.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (defun rasen/org-confirm-babel-evaluate (lang body)
   (not (member lang '("emacs-lisp"))))
 
@@ -5324,15 +4380,13 @@ Do not confirm evaluation for emacs-lisp.
 #+end_src
 
 Load more languages:
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (org-babel-do-load-languages 'org-babel-load-languages
                              '((shell . t)))
 #+end_src
 ** Latex preview
 Install imagemagick and latex:
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = [
     pkgs.imagemagick
@@ -5354,8 +4408,7 @@ Install imagemagick and latex:
 }
 #+end_src
 
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-latex-packages-alist
       '(;; Use mhchem for chemistry formulas
         ("" "mhchem" t)
@@ -5379,8 +4432,7 @@ Install imagemagick and latex:
              :image-converter '("convert -density 278 -trim -antialias %f -quality 100 %O")))
 #+end_src
 ** Image preview
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 ;; Scale inline images by default
 (setq org-image-actual-width '(800))
 ;; Show inline images by default
@@ -5390,8 +4442,7 @@ Install imagemagick and latex:
 Fix exporting for confluence.
 
 =ox-confluence= has an issue with verbatim---it doesn't redefine verbatim translation, so =org-ascii-verbatim= is used. The following makes =org-ascii-verbatim= produce proper confluence fixed-width block.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (add-to-list 'org-modules 'ox-confluence)
 (setq org-ascii-verbatim-format "\{\{%s\}\}")
 
@@ -5477,8 +4528,7 @@ Fix exporting for confluence.
 #+end_src
 ** Crypt
 Allow encrypted entries in org files.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (require 'org-crypt)
 (org-crypt-use-before-save-magic)
 (add-to-list 'org-tags-exclude-from-inheritance "crypt")
@@ -5487,8 +4537,7 @@ Allow encrypted entries in org files.
 #+end_src
 ** org-list
 I always use either =-= or =1.= style for lists. Make ~org-cycle-list-bullet~ ignore the rest of styles (=*=, =+=, =1)=), so switching between ordered/unordered list is always one command away:
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (el-patch-defun org-cycle-list-bullet (&optional which)
   "Cycle through the different itemize/enumerate bullets.
 This cycle the entire list level through the sequence:
@@ -5557,13 +4606,11 @@ is an integer, 0 means `-', 1 means `+' etc.  If WHICH is
 #+end_src
 ** org-checklist
 Setting property =RESET_CHECK_BOXES= on a periodic task to =t= will clear all checkboxes when the task is closed.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (require 'org-checklist)
 #+end_src
 ** Habits
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (require 'org-habit)
 (setq org-habit-show-habits-only-for-today t)
 (setq org-habit-preceding-days 25)
@@ -5578,20 +4625,17 @@ Better line wrapping. (Use proper wrap-prefix in lists, etc.)
 #+end_src
 ** org-id
 Use timestamps as ids.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-id-method 'ts)
 #+end_src
 
 Configure ~org-store-link~ to prefer ids for headlines.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (setq org-id-link-to-org-use-id 'create-if-interactive)
 #+end_src
 
 Override ~org-id-new~ to use ~rasen/tsid~ as ids. (They have less precision but that's enough for me.) By using tsid, I can easily switch headline-nodes to file-nodes—id becomes the filename.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (el-patch-defun org-id-new (&optional prefix)
   "Create a new globally unique ID.
 
@@ -5634,8 +4678,7 @@ So a typical ID could look like \"Org:4nd91V40HI\"."
 #+end_src
 
 Highlight org-id links with different color.
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (defface rasen/org-id-link
   '((t :inherit org-link))
   "Face for org-id links.")
@@ -5653,24 +4696,6 @@ Actual style is overridden in Color theme section.
   :bind
   (:map org-mode-map
    ("C-c i" . org-roam-node-insert))
-  :general
-  (s-leader-def
-    "n r" #'org-roam-buffer-toggle
-    "n f" #'org-roam-node-find
-    "n j" #'org-roam-dailies-goto-date
-    "n t" #'org-roam-dailies-goto-today
-    "n ." #'org-roam-dailies-goto-today
-    "n ," #'org-roam-dailies-goto-yesterday)
-  (:keymaps 'org-mode-map
-   :states 'normal
-   "SPC ," #'org-roam-dailies-goto-previous-note
-   "SPC ." #'org-roam-dailies-goto-next-note)
-  (:keymaps 'org-mode-map
-   :states '(insert visual)
-   "C-c i" #'org-roam-node-insert
-   ;; C-i is interpreted as TAB
-   "C-c TAB" #'org-roam-node-insert)
-
   :init
   ;; yes, I have migrated to v2
   (setq org-roam-v2-ack t)
@@ -5707,8 +4732,7 @@ Actual style is overridden in Color theme section.
 #+end_src
 *** org-roam-exclude-org-fc
 Do not treat [[*org-fc][org-fc]] cards as nodes.
-#+name: org-roam-exclude-org-fc
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :noweb-ref org-roam-exclude-org-fc :tangle no
 (setq org-roam-db-node-include-function
       (defun rasen/org-roam-include ()
         ;; exclude org-fc headlines from org-roam
@@ -5716,8 +4740,7 @@ Do not treat [[*org-fc][org-fc]] cards as nodes.
 #+end_src
 *** org-roam-slip-boxes
 Slip boxes are basically different directories that I split notes into.
-#+name: org-roam-slip-boxes
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :noweb-ref org-roam-slip-boxes :tangle no
 (defconst rasen/slip-boxes
   '(;; Default slip-box with permanent notes
     ("d" "default"     ""         "${rasen/capture-tsid}")
@@ -5765,8 +4788,7 @@ Slip boxes are basically different directories that I split notes into.
 #+end_src
 
 And a helper command to move notes between slip boxes.
-#+name: org-roam-slip-boxes
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :noweb-ref org-roam-slip-boxes :tangle no
 (defun rasen/move-to-slip-box (slip-box)
   "Move file to specified SLIP-BOX."
   (interactive (list (completing-read "Move to slip-box: "
@@ -5792,8 +4814,7 @@ And a helper command to move notes between slip boxes.
 #+end_src
 
 And some extra refile helpers for dealing with inbox.
-#+name: org-roam-slip-boxes
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :noweb-ref org-roam-slip-boxes :tangle no
 ;; TODO: replace hard-coded paths with querying org-roam by title.
 
 (defun rasen/refile-weight ()
@@ -5830,8 +4851,7 @@ And some extra refile helpers for dealing with inbox.
 Configure how nodes are shown in the prompt (when searching, creating new, inserting link).
 
 Show slip box and path within file. e.g., =(life) My file > sub-note=.
-#+name: org-roam-node-display
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :noweb-ref org-roam-node-display :tangle no
 (setq org-roam-node-display-template "${hierarchy:*} ${tags:10}")
 
 (defun org-roam-node-filetitle (node)
@@ -5882,8 +4902,7 @@ Show slip box and path within file. e.g., =(life) My file > sub-note=.
 Configure org-roam-buffer (buffer with backlinks).
 
 Show all sections:
-#+name: org-roam-buffer
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :noweb-ref org-roam-buffer :tangle no
 (setq org-roam-mode-section-functions
       (list #'org-roam-backlinks-section
             #'org-roam-reflinks-section
@@ -5891,8 +4910,7 @@ Show all sections:
 #+end_src
 
 Make it prettier—enable word-wrap and variable pitch font.
-#+name: org-roam-buffer
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :noweb-ref org-roam-buffer :tangle no
 (add-hook 'org-roam-mode-hook #'visual-line-mode)
 (add-hook 'org-roam-mode-hook #'variable-pitch-mode)
 #+end_src
@@ -5901,8 +4919,7 @@ Make it prettier—enable word-wrap and variable pitch font.
 I moved my journaling into org-roam and this provides more context when reviewing my notes (unlinked references show where that date was mentioned).
 
 All daily notes are stored in a separate directory so they do not mix up with normal notes. Nothing fancy here.
-#+name: org-roam-dailies
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :noweb-ref org-roam-dailies :tangle no
 (require 'org-roam-dailies)
 (setq org-roam-dailies-directory "life/journal/")
 (defconst rasen/org-roam-daily-template
@@ -5956,8 +4973,7 @@ javascript:location.href = 'org-protocol://roam-ref?' + new URLSearchParams({
 Firefox is annoying with asking permissions to allow =org-protocol= urls, but you can disable that if you go to [[about:config]] and toggle =security.external_protocol_requires_permission= off (only if you know what you’re doing).
 
 Configure template. ~rasen/capture-quote-body~ bit inserts the selection as a quote if something is selected and does nothing otherwise.
-#+name: org-roam-protocol
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :noweb-ref org-roam-protocol :tangle no
 (require 'org-roam-protocol)
 
 (setq org-roam-capture-ref-templates
@@ -5982,8 +4998,7 @@ When I take notes on the page, I want the note to be open in a split window. I a
 I patch ~org-goto-marker-or-bmk~ so that it does not necessarily use the same window. This is used for
 org-roam-capture-ref to open the new note in a split window instead of reusing the browser window.
 (This might cause some other parts of org-mode to behave weirdly, but I have to see.)
-#+name: org-roam-protocol
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :noweb-ref org-roam-protocol :tangle no
 (el-patch-defun org-goto-marker-or-bmk (marker &optional bookmark)
   "Go to MARKER, widen if necessary.  When marker is not live, try BOOKMARK."
   (if (and marker (marker-buffer marker)
@@ -6000,16 +5015,14 @@ org-roam-capture-ref to open the new note in a split window instead of reusing t
 #+end_src
 *** org-roam-graph
 Install graphviz globally:
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = [ pkgs.graphviz ];
 }
 #+end_src
 
 Emacs configuration:
-#+name: org-roam-graph
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :noweb-ref org-roam-graph :tangle no
 (require 'org-roam-graph)
 
 ;; better defaults for graph view
@@ -6051,8 +5064,7 @@ Emacs configuration:
 #+end_src
 **** org-roam-graph-exclude-node
 Patch org-roam to allow a custom function to exclude nodes.
-#+name: org-roam-graph-exclude-node
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :noweb-ref org-roam-graph-exclude-node :tangle no
 (require 'cl)
 (require 'el-patch)
 
@@ -6113,8 +5125,7 @@ If ALL-NODES, include also nodes without edges."
 #+end_src
 
 Exclude all links that are not nodes (non-id) as well as links from non-permanent directories.
-#+name: org-roam-graph-exclude-node
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :noweb-ref org-roam-graph-exclude-node :tangle no
 (setq rasen/org-roam-graph-exclude-node
       (defun rasen/org-roam-graph-exclude-node (id node type)
         (or (not (string-equal type "id"))
@@ -6123,8 +5134,7 @@ Exclude all links that are not nodes (non-id) as well as links from non-permanen
 #+end_src
 *** org-roam-kebab-slugs
 Patch slug function so it uses kebab-case instead of snake-case.
-#+name: org-roam-kebab-slugs
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :noweb-ref org-roam-kebab-slugs :tangle no
 (el-patch-defun org-roam-node-slug (node)
   "Return the slug of NODE."
   (let ((title (org-roam-node-title node))
@@ -6171,8 +5181,7 @@ Patch slug function so it uses kebab-case instead of snake-case.
 #+end_src
 *** org-roam-update-ids
 A helper function for the next time org-id fucks up its database.
-#+name: org-roam-update-ids
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :noweb-ref org-roam-update-ids :tangle no
 (defun rasen/org-roam-update-ids ()
   "Update all org-ids in org-roam-directory."
   (interactive)
@@ -6181,8 +5190,7 @@ A helper function for the next time org-id fucks up its database.
 #+end_src
 *** org-roam-new-node
 A function to create a new node without prompting for a title. Sometimes I want to create a new node and I am not sure what the title will be—I discover it while I write the note.
-#+name: org-roam-new-node
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-roam-new-node
 (defun rasen/org-roam-new-node (&optional keys)
   (interactive)
   (org-roam-capture-
@@ -6215,8 +5223,7 @@ A function to create a new node without prompting for a title. Sometimes I want 
 ;;                       (rasen/org-roam-new-node "f")))
 #+end_src
 *** org-roam-update-title
-#+name: org-roam-update-title
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-roam-update-title
 ;; TODO: this only handles file renames. Make it work for headline nodes too.
 (defun rasen/org-roam-title-update ()
   "Update the title of the current node and patch all incoming links."
@@ -6307,19 +5314,14 @@ A function to create a new node without prompting for a title. Sometimes I want 
 
   (require 'org-ref-url-utils)
   (require 'org-ref-isbn)
-  (general-def 'normal 'bibtex-mode-map
-    "C-c C-c" #'org-ref-clean-bibtex-entry
-    "C-c c"   #'org-ref-clean-bibtex-entry
-    "C-c s"   #'bibtex-sort-buffer
-    "C-c n"   #'org-ref-open-bibtex-notes
-
-    ;; (a)ttach pdf
-    "C-c a"   #'org-ref-bibtex-assoc-pdf-with-entry
-    "C-c f"   #'org-ref-bibtex-pdf
-
-    ;; (o)nline
-    "C-c o"   #'org-ref-url-html-to-bibtex
-    "C-c i"   #'isbn-to-bibtex)
+  (define-key bibtex-mode-map (kbd "C-c C-c") #'org-ref-clean-bibtex-entry)
+  (define-key bibtex-mode-map (kbd "C-c c")   #'org-ref-clean-bibtex-entry)
+  (define-key bibtex-mode-map (kbd "C-c s")   #'bibtex-sort-buffer)
+  (define-key bibtex-mode-map (kbd "C-c n")   #'org-ref-open-bibtex-notes)
+  (define-key bibtex-mode-map (kbd "C-c a")   #'org-ref-bibtex-assoc-pdf-with-entry)
+  (define-key bibtex-mode-map (kbd "C-c f")   #'org-ref-bibtex-pdf)
+  (define-key bibtex-mode-map (kbd "C-c o")   #'org-ref-url-html-to-bibtex)
+  (define-key bibtex-mode-map (kbd "C-c i")   #'isbn-to-bibtex)
 
   (setq org-ref-completion-library 'org-ref-ivy-cite)
 
@@ -6424,8 +5426,7 @@ Citations and bibliography tools for org-mode.
 Flashcards/spaced repetition system for org-mode. It works with many files better than org-drill (and many files is what I have with org-roam).
 
 Install required dependencies:
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = [
     pkgs.findutils
@@ -6501,50 +5502,32 @@ Install required dependencies:
          grouped-count))
       (switch-to-buffer-other-window "*org-fc-upcoming*")))
 
-  (general-define-key
-   :definer 'minor-mode
-   :states 'normal
-   :keymaps 'org-fc-review-flip-mode
-   "RET" 'org-fc-review-flip
-   "n" 'org-fc-review-flip
-   "s" 'org-fc-review-suspend-card
-   "q" 'org-fc-review-quit)
+  (define-key org-fc-review-flip-mode-map (kbd "RET") 'org-fc-review-flip)
+  (define-key org-fc-review-flip-mode-map (kbd "n") 'org-fc-review-flip)
+  (define-key org-fc-review-flip-mode-map (kbd "s") 'org-fc-review-suspend-card)
+  (define-key org-fc-review-flip-mode-map (kbd "q") 'org-fc-review-quit)
 
-  (general-define-key
-   :definer 'minor-mode
-   :states 'normal
-   :keymaps 'org-fc-review-rate-mode
-   "a" 'org-fc-review-rate-again
-   "h" 'org-fc-review-rate-hard
-   "g" 'org-fc-review-rate-good
-   ;; There seems to be an issue binding "g" and it still behaves as
-   ;; a prefix for other commands in rate mode.
-   ;;
-   ;; Bind `org-fc-review-rate-good' to "n" as well to workaround
-   ;; this.
-   "n" 'org-fc-review-rate-good
-   "e" 'org-fc-review-rate-easy
-   "s" 'org-fc-review-suspend-card
-   "q" 'org-fc-review-quit)
+  (define-key org-fc-review-rate-mode-map (kbd "a") 'org-fc-review-rate-again)
+  (define-key org-fc-review-rate-mode-map (kbd "h") 'org-fc-review-rate-hard)
+  (define-key org-fc-review-rate-mode-map (kbd "g") 'org-fc-review-rate-good)
+  (define-key org-fc-review-rate-mode-map (kbd "n") 'org-fc-review-rate-good)
+  (define-key org-fc-review-rate-mode-map (kbd "e") 'org-fc-review-rate-easy)
+  (define-key org-fc-review-rate-mode-map (kbd "s") 'org-fc-review-suspend-card)
+  (define-key org-fc-review-rate-mode-map (kbd "q") 'org-fc-review-quit)
 
-  (general-def 'normal 'org-fc-review-edit-mode-map
-    "'"   #'org-fc-review-resume)
-
-  (general-def 'normal 'org-fc-dashboard-mode-map
-    "r"   #'org-fc-dashboard-review
-    "g"   (defun rasen/org-fc-dashboard ()
-            (interactive)
-            (org-fc-dashboard org-fc-context-all))
-    "h"   #'rasen/org-fc-upcoming-histogram
-    "q"   #'quit-window)
+  (define-key org-fc-dashboard-mode-map (kbd "r")   #'org-fc-dashboard-review)
+  (define-key org-fc-dashboard-mode-map (kbd "g") (defun rasen/org-fc-dashboard ()
+                                                    (interactive)
+                                                    (org-fc-dashboard org-fc-context-all)))
+  (define-key org-fc-dashboard-mode-map (kbd "h")   #'rasen/org-fc-upcoming-histogram)
+  (define-key org-fc-dashboard-mode-map (kbd "q")   #'quit-window)
 
   <<org-fc-review-todos>>)
 #+end_src
 
 ** COMMENT org-fc review todos
 My modifications to support reviewing arbitrary todo lists with spaced repetition.
-#+name: org-fc-review-todos
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-fc-review-todos
 (defcustom rasen/org-fc-todos-context `(:paths (,(expand-file-name "resources.org" rasen/org-directory))
                                         :filter (type "nocard"))
   "Context in which to search for todo cards.")
@@ -6767,85 +5750,17 @@ rating the card."
   (setq-local org-link-descriptive (not org-link-descriptive))
   (font-lock-fontify-buffer))
 
-(leader-def 'normal 'org-mode-map
-  "\\" #'rasen/toggle-org-view-mode)
+(define-key org-mode-map (kbd "C-c \\") #'rasen/toggle-org-view-mode)
 #+end_src
-** Evilify org-mode
-#+begin_src emacs-lisp
-(use-package evil-org
-  :disabled t
-  :after org
-  :diminish
-  :init
-  ;; https://github.com/Somelauw/evil-org-mode/issues/93
-  (fset 'evil-redirect-digit-argument 'ignore)
-
-  :custom
-  ;; https://github.com/Somelauw/evil-org-mode/issues/93
-  (add-to-list 'evil-digit-bound-motions 'evil-org-beginning-of-line)
-  (evil-define-key 'motion 'evil-org-mode
-    (kbd "0") 'evil-org-beginning-of-line)
-
-  ;; swap j/k
-  (evil-org-movement-bindings '((up . "j")
-                                (down . "k")
-                                (left . "h")
-                                (right . "l")))
-  :config
-  (add-hook 'org-mode-hook 'evil-org-mode)
-  (add-hook 'evil-org-mode-hook
-            (lambda ()
-              (evil-org-set-key-theme)))
-  (require 'evil-org-agenda)
-  (evil-org-agenda-set-keys)
-
-  ;; when editing code blocks, use current window and do not
-  ;; reorganize my frame
-  (setq org-src-window-setup 'current-window)
-
-  (general-def 'normal org-mode-map
-    "'"        #'org-edit-special
-    "C-c '"    (rasen/hard-way "'")
-    "go"       #'org-open-at-point
-    "C-c C-o"  (rasen/hard-way "go"))
-
-  ;; open file links in the same window
-  (push '(file . find-file) org-link-frame-setup)
-
-  (general-def 'normal org-src-mode-map
-    "'"      #'org-edit-src-exit
-    "C-c '"  (rasen/hard-way "'"))
-
-  (general-def 'motion org-agenda-mode-map
-    "k"    #'org-agenda-next-line
-    "j"    #'org-agenda-previous-line
-    "gk"   #'org-agenda-next-item
-    "gj"   #'org-agenda-previous-item
-    "C-k"  #'org-agenda-next-item
-    "C-j"  #'org-agenda-previous-item
-
-    "K"    #'org-agenda-priority-down
-    "J"    #'org-agenda-priority-up
-
-    "M-k"  #'org-agenda-drag-line-forward
-    "M-j"  #'org-agenda-drag-line-backward)
-
-  (general-def 'motion org-agenda-mode-map
-    "SPC"      nil ;; unset prefix
-    "go"       #'org-agenda-open-link
-    "gl"       #'org-agenda-log-mode)
-  (leader-def 'motion org-agenda-mode-map
-    "SPC"  #'org-save-all-org-buffers
-    "s"    #'org-agenda-schedule
-    "d"    #'org-agenda-deadline
-    "w"    #'rasen/org-refile-hydra/body
-    "t"    #'rasen/org-agenda-todo))
+** Org key bindings
+When editing code blocks, use current window and do not reorganize frame.
+#+begin_src emacs-lisp :noweb-ref org-config
+(setq org-src-window-setup 'current-window)
 #+end_src
-Use emacs-state in org-lint buffers.
-#+name: org-config
-#+begin_src emacs-lisp
-;;(evil-set-initial-state 'org-lint--report-mode 'emacs)
-;;(evil-set-initial-state 'epa-key-list-mode 'emacs)
+
+Open file links in the same window.
+#+begin_src emacs-lisp :noweb-ref org-config
+(push '(file . find-file) org-link-frame-setup)
 #+end_src
 ** Timestamps
 Configure time-stamp for org-mode, so ~time-stamp~ command would update =#+LAST_MODIFIED:= or =#+DATE:= keyword value (whichever is found first) using ISO8601 format.
@@ -6875,9 +5790,7 @@ I have debugged the issue to be caused by ~org-read-date-minibuffer-local-map~ b
 #+end_src
 
 I am not sure how but the if-branch causes the issue. (Somehow, it causes mouse cursor to jump.) So… just redefine the binding:
-
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (org-defkey org-read-date-minibuffer-local-map (kbd ".") #'self-insert-command)
 #+end_src
 
@@ -6888,8 +5801,7 @@ My email load is handled by mbsync (to download email), msmtp (to send mail), an
 
 Applications are configured with Home Manager, and notmuch frontend is configured in Emacs.
 ** Applications
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   # Store mails in ~/Mail
   accounts.email.maildirBasePath = "Mail";
@@ -7054,40 +5966,28 @@ Applications are configured with Home Manager, and notmuch frontend is configure
                         "mbsync -a && ~/dotfiles/notmuch.sh")))
       (async-shell-command mbsync-cmd "*mbsync*")))
 
-  ;; bind q in shell to hide buffer
-  (general-def 'motion shell-mode-map
-    "q" #'quit-window)
-
   (defun rasen/notmuch-search-mute ()
     (interactive)
     (notmuch-search-tag '("+muted"))
     (notmuch-search-archive-thread))
 
-  (general-def notmuch-hello-mode-map "f" 'rasen/mbsync)
+  (define-key notmuch-hello-mode-map (kbd "f") 'rasen/mbsync)
 
-  (general-def
-    :keymaps '(notmuch-hello-mode-map
-               notmuch-search-mode-map
-               notmuch-show-mode-map)
-    "g" 'notmuch-refresh-all-buffers)
+  (define-key notmuch-hello-mode-map (kbd "g") 'notmuch-refresh-all-buffers)
+  (define-key notmuch-search-mode-map (kbd "g") 'notmuch-refresh-all-buffers)
+  (define-key notmuch-show-mode-map (kbd "g") 'notmuch-refresh-all-buffers)
 
-  (general-def 'notmuch-search-mode-map
-    "k" #'notmuch-search-archive-thread
-    "m" #'rasen/notmuch-search-mute)
-  (general-def 'notmuch-show-mode-map
-    "k" #'notmuch-show-archive-thread-then-next)
-  ;; remap old function
-  (general-def '(notmuch-search-mode-map
-                 notmuch-show-mode-map)
-    "K" #'notmuch-tag-jump)
+  (define-key notmuch-search-mode-map (kbd "k") #'notmuch-search-archive-thread)
+  (define-key notmuch-search-mode-map (kbd "m") #'rasen/notmuch-search-mute)
+  (define-key notmuch-show-mode-map (kbd "k") #'notmuch-show-archive-thread-then-next)
+  (define-key notmuch-search-mode-map (kbd "K") #'notmuch-tag-jump)
+  (define-key notmuch-show-mode-map (kbd "K") #'notmuch-tag-jump)
 
-  (general-def 'notmuch-show-mode-map
-    "C" #'rasen/org-capture-link)
+  (define-key notmuch-show-mode-map (kbd "C") #'rasen/org-capture-link)
 
-  (general-def 'notmuch-show-mode-map
-    "M-u" (lambda ()
-            (interactive)
-            (notmuch-show-tag '("+unread"))))
+  (define-key notmuch-show-mode-map (kbd "M-u") (defun rasen/notmuch-unread ()
+                                                  (interactive)
+                                                  (notmuch-show-tag '("+unread"))))
 
   ;; notmuch-tag-formats
 
@@ -7104,8 +6004,7 @@ Applications are configured with Home Manager, and notmuch frontend is configure
 #+end_src
 
 Open html links in browser:
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.file.".mailcap".text = ''
     text/html; firefox %s
@@ -7146,8 +6045,7 @@ Email sending.
 #+end_src
 ** rss2email
 Install rss2email to deliver RSS feeds to my maildir.
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = [ pkgs.rss2email ];
 }
@@ -7155,8 +6053,7 @@ Install rss2email to deliver RSS feeds to my maildir.
 * Applications
 Here go applications (almost) every normal user needs.
 ** GPG
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   programs.gnupg.agent = {
     enable = true;
@@ -7182,8 +6079,7 @@ Here go applications (almost) every normal user needs.
 #+end_src
 
 Install on macOS:
-#+name: darwin-section
-#+begin_src nix
+#+begin_src nix :noweb-ref darwin-section
 {
   environment.systemPackages = [ pkgs.gnupg ];
   programs.gnupg.agent = {
@@ -7207,8 +6103,7 @@ Temporary workaround:
   keys)
 #+end_src
 ** Yubikey
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   environment.systemPackages = [
     pkgs.yubikey-manager
@@ -7223,8 +6118,7 @@ Temporary workaround:
 }
 #+end_src
 
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = [
     pkgs.yubikey-manager
@@ -7234,8 +6128,7 @@ Temporary workaround:
 #+end_src
 ** password-store
 Install [[https://www.passwordstore.org/][password-store]] along with [[https://github.com/tadfisher/pass-otp][one-time password extension]].
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = [
     (pkgs.pass.withExtensions (exts: [ exts.pass-otp exts.pass-audit exts.pass-genphrase ]))
@@ -7245,8 +6138,7 @@ Install [[https://www.passwordstore.org/][password-store]] along with [[https://
 #+end_src
 
 Install [[https://github.com/browserpass/browserpass][browserpass]] firefox extension backend.
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   programs.browserpass = {
     enable = true;
@@ -7311,9 +6203,7 @@ Enable auth-source–pass integration + patches to make auth-source work with pa
 ** Age
 
 Use Age for file encryption.
-
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = [
     pkgs.age
@@ -7324,8 +6214,7 @@ Use Age for file encryption.
 #+end_src
 
 ** Passage
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.sessionVariables.PASSAGE_DIR = "${config.home.homeDirectory}/.password-store";
   home.sessionVariables.PASSAGE_IDENTITIES_FILE = "${config.home.homeDirectory}/.config/passage/identities";
@@ -7346,8 +6235,7 @@ Use Age for file encryption.
 #+end_src
 
 ** Gopass
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = [
     pkgs.unstable.gopass
@@ -7357,8 +6245,7 @@ Use Age for file encryption.
 #+end_src
 
 On MacOS:
-#+name: darwin-section
-#+begin_src nix
+#+begin_src nix :noweb-ref darwin-section
 {
   environment.systemPackages = [ pkgs.pinentry_mac ];
 }
@@ -7366,8 +6253,7 @@ On MacOS:
 
 ** KDE apps
 I don't use full KDE but some apps are definitely nice.
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = pkgs.lib.linux-only [
     pkgs.kdePackages.gwenview
@@ -7380,16 +6266,14 @@ I don't use full KDE but some apps are definitely nice.
 #+end_src
 
 KDE apps might have issues with mime types without this:
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   environment.pathsToLink = [ "/share" ];
 }
 #+end_src
 ** Zathura
 [[https://pwmt.org/projects/zathura/][Zathura]] is a cool document viewer with Vim-like bindings.
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   programs.zathura = {
     # FIXME: appstream is broken on 26.05 (https://github.com/NixOS/nixpkgs/issues/514566)
@@ -7407,8 +6291,7 @@ KDE apps might have issues with mime types without this:
 }
 #+end_src
 ** User applications
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = [
     (pkgs.lib.linux-only pkgs.tdesktop) # Telegram
@@ -7430,8 +6313,7 @@ Emacs integration:
 * Development
 ** Vim
 Install Vim as my backup editor. (~<<nixos-section>>~)
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   environment.systemPackages = [
     pkgs.vim-full
@@ -7440,8 +6322,7 @@ Install Vim as my backup editor. (~<<nixos-section>>~)
 #+end_src
 
 For Home Manager–managed hosts.
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = [
     pkgs.vim-full
@@ -7450,8 +6331,7 @@ For Home Manager–managed hosts.
 #+end_src
 
 Link its configuration.
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.file.".vim".source = ./.vim;
   home.file.".vimrc".source = ./.vim/init.vim;
@@ -7460,8 +6340,7 @@ Link its configuration.
 ** Terminal / shell
 *** rxvt-unicode
 I use urxvt as my terminal emulator.
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   programs.urxvt = {
     enable = true;
@@ -7512,6 +6391,10 @@ xrdb ~/.Xresources
 #+end_src
 *** vterm
 vterm is a terminal emulator using libvterm. Which allows running it within Emacs.
+#+begin_src nix :noweb-ref emacs-packages
+melpaPackages.vterm
+#+end_src
+
 #+begin_src emacs-lisp
 (use-package vterm
   :commands vterm
@@ -7521,55 +6404,15 @@ vterm is a terminal emulator using libvterm. Which allows running it within Emac
   (setq vterm-kill-buffer-on-exit t)
 
   (add-hook 'vterm-mode-hook #'rasen/disable-hl-line-mode)
-  ;; (push 'vterm-mode evil-motion-state-modes)
-  (general-def 'vterm-mode-map
-    "<f1>" nil
-    "<f2>" nil
-    "<f3>" nil
-    "<f4>" nil
-    "<f5>" nil
-    "<f6>" nil
-    "<f7>" nil
-    "<f8>" nil
-    "<f9>" nil
-    "<f10>" nil
-    "<f11>" nil
-    "<f12>" nil
-    "<return>" nil
-    "RET" #'vterm-send-return)
-
-  ;;  (general-def 'normal 'vterm-mode-map
-  ;;    "j" #'evil-previous-line
-  ;;    "k" #'evil-collection-vterm-next-line
-  ;;    "RET" nil)
-  ;;  (general-def 'insert 'vterm-mode-map
-  ;;    "<f1>" #'vterm--self-insert
-  ;;    "<f2>" #'vterm--self-insert
-  ;;    "<f3>" #'vterm--self-insert
-  ;;    "<f4>" #'vterm--self-insert
-  ;;    "<f5>" #'vterm--self-insert
-  ;;    "<f6>" #'vterm--self-insert
-  ;;    "<f7>" #'vterm--self-insert
-  ;;    "<f8>" #'vterm--self-insert
-  ;;    "<f9>" #'vterm--self-insert
-  ;;    "<f10>" #'vterm--self-insert
-  ;;    "<f11>" #'vterm--self-insert
-  ;;    "<f12>" #'vterm--self-insert
-  ;;    "C-h" #'vterm--self-insert
-  ;;    "RET" #'vterm-send-return
-  ;;    "C-c" nil
-  ;;    "C-c C-c" #'vterm-send-C-c)
-  ;;  (general-def '(insert normal) 'vterm-mode-map
-  ;;    "<C-return>" #'vterm-send-return
-  ;;    "C-c C-z" #'evil-collection-vterm-toggle-send-escape
-  ;;    "C-c z" #'evil-collection-vterm-toggle-send-escape)
+  (dolist (key '("<f1>" "<f2>" "<f3>" "<f4>" "<f5>" "<f6>" "<f7>" "<f8>" "<f9>" "<f10>" "<f11>" "<f12>" "<return>"))
+    (define-key vterm-mode-map (kbd key) nil))
+  (define-key vterm-mode-map (kbd "RET") #'vterm-send-return)
 
   (setq vterm-buffer-name-string "vterm %s"))
 #+end_src
 
 Fish configuration to work with vterm (~<<home-manager-section>>~):
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   programs.fish = {
 
@@ -7665,8 +6508,7 @@ shell exits, the buffer is killed."
     (vterm-send-return)))
 #+end_src
 *** ghostel
-#+name: emacs-packages
-#+begin_src nix
+#+begin_src nix :noweb-ref emacs-packages
 melpaPackages.ghostel
 #+end_src
 
@@ -7703,8 +6545,7 @@ Support for quail
   :hook (ghostel-mode . ghostel-ime-mode))
 #+end_src
 *** eat terminal emulator
-#+name: emacs-packages
-#+begin_src nix
+#+begin_src nix :noweb-ref emacs-packages
 nongnuPackages.eat
 #+end_src
 
@@ -7714,9 +6555,7 @@ nongnuPackages.eat
 #+end_src
 *** fish
 [[https://fishshell.com/][fish]] is a cool shell, I use it as my default for day-to-day work.
-
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   programs.fish.enable = true;
   users.defaultUserShell = pkgs.fish;
@@ -7724,8 +6563,7 @@ nongnuPackages.eat
 #+end_src
 
 For home-manager:
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   programs.fish = {
     enable = true;
@@ -7764,8 +6602,7 @@ For home-manager:
 #+end_src
 
 For macOS:
-#+name: darwin-section
-#+begin_src nix
+#+begin_src nix :noweb-ref darwin-section
 {
   programs.fish.enable = true;
   programs.zsh.enable = true;
@@ -7776,8 +6613,7 @@ For macOS:
 }
 #+end_src
 **** Vi key bindings
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   programs.fish.functions.fish_user_key_bindings = ''
     function fish_user_key_bindings
@@ -7824,16 +6660,14 @@ Eshell is a shell written in Emacs lisp. It offers great integration with Emacs.
 #+end_src
 *** tmux
 (~<<nixos-section>>~)
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   environment.systemPackages = [ pkgs.tmux ];
 }
 #+end_src
 
 For home-manager. (~<<home-manager-section>>~)
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   programs.tmux = {
     enable = true;
@@ -7872,8 +6706,7 @@ For home-manager. (~<<home-manager-section>>~)
 *** Just
 (task runner)
 A task runner / helper for frequently ran commands.
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = [ pkgs.just ];
 }
@@ -7897,15 +6730,13 @@ Executing just scripts from emacs:
   (defalias 'just 'justl))
 #+end_src
 *** Other terminal goodies
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
-  home.packages = [ pkgs.dtach ];
+  home.packages = [ pkgs.dtach pkgs.ripgrep ];
 }
 #+end_src
 
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   environment.systemPackages = [
     pkgs.wget
@@ -7929,11 +6760,11 @@ Executing just scripts from emacs:
   # environment.variables.PATH = "$HOME/.npm-global/bin:$PATH";
 }
 #+end_src
+
 ** git
 *** git config
 (~<<home-manager-section>>~)
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   programs.git = {
     enable = true;
@@ -7984,8 +6815,7 @@ Executing just scripts from emacs:
 #+end_src
 
 I have *LOTS* of aliases (~<<home-manager-section>>~)
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   programs.git.settings.aliases = {
     cl    = "clone";
@@ -8025,8 +6855,7 @@ I have *LOTS* of aliases (~<<home-manager-section>>~)
 #+end_src
 
 Always push to github with ssh keys instead of login/password. (~<<home-manager-section>>~)
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   programs.git.settings = {
     url."ssh://git@github.com/DataDog".insteadOf = "https://github.com/DataDog";
@@ -8036,20 +6865,20 @@ Always push to github with ssh keys instead of login/password. (~<<home-manager-
 #+end_src
 
 Also, install git for the rest of the system. (~<<nixos-section>>~)
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   environment.systemPackages = [ pkgs.git ];
 }
 #+end_src
 
 *** magit
-Magit is a cool emacs interface to git. (emacs-lisp)
+Magit is a cool emacs interface to git.
+#+begin_src nix :noweb-ref emacs-packages
+melpaPackages.magit
+#+end_src
+
 #+begin_src emacs-lisp
 (use-package magit
-  :general
-  (:states 'motion
-   "g m"    #'magit-status)
   :diminish auto-revert-mode
   :config
   <<magit-config>>
@@ -8057,20 +6886,17 @@ Magit is a cool emacs interface to git. (emacs-lisp)
 #+end_src
 
 Use global git. (~<<magit-config>>~)
-#+name: magit-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :noweb-ref magit-config :tangle no
 (setq magit-git-executable "git")
 #+end_src
 
 Do not put files into trash can. Delete them for real. (~<<magit-config>>~)
-#+name: magit-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :noweb-ref magit-config :tangle no
 (setq-default magit-delete-by-moving-to-trash nil)
 #+end_src
 
 Integrate with ivy. (~<<magit-config>>~)
-#+name: magit-config
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :noweb-ref magit-config :tangle no
 ;; (setq-default magit-completing-read-function 'ivy-completing-read)
 #+end_src
 
@@ -8101,8 +6927,6 @@ Add a magit command to push =HEAD= into a specified ref. Bound to ~p h~.
 #+end_src
 
 ***** git fetch origin/master && git checkout origin/master
-(evil-magit)
-#+name: evil-magit-config
 #+begin_src emacs-lisp
 (defun rasen/magit-fco (remote refspec args)
   "Fetch remote branch and checkout it (detached HEAD)."
@@ -8125,14 +6949,11 @@ Add a magit command to push =HEAD= into a specified ref. Bound to ~p h~.
   (magit-git-fetch "origin" "master")
   (magit-checkout "origin/master"))
 
-;; (evil-collection-define-key evil-collection-magit-state 'magit-mode-map
-;;                        "g m" 'rasen/magit-fco-master)
 #+end_src
 ***** TODO add a detach head command (git checkout HEAD)
 **** GPG
 Show commit signatures in log. (~<<magit-config>>~)
-#+name: magit-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref magit-config
 (setq magit-log-arguments '("--graph" "--decorate" "--show-signature" "-n256"))
 #+end_src
 *** forge
@@ -8144,8 +6965,7 @@ Forge is an extension to magit that allows working with GitHub/GitLab.
 #+end_src
 
 Configure my username in ~.gitconfig~.
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   programs.git.settings.github.user = "rasendubi";
 }
@@ -8154,23 +6974,16 @@ Configure my username in ~.gitconfig~.
 git-commit is emacs mode for editing commit messages. (emacs-lisp)
 #+begin_src emacs-lisp
 (use-package git-commit
-  :gfhook 'flyspell-mode
-
-  :general
-  (:keymaps 'with-editor-mode-map
-   :states 'normal
-   "'" #'with-editor-finish)
-
-  :config
-  ;;  (add-to-list 'evil-insert-state-modes 'with-editor-mode)
-  ;;  (setq evil-normal-state-modes (delete 'git-commit-mode evil-normal-state-modes))
-  )
+  :hook (git-commit-mode . flyspell-mode))
 #+end_src
 *** diff-hl
 [[https://github.com/dgutov/diff-hl][diff-hl]] is an emacs package to highlight uncommitted changes.
+#+begin_src nix :noweb-ref emacs-packages
+melpaPackages.diff-hl
+#+end_src
+
 #+begin_src emacs-lisp
 (use-package diff-hl
-  :after magit
   :config
   (require 'diff-hl-flydiff)
   (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
@@ -8179,6 +6992,10 @@ git-commit is emacs mode for editing commit messages. (emacs-lisp)
 #+end_src
 *** git-link
 git-link helps to create permalinks to the files.
+#+begin_src nix :noweb-ref emacs-packages
+melpaPackages.git-link
+#+end_src
+
 #+begin_src emacs-lisp
 (use-package git-link
   :commands (git-link))
@@ -8187,8 +7004,7 @@ git-link helps to create permalinks to the files.
 GitHub’s PR review is completely broken for larger PRs with many comments (can’t view all comment, can only review one file at a time). Use [[https://github.com/blahgeek/emacs-pr-review][blahgeek/emacs-pr-review]] instead.
 
 Install emacs package:
-#+name: emacs-packages
-#+begin_src nix
+#+begin_src nix :noweb-ref emacs-packages
 melpaPackages.pr-review
 #+end_src
 
@@ -8198,8 +7014,7 @@ Configure:
   :commands (pr-review pr-review-notification))
 #+end_src
 ** jujutsu
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   programs.jujutsu = {
     enable = true;
@@ -8246,11 +7061,15 @@ Emacs interface via majutsu:
   :vc (:url "https://github.com/0WD0/majutsu"
        :rev "74371e921ba34532908e944f4dec0083f36a3ae4"))
 #+end_src
+
+Required dependency for majutsu:
+#+begin_src nix :noweb-ref emacs-packages
+melpaPackages.consult
+#+end_src
 ** Man pages
 This install a number of default man pages for the linux/posix system.
 (~<<nixos-section>>~)
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   documentation = {
     man.enable = true;
@@ -8272,7 +7091,7 @@ Do not use tabs for indentation.
 (setq-default indent-tabs-mode nil)
 #+end_src
 *** Make underscore part of words
-Make '_' a part of words so that commands like =evil-forward-word-begin= work properly.
+Make '_' a part of words so that word movement commands work properly.
 #+begin_src emacs-lisp
 (add-hook 'prog-mode-hook
           (lambda () (modify-syntax-entry ?_ "w")))
@@ -8291,133 +7110,10 @@ Make '_' a part of words so that commands like =evil-forward-word-begin= work pr
   :custom
   (project-vc-extra-root-markers '(".bazelproject" "Cargo.lock" ".git")))
 #+end_src
-*** company
-Company mode provides autocomplete features.
-#+begin_src emacs-lisp
-(use-package company
-  ;; :disabled t
-  :defer 2
-  ;; :general
-  ;; (:keymaps 'company-mode-map
-  ;;  :states 'insert
-  ;;  "C-n" #'company-complete-common-or-cycle
-  ;;  "C-p" #'company-select-previous)
-  ;; ('company-active-map
-  ;;  "C-n" #'company-complete-common-or-cycle
-  ;;  "C-p" #'company-select-previous-or-abort
-  ;;  "C-e" #'company-complete
-  ;;  "TAB" #'company-complete-common-or-cycle)
-
-
-  :diminish company-mode
-  :config
-  (setq-default company-dabbrev-downcase nil)
-  (setq-default company-search-filtering t)
-  (setq-default company-global-modes '(not org-mode))
-  (global-company-mode))
-#+end_src
-
-Company-box frontend works better with variable-pitch fonts.
-#+begin_src emacs-lisp
-(use-package company-box
-  :disabled t
-  :diminish
-  :hook (company-mode . company-box-mode))
-#+end_src
-*** corfu
-#+begin_src emacs-lisp
-(use-package corfu
-  :custom
-  (corfu-cycle t)
-  :config
-  (global-corfu-mode))
-
-(use-package corfu-history
-  :config
-  (corfu-history-mode 1)
-  (savehist-mode 1)
-  (add-to-list 'savehist-additional-variables 'corfu-history))
-
-(use-package emacs
-  :custom
-  (tab-always-indent 'complete)
-  (read-extended-command-predicate #'command-completion-default-include-p))
-
-(use-package orderless
-  :custom
-  ;; (orderless-style-dispatchers '(orderless-affix-dispatch))
-  ;; (orderless-component-separator #'orderless-escapable-split-on-space)
-  (completion-styles '(basic orderless))
-  (completion-category-defaults nil)
-  (completions-sort 'historical)
-  (completion-category-overrides nil)
-  ;; (completion-category-overrides '((file (styles flex))))
-  )
-#+end_src
-*** vertico
-#+begin_src emacs-lisp
-(use-package vertico
-  :custom
-  (vertico-count 20)
-  :config
-  (vertico-mode))
-
-(use-package consult
-  :commands (consult-ripgrep))
-
-(use-package vertico-multiform
-  :config
-  (require 'vertico-buffer)
-  (require 'vertico-unobtrusive)
-  (setq vertico-multiform-commands
-        '((consult-line buffer)
-          (consult-grep buffer)
-          (consult-git-grep buffer)
-          (consult-ripgrep buffer)))
-  (vertico-multiform-mode))
-
-;; More convenient file/directory navigation.
-(use-package vertico-directory
-  :bind
-  (:map vertico-map
-   ("C-e" . vertico-directory-enter)
-   ("RET" . vertico-directory-enter)
-   ("DEL" . vertico-directory-delete-char)
-   ("C-w" . vertico-directory-delete-word))
-  :hook
-  (rfn-eshadow-update-overlay . vertico-directory-tidy))
-
-(use-package savehist
-  :init
-  (savehist-mode 1))
-
-(use-package emacs
-  :custom
-  (enable-recursive-minibuffers t)
-  :init
-  ;; Add prompt indicator to `completing-read-multiple'.
-  ;; We display [CRM<separator>], e.g., [CRM,] if the separator is a comma.
-  (defun crm-indicator (args)
-    (cons (format "[CRM%s] %s"
-                  (replace-regexp-in-string
-                   "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
-                   crm-separator)
-                  (car args))
-          (cdr args)))
-  (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
-
-  ;; Do not allow the cursor in the minibuffer prompt
-  (setq minibuffer-prompt-properties
-        '(read-only t cursor-intangible t face minibuffer-prompt))
-  (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode))
-#+end_src
 *** Hippie expand
 Useful for languages that do not support proper completion.
 #+begin_src emacs-lisp
 (use-package hippie-exp
-  :general
-  ('insert
-   "C-/"  #'hippie-expand)
   :config
   (setq hippie-expand-try-functions-list
         '(try-expand-dabbrev-visible
@@ -8427,33 +7123,6 @@ Useful for languages that do not support proper completion.
           try-complete-file-name
           try-expand-line
           try-expand-list)))
-#+end_src
-*** flycheck
-#+begin_src emacs-lisp
-(use-package flycheck
-  :config
-  ;; not sure I actually sandbox
-  ;; (setq flycheck-command-wrapper-function
-  ;;       (lambda (cmd) (apply 'nix-shell-command (nix-current-sandbox) cmd))
-
-  ;;       flycheck-executable-find
-  ;;       (lambda (cmd) (nix-executable-find (nix-current-sandbox) cmd)))
-
-  ;; Do not check for elisp header/footer
-  (setq-default flycheck-disabled-checkers
-                (append flycheck-disabled-checkers
-                        '(emacs-lisp-checkdoc)))
-
-  (global-flycheck-mode))
-#+end_src
-*** flycheck-inline
-Display flycheck error inline.
-#+begin_src emacs-lisp
-(use-package flycheck-inline
-  :disabled t ;; [2026-04-02 Thu] seems too intrusive sometimes
-  :after flycheck
-  :config
-  (global-flycheck-inline-mode))
 #+end_src
 *** electric-pair
 Auto-close pairs.
@@ -8468,17 +7137,12 @@ Auto-close pairs.
   :diminish (color-identifiers-mode
              global-color-identifiers-mode))
 #+end_src
-*** dtrt-indent
-Automatically determine indent style.
-#+begin_src emacs-lisp
-(use-package dtrt-indent
-  :diminish
-  :disabled t
-  :config
-  (dtrt-indent-global-mode))
-#+end_src
 *** paren-face
 Dim parens.
+#+begin_src nix :noweb-ref emacs-packages
+melpaPackages.paren-face
+#+end_src
+
 #+begin_src emacs-lisp
 (use-package paren-face
   :config
@@ -8494,18 +7158,7 @@ LSP is Language Server Protocol. Some languages support it usually provide bette
   ;; makes lines jumpy. See
   ;; https://www.reddit.com/r/emacs/comments/1n3o2we/comment/nbf9bsi/
   ;; (setq eglot-code-action-indications '(eldoc-hint))
-  (with-eval-after-load "evil"
-    (general-def 'normal eglot-mode-map
-      "SPC e" nil
-      "SPC e r" #'eglot-rename
-      "SPC e e" #'eglot-code-actions)
-    (general-def 'normal "SPC e" nil)
-    (general-def 'normal "SPC e r" nil)
-    (general-def 'normal "SPC e e" nil)))
-#+end_src
-*** Commenting
-#+begin_src emacs-lisp
-;; (leader-def '(normal visual)  "/" #'comment-line)
+  )
 #+end_src
 *** yasnippet
 #+begin_src emacs-lisp
@@ -8522,50 +7175,12 @@ LSP is Language Server Protocol. Some languages support it usually provide bette
   (make-directory rasen/snippets-directory t)
   (yas-load-directory rasen/snippets-directory)
 
-  ;; yasnippet's wrapping doesn't work well with evil. When you
-  ;; trigger a snippet from a visual state, it switches into normal
-  ;; state, but cursor moves in such a way, so that you leave the
-  ;; snippet, so you're not able to supply other fields ($1, $2,
-  ;; etc.).
-  ;;
-  ;; This function installed as `yas-before-expand-snippet-hook'
-  ;; switches into insert state before expanding the snippet, so you
-  ;; can supply all the fields.
-  ;;
-  ;; Note that it is not always desirable because some snippets don't
-  ;; have extra fields, so switching to insert state has no sense.
-  ;; In order for the switch to kick in, set `rasen/evil-state'
-  ;; expand-env to "insert" like this:
-  ;;
-  ;; # expand-env: ((rasen/evil-state "insert"))
-  (defun rasen/yas-before-expand-snippet ()
-    (when (and (boundp 'snippet) (not (string-or-null-p snippet)))
-      (let ((state (car (alist-get 'rasen/evil-state (yas--template-expand-env snippet)))))
-        (when (and (equal state "insert") (evil-visual-state-p))
-          (let ((beg evil-visual-beginning)
-                (end evil-visual-end))
-            (evil-insert-state nil)
-            ;; restore mark and point
-            (if (eq (char-after beg) ?\s)
-                ;; skip whitespaces, if present
-                (progn
-                  (goto-char beg)
-                  (forward-whitespace 1)
-                  (set-mark (point)))
-              (set-mark beg))
-            (goto-char end)
-            (when (bolp)
-              (backward-char)))))))
-
-;;  (add-hook 'yas-before-expand-snippet-hook #'rasen/yas-before-expand-snippet)
-
   (add-hook 'term-mode-hook (lambda ()
                               (setq-local yas-dont-activate-functions t))))
 #+end_src
 *** Auto-formatting
 Buffer formatting with [[https://github.com/radian-software/apheleia][apheleia]].
-#+name: emacs-packages
-#+begin_src nix
+#+begin_src nix :noweb-ref emacs-packages
 melpaPackages.apheleia
 #+end_src
 
@@ -8585,135 +7200,6 @@ melpaPackages.apheleia
   <<elisp-mode-config>>
   )
 #+end_src
-
-Eval last sexp Vim-style.
-#+name: elisp-mode-config
-#+begin_src emacs-lisp
-;; (evil-define-operator rasen/evil-eval (beg end type)
-;;   "Evaluate region."
-;;   (if (eq type 'block)
-;;       (evil-apply-on-block 'eval-region beg end nil)
-;;     (eval-region beg end)))
-;;
-;; (general-def 'motion emacs-lisp-mode-map "SPC e" #'eval-last-sexp)
-;; (general-def 'visual emacs-lisp-mode-map "SPC e" #'rasen/evil-eval)
-#+end_src
-**** aggressive indent
-Keep lisp code always indented.
-#+begin_src emacs-lisp
-(use-package aggressive-indent
-  :commands (aggressive-indent-mode aggressive-indent-global-mode)
-  :hook
-  (clojure-mode . aggressive-indent-mode)
-  (clojurescript-mode . aggressive-indent-mode)
-  (emacs-lisp-mode . aggressive-indent-mode)
-  (lisp-mode . aggressive-indent-mode))
-#+end_src
-**** Fix indentation for keywords
-Alternate indent function definition.
-#+begin_src emacs-lisp
-;; Fix the indentation of keyword lists in Emacs Lisp. See [1] and [2].
-;;
-;; Before:
-;;  (:foo bar
-;;        :baz quux)
-;;
-;; After:
-;;  (:foo bar
-;;   :bar quux)
-;;
-;; [1]: https://github.com/Fuco1/.emacs.d/blob/af82072196564fa57726bdbabf97f1d35c43b7f7/site-lisp/redef.el#L12-L94
-;; [2]: http://emacs.stackexchange.com/q/10230/12534
-(el-patch-defun (el-patch-swap lisp-indent-function rasen/emacs-lisp-indent-function) (indent-point state)
-  "This function is the normal value of the variable `lisp-indent-function'.
-The function `calculate-lisp-indent' calls this to determine
-if the arguments of a Lisp function call should be indented specially.
-
-INDENT-POINT is the position at which the line being indented begins.
-Point is located at the point to indent under (for default indentation);
-STATE is the `parse-partial-sexp' state for that position.
-
-If the current line is in a call to a Lisp function that has a non-nil
-property `lisp-indent-function' (or the deprecated `lisp-indent-hook'),
-it specifies how to indent.  The property value can be:
-
-,* `defun', meaning indent `defun'-style
-  (this is also the case if there is no property and the function
-  has a name that begins with \"def\", and three or more arguments);
-
-,* an integer N, meaning indent the first N arguments specially
-  (like ordinary function arguments), and then indent any further
-  arguments like a body;
-
-,* a function to call that returns the indentation (or nil).
-  `lisp-indent-function' calls this function with the same two arguments
-  that it itself received.
-
-This function returns either the indentation to use, or nil if the
-Lisp function does not specify a special indentation."
-  (el-patch-let (($cond (and (elt state 2)
-                             (el-patch-wrap 1 1
-                               (or (not (looking-at "\\sw\\|\\s_"))
-                                   (looking-at ":")))))
-                 ($then (progn
-                          (if (not (> (save-excursion (forward-line 1) (point))
-                                      calculate-lisp-indent-last-sexp))
-                              (progn (goto-char calculate-lisp-indent-last-sexp)
-                                     (beginning-of-line)
-                                     (parse-partial-sexp (point)
-                                                         calculate-lisp-indent-last-sexp 0 t)))
-                          ;; Indent under the list or under the first sexp on the same
-                          ;; line as calculate-lisp-indent-last-sexp.  Note that first
-                          ;; thing on that line has to be complete sexp since we are
-                          ;; inside the innermost containing sexp.
-                          (backward-prefix-chars)
-                          (current-column)))
-                 ($else (let ((function (buffer-substring (point)
-                                                          (progn (forward-sexp 1) (point))))
-                              method)
-                          (setq method (or (function-get (intern-soft function)
-                                                         'lisp-indent-function)
-                                           (get (intern-soft function) 'lisp-indent-hook)))
-                          (cond ((or (eq method 'defun)
-                                     (and (null method)
-                                          (> (length function) 3)
-                                          (string-match "\\`def" function)))
-                                 (lisp-indent-defform state indent-point))
-                                 ((integerp method)
-                                 (lisp-indent-specform method state
-                                                       indent-point normal-indent))
-                                (method
-                                 (funcall method indent-point state))))))
-    (let ((normal-indent (current-column))
-          (el-patch-add
-            (orig-point (point))))
-      (goto-char (1+ (elt state 1)))
-      (parse-partial-sexp (point) calculate-lisp-indent-last-sexp 0 t)
-      (el-patch-swap
-        (if $cond
-            ;; car of form doesn't seem to be a symbol
-            $then
-          $else)
-        (cond
-         ;; car of form doesn't seem to be a symbol, or is a keyword
-         ($cond $then)
-         ((and (save-excursion
-                 (goto-char indent-point)
-                 (skip-syntax-forward " ")
-                 (not (looking-at ":")))
-               (save-excursion
-                 (goto-char orig-point)
-                 (looking-at ":")))
-          (save-excursion
-            (goto-char (+ 2 (elt state 1)))
-            (current-column)))
-         (t $else))))))
-#+end_src
-Apply it for emacs-lisp-mode.
-#+begin_src emacs-lisp
-(add-hook 'emacs-lisp-mode-hook
-          (lambda () (setq-local lisp-indent-function #'rasen/emacs-lisp-indent-function)))
-#+end_src
 *** Nix
 Pretty self-explaining.
 #+begin_src emacs-lisp
@@ -8730,36 +7216,6 @@ Pretty self-explaining.
   ;; (setq flycheck-ghc-stack-use-nix t)
   :config
   (setq haskell-mode-hook nil)
-  ;; (add-hook 'haskell-mode-hook #'interactive-haskell-mode)
-  ;; (add-hook 'haskell-mode-hook #'haskell-decl-scan-mode)
-  ;; (add-hook 'haskell-mode-hook #'lsp)
-
-  ;; (setq haskell-compile-cabal-build-command "cd %s && stack build")
-  ;; (setq haskell-compile-cabal-build-command-alt "cd %s && cabal build --ghc-options=-ferror-spans")
-
-  ;; Use Nix for stack ghci
-  ;; (add-to-list 'haskell-process-args-stack-ghci "--fast --nix")
-  ;; (add-to-list 'haskell-process-args-stack-ghci "--test")
-
-  ;; Use Nix for default build/test command
-  ;; (projectile-register-project-type 'haskell-stack
-  ;;                                   '("stack.yaml")
-  ;;                                   :compile "stack build --fast --nix"
-  ;;                                   :test "stack build --nix --test")
-
-  ;; (general-def haskell-mode-map
-  ;;   [f8]       #'haskell-navigate-imports
-  ;;   "C-c C-b"  #'haskell-compile
-  ;;   "C-c v c"  #'haskell-cabal-visit-file
-
-  ;;   ;; haskell-interactive-mode
-  ;;   "C-x C-d"  nil
-  ;;   "C-c C-z"  #'haskell-interactive-switch
-  ;;   "C-c C-l"  #'haskell-process-load-file
-  ;;   "C-c C-t"  #'haskell-process-do-type
-  ;;   "C-c C-i"  #'haskell-process-do-info
-  ;;   "C-c M-."  nil
-  ;;   "C-c C-d"  nil)
 
   ;; Disable popups (i.e., report errors in the interactive shell).
   (setq haskell-interactive-popup-errors nil)
@@ -8810,11 +7266,6 @@ Pretty self-explaining.
                                   :cargo (:buildScripts (:enable t)
                                           :features "all")))))
 
-(use-package flycheck-rust
-  :disabled t  ;; [2026-04-02 Thu] doesn’t seem to do much
-  :after rust-mode
-  :config
-  (add-hook 'flycheck-mode-hook #'flycheck-rust-setup))
 #+end_src
 *** Go
 #+begin_src emacs-lisp
@@ -8960,8 +7411,7 @@ This const is taken from doxymacs and is subject to GPLv2. I've copied it my dot
   :mode "^requirements.txt$")
 #+end_src
 *** Create writable npm global directory
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = [ pkgs.nodejs pkgs.pnpm ];
   xdg.enable = true;
@@ -8990,8 +7440,7 @@ Typescript support via tree sitter.
 #+end_src
 
 Install typsecript-language-server as emacs package (so it’s available to emacs but not system-wide):
-#+name: emacs-packages
-#+begin_src nix
+#+begin_src nix :noweb-ref emacs-packages
 pkgs.typescript-language-server
 #+end_src
 
@@ -8999,7 +7448,7 @@ pkgs.typescript-language-server
 #+begin_src emacs-lisp
 (use-package svelte-mode
   :mode "\\.svelte$"
-  :gfhook #'prettier-js-mode
+  :hook (svelte-mode . prettier-js-mode)
   :config
   (setq svelte-basic-offset 2))
 #+end_src
@@ -9014,14 +7463,8 @@ pkgs.typescript-language-server
   :mode "\\.\\(clj\\|cljs\\)$")
 
 (use-package cider
-  :after clojure-mode
-  :config
-  (evil-set-initial-state 'cider-stacktrace-mode 'emacs))
-#+end_src
-*** Groovy
-#+begin_src emacs-lisp
-(use-package groovy-mode
-  :mode "\\.\\(groovy\\|gradle\\)$")
+  :disabled t
+  :after clojure-mode)
 #+end_src
 *** Kotlin
 #+begin_src emacs-lisp
@@ -9058,8 +7501,7 @@ pkgs.typescript-language-server
 #+end_src
 *** Ledger / Hledger
 Install latest version with home-manager:
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = [ pkgs.unstable.hledger ];
 }
@@ -9089,15 +7531,6 @@ Install latest version with home-manager:
     "Insert current timestamp in ISO 8601 format"
     (interactive)
     (insert (format-time-string "%FT%R%z")))
-
-  (general-def 'normal markdown-mode-map
-    "'"      #'markdown-edit-code-block
-    "C-c '"  (rasen/hard-way "'"))
-  (general-def 'normal edit-indirect-mode-map
-    "'"      #'edit-indirect-commit
-    "C-c '"  (rasen/hard-way "'"))
-  (general-def 'insert markdown-mode-map
-    "C-c ,"  #'rasen/insert-timestamp)
 
   (setq markdown-fontify-code-blocks-natively t))
 #+end_src
@@ -9130,13 +7563,6 @@ buffer"
   (org-cliplink-insert-transformed-title (org-cliplink-clipboard-content)
                                          #'rasen/md-link-transformer))
 #+end_src
-**** WriteGood
-See http://bnbeckwith.com/code/writegood-mode.html
-
-#+begin_src emacs-lisp
-(use-package writegood-mode
-  :hook (markdown-mode . writegood-mode))
-#+end_src
 *** JSON
 #+begin_src emacs-lisp
 (use-package json-mode
@@ -9156,8 +7582,7 @@ See http://bnbeckwith.com/code/writegood-mode.html
 #+end_src
 *** Docker
 (~<<nixos-section>>~)
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   virtualisation.docker.enable = true;
 }
@@ -9215,8 +7640,7 @@ See http://bnbeckwith.com/code/writegood-mode.html
 #+end_src
 *** PlantUML
 Install plantuml.
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = [ pkgs.plantuml ];
 }
@@ -9241,14 +7665,17 @@ Emacs configuration.
 #+end_src
 *** COMMENT Common Lisp
 Install SBCL.
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = [
     pkgs.sbcl
     # pkgs.clpm
   ];
 }
+#+end_src
+
+#+begin_src nix :noweb-ref emacs-packages
+melpaPackages.slime
 #+end_src
 
 #+begin_src emacs-lisp
@@ -9258,8 +7685,7 @@ Install SBCL.
   (setq inferior-lisp-program "sbcl"))
 #+end_src
 *** Parinfer for lisps
-#+name: emacs-packages
-#+begin_src nix
+#+begin_src nix :noweb-ref emacs-packages
 epkgs.melpaPackages.parinfer-rust-mode
 pkgs.parinfer-rust-emacs
 #+end_src
@@ -9308,8 +7734,7 @@ If given a SOURCE, execute the CMD on it."
 ** Agents
 
 Flake input:
-#+name: flake-inputs
-#+begin_src nix
+#+begin_src nix :noweb-ref flake-inputs
 llm-agents = {
   url = "github:numtide/llm-agents.nix";
   inputs.nixpkgs.follows = "nixpkgs-unstable";
@@ -9317,8 +7742,7 @@ llm-agents = {
 #+end_src
 
 Install agents and tools:
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.packages = with inputs.llm-agents.packages."${pkgs.stdenv.hostPlatform.system}"; [
     claude-code
@@ -9327,8 +7751,7 @@ Install agents and tools:
 }
 #+end_src
 
-#+name: emacs-packages
-#+begin_src nix
+#+begin_src nix :noweb-ref emacs-packages
 melpaPackages.pi-coding-agent
 #+end_src
 
@@ -9340,8 +7763,7 @@ melpaPackages.pi-coding-agent
 #+end_src
 
 Emacs integration via agent-shell:
-#+name: emacs-packages
-#+begin_src nix
+#+begin_src nix :noweb-ref emacs-packages
 melpaPackages.agent-shell
 #+end_src
 
@@ -9353,8 +7775,7 @@ melpaPackages.agent-shell
 #+begin_src emacs-lisp
 (use-package gptel
   :commands (gptel gptel-send)
-  :general
-  ("s-g" #'gptel-send)
+  :bind ("s-g" . gptel-send)
   :config
   (require 'gptel-curl)
   (require 'gptel-transient)
@@ -9409,25 +7830,9 @@ Hightlight parentheses, show current column.
 (show-paren-mode 1)
 (column-number-mode 1)
 #+end_src
-** beacon-mode
-Add a little bit of highlighting for the cursor when buffer scrolls or cursor jumps, so I don't lose it.
-#+begin_src emacs-lisp
-(use-package beacon
-  :diminish beacon-mode
-  :config
-
-  ;; do not blink where beacon-mode plays badly
-  (defun rasen/dont-blink-predicate ()
-    (member major-mode '(notmuch-search-mode ghostel-mode vterm-mode)))
-  (add-hook 'beacon-dont-blink-predicates #'rasen/dont-blink-predicate)
-
-  (beacon-mode 1))
-#+end_src
 ** Fonts
 I'm not a font guru, so I just stuffed a bunch of random fonts in here.
-
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   fonts = {
     fontconfig.enable = true;
@@ -9448,8 +7853,7 @@ I'm not a font guru, so I just stuffed a bunch of random fonts in here.
 #+end_src
 
 For home-manager.
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   fonts.fontconfig.enable = true;
   home.packages = [
@@ -9523,8 +7927,7 @@ Apply my font settings when new frame is created (useful when emacs is started i
 #+end_src
 ** Variable-pitch fonts in org-mode
 Use variable-pitch fonts in org-mode. (~<<org-config>>~)
-#+name: org-config
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-config
 (require 'org-variable-pitch)
 (setq org-variable-pitch-fixed-font "Iosevka")
 (set-face-attribute 'org-variable-pitch-fixed-face nil
@@ -9594,9 +7997,7 @@ Patch adaptive-wrap, so it work better with org-variable-pitch-mode (i.e., make 
 #+end_src
 ** Hi-DPI
 These are for omicron-only.
-
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   xresources.properties = {
     "Xft.dpi" = 276;
@@ -9605,8 +8006,7 @@ These are for omicron-only.
 }
 #+end_src
 
-#+name: machine-omicron
-#+begin_src nix
+#+begin_src nix :noweb-ref machine-omicron
 {
   console.packages = [
     pkgs.terminus_font
@@ -9616,15 +8016,13 @@ These are for omicron-only.
 #+end_src
 
 Load console configuration early at initrd. This ensures the proper font (sizes) are loaded when asking for disk encryption passphrase.
-#+name: nixos-section
-#+begin_src nix
+#+begin_src nix :noweb-ref nixos-section
 {
   console.earlySetup = true;
 }
 #+end_src
 
-#+name: machine-omicron
-#+begin_src nix
+#+begin_src nix :noweb-ref machine-omicron
 {
   services.xserver.dpi = 276;
 }
@@ -9734,8 +8132,7 @@ Display time and battery level in modeline.
   (display-battery-mode 1))
 #+end_src
 * Misc
-#+name: home-manager-section
-#+begin_src nix
+#+begin_src nix :noweb-ref home-manager-section
 {
   home.file = {
     ".nethackrc".source = ./.nethackrc;
@@ -9754,8 +8151,7 @@ A key binding to quickly open my configuration file.
   (interactive)
   (find-file (expand-file-name "README.org" rasen/dotfiles-directory)))
 
-(general-def
-  "<f12>" #'rasen/find-config)
+(global-set-key (kbd "<f12>") #'rasen/find-config)
 
 (rasen/exwm-input-set-key (kbd "<s-f12>") #'rasen/find-config)
 #+end_src
@@ -9766,8 +8162,7 @@ Same for my planning file.
   (interactive)
   (find-file (expand-file-name "plan.org" org-directory)))
 
-(general-def
-  "<f10>" #'rasen/find-plan)
+(global-set-key (kbd "<f10>") #'rasen/find-plan)
 
 (rasen/exwm-input-set-key (kbd "<s-f10>") #'rasen/find-plan)
 #+end_src
@@ -9778,8 +8173,7 @@ And for agenda.
   (interactive)
   (org-agenda nil "o"))
 
-(general-def
-  "<f9>" #'rasen/find-agenda-overview)
+(global-set-key (kbd "<f9>") #'rasen/find-agenda-overview)
 
 (rasen/exwm-input-set-key (kbd "<s-f9>") #'rasen/find-agenda-overview)
 #+end_src
@@ -9796,52 +8190,4 @@ Set PATH env variable from =exec-path=. This is required for =shell-command= to 
     (setq exec-path (delete-dups (append exec-path old-path)))
     ;; set new value to PATH
     (setenv "PATH" (string-join exec-path ":"))))
-#+end_src
-
-** break mode
-#+begin_src emacs-lisp
-(require 'break)
-(general-def break-rest-mode-map
-  "l" #'rasen/lock-screen)
-
-(setq break-work-length 45
-      break-rest-length 15)
-
-;; (break-mode)
-#+end_src
-
-Watch IdleHint from logind to pause or resume break-mode.
-#+begin_src emacs-lisp
-(when (featurep 'dbusbind)
-  (require 'dbus)
-
-  (defvar rasen/idlehint-changed-hook nil)
-  (defvar rasen/idlehint-object nil)
-
-  (defun rasen/idlehint-changed-handler (interface changed invalidated)
-    (if-let ((idlehintprop (alist-get "IdleHint" changed nil nil 'equal)))
-        (run-hook-with-args 'rasen/idlehint-changed-hook (caar idlehintprop))))
-  (defun rasen/idlehint-watch ()
-    (interactive)
-    (rasen/idlehint-unwatch)
-    (dbus-register-signal
-     :system
-     nil
-     "/org/freedesktop/login1/user/_1000"
-     "org.freedesktop.DBus.Properties"
-     "PropertiesChanged"
-     #'rasen/idlehint-changed-handler))
-  (defun rasen/idlehint-unwatch ()
-    (interactive)
-    (when rasen/idlehint-object
-      (dbus-unregister-object rasen/idlehint-object)
-      (setq rasen/idlehint-object nil)))
-  (rasen/idlehint-watch)
-
-  (defun rasen/idlehinit-to-break (idle)
-    (message "(rasen/idlehint-to-break %s)" idle)
-    (if idle
-        (break-pause)
-      (break-resume)))
-  (add-hook 'rasen/idlehint-changed-hook #'rasen/idlehinit-to-break))
 #+end_src

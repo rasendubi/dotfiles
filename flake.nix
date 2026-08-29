@@ -796,9 +796,6 @@
               ];
             }
             {
-              home.packages = [ pkgs.ripgrep ];
-            }
-            {
               home.packages = pkgs.lib.linux-only [
                 pkgs.xss-lock
               ];
@@ -1445,7 +1442,7 @@
               home.packages = [ pkgs.just ];
             }
             {
-              home.packages = [ pkgs.dtach ];
+              home.packages = [ pkgs.dtach pkgs.ripgrep ];
             }
             {
               programs.git = {
@@ -1590,12 +1587,6 @@
               home.packages = [ pkgs.plantuml ];
             }
             {
-              home.packages = [
-                pkgs.sbcl
-                # pkgs.clpm
-              ];
-            }
-            {
               home.packages = with inputs.llm-agents.packages."${pkgs.stdenv.hostPlatform.system}"; [
                 claude-code
                 pi
@@ -1652,11 +1643,6 @@
                           url = "${homebrew-emacs-plus}/patches/emacs-31/fix-ns-x-colors.patch";
                           sha256 = "sha256-oe3DFgEXwp0cZJl+ufWqTonaeWSliikTRsVDNbcy4Yw=";
                         })
-                        # # Fix OS window role so that yabai can pick up emacs
-                        # (pkgs.fetchpatch {
-                        #   url = "${homebrew-emacs-plus}/patches/emacs-28/fix-window-role.patch";
-                        #   sha256 = "sha256-+z/KfsBm1lvZTZNiMbxzXQGRTjkCFO4QPlEK35upjsE=";
-                        # })
                         # Make emacs aware of OS-level light/dark mode
                         (pkgs.fetchpatch {
                           url = "${homebrew-emacs-plus}/patches/emacs-31/system-appearance.patch";
@@ -1681,9 +1667,15 @@
                 emacs-packages = (epkgs:
                   (with epkgs; [
                     epkgs.melpaPackages.envrc
+                    melpaPackages.vterm
                     melpaPackages.ghostel
                     nongnuPackages.eat
+                    melpaPackages.magit
+                    melpaPackages.diff-hl
+                    melpaPackages.git-link
                     melpaPackages.pr-review
+                    melpaPackages.consult
+                    melpaPackages.paren-face
                     melpaPackages.apheleia
                     pkgs.typescript-language-server
                     epkgs.melpaPackages.parinfer-rust-mode
@@ -1698,51 +1690,31 @@
                     atomic-chrome
                     avy
                     bash-completion
-                    beacon
                     clojure-mode
                     cmake-mode
-                    color-identifiers-mode
-                    company
-                    company-box
-                    counsel
-                    counsel-projectile
                     dart-mode
-                    diff-hl
                     diminish
                     dockerfile-mode
                     doom-modeline
-                    dtrt-indent
                     edit-indirect
                     el-patch
-                    emojify
                     exec-path-from-shell
                     expand-region
                     fish-completion
                     fish-mode
                     flycheck
-                    flycheck-inline
-                    flycheck-rust
                     forge
                     forth-mode
                     just-mode
                     justl
-                    general
                     go-mode
-                    google-translate
                     gptel
                     graphviz-dot-mode
-                    groovy-mode
                     haskell-mode
-                    imenu-list
-                    ivy
-                    ivy-bibtex
-                    ivy-pass
                     jinja2-mode
                     json-mode
                     ledger-mode
-                    lispyville
                     lua-mode
-                    magit
                     markdown-mode
                     nix-mode
                     notmuch
@@ -1753,42 +1725,23 @@
                     org-roam
                     org-roam-bibtex
                     org-super-agenda
-                    paren-face
                     pass
-                    php-mode
                     pip-requirements
                     plantuml-mode
                     protobuf-mode
                     racket-mode
                     restclient
-                    ryo-modal
-                    god-mode
-                    multiple-cursors
                     rust-mode
-                    slime
                     svelte-mode
                     swift-mode
                     terraform-mode
                     visual-fill-column
-                    vterm
                     vue-mode
                     wgrep
-                    which-key
                     whitespace-cleanup-mode
-                    writegood-mode
                     yaml-mode
                     yasnippet
                     zig-mode
-              
-                    corfu
-                    cape
-                    vertico
-                    orderless
-                    consult
-                    embark
-                    marginalia
-                    smartparens
-                    git-link
               
                   ]) ++
                   [
@@ -1805,10 +1758,6 @@
                       pname = "org-fc";
                       version = "20201121";
                       src = pkgs.fetchFromGitHub {
-                        # owner = "rasendubi";
-                        # repo = "org-fc";
-                        # rev = "35ec13fd0412cd17cbf0adba7533ddf0998d1a90";
-                        # sha256 = "sha256-2h1dIR7WHYFsLZ/0D4HgkoNDxKQy+v3OaiiCwToynvU=";
                         owner = "l3kn";
                         repo = "org-fc";
                         rev = "cc191458a991138bdba53328690a569b8b563502";
