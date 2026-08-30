@@ -4942,6 +4942,10 @@ All daily notes are stored in a separate directory so they do not mix up with no
 ;; Try to guess "today"
 (setq org-extend-today-until 6)
 
+;; Use 23:59 timestamp when past midnight. This is usually desired so
+;; that org-habit counts repetitions properly.
+(setq org-use-effective-time t)
+
 (defun rasen/org-daily-dispatch (arg)
   "Dispatch command for org-roam-dailies.
 
