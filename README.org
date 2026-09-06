@@ -6532,7 +6532,11 @@ melpaPackages.ghostel
          ("<f11>" . nil)
          ("<f12>" . nil))
   :custom
-  (ghostel-module-directory (expand-file-name "var/ghostel" user-emacs-directory)))
+  (ghostel-module-directory (expand-file-name "var/ghostel" user-emacs-directory))
+  :config
+  (setq ghostel-buffer-name-function
+        (defun rasen/ghostel-buffer-name (title)
+          (format "ghostel %s" (abbreviate-file-name default-directory)))))
 #+end_src
 
 Run all compile commands in ghostel.
