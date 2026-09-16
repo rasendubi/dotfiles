@@ -1680,7 +1680,7 @@
                     pkgs.typescript-language-server
                     epkgs.melpaPackages.parinfer-rust-mode
                     pkgs.parinfer-rust-emacs
-                    melpaPackages.pi-coding-agent
+                    melpaPackages.pilish
                     melpaPackages.agent-shell
                   ]) ++
                   (with epkgs.melpaPackages; [

@@ -7758,14 +7758,14 @@ Install agents and tools:
 #+end_src
 
 #+begin_src nix :noweb-ref emacs-packages
-melpaPackages.pi-coding-agent
+melpaPackages.pilish
 #+end_src
 
 #+begin_src emacs-lisp
-(use-package pi-coding-agent
-  :commands (pi-coding-agent)
+(use-package pilish
+  :commands (pilish)
   :init
-  (defalias 'pi 'pi-coding-agent))
+  (defalias 'pi 'pilish))
 #+end_src
 
 Emacs integration via agent-shell:
