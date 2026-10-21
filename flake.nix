@@ -1680,6 +1680,8 @@
                     pkgs.typescript-language-server
                     epkgs.melpaPackages.parinfer-rust-mode
                     pkgs.parinfer-rust-emacs
+                    melpaPackages.erlang-ts
+                    melpaPackages.gleam-ts-mode
                     melpaPackages.pilish
                     melpaPackages.agent-shell
                   ]) ++
@@ -1787,6 +1789,44 @@
                     pkgs.shellcheck
               
                     pkgs.direnv
+              
+                    pkgs.git
+                    pkgs.gcc
+              
+                    # epkgs.melpaPackages.tree-sitter-langs
+                    (epkgs.treesit-grammars.with-grammars (p: [
+                      p.tree-sitter-astro
+                      p.tree-sitter-bash
+                      p.tree-sitter-bibtex
+                      p.tree-sitter-css
+                      p.tree-sitter-diff
+                      p.tree-sitter-dockerfile
+                      p.tree-sitter-elisp
+                      p.tree-sitter-elixir
+                      p.tree-sitter-erlang
+                      p.tree-sitter-fish
+                      p.tree-sitter-gleam
+                      p.tree-sitter-go
+                      p.tree-sitter-haskell
+                      # p.tree-sitter-hledger
+                      p.tree-sitter-html
+                      p.tree-sitter-jjdescription
+                      p.tree-sitter-json
+                      p.tree-sitter-just
+                      p.tree-sitter-markdown
+                      p.tree-sitter-markdown-inline
+                      p.tree-sitter-nix
+                      p.tree-sitter-org
+                      p.tree-sitter-python
+                      p.tree-sitter-rust
+                      p.tree-sitter-scheme
+                      p.tree-sitter-sql
+                      p.tree-sitter-toml
+                      p.tree-sitter-tsx
+                      p.tree-sitter-typescript
+                      p.tree-sitter-yaml
+                      p.tree-sitter-zig
+                    ]))
               
                     (pkgs.hunspell.withDicts (dicts: with dicts; [en_US-large uk_UA]))
               

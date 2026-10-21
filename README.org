@@ -1804,6 +1804,44 @@ Expose Emacs with my packages as a top-level package (~<<flake-packages>>~).
 
       pkgs.direnv
 
+      pkgs.git
+      pkgs.gcc
+
+      # epkgs.melpaPackages.tree-sitter-langs
+      (epkgs.treesit-grammars.with-grammars (p: [
+        p.tree-sitter-astro
+        p.tree-sitter-bash
+        p.tree-sitter-bibtex
+        p.tree-sitter-css
+        p.tree-sitter-diff
+        p.tree-sitter-dockerfile
+        p.tree-sitter-elisp
+        p.tree-sitter-elixir
+        p.tree-sitter-erlang
+        p.tree-sitter-fish
+        p.tree-sitter-gleam
+        p.tree-sitter-go
+        p.tree-sitter-haskell
+        # p.tree-sitter-hledger
+        p.tree-sitter-html
+        p.tree-sitter-jjdescription
+        p.tree-sitter-json
+        p.tree-sitter-just
+        p.tree-sitter-markdown
+        p.tree-sitter-markdown-inline
+        p.tree-sitter-nix
+        p.tree-sitter-org
+        p.tree-sitter-python
+        p.tree-sitter-rust
+        p.tree-sitter-scheme
+        p.tree-sitter-sql
+        p.tree-sitter-toml
+        p.tree-sitter-tsx
+        p.tree-sitter-typescript
+        p.tree-sitter-yaml
+        p.tree-sitter-zig
+      ]))
+
       (pkgs.hunspell.withDicts (dicts: with dicts; [en_US-large uk_UA]))
 
       # latex for displaying fragments in org-mode
@@ -4690,7 +4728,7 @@ Actual style is overridden in Color theme section.
   :after org
   :diminish
   :autoload (org-roam-db-update-file)
-  :commands (rasen/org-daily-dispatch)
+  :commands (rasen/org-daily-dispatch org-roam-node-find)
   :bind
   (:map org-mode-map
    ("C-c i" . org-roam-node-insert))
@@ -7736,6 +7774,32 @@ If given a SOURCE, execute the CMD on it."
 #+begin_src emacs-lisp
 (use-package dart-mode
   :mode "\\.dart\\'")
+#+end_src
+*** Erlang / Elixir / Gleam
+#+begin_src nix :noweb-ref emacs-packages
+melpaPackages.erlang-ts
+melpaPackages.gleam-ts-mode
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package erlang
+  :mode (".\\.erl\\'" . erlang-mode))
+#+end_src
+
+# erlang-ts-mode is crashing emacs for some reason.
+# #+begin_src emacs-lisp
+# (use-package erlang-ts
+#   :mode ("\\.erl\\'" . erlang-ts-mode))
+# #+end_src
+
+#+begin_src emacs-lisp
+(use-package elixir-ts-mode
+  :mode "\\.exs?\\'")
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package gleam-ts-mode
+  :mode "\\.gleam\\'")
 #+end_src
 ** Agents
 
